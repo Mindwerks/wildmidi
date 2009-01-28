@@ -845,7 +845,7 @@ WM_LoadConfig (const char *config_file) {
 			}
 			continue;
 		} else if (strncasecmp(line_buffer, "source ", 7) == 0) {
-			if (config_dir != NULL) {
+			if ((config_dir != NULL) && (line_buffer[7] != '/')) {
 				new_config = malloc(strlen(config_dir) + strlen(&line_buffer[7]) + 1);
 				if (new_config == NULL) {
 					WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse config", errno);
@@ -1013,7 +1013,7 @@ WM_LoadConfig (const char *config_file) {
 				*chr_ptr = '\0';
 			}
 			if (strncasecmp(&line_buffer[(line_ptr + strlen(&line_buffer[line_ptr]) - 5)], ".pat", 4) != 0) {
-				if (config_dir != NULL) {
+				if ((config_dir != NULL)  && (line_buffer[line_ptr] != '/')) {
 					tmp_patch->filename = malloc(strlen(config_dir) + strlen(&line_buffer[line_ptr]) + 5);
 					if (tmp_patch->filename == NULL) {
 						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
@@ -1041,7 +1041,7 @@ WM_LoadConfig (const char *config_file) {
 				}
 				strcat(tmp_patch->filename, ".pat");
 			} else {
-				if (config_dir != NULL) {
+				if ((config_dir != NULL)  && (line_buffer[line_ptr] != '/')) {
 					tmp_patch->filename = malloc(strlen(config_dir) + strlen(&line_buffer[line_ptr]) + 1);
 					if (tmp_patch->filename == NULL) {
 						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
