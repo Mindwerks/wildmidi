@@ -4,6 +4,7 @@ AC_INIT(include/wildmidi_lib.h)
 AC_REVISION($Revision: 1.13 $) dnl
 AM_CONFIG_HEADER(include/config.h)
 AC_CANONICAL_SYSTEM
+AM_MAINTAINER_MODE
 AC_VALIDATE_CACHED_SYSTEM_TUPLE(
 	rm $cache_file
 	echo restart configure
