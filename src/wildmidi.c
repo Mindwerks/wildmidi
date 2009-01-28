@@ -442,7 +442,7 @@ open_alsa_output(void) {
 		return -1;
 	}
 	
-	if (snd_pcm_hw_params_set_format (pcm, hw, SND_PCM_FORMAT_S16) < 0) {
+	if (snd_pcm_hw_params_set_format (pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
 		printf("ALSA does not support 16bit signed audio for your soundcard\n");
 		close_alsa_output();
 		return -1;
