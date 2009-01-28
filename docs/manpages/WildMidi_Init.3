@@ -1,0 +1,86 @@
+.TH WildMidi_Init 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMidi_Init -\ Initialize the library.
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B int WildMidi_Init (const char *
+.I config_file,
+.B unsigned short int
+.I rate,
+.B unsigned short int
+.I options);
+.SH DESCRIPTION
+.B WildMidi_Init()
+initializes libWildMIDI and prepares it for turning midi files into sweet(sometimes ear splitting) music.
+.SH OPTIONS
+.TP
+.B config_file
+The full path and filename of a
+.BR wildmidi.cfg (5)
+compatable file.
+.TP
+.B rate
+The desired audio output rate between 11000 and 65000.
+.TP
+.B options
+.RS
+.TP
+.B WM_MO_LINEAR_VOLUME
+libWildMIDI uses volume curves in some areas by default. Unfortunately some MIDI files were created on systems that didn't support volume curves so sound badly mixed in libWildMIDI. Using this flad will disable the use of volume curves.
+.TP
+.B WM_MO_EXPENSIVE_INTERPOLATION
+By default libWildMIDI uses linear(straight line) interpolation to fill in the gap between samples. Adding this option enables an interpelation engine that tries to rebuild the lost audio between samples.
+.TP
+.B WM_MO_REVERB
+Enables a final mix reverb engine, which is currently just a proof of concept.
+.TP
+.B WM_MO_BIG_ENDIAN_OUTPUT
+Some systems requre the audio in big endian format so use this option of they do.
+.RE
+.SH FILES
+libWildMIDI does not contain a default configuration file. It is recommended that you use
+.I /etc/wildmidi.cfg
+as the default.
+.SH RETURN VALUE
+.TP
+.B 0
+Library successfully initialized
+.TP
+.B -1
+What did I screw up now?
+.SH DIAGNOSTICS
+.TP
+.B NULL config file pointer
+No config file was passed
+.TP
+.B invalid option
+One or more of the 
+.I options
+was not correct.
+.TP
+.B rate out of bounds, range is 11000 - 65000
+The
+.I rate
+passed to the function was outside acceptable range.
+.SH BUGS
+Since the config file is passed during the init, only one sample set is usuable at a time.
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMidi_Init (3),
+.BR WildMidi_GetString (3),
+.BR WildMidi_MasterVolume (3),
+.BR WildMidi_Open (3),
+.BR WildMidi_OpenBuffer (3),
+.BR WildMidi_LoadSamples (3),
+.BR WildMidi_GetOutput (3),
+.BR WildMidi_SetOption (3),
+.BR WildMidi_GetInfo (3),
+.BR WildMidi_FastSeek (3),
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3),
+.BR WildMidi_Shutdown (3)
+
+

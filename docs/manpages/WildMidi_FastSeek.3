@@ -1,0 +1,64 @@
+.TH WildMIDI_FastSeek 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMIDI_Init -\ Initialize the library.
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B int WildMidi_FastSeek ( midi * 
+.I handle,
+.B unsigned long int * 
+.I sample_pos);
+.
+.B int WildMidi_SampledSeek ( midi * 
+.I handle,
+.B unsigned long int * 
+.I sample_pos);
+.SH DESCRIPTION
+.TP
+.B WildMidi_FastSeek
+Instantly seeks to 
+.I sample_pos.
+This allows for fast forwarding and rewinding but behaves as if you started the MIDI at that position so that only new events are processed.
+.TP
+.B WildMidi_SampledSeek
+This allows for fast forwarding and rewinding but behaves as if you paused the MIDI at that position so that any previous MIDI events that would normally be active at that position are active.
+.SH OPTIONS
+.TP
+.B handle
+The identifier returned by a previous
+.BR WildMidi_Open (3)
+or 
+.BR WildMidi_OpenBuffer (3)
+.SH RETURN VALUE
+.TP
+.B 0
+on success
+.TP
+.B -1
+on failure
+.SH DIAGNOSTICS
+.TP
+.B NULL handle
+You need the handle
+.TP
+.B NULL seek position pointer
+um, hello, anyone there, need a pointer to the position.
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMIDI_Init (3),
+.BR WildMIDI_GetString (3),
+.BR WildMIDI_MasterVolume (3),
+.BR WildMIDI_Open (3),
+.BR WildMIDI_OpenBuffer (3),
+.BR WildMIDI_LoadSamples (3),
+.BR WildMIDI_GetOutput (3),
+.BR WildMIDI_SetOption (3),
+.BR WildMIDI_GetInfo (3),
+.BR WildMIDI_FastSeek (3),
+.BR WildMIDI_SampledSeek (3),
+.BR WildMIDI_Close (3),
+.BR WildMIDI_Shutdown (3)
+
+

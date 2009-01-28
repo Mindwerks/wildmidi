@@ -1,0 +1,65 @@
+.TH WildMIDI_SetOption 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMIDI_SetOption -\ Set some libWildMIDI options
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B int WildMidi_SetOption (midi * 
+.I handle,
+.B unsigned short int 
+.I options,
+.B unsigned short int
+.I setting);
+.SH DESCRIPTION
+.B WildMidi_SetOption
+Change some of the options in the processing of the midi.
+.SH OPTIONS
+.TP
+.B handle
+The handle of the midi file we are processing
+.TP
+.B options
+.RS
+.TP
+.B WM_MO_LINEAR_VOLUME
+straight line volume levels.
+.TP
+.B WM_MO_EXPENSIVE_INTERPOLATION
+A CPU intensive audio re-construction thingy that just makes it sound better. Thats all I know as it was developed and submitted by Eric A Welsh and adapted with his help by me.
+.TP
+.B WM_MO_REVERB
+mmmm reverb what more can i say, except that the values are fixed.
+.RE
+.TP
+.B setting
+You set this to the above options for on, and leave them out for off.
+.SH RETURN VALUE
+.TP
+.B 0
+Success
+.TP
+.B -1
+Error
+.SH DIAGNOSTICS
+NULL handle
+invalid option
+invalid setting
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMIDI_Init (3),
+.BR WildMIDI_GetString (3),
+.BR WildMIDI_MasterVolume (3),
+.BR WildMIDI_Open (3),
+.BR WildMIDI_OpenBuffer (3),
+.BR WildMIDI_LoadSamples (3),
+.BR WildMIDI_GetOutput (3),
+.BR WildMIDI_SetOption (3),
+.BR WildMIDI_GetInfo (3),
+.BR WildMIDI_FastSeek (3),
+.BR WildMIDI_SampledSeek (3),
+.BR WildMIDI_Close (3),
+.BR WildMIDI_Shutdown (3)
+
+
