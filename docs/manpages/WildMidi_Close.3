@@ -1,0 +1,49 @@
+.TH WildMIDI_Close 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMIDI_Close -\ close an active midi handle
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B int WildMidi_Close (midi *
+.I handle);
+.SH DESCRIPTION
+.B WildMIDI_Close()
+.SH OPTIONS
+.TP
+.B handle
+.SH RETURN VALUE
+.TP
+.B 0
+Library successfully initialized
+.TP
+.B -1
+What did I screw up now?
+.SH DIAGNOSTICS
+.TP
+.B NULL Handle
+No handle was passed
+.TP
+.B no midi's open
+no handle has been created
+.TP
+.B handle does not exist
+Associated handle does not exists
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMidi_Init (3),
+.BR WildMidi_GetString (3),
+.BR WildMidi_MasterVolume (3),
+.BR WildMidi_Open (3),
+.BR WildMidi_OpenBuffer (3),
+.BR WildMidi_LoadSamples (3),
+.BR WildMidi_GetOutput (3),
+.BR WildMidi_SetOption (3),
+.BR WildMidi_GetInfo (3),
+.BR WildMidi_FastSeek (3),
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3),
+.BR WildMidi_Shutdown (3)
+
+

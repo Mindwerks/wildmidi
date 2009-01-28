@@ -1,0 +1,40 @@
+.TH WildMidi_Open 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMidi_Open -\ Initialize a MIDI file.
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B midi * WildMidi_Open (const char *
+.I midifile);
+.SH DESCRIPTION
+WildMidi_Open loads a midi file for processing.
+.SH OPTIONS
+.TP
+.B midifile
+the file you wish to process
+.SH RETURN VALUE
+A handle identifying the midi file to other libWildMidi functions.
+.SH DIAGNOSTICS
+.TP
+.B NULL filename
+no pointer to the filename.
+.SH BUGS
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMIDI_Init (3),
+.BR WildMIDI_GetString (3),
+.BR WildMIDI_MasterVolume (3),
+.BR WildMIDI_Open (3),
+.BR WildMIDI_OpenBuffer (3),
+.BR WildMIDI_LoadSamples (3),
+.BR WildMIDI_GetOutput (3),
+.BR WildMIDI_SetOption (3),
+.BR WildMIDI_GetInfo (3),
+.BR WildMIDI_FastSeek (3),
+.BR WildMIDI_SampledSeek (3),
+.BR WildMIDI_Close (3),
+.BR WildMIDI_Shutdown (3)
+
+

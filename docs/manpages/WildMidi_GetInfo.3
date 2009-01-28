@@ -1,0 +1,73 @@
+.TH WildMIDI_GetInfo 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMidi_GetInfo -\ Retrieve information about the associated midi.
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B struct _WM_Info * WildMidi_GetInfo ( midi * 
+.I handle );
+.SH DESCRIPTION
+.B WildMIDI_GetInfo()
+Retrieves stored information about the associated midi
+.SH OPTIONS
+.TP
+.B handle
+The identifier returned by a previous
+.BR WildMidi_Open (3)
+or 
+.BR WildMidi_OpenBuffer (3)
+.SH RETURN VALUE
+.TP
+.B NULL
+On Error
+.TP
+Otherwise a pointer to a struct containing information about the currently playing file.
+.
+.RS
+. struct _WM_Info {
+.     unsigned long int current_sample;
+.     unsigned long int approx_total_samples;
+.     unsigned short int mixer_options;
+. }
+.
+.TP
+.B current_sample
+Number of samples that has been used to sample the midi.
+.TP
+.B approx_total_samples
+An estimated count of the total samples that would be used to sample the midi.
+.TP
+.B mixer_options
+Contains which mixer options are active. See
+.BR WildMidi_Init (3)
+.RE
+.SH DIAGNOSTICS
+.TP
+.B NULL handle
+NULL identifier was passed.
+.TP
+.B to set info
+something is eating the ram
+.SH BUGS
+Do Not rely on approx_total_samples to identify when to stop playing as this often inaccurate. Please use
+.BR WildMidi_GetOutput (3)
+instead.
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMidi_Init (3),
+.BR WildMidi_GetString (3),
+.BR WildMidi_MasterVolume (3),
+.BR WildMidi_Open (3),
+.BR WildMidi_OpenBuffer (3),
+.BR WildMidi_LoadSamples (3),
+.BR WildMidi_GetOutput (3),
+.BR WildMidi_SetOption (3),
+.BR WildMidi_GetInfo (3),
+.BR WildMidi_FastSeek (3),
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3),
+.BR WildMidi_Shutdown (3)
+
+

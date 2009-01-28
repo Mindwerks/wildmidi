@@ -1,0 +1,46 @@
+.TH WildMIDI_MasterVolume 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMIDI_MasterVolume -\ Change the output volume.
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.Bint WildMidi_MasterVolume (unsigned char
+.I master_volume);
+.SH DESCRIPTION
+.B WildMIDI_MasterVolume()
+alters the volume of the final audio output.
+.SH OPTIONS
+.TP
+.B master_volume
+valid settings are between 0 and 127, with 127 being the maximum setting.
+.SH RETURN VALUE
+.TP
+.B 0
+Volume Changed
+.TP
+.B -1
+What did I screw up now?
+.SH DIAGNOSTICS
+.TP
+.B master volume out of range, range is 0-127
+.I master_volume
+outside of acceptable range.
+.SH BUGS
+The implementation used is linear but might need need to use a volume curve, will explore later.
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMidi_Init (3),
+.BR WildMidi_GetString (3),
+.BR WildMidi_Open (3),
+.BR WildMidi_OpenBuffer (3),
+.BR WildMidi_LoadSamples (3),
+.BR WildMidi_GetOutput (3),
+.BR WildMidi_SetOption (3),
+.BR WildMidi_GetInfo (3),
+.BR WildMidi_FastSeek (3),
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3),
+.BR WildMidi_Shutdown (3)
+

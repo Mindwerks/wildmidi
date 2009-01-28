@@ -1,0 +1,42 @@
+.TH WildMIDI_OpenBuffer 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMIDI_OpenBuffer -\ Initialize a MIDI file in memory.
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B midi * WildMidi_OpenBuffer (unsigned char *
+.I midibuffer,
+.B unsigned long int
+.I size);
+.SH DESCRIPTION
+WildMidi_OpenBuffer loads a midi file in memory for processing.
+.SH OPTIONS
+.TP
+.B midibuffer
+the the buffer containing the whole MIDI file
+.SH RETURN VALUE
+A handle identifying the midi file to other libWildMidi functions.
+.SH DIAGNOSTICS
+.TP
+.B NULL midi data buffer
+no pointer to the mudibuffr
+.SH BUGS
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMIDI_Init (3),
+.BR WildMIDI_GetString (3),
+.BR WildMIDI_MasterVolume (3),
+.BR WildMIDI_Open (3),
+.BR WildMIDI_OpenBuffer (3),
+.BR WildMIDI_LoadSamples (3),
+.BR WildMIDI_GetOutput (3),
+.BR WildMIDI_SetOption (3),
+.BR WildMIDI_GetInfo (3),
+.BR WildMIDI_FastSeek (3),
+.BR WildMIDI_SampledSeek (3),
+.BR WildMIDI_Close (3),
+.BR WildMIDI_Shutdown (3)
+
+

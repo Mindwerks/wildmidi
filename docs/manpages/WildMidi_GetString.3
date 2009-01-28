@@ -1,0 +1,45 @@
+.TH WildMidi_GetString 3 "January 2009" WildMIDI "Programming Manual"
+.SH NAME
+WildMidi_GetString -\ Returns information about libWildMIDI.
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.
+.B const char *WildMidi_GetString (unsigned short int 
+.I info)
+.SH DESCRIPTION
+.B WildMidi_GetString()
+Returns a NULL terminated string containing the information requested.
+.SH OPTIONS
+.TP
+.B info
+.RS
+.TP
+.B WM_GS_VERSION
+Return the version of the library.
+.RE
+.SH RETURN VALUE
+.B
+A pointer to a NULL terminated string if successful.
+.TP
+.B NULL
+No Available Information.
+.SH BUGS
+Segfault if calling application tries to free the pointer.
+.SH AUTHOR
+Chris Ison <wildcode at users.sourceforge.net>
+.SH SEE ALSO
+.BR wildmidi.cfg (5),
+.BR WildMidi_Init (3),
+.BR WildMidi_MasterVolume (3),
+.BR WildMidi_Open (3),
+.BR WildMidi_OpenBuffer (3),
+.BR WildMidi_LoadSamples (3),
+.BR WildMidi_GetOutput (3),
+.BR WildMidi_SetOption (3),
+.BR WildMidi_GetInfo (3),
+.BR WildMidi_FastSeek (3),
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3),
+.BR WildMidi_Shutdown (3)
+
+
