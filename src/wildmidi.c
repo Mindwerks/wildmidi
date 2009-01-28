@@ -402,12 +402,8 @@ close_mm_output ( void ) {
 #else
 #ifdef HAVE_ALSA
 
-void *buffer;
-int bps;
 int alsa_first_time = 1;
 static snd_pcm_t  *pcm;
-static snd_pcm_uframes_t alsa_period_size;
-static snd_pcm_channel_area_t *areas;
 
 int write_alsa_output (char * output_data, int output_size);
 void close_alsa_output ( void );
@@ -417,9 +413,8 @@ open_alsa_output(void) {
 	snd_pcm_hw_params_t     *hw;
 	snd_pcm_sw_params_t     *sw;
 	int err;
-	int alsa_buffer_time, bits_per_sample;
+	int alsa_buffer_time;
 	unsigned int alsa_period_time;
-	snd_pcm_uframes_t alsa_buffer_size;
 	
 	if (!pcmname)
 		pcmname = "default";
@@ -437,7 +432,7 @@ open_alsa_output(void) {
 		return -1;
 	}
 
-	if ((err = snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_MMAP_INTERLEAVED)) < 0) {
+	if ((err = snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
 		printf("Cannot set mmap'ed mode: %s.\n", snd_strerror(-err));
 		return -1;
 	}
@@ -491,28 +486,6 @@ open_alsa_output(void) {
 		return -1;
 	}
 
-#ifdef ALSA_NEW
-	if ((err = snd_pcm_hw_params_get_buffer_size(hw, &alsa_buffer_size)) < 0)
-#else
-	if ((err = snd_pcm_hw_params_get_buffer_size(hw)) < 0)
-#endif
-	{
-		printf ("snd_pcm_hw_params_get_buffer_size() failed: %s\n", snd_strerror(-err));
-		return -1;
-	}
-#ifdef ALSA_NEW
-	if ((err = snd_pcm_hw_params_get_period_size(hw, &alsa_period_size, 0)) < 0)	
-#else
-	alsa_buffer_size = err;
-	if ((err = snd_pcm_hw_params_get_period_size(hw, 0)) < 0)
-#endif
-	{
-		printf ("snd_pcm_hw_params_get_period_size() failed: %s\n", snd_strerror(-err));
-		return -1;
-	}
-#ifndef ALSA_NEW
-	alsa_period_size = err;
-#endif	
 	snd_pcm_sw_params_alloca(&sw);
 	snd_pcm_sw_params_current(pcm, sw);
 	if (snd_pcm_sw_params(pcm, sw) < 0)
@@ -521,19 +494,6 @@ open_alsa_output(void) {
 		return -1;
 	}
 	
-	bits_per_sample = snd_pcm_format_physical_width(SND_PCM_FORMAT_S16);
-	bps = (rate * bits_per_sample * 2) / 8000;
-
-	buffer = malloc(alsa_period_size * bits_per_sample / 8 * 2);
-	areas = malloc(2 * sizeof(snd_pcm_channel_area_t));
-
-	areas[0].addr = buffer;
-	areas[0].first = 0;
-	areas[0].step = 2 * bits_per_sample;
-	areas[1].addr = buffer;
-        areas[1].first = bits_per_sample;
-        areas[1].step = 2 * bits_per_sample;
-	
 	send_output = write_alsa_output;
 	close_output = close_alsa_output;
 	return 0;			
@@ -541,45 +501,20 @@ open_alsa_output(void) {
 
 int 
 write_alsa_output (char * output_data, int output_size) {
-	int cnt = 0, err;
-	snd_pcm_uframes_t offset, frames;
-	snd_pcm_sframes_t avail;
-	const snd_pcm_channel_area_t *chan_areas = areas;
+	int err;
+	snd_pcm_uframes_t offset
 	
 	while (output_size > 0) {
-		avail = snd_pcm_avail_update(pcm);
-		if (avail == -EPIPE) {
-			if (snd_pcm_state(pcm) == SND_PCM_STATE_XRUN) {
-				if ((err = snd_pcm_prepare(pcm)) < 0)
-					printf("snd_pcm_prepare() failed.\n");
-				alsa_first_time = 1;
-			}
-		} else if (avail < 0) {
-			printf("snd_pcm_avail_update() failed: %s\n", snd_strerror(-avail));
-			avail = 0;
-		}
-		if (avail < alsa_period_size) {
-			usleep(500);
-			continue;
-		}
 		frames = snd_pcm_bytes_to_frames(pcm, output_size);
-		if ((err = snd_pcm_mmap_begin(pcm, &chan_areas, &offset, &frames)) < 0) {
-			printf("snd_pcm_mmap_begin() failed: %s\n", snd_strerror(-err));
-		}
-		cnt = snd_pcm_frames_to_bytes(pcm, frames);
-		memcpy((char*) chan_areas[0].addr + snd_pcm_frames_to_bytes(pcm, offset), output_data, cnt);
-		if ((err = snd_pcm_mmap_commit(pcm, offset, frames)) < 0) {
+		if ((err = snd_pcm_writei(pcm, output_data, frames)) < 0) {
 			if (snd_pcm_state(pcm) == SND_PCM_STATE_XRUN) {
 				if ((err = snd_pcm_prepare(pcm)) < 0)
 					printf("snd_pcm_prepare() failed.\n");
 				alsa_first_time = 1;
+				continue;
 			}
+			return err;
 		}
-		if (err != frames)
-			printf("snd_pcm_mmap_commit returned %d, expected %d\n", err, (int)frames);
-		
-		output_size -= cnt;
-		output_data += cnt;
 		if (alsa_first_time) {
 			alsa_first_time = 0;
 			snd_pcm_start(pcm);
@@ -591,8 +526,6 @@ write_alsa_output (char * output_data, int output_size) {
 void 
 close_alsa_output ( void ) {
 	snd_pcm_close (pcm);
-	free(areas);
-	free(buffer);
 }
 
 #else
