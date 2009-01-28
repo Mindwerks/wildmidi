@@ -226,6 +226,8 @@ AC_ARG_WITH(arch,
 )
 
 case "$arch" in
+	no)
+		;;
 	auto)
 		case "${host_cpu}" in
 			i?86)
