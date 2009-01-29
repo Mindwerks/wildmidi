@@ -1,28 +1,27 @@
 /*
-	wildmidi_lib.h
+    wildmidi_lib.h - API for the library
+    Copyright (C) 2001-2009 Chris Ison
 
- 	Midi Wavetable Processing library
+    This file is part of WildMIDI.
+
+    WildMIDI is free software: you can redistribute and/or modify the players
+    under the terms of the GNU General Public License and you can redistribute
+    and/or modify the library under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation, either version 3 of
+   the licenses, or(at your option) any later version.
+
+    WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+    the GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU General Public License and the
+    GNU Lesser General Public License along with WildMIDI.  If not,  see
+    <http://www.gnu.org/licenses/>.
+
+    Email: wildcode@users.sourceforge.net
  
- 	Copyright (C)2001-2004 Chris Ison
- 
-	This library is free software; you can redistribute it and/or
-	modify it under the terms of the GNU Lesser General Public
-	License as published by the Free Software Foundation; either
-	version 2.1 of the License, or (at your option) any later version.
-
-	This library is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-	Lesser General Public License for more details.
-
-	You should have received a copy of the GNU Lesser General Public
-	License along with this library; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-	Email: cisos@bigpond.net.au
-		 wildcode@users.sourceforge.net
- 
- 	$Id: wildmidi_lib.h,v 1.6 2004/01/26 02:24:33 wildcode Exp $
+    $Id: wildmidi_lib.h,v 1.6 2004/01/26 02:24:33 wildcode Exp $
 */
 
 #define WM_MO_LINEAR_VOLUME	0x0001  

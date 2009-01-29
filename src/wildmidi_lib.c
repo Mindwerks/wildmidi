@@ -1,141 +1,27 @@
 /*
-	wildmidi_lib.c
+    wildmidi_lib.c - API for the library
+    Copyright (C) 2001-2009 Chris Ison
 
- 	Midi Wavetable Processing library
+    This file is part of WildMIDI.
+
+    WildMIDI is free software: you can redistribute and/or modify the players
+    under the terms of the GNU General Public License and you can redistribute
+    and/or modify the library under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation, either version 3 of
+   the licenses, or(at your option) any later version.
+
+    WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+    the GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU General Public License and the
+    GNU Lesser General Public License along with WildMIDI.  If not,  see
+    <http://www.gnu.org/licenses/>.
+
+    Email: wildcode@users.sourceforge.net
  
- 	Copyright (C)2001-2004 Chris Ison
- 
-	This library is free software; you can redistribute it and/or
-	modify it under the terms of the GNU Lesser General Public
-	License as published by the Free Software Foundation; either
-	version 2.1 of the License, or (at your option) any later version.
-
-	This library is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-	Lesser General Public License for more details.
-
-	You should have received a copy of the GNU Lesser General Public
-	License along with this library; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-	Email: cisos@bigpond.net.au
-		 wildcode@users.sourceforge.net
- 
- 	$Id: wildmidi_lib.c,v 1.18 2004/01/28 05:45:09 wildcode Exp $
-
-	========================================
-	Changelog
-	----------------------------------------
-	Aug 3, 2003
-		- changed kill envelope from 6th to 5th
-		- changed data_length, loop_start, loop_end to 22:10 fixed point
-		- added fractional position to loop_start and loop_end
-		- added fake reverb
-		
-	Aug 4, 2003
-		- added MIDI_EVENT_DEBUG to midi event functions
-		- fixed hold release killing off notes that hadn't been turned off
-		  by note off
-		- sped up fake reverb by doing it outside the channel mixing loop
-	
-	Aug 5, 2003
-		- removed note_table init from ParseNewMidi, entries are now fully reset 
-		  in do_note_on
-		- moved fast kill envelope setting to sample loading
-		- removed envelopes from notes, use ones from sample instead
-		- optimized do_amp_setup functions
-		- do_control_volume, do_control_expression, do_channel_pressure,
-		  changed from setting note_table[] to note[] for performance.
-		- optimizations of sample conversion,
-		
-	Aug 6, 2003
-		- removed changing sample volumes, the amp setting is now apart of 
-		  the midi volume maths.
-		- re-write conversion functions to make them more clearer and less bug prone
-		
-	Aug 7, 2003
-		- fixed volume, expression and preasure changes effecting all notes.
-	
-	Aug 8, 2003
-		- spead up midi processing by using an event index
-		
-	Aug 9, 2003
-		- spead up sampling and mixing by using a seperate function depending on fixed
-		  modes
-		- fixed data lock where it would sleep reguardless of lock state
-		- fixed memory leak ... oops, forgot a free
-		- removed track data storge, isn't required by the core functions
-		
-	Aug 10, 2003
-		- created error function and changed all error messages to use it
-		- malloc, calloc, realloc audit ensuring all are error checked.
-		- fixed potential reading beyond end of midi bug
-		
-	Aug 11, 2003
-		- fixed expensive interpolation over-running the sample buffer
-		- changed stereo option so that changing it worked right away
-		
-	Aug 14, 2003
-		- optimizations for and to the frequency calc code
-		- removal of wide stereo (it sucked anyway)
-
-	Aug 15, 2003
-		- fixed volume levels for panning when non-linear volumes are used
-		- removed fake reberb, it sucked on better sound systems.
-		
-	Aug 17, 2003
-		- fixed autoamp
-		- added env_time#= and env_level#= to timiidty.cfg parser.
-		- fixed bug where last event in the midi before the last eot would
-		  have a large delta. This is a bug in the midi file itself.
-		- fixed some midi's having no sound cause they don't supply patch information.
-		  Now defaulting all channels to bank 0, patch 0.
-	
-	Aug 18, 2003
-		- preload samples
-		- optimized envelope checking and controler code
-		- fixed bug where some samples have an envelope rate setting that doesn't 
-		  actually mean anything .. ie: 0x00 0x40 0x80 0xC0
-		- fixed amp bug where initial left/right levels were set to 0
-		- added timidity's keep=[loop|env] support for drum patches, 
-		  now ignores loops and env settings for drum patches unless keep=[loop|env]
-		  is in the patch line in the config.
-	
-	Aug 21, 2003
-		- float to fixed point math conversions.
-		- frequency range locked to 100 steps between notes
-		  NOTE:need to test slow pitchbends with this, fast ones are fine
-		
-	Aug 24, 2003
-		- optimized sample conversions
-		- optimized note handling and sample/envelope position checks	
-	
-	Aug 28, 2003
-		- compile level optimizations
-		  NOTE: gcc builtins used
-		- numerous bug fixes
-		
-	Aug 30, 2003
-		- fixed sample inc calculation bug
-		- fixed panning volumes, now percieved volume of the sample is the same no matter
-		  panning position.
-
-`	Sep 2, 2003
-		- made noteoff/hold behaviour match midi standard
-		- added remove=sustain to patch line 
-		- added all sound off controller
-		- fixed all notes off to only effect notes that aren't being held
-		- changed envelope behaviour so that only non-sustaned samples hit envelope 4 
-		  while note is on.
-		- Added all controllers off event
-		
-
-	Sep 4, 2003
-		- added master sample data lock
-		- improved performance of the resampling algo
-		
-	========================================
+    $Id: wildmidi_lib.c,v 1.76 2008/06/05 07:01:59 wildcode Exp $
 */
 
 #include <ctype.h>

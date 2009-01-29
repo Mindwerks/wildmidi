@@ -1,27 +1,26 @@
-  /*
-	wildmidi.c
+/*
+    wildmidi.c - Player using library API
+    Copyright (C) 2001-2009 Chris Ison
 
- 	Midi Player using the WildMidi Midi Processing Library
- 
- 	Copyright (C)2001-2004 Chris Ison
- 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+    This file is part of WildMIDI.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    WildMIDI is free software: you can redistribute and/or modify the players
+    under the terms of the GNU General Public License and you can redistribute
+    and/or modify the library under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation, either version 3 of
+   the licenses, or(at your option) any later version.
 
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+    the GNU Lesser General Public License for more details.
 
-	Email: cisos@bigpond.net.au
-		 wildcode@users.sourceforge.net
- 
+    You should have received a copy of the GNU General Public License and the
+    GNU Lesser General Public License along with WildMIDI.  If not,  see
+    <http://www.gnu.org/licenses/>.
+
+    Email: wildcode@users.sourceforge.net
+
  	$Id: wildmidi.c,v 1.21 2004/01/28 05:45:09 wildcode Exp $
 */
 
