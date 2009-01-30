@@ -21,7 +21,7 @@
 
     Email: wildcode@users.sourceforge.net
 
- 	$Id: wildmidi.c,v 1.21 2004/01/28 05:45:09 wildcode Exp $
+    $Id: wildmidi.c,v 1.21 2004/01/28 05:45:09 wildcode Exp $
 */
 
 #include "config.h"
@@ -720,10 +720,10 @@ do_help (void) {
 void
 do_version (void) {
 	printf("WildMidi %s Open Source Midi Sequencer\n",WILDMIDI_VERSION);
-	printf("Copyright (C) 2001-2004 Chris Ison wildcode@users.sourceforge.net\n\n");
+	printf("Copyright (C) 2001-2009 Chris Ison wildcode@users.sourceforge.net\n\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
-	printf("under the terms and conditions of the GNU General Public License version 2.\n");
+	printf("under the terms and conditions of the GNU General Public License version 3.\n");
 	printf("For more information see COPYING\n\n");
 }
 
@@ -788,11 +788,9 @@ main (int argc, char **argv) {
 			case 'r': // SoundCard Rate
 				rate = atoi(optarg);
 				break;
-#ifdef EPERIMENT_626
 			case 'b': // Reverb
 				mixer_options ^= WM_MO_REVERB;
 				break;
-#endif
 			case 'm': // Master Volume
 				master_volume = (unsigned char)atoi(optarg);
 				break;
@@ -942,12 +940,10 @@ main (int argc, char **argv) {
 							WildMidi_SetOption(midi_ptr, WM_MO_LINEAR_VOLUME, ((mixer_options & WM_MO_LINEAR_VOLUME) ^ WM_MO_LINEAR_VOLUME));
 							mixer_options ^= WM_MO_LINEAR_VOLUME;
 							break;
-#ifdef EXPERIMENT_626
 						case 'r':
 							WildMidi_SetOption(midi_ptr, WM_MO_REVERB, ((mixer_options & WM_MO_REVERB) ^ WM_MO_REVERB));	
 							mixer_options ^= WM_MO_REVERB;	
 							break;
-#endif
 						case 'e':
 							WildMidi_SetOption(midi_ptr, WM_MO_EXPENSIVE_INTERPOLATION, ((mixer_options & WM_MO_EXPENSIVE_INTERPOLATION) ^ WM_MO_EXPENSIVE_INTERPOLATION));	
 							mixer_options ^= WM_MO_EXPENSIVE_INTERPOLATION;	
