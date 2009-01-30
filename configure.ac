@@ -58,12 +58,12 @@ case "$host_os" in
 	mingw32*)
 		mingw=yes
 		CFLAGS="$CFLAGS -I\$(top_srcdir)/include/win32"
-		LDFLAGS="$LDFLAGS -luser32 -lgdi32 -lwinmm"
+		LIBADD="$LIBADD -luser32 -lgdi32"
 		if test "x$host" != "x$build"; then
 			case "$build_os" in
 				cygwin*)
 					CFLAGS="$CFLAGS -mno-cygwin -mconsole"
-					LDFLAGS="-L/usr/lib/w32api $LDFLAGS"
+					LIBADD="-L/usr/lib/w32api $LIBADD"
 					CPPFLAGS="$CPPFLAGS $CFLAGS"
 					;;
 				*)
@@ -248,7 +248,7 @@ esac
 
 case "$host_os" in
         *mingw*)
-                AUDDR="-lwinmm"
+		AUDLIB="-lwinmm"
         ;;
         *)
 		USE_ALSA=no
@@ -261,7 +261,7 @@ case "$host_os" in
 
 			if test "x$USE_ALSA" = xyes ; then
 				if test "x$USE_OSS" = xno ; then 
-					AUDDR="-lasound"
+					AUDLIB="-lasound"
 					AC_DEFINE(HAVE_ALSA, 1, [Define this if your system uses alsa])
 					AC_TRY_COMPILE(
 						[#include <alsa/asoundlib.h>],
@@ -279,15 +279,12 @@ case "$host_os" in
 		fi
        ;;
 esac
-if test -d CVS; then
-        AC_DEFINE(EXPERIMENT_626, 1, [Define this to enable all experimental code])
-fi
-		
 
 AC_SUBST(HAVE_ALSA)
 AC_SUBST(CFLAGS)
+AC_SUBST(LIBADD)
 AC_SUBST(LDFLAGS)
-AC_SUBST(AUDDR)
+AC_SUBST(AUDLIB)
 AC_SUBST(AS)
 AC_SUBST(AR)
 AC_SUBST(RANLIB)
