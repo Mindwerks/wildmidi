@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS=	foreign
 INCLUDES=		-I$(top_srcdir)/include
 
 lib_LTLIBRARIES=	libWildMidi.la
-libWildMidi_la_SOURCES=		wildmidi_lib.c
+libWildMidi_la_SOURCES=		reverb.c wildmidi_lib.c
 libWildMidi_la_CFLAGS=		$(PREFER_NON_PIC) 
 libWildMidi_la_LDFLAGS=		-shared -lm -lc $(LDFLAGS) -no-undefined
 
