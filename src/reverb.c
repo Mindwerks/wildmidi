@@ -253,7 +253,7 @@ init_reverb(int rate) {
 /*
 	free_reverb - free up memory used for reverb
 */
-inline void
+void
 free_reverb (struct _rvb *rvb) {
 	free (rvb->l_buf);
 	free (rvb->r_buf);

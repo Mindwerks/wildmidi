@@ -49,9 +49,9 @@ struct _rvb {
 	int gain;
 };
 
-inline void reset_reverb (struct _rvb *rvb);
-inline struct _rvb *init_reverb(int rate);
-inline void free_reverb (struct _rvb *rvb);
-inline void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
+extern inline void reset_reverb (struct _rvb *rvb);
+extern inline struct _rvb *init_reverb(int rate);
+extern inline void free_reverb (struct _rvb *rvb);
+extern inline void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
 
 #endif // _REVERB_H

@@ -400,7 +400,7 @@ WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmf
 
 }
 
-unsigned char *
+char *
 WM_BufferFile (const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	char *data;
@@ -555,7 +555,7 @@ WM_FreePatches ( void ) {
 int
 WM_LoadConfig (const char *config_file) {
 	unsigned long int config_size = 0;
-	unsigned char *config_buffer =  NULL;
+	char *config_buffer =  NULL;
 	char * dir_end =  NULL;
 	char * config_dir =  NULL;
 	unsigned long int config_ptr = 0;
@@ -1959,7 +1959,7 @@ convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 
 int
 load_sample (struct _patch *sample_patch) {
-	unsigned char *gus_patch;
+	char *gus_patch;
 	unsigned long int gus_size;
 	unsigned long int gus_ptr;
 	unsigned char no_of_samples;
@@ -3209,7 +3209,7 @@ do_amp_setup_message (unsigned char ch, struct _mdi *mdi, struct _miditrack *tra
 
 
 struct _mdi *
-WM_ParseNewMidi(unsigned char *mididata, unsigned long int midisize ) {
+WM_ParseNewMidi(char *mididata, unsigned long int midisize ) {
 	int i;
 	unsigned char eot[] = { 0xff, 0x2f, 0x00}; 
 	unsigned long int index_count = 0;
@@ -3650,7 +3650,7 @@ WildMidi_Close (midi * handle) {
 
 midi * 
 WildMidi_Open (const char *midifile) {
-	unsigned char *mididata = NULL;
+	char *mididata = NULL;
 	unsigned long int midisize = 0;
 	
 	if (!WM_Initialized) {
@@ -3670,7 +3670,7 @@ WildMidi_Open (const char *midifile) {
 }
 
 midi *
-WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
+WildMidi_OpenBuffer (char *midibuffer, unsigned long int size) {
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return NULL;
