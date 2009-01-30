@@ -501,7 +501,7 @@ open_alsa_output(void) {
 int 
 write_alsa_output (char * output_data, int output_size) {
 	int err;
-	snd_pcm_uframes_t offset
+	snd_pcm_uframes_t frames;
 	
 	while (output_size > 0) {
 		frames = snd_pcm_bytes_to_frames(pcm, output_size);
@@ -518,6 +518,7 @@ write_alsa_output (char * output_data, int output_size) {
 			alsa_first_time = 0;
 			snd_pcm_start(pcm);
 		}
+		output_size = 0;
 	}
 	return 0;
 }
