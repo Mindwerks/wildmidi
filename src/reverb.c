@@ -40,7 +40,7 @@
 /*
 	reverb function
 */
-inline void
+void
 reset_reverb (struct _rvb *rvb) {
 	int i,j;
 	for (i = 0; i < rvb->l_buf_size; i++) {
@@ -76,7 +76,7 @@ reset_reverb (struct _rvb *rvb) {
 	
 */
 
-inline struct _rvb *
+struct _rvb *
 init_reverb(int rate) {
 	struct _rvb *rtn_rvb = malloc(sizeof(struct _rvb));
 
@@ -260,7 +260,7 @@ free_reverb (struct _rvb *rvb) {
 	free (rvb);
 }
 
-inline void
+void
 do_reverb (struct _rvb *rvb, signed long int *buffer, int size) {
 	int i, j;
 	signed long int l_buf_flt = 0;

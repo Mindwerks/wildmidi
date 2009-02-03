@@ -1,4 +1,2 @@
-## Process this file with automake to produce Makefile.in
-AUTOMAKE_OPTIONS=   foreign
-includedir = $(prefix)/include
+SOURCES=error.h file_io.h reverb.h wildmidi_lib.h
 include_HEADERS = wildmidi_lib.h

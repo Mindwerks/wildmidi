@@ -44,6 +44,8 @@
 #include "config.h"
 #include "wildmidi_lib.h"
 #include "reverb.h"
+#include "error.h"
+#include "file_io.h"
 
 /*
  * =========================
@@ -56,7 +58,7 @@ signed short int WM_MasterVolume = 948;
 unsigned short int WM_SampleRate = 0;
 unsigned short int WM_MixerOptions = 0;
 
-char WM_Version[] = "WildMidi Processing Library " WILDMIDILIB_VERSION;
+char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
 struct _env {
 	float time;
@@ -191,10 +193,9 @@ struct _mdi {
 	unsigned char ch_vol[16];
 	unsigned char ch_exp[16];
 	unsigned char note_vel[16][128];
+
 	struct _rvb *reverb;
 };
-
-/* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
 
 double newt_coeffs[58][58];		/* for start/end of samples */
 float *gauss_table[(1<<10)] = {0};	/* don't need doubles */
@@ -276,10 +277,6 @@ signed short int sqr_volume[] = { 0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 9, 10, 12,
 //signed short int pan_volume[] = { 0, 55, 84, 107, 127, 146, 162, 178, 193, 208, 221, 234, 247, 259, 271, 282, 294, 305, 315, 326, 336, 346, 356, 366, 375, 384, 394, 403, 412, 420, 429, 438, 446, 454, 463, 471, 479, 487, 495, 503, 510, 518, 525, 533, 540, 548, 555, 562, 570, 577, 584, 591, 598, 605, 611, 618, 625, 632, 638, 645, 651, 658, 664, 671, 677, 684, 690, 696, 703, 709, 715, 721, 727, 733, 739, 745, 751, 757, 763, 769, 775, 781, 786, 792, 798, 804, 809, 815, 821, 826, 832, 837, 843, 848, 854, 859, 865, 870, 876, 881, 886, 892, 897, 902, 907, 913, 918, 923, 928, 933, 939, 944, 949, 954, 959, 964, 969, 974, 979, 984, 989, 994, 999, 1004, 1009, 1014, 1019, 1024 };
 signed short int pan_volume[] = { 0, 90, 128, 157, 181, 203, 222, 240, 257, 272, 287, 301, 314, 327, 339, 351, 363, 374, 385, 396, 406, 416, 426, 435, 445, 454, 463, 472, 480, 489, 497, 505, 514, 521, 529, 537, 545, 552, 560, 567, 574, 581, 588, 595, 602, 609, 616, 622, 629, 636, 642, 648, 655, 661, 667, 673, 679, 686, 692, 697, 703, 709, 715, 721, 726, 732, 738, 743, 749, 754, 760, 765, 771, 776, 781, 786, 792, 797, 802, 807, 812, 817, 822, 827, 832, 837, 842, 847, 852, 857, 862, 866, 871, 876, 880, 885, 890, 894, 899, 904, 908, 913, 917, 922, 926, 931, 935, 939, 944, 948, 953, 957, 961, 965, 970, 974, 978, 982, 987, 991, 995, 999, 1003, 1007, 1011, 1015, 1019, 1024 };
 
-unsigned long int reverb_val = 92;
-unsigned long int comb_size[8][2];
-unsigned long int allpass_size[2][2];
-
 float env_time_table[] = {
 	0.0, 0.092857143, 0.046428571, 0.030952381, 0.023214286, 0.018571429, 0.015476190, 0.013265306, 0.011607143, 0.010317460, 0.009285714, 0.008441558, 0.007738095, 0.007142857, 0.006632653, 0.006190476, 0.005803571, 0.005462185, 0.005158730, 0.004887218, 0.004642857, 0.004421769, 0.004220779, 0.004037267, 0.003869048, 0.003714286, 0.003571429, 0.003439153, 0.003316327, 0.003201970, 0.003095238, 0.002995392, 0.002901786, 0.002813853, 0.002731092, 0.002653061, 0.002579365, 0.002509653, 0.002443609, 0.002380952, 0.002321429, 0.002264808, 0.002210884, 0.002159468, 0.002110390, 0.002063492, 0.002018634, 0.001975684, 0.001934524, 0.001895044, 0.001857143, 0.001820728, 0.001785714, 0.001752022, 0.001719577, 0.001688312, 0.001658163, 0.001629073, 0.001600985, 0.001573850, 0.001547619, 0.001522248, 0.001497696, 0.001473923,
 	0.0, 0.742857143, 0.371428571, 0.247619048, 0.185714286, 0.148571429, 0.123809524, 0.106122449, 0.092857143, 0.082539683, 0.074285714, 0.067532468, 0.061904762, 0.057142857, 0.053061224, 0.049523810, 0.046428571, 0.043697479, 0.041269841, 0.039097744, 0.037142857, 0.035374150, 0.033766234, 0.032298137, 0.030952381, 0.029714286, 0.028571429, 0.027513228, 0.026530612, 0.025615764, 0.024761905, 0.023963134, 0.023214286, 0.022510823, 0.021848739, 0.021224490, 0.020634921, 0.020077220, 0.019548872, 0.019047619, 0.018571429, 0.018118467, 0.017687075, 0.017275748, 0.016883117, 0.016507937, 0.016149068, 0.015805471, 0.015476190, 0.015160350, 0.014857143, 0.014565826, 0.014285714, 0.014016173, 0.013756614, 0.013506494, 0.013265306, 0.013032581, 0.012807882, 0.012590799, 0.012380952, 0.012177986, 0.011981567, 0.011791383,
@@ -328,16 +325,6 @@ unsigned long int freq_table[] = {
 #define MIDI_EVENT_DEBUG(dx,dy)
 #endif
 
-#define WM_ERR_MEM		0
-#define WM_ERR_STAT		1
-#define WM_ERR_LOAD		2
-#define WM_ERR_OPEN		3
-#define WM_ERR_READ		4
-#define WM_ERR_INVALID		5
-#define WM_ERR_CORUPT		6
-#define WM_ERR_NOT_INIT		7
-#define WM_ERR_INVALID_ARG	8
-
 #define MAX_AUTO_AMP 2.0
 
 #define FPBITS 10
@@ -370,127 +357,7 @@ void (*do_event[])(unsigned char ch, struct _mdi *midifile, unsigned long int pt
  * =========================
  */
 
-
-void
-WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmfor, int error) {
-	const char * errors[] = {
-		"Unable to obtain memory\0",
-		"Unable to stat\0",
-		"Unable to load\0",
-		"Unable to open\0",
-		"Unable to read\0",
-		"Invalid or Unsuported file format\0",
-		"File corrupt\0",
-		"Library not Initialized\0",
-		"Invalid argument\0"
-	};
-	if (wmfor != NULL) {
-		if (error != 0) {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s %s (%s)\n",func, lne, errors[wmerno], wmfor, strerror(error));
-		} else {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s %s\n",func, lne, errors[wmerno], wmfor);
-		}
-	} else {
-		if (error != 0) {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s (%s)\n",func, lne, errors[wmerno], strerror(error));
-		} else {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s\n",func, lne, errors[wmerno]);
-		}
-	}
-
-}
-
-char *
-WM_BufferFile (const char *filename, unsigned long int *size) {
-	int buffer_fd;
-	char *data;
-	struct stat buffer_stat;
-#ifndef _WIN32
-	char *home = NULL;
-	struct passwd *pwd_ent;
-	char buffer_dir[1024];
-#endif
-	
-	char *buffer_file = malloc(strlen(filename) + 1);
-
-	if (buffer_file == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-		return NULL;
-	}
-	
-	strcpy (buffer_file, filename);
-#ifndef _WIN32
-	if (strncmp(buffer_file,"~/",2) == 0) {
-		if ((pwd_ent = getpwuid (getuid ()))) {
-			home = pwd_ent->pw_dir;
-		} else {
-			home = getenv ("HOME");
-		}
-		if (home) {
-			buffer_file = realloc(buffer_file,(strlen(buffer_file) + strlen(home) + 1));
-			if (buffer_file == NULL) {
-				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-				free(buffer_file);
-				return NULL;
-			}
-			memmove((buffer_file + strlen(home)), (buffer_file + 1), (strlen(buffer_file)));
-			strncpy (buffer_file, home,strlen(home));
-		}
-	} else if (buffer_file[0] != '/') {
-		getcwd(buffer_dir,1024);
-		if (buffer_dir[strlen(buffer_dir)-1] != '/') {
-			buffer_dir[strlen(buffer_dir)+1] = '\0';
-			buffer_dir[strlen(buffer_dir)] = '/';
-		}
-		buffer_file = realloc(buffer_file,(strlen(buffer_file) + strlen(buffer_dir) + 1));
-		if (buffer_file == NULL) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-			free(buffer_file);
-			return NULL;
-		}
-		memmove((buffer_file + strlen(buffer_dir)), buffer_file, strlen(buffer_file)+1);
-		strncpy (buffer_file,buffer_dir,strlen(buffer_dir));
-	}
-#endif
-	if (stat(buffer_file,&buffer_stat)) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
-		free(buffer_file);
-		return NULL;
-	}
-	*size = buffer_stat.st_size;
-	data = malloc(*size);
-	if (data == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-		free(buffer_file);
-		return NULL;
-	}
-#ifdef _WIN32
-	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
-#else
-	if ((buffer_fd = open(buffer_file,O_RDONLY)) == -1) {
-#endif
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, errno);
-		free(buffer_file);
-		free(data);
-		return NULL;
-	}
-	if (read(buffer_fd,data,*size) != buffer_stat.st_size) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, errno);
-		free(buffer_file);
-		free(data);
-		close(buffer_fd);
-		return NULL;
-	}
-	close(buffer_fd);
-	free(buffer_file);
-	return data;						
-}
-
-inline void
+ inline void
 WM_Lock (int * wmlock) {
 	LOCK_START:
 	if (__builtin_expect(((*wmlock) == 0),1)) {
@@ -555,7 +422,7 @@ WM_FreePatches ( void ) {
 int
 WM_LoadConfig (const char *config_file) {
 	unsigned long int config_size = 0;
-	char *config_buffer =  NULL;
+	unsigned char *config_buffer =  NULL;
 	char * dir_end =  NULL;
 	char * config_dir =  NULL;
 	unsigned long int config_ptr = 0;
@@ -843,7 +710,7 @@ WM_LoadConfig (const char *config_file) {
 				*chr_ptr = '\0';
 			}
 			if (strncasecmp(&line_buffer[(line_ptr + strlen(&line_buffer[line_ptr]) - 5)], ".pat", 4) != 0) {
-				if ((config_dir != NULL)  && (line_buffer[line_ptr] != '/')) {
+				if ((config_dir != NULL) && (line_buffer[line_ptr] != '/')) {
 					tmp_patch->filename = malloc(strlen(config_dir) + strlen(&line_buffer[line_ptr]) + 5);
 					if (tmp_patch->filename == NULL) {
 						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
@@ -871,7 +738,7 @@ WM_LoadConfig (const char *config_file) {
 				}
 				strcat(tmp_patch->filename, ".pat");
 			} else {
-				if ((config_dir != NULL)  && (line_buffer[line_ptr] != '/')) {
+				if ((config_dir != NULL) && (line_buffer[line_ptr] != '/')) {
 					tmp_patch->filename = malloc(strlen(config_dir) + strlen(&line_buffer[line_ptr]) + 1);
 					if (tmp_patch->filename == NULL) {
 						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
@@ -1959,7 +1826,7 @@ convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 
 int
 load_sample (struct _patch *sample_patch) {
-	char *gus_patch;
+	unsigned char *gus_patch;
 	unsigned long int gus_size;
 	unsigned long int gus_ptr;
 	unsigned char no_of_samples;
@@ -3209,7 +3076,7 @@ do_amp_setup_message (unsigned char ch, struct _mdi *mdi, struct _miditrack *tra
 
 
 struct _mdi *
-WM_ParseNewMidi(char *mididata, unsigned long int midisize ) {
+WM_ParseNewMidi(unsigned char *mididata, unsigned long int midisize ) {
 	int i;
 	unsigned char eot[] = { 0xff, 0x2f, 0x00}; 
 	unsigned long int index_count = 0;
@@ -3534,7 +3401,6 @@ WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short
 	WM_SampleRate = rate;
 	WM_Initialized = 1;
 	patch_lock = 0;
-	
 	init_gauss();
 	return 0;
 }
@@ -3632,7 +3498,6 @@ WildMidi_Close (midi * handle) {
 		WM_Unlock(&patch_lock);
 		free (mdi->patches);
 	}
-	
 	if (mdi->data != NULL) {
 		free (mdi->data);
 	}
@@ -3641,16 +3506,18 @@ WildMidi_Close (midi * handle) {
 	}
 	if (mdi->index != NULL) 
 		free (mdi->index);
-	free_reverb (mdi->reverb);
-	free (mdi);
 	
+	if (mdi->reverb != NULL) 
+		free_reverb(mdi->reverb);
+	
+	free (mdi);
 	// no need to unlock cause the struct containing the lock no-longer exists;
 	return 0;
 }
 
 midi * 
 WildMidi_Open (const char *midifile) {
-	char *mididata = NULL;
+	unsigned char *mididata = NULL;
 	unsigned long int midisize = 0;
 	
 	if (!WM_Initialized) {
@@ -3670,7 +3537,7 @@ WildMidi_Open (const char *midifile) {
 }
 
 midi *
-WildMidi_OpenBuffer (char *midibuffer, unsigned long int size) {
+WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return NULL;
@@ -4014,6 +3881,7 @@ interum_reverb_mix (struct _rvb *rvb, signed short int * buffer, unsigned long i
 	free (temp_buffer);
 }
 
+
 int
 WildMidi_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
 	unsigned long int buffer_used = 0;
@@ -4233,11 +4101,8 @@ WildMidi_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size)
  */
 			(*buffer++) = left_mix & 0xff;
 			(*buffer++) = (left_mix >> 8) & 0xff;
-			//(*buffer++) = ((left_mix & 0x8000) >> 24) | ((left_mix >> 8) & 0x7f);
 			(*buffer++) = right_mix & 0xff;
 			(*buffer++) = (right_mix >> 8) & 0xff;
-			//(*buffer++) = ((right_mix & 0x8000) >> 24) | ((right_mix >> 8) & 0x7f);
-			
 		} while (--count);
 		
 		buffer_used += real_samples_to_mix * 4;
@@ -4280,9 +4145,8 @@ WildMidi_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) 
 	float *gptr, *gend;
 	int left, right, temp_n;
 	int ii, jj;
-
 	char * orig_buffer = buffer;
-	
+
 	if (__builtin_expect((!WM_Initialized),0)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return -1;
@@ -4520,10 +4384,8 @@ WildMidi_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) 
  */
 			(*buffer++) = left_mix & 0xff;
 			(*buffer++) = (left_mix >> 8) & 0xff;
-			//(*buffer++) = ((left_mix & 0x8000) >> 24) | ((left_mix >> 8) & 0x7f);
 			(*buffer++) = right_mix & 0xff;
 			(*buffer++) = (right_mix >> 8) & 0xff;
-			//(*buffer++) = ((right_mix & 0x8000) >> 24) | ((right_mix >> 8) & 0x7f);
 		} while (--count);
 		
 		buffer_used += real_samples_to_mix * 4;
@@ -4546,7 +4408,7 @@ WildMidi_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) 
 		mdi->sample_count = mdi->info.approx_total_samples - mdi->info.current_sample;
 	}
 	if (mdi->info.mixer_options & WM_MO_REVERB)
-		interum_reverb_mix (mdi->reverb, (signed short int *)orig_buffer, (buffer_used/2));
+					interum_reverb_mix (mdi->reverb, (signed short int *)orig_buffer, (buffer_used/2));
 	WM_Unlock(&mdi->lock);
 	return buffer_used;
 }
@@ -4631,9 +4493,8 @@ WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short in
 	}
 
 	if (options & WM_MO_REVERB) {		
-		reset_reverb (mdi->reverb);
+		reset_reverb(mdi->reverb);
 	}
-
 	WM_Unlock(&mdi->lock);
 	return 0;
 }

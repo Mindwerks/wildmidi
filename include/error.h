@@ -1,5 +1,5 @@
 /*
-    reverb.h - reverb handling
+    error.h - Error handling
     Copyright (C) 2001-2009 Chris Ison
 
     This file is part of WildMIDI.
@@ -18,39 +18,26 @@
     You should have received a copy of the GNU General Public License and the
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
-
+	
     Email: wildcode@users.sourceforge.net
-
-	$Id: reverb.h,v 1.2 2008/06/05 06:06:22 wildcode Exp $
+ 
+     $Id: error.h,v 1.7 2008/05/23 13:22:31 wildcode Exp $
 */
 
-#ifndef _REVERB_H
-#define _REVERB_H
+#ifndef __error_h
+#define __error_h
 
-struct _rvb {
-	/* filter data */
-	signed long int l_buf_flt_in[6][2];
-	signed long int l_buf_flt_out[6][2];
-	signed long int r_buf_flt_in[6][2];
-	signed long int r_buf_flt_out[6][2];
-	signed long int coeff[6][5];
-	/* buffer data */
-	signed long int *l_buf;
-	signed long int *r_buf;
-	int l_buf_size;
-	int r_buf_size;
-	int l_out;
-	int r_out;
-	int l_sp_in[8];
-	int r_sp_in[8];
-	int l_in[4];
-	int r_in[4];
-	int gain;
-};
+#define WM_ERR_MEM		0
+#define WM_ERR_STAT		1
+#define WM_ERR_LOAD		2
+#define WM_ERR_OPEN		3
+#define WM_ERR_READ		4
+#define WM_ERR_INVALID		5
+#define WM_ERR_CORUPT		6
+#define WM_ERR_INVALID_ARG	7
+#define WM_ERR_NOT_INIT		8
+#define WM_ERR_ALR_INIT     9
 
-extern void reset_reverb (struct _rvb *rvb);
-extern struct _rvb *init_reverb(int rate);
-extern void free_reverb (struct _rvb *rvb);
-extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
+inline void WM_ERROR( const char *func, unsigned long int lne, int wmerno, const char *wmfor, int error);
 
-#endif // _REVERB_H
+#endif // __error_h

@@ -1,30 +1,8 @@
-dnl Process this file with autoconf to produce a configure script.
-AC_PREREQ(2.52)
-AC_INIT(include/wildmidi_lib.h)
-AC_REVISION($Revision: 1.13 $) dnl
-AM_CONFIG_HEADER(include/config.h)
-AC_CANONICAL_SYSTEM
-AM_MAINTAINER_MODE
-AC_VALIDATE_CACHED_SYSTEM_TUPLE(
-	rm $cache_file
-	echo restart configure
-	exit 1
-)
-AM_INIT_AUTOMAKE(wildmidi, 0.2.3)
-PROGRAM=WildMidi
-WILDMIDI_VERSION=0.2.3-devel
-WILDMIDILIB_VERSION=0.2.3-devel
-
-AC_DEFINE_UNQUOTED(PROGRAM,             "$PROGRAM",["Proper" program name])
-AC_DEFINE_UNQUOTED(WILDMIDI_VERSION,    "$WILDMIDI_VERSION", [current program version])
-AC_DEFINE_UNQUOTED(WILDMIDILIB_VERSION,    "$WILDMIDILIB_VERSION", [current lib version])
- 
-AC_SUBST(PROGRAM)
-AC_SUBST(WILDMIDI_VERSION)
-AC_SUBST(WILDMIDILIB_VERSION)
-
-ISODATE=`date +%Y-%m-%d`
-AC_SUBST(ISODATE)
+AC_INIT([wildmidi], [0.2.3-devel], [http://sourceforge.net/tracker2/?func=add&group_id=42635&atid=433744])
+AC_PREREQ([2.61])
+AC_CONFIG_SRCDIR([src/wildmidi.c])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_PROG_CC
 
 AC_LANG_C
 
@@ -58,12 +36,11 @@ case "$host_os" in
 	mingw32*)
 		mingw=yes
 		CFLAGS="$CFLAGS -I\$(top_srcdir)/include/win32"
-		LIBADD="$LIBADD -luser32 -lgdi32"
 		if test "x$host" != "x$build"; then
 			case "$build_os" in
 				cygwin*)
 					CFLAGS="$CFLAGS -mno-cygwin -mconsole"
-					LIBADD="-L/usr/lib/w32api $LIBADD"
+					LDFLAGS="-L/lib/w32api $LDFLAGS"
 					CPPFLAGS="$CPPFLAGS $CFLAGS"
 					;;
 				*)
@@ -88,11 +65,31 @@ case "$host_os" in
 	;;
 esac
 
-AC_CHECK_HEADERS(
-	alsa/asoundlib.h ctype.h errno.h fcntl.h getopt.h linux/soundcard.h machine/soundcard.h math.h mmsystem.h pwd.h \
-      stdarg.h stdio.h stdlib.h string.h sys/ioctl.h sys/mman.h sys/soundcard.h sys/stat.h sys/types.h \
-      termios.h unistd.h windows.h
-)
+AC_CHECK_HEADER([alsa/asoundlib.h])
+AC_CHECK_HEADER([ctype.h])
+AC_CHECK_HEADER([errno.h])
+AC_CHECK_HEADER([fcntl.h])
+AC_CHECK_HEADER([getopt.h])
+AC_CHECK_HEADER([linux/soundcard.h])
+AC_CHECK_HEADER([machine/soundcard.h])
+AC_CHECK_HEADER([math.h])
+AC_CHECK_HEADERS([windows.h mmsystem.h], [], [],
+[[#ifdef HAVE_WINDOWS_H
+# include <windows.h>
+#endif
+]])
+AC_CHECK_HEADER([pwd.h])
+AC_CHECK_HEADER([stdarg.h])
+AC_CHECK_HEADER([stdio.h])
+AC_CHECK_HEADER([stdlib.h])
+AC_CHECK_HEADER([string.h])
+AC_CHECK_HEADER([sys/ioctl.h])
+AC_CHECK_HEADER([sys/mman.h])
+AC_CHECK_HEADER([sys/soundcard.h])
+AC_CHECK_HEADER([sys/stat.h])
+AC_CHECK_HEADER([sys/types.h])
+AC_CHECK_HEADER([termios.h])
+AC_CHECK_HEADER([unistd.h])
 
 AC_C_BIGENDIAN
 
@@ -109,8 +106,6 @@ if test "x$werror" = xyes; then
 else 
 	AC_MSG_RESULT(no)
 fi
-
-LDFLAGS=
 
 AC_ARG_ENABLE(optimize,
     [  --disable-optimize      compile without optimizations (for development)],    optimize=$enable_optimize,
@@ -227,8 +222,6 @@ AC_ARG_WITH(arch,
 )
 
 case "$arch" in
-	no)
-		;;
 	auto)
 		case "${host_cpu}" in
 			i?86)
@@ -248,7 +241,7 @@ esac
 
 case "$host_os" in
         *mingw*)
-		AUDLIB="-lwinmm"
+                LDADD="$LDADD -lwinmm"
         ;;
         *)
 		USE_ALSA=no
@@ -261,7 +254,7 @@ case "$host_os" in
 
 			if test "x$USE_ALSA" = xyes ; then
 				if test "x$USE_OSS" = xno ; then 
-					AUDLIB="-lasound"
+					LDADD="$LDADD -lasound"
 					AC_DEFINE(HAVE_ALSA, 1, [Define this if your system uses alsa])
 					AC_TRY_COMPILE(
 						[#include <alsa/asoundlib.h>],
@@ -282,20 +275,18 @@ esac
 
 AC_SUBST(HAVE_ALSA)
 AC_SUBST(CFLAGS)
-AC_SUBST(LIBADD)
 AC_SUBST(LDFLAGS)
-AC_SUBST(AUDLIB)
+AC_SUBST(LDADD)
+AC_SUBST(LIBADD)
 AC_SUBST(AS)
 AC_SUBST(AR)
 AC_SUBST(RANLIB)
 
-AC_OUTPUT(
- Makefile
- src/Makefile
- include/Makefile
+AC_CONFIG_HEADER(include/config.h)
+AC_CONFIG_FILES([Makefile include/Makefile src/Makefile])
+AC_OUTPUT
 
-)
-if test -d CVS; then
+if test -d .svn; then
 	echo " "
 	echo "WARNING: Developement source, expect problems."
 fi
