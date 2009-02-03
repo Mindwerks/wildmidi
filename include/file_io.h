@@ -1,5 +1,5 @@
 /*
-    reverb.h - reverb handling
+    file_io.h - Process files
     Copyright (C) 2001-2009 Chris Ison
 
     This file is part of WildMIDI.
@@ -18,39 +18,17 @@
     You should have received a copy of the GNU General Public License and the
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
-
+	
     Email: wildcode@users.sourceforge.net
-
-	$Id: reverb.h,v 1.2 2008/06/05 06:06:22 wildcode Exp $
+ 
+     $Id: file_io.h,v 1.11 2008/05/23 13:22:31 wildcode Exp $
 */
 
-#ifndef _REVERB_H
-#define _REVERB_H
+#ifndef __file_io_h
+#define __file_io_h
 
-struct _rvb {
-	/* filter data */
-	signed long int l_buf_flt_in[6][2];
-	signed long int l_buf_flt_out[6][2];
-	signed long int r_buf_flt_in[6][2];
-	signed long int r_buf_flt_out[6][2];
-	signed long int coeff[6][5];
-	/* buffer data */
-	signed long int *l_buf;
-	signed long int *r_buf;
-	int l_buf_size;
-	int r_buf_size;
-	int l_out;
-	int r_out;
-	int l_sp_in[8];
-	int r_sp_in[8];
-	int l_in[4];
-	int r_in[4];
-	int gain;
-};
 
-extern void reset_reverb (struct _rvb *rvb);
-extern struct _rvb *init_reverb(int rate);
-extern void free_reverb (struct _rvb *rvb);
-extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
+inline int WM_Check_File_Exists (const char *filename);
+inline unsigned char *WM_BufferFile (const char *filename, unsigned long int *size);
 
-#endif // _REVERB_H
+#endif // __file_io_h

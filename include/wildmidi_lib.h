@@ -20,8 +20,8 @@
     <http://www.gnu.org/licenses/>.
 
     Email: wildcode@users.sourceforge.net
- 
-    $Id: wildmidi_lib.h,v 1.6 2004/01/26 02:24:33 wildcode Exp $
+
+ 	$Id: wildmidi_lib.h,v 1.6 2004/01/26 02:24:33 wildcode Exp $
 */
 
 #define WM_MO_LINEAR_VOLUME	0x0001  
@@ -43,7 +43,7 @@ extern const char * WildMidi_GetString (unsigned short int info);
 extern int WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short int options);
 extern int WildMidi_MasterVolume (unsigned char master_volume);
 extern midi * WildMidi_Open (const char *midifile);
-extern midi * WildMidi_OpenBuffer (char *midibuffer, unsigned long int size);
+extern midi * WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size);
 extern int WildMidi_LoadSamples ( midi * handle);
 extern int WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size);
 extern int WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short int setting);

@@ -1,0 +1,1 @@
+dist_man_MANS= WildMidi_FastSeek.3 WildMidi_GetString.3 WildMidi_MasterVolume.3 WildMidi_SampledSeek.3 WildMidi_GetInfo.3 WildMidi_Init.3 WildMidi_Open.3 WildMidi_SetOption.3 WildMidi_Close.3 WildMidi_GetOutput.3 WildMidi_LoadSamples.3 WildMidi_OpenBuffer.3 WildMidi_Shutdown.3 wildmidi.cfg.5 
