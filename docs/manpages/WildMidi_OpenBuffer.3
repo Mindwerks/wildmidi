@@ -1,42 +1,57 @@
-.TH WildMIDI_OpenBuffer 3 "January 2009" WildMIDI "Programming Manual"
+.\" WildMidi_OpenBuffer.3
+.\" 
+.\" Midi Wavetable Processing library
+.\"
+.\" Copyright (C)2001-2008 Chris Ison
+.\" 
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\" 
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\" 
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\" 
+.\" Email: cisos@bigpond.net.au
+.\" 	wildcode@users.sourceforge.net
+.\" 
+.\"	$Id: WildMidi_OpenBuffer.3,v 1.2 2008/05/19 03:47:29 wildcode Exp $
+.\"
+.TH WildMidi_OpenBuffer 3 2008-05-19 "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMIDI_OpenBuffer -\ Initialize a MIDI file in memory.
+WildMidi_OpenBuffer \- Open a midi file buffer for processing
+.SH LIBRARY
+.B libWildMidi
 .SH SYNOPSIS
+.nf
 .B #include <wildmidi_lib.h>
-.
-.B midi * WildMidi_OpenBuffer (char *
-.I midibuffer,
-.B unsigned long int
-.I size);
+.sp
+.BI "midi * WildMidi_OpenBuffer (unsigned char * " midibuffer " , unsigned long int " size);
+.fi
 .SH DESCRIPTION
-WildMidi_OpenBuffer loads a midi file in memory for processing.
-.SH OPTIONS
-.TP
-.B midibuffer
-the the buffer containing the whole MIDI file
-.SH RETURN VALUE
-A handle identifying the midi file to other libWildMidi functions.
-.SH DIAGNOSTICS
-.TP
-.B NULL midi data buffer
-no pointer to the mudibuffr
-.SH BUGS
-.SH AUTHOR
-Chris Ison <wildcode at users.sourceforge.net>
+Open a midi file, that you have buffered in memory, for processing. The buffer needs to be in midi file format. Once passed WildMidi owns that buffer, any changes to the buffer will result in corutpion of the data within the lib. WildMidi will also free the buffer when its finished. So, set and forget, or suffer the evils that lay hidden within.
+.sp
+.BR midibuffer 
+is a pointer to the buffer and
+.BR size 
+is the size of the buffer in bytes.
+.sp
+.SH "RETURN VALUE"
+Returns NULL on error, otherwise returns a handle for the midi buffer opened.
 .SH SEE ALSO
-.BR wildmidi.cfg (5),
-.BR WildMIDI_Init (3),
-.BR WildMIDI_GetString (3),
-.BR WildMIDI_MasterVolume (3),
-.BR WildMIDI_Open (3),
-.BR WildMIDI_OpenBuffer (3),
-.BR WildMIDI_LoadSamples (3),
-.BR WildMIDI_GetOutput (3),
-.BR WildMIDI_SetOption (3),
-.BR WildMIDI_GetInfo (3),
-.BR WildMIDI_FastSeek (3),
-.BR WildMIDI_SampledSeek (3),
-.BR WildMIDI_Close (3),
-.BR WildMIDI_Shutdown (3)
-
+.Xr WildMidi_GetString 3 ,
+.Xr WildMidi_Init 3 ,
+.Xr WildMidi_MasterVolume 3 ,
+.Xr WildMidi_Open 3 ,
+.Xr WildMidi_GetOutput 3 ,
+.Xr WildMidi_GetInfo 3 ,
+.Xr WildMidi_FastSeek 3 ,
+.Xr WildMidi_Close 3 ,
+.Xr WildMidi_Shutdown 3,
+.Xr WildMidi_SetOption 3
 

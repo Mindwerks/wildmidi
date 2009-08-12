@@ -1,36 +1,48 @@
-.TH WildMIDI_Shutdown 3 "January 2009" WildMIDI "Programming Manual"
+.\" WildMidi_Shutdown.3
+.\" 
+.\" Midi Wavetable Processing library
+.\"
+.\" Copyright (C)2001-2008 Chris Ison
+.\" 
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\" 
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\" 
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\" 
+.\" Email: cisos@bigpond.net.au
+.\" 	wildcode@users.sourceforge.net
+.\" 
+.\"	$Id: WildMidi_Shutdown.3,v 1.2 2008/05/19 03:47:29 wildcode Exp $
+.\"
+.TH WildMidi_Shutdown 3 2008-05-19 "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMIDI_Shutdown -\ Shuts down the library.
+WildMidi_Shutdown \- Shutdown the library
+.SH LIBRARY
+.B libWildMidi
 .SH SYNOPSIS
+.nf
 .B #include <wildmidi_lib.h>
-.
-.B int WildMidi_Shutdown ( void );
+.sp
+.BI "void WildMidi_Shutdown ( void ");
+.fi
 .SH DESCRIPTION
-.B WildMIDI_Shutdown()
-Closes down libWildMIDI, closing any open handles.
-.SH RETURN VALUE
-.TP
-.B 0
-Library successfully shutdown
-.TP
-.B -1
-Library not initialized
-.SH AUTHOR
-Chris Ison <wildcode at users.sourceforge.net>
+Shuts down the wildmidi library.
 .SH SEE ALSO
-.BR wildmidi.cfg (5),
-.BR WildMidi_Init (3),
-.BR WildMidi_GetString (3),
-.BR WildMidi_MasterVolume (3),
-.BR WildMidi_Open (3),
-.BR WildMidi_OpenBuffer (3),
-.BR WildMidi_LoadSamples (3),
-.BR WildMidi_GetOutput (3),
-.BR WildMidi_SetOption (3),
-.BR WildMidi_GetInfo (3),
-.BR WildMidi_FastSeek (3),
-.BR WildMidi_SampledSeek (3),
-.BR WildMidi_Close (3),
-.BR WildMidi_Shutdown (3)
-
-
+.Xr WildMidi_GetString 3 ,
+.Xr WildMidi_Init 3 ,
+.Xr WildMidi_MasterVolume 3 ,
+.Xr WildMidi_Open 3 ,
+.Xr WildMidi_OpenBuffer 3 ,
+.Xr WildMidi_GetOutput 3 ,
+.Xr WildMidi_GetInfo 3 ,
+.Xr WildMidi_FastSeek 3 ,
+.Xr WildMidi_Close 3 ,
+.Xr WildMidi_SetOption 3

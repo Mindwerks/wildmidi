@@ -1,6 +1,6 @@
 /*
-    error.c - Error handling
-    Copyright (C) 2001-2009 Chris Ison
+    error.c Error handling
+    Copyright (C) 2001-2008 Chris Ison
 
     This file is part of WildMIDI.
 
@@ -19,7 +19,8 @@
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
 	
-    Email: wildcode@users.sourceforge.net
+    Email: cisos@bigpond.net.au
+    	 wildcode@users.sourceforge.net
  
      $Id: error.c,v 1.8 2008/05/23 13:22:31 wildcode Exp $
 */

@@ -1,6 +1,6 @@
 /*
     reverb.c - reverb handling
-    Copyright (C) 2001-2009 Chris Ison
+    Copyright (C) 2001-2008 Chris Ison
 
     This file is part of WildMIDI.
 
@@ -19,7 +19,8 @@
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
 
-    Email: wildcode@users.sourceforge.net
+    Email: cisos@bigpond.net.au
+    	 wildcode@users.sourceforge.net
 
 	$Id: reverb.c,v 1.2 2008/06/05 06:06:23 wildcode Exp $
 */
@@ -40,7 +41,7 @@
 /*
 	reverb function
 */
-void
+inline void
 reset_reverb (struct _rvb *rvb) {
 	int i,j;
 	for (i = 0; i < rvb->l_buf_size; i++) {
@@ -76,7 +77,7 @@ reset_reverb (struct _rvb *rvb) {
 	
 */
 
-struct _rvb *
+inline struct _rvb *
 init_reverb(int rate) {
 	struct _rvb *rtn_rvb = malloc(sizeof(struct _rvb));
 
@@ -93,14 +94,14 @@ init_reverb(int rate) {
 	struct _coord LSN = { 5.0, 15 }; // Listener Position
 	// position of the reflective points
 	struct _coord RFN[] = {
-		{ 10.0, 0.0 },
+		{ 5.0, 0.0 },
+		{ 0.0, 6.66666 },
 		{ 0.0, 13.3333 },
-		{ 0.0, 26.6666 },
-		{ 10.0, 40.0 },
-		{ 20.0, 40.0 },
-		{ 30.0, 13.3333 },
-		{ 30.0, 26.6666 },
-		{ 20.0, 0.0 }
+		{ 5.0, 20.0 },
+		{ 10.0, 20.0 },
+		{ 15.0, 13.3333 },
+		{ 15.0, 6.66666 },
+		{ 10.0, 0.0 }
 	}; 
 
 	//distance 
@@ -253,14 +254,15 @@ init_reverb(int rate) {
 /*
 	free_reverb - free up memory used for reverb
 */
-void
+inline void
 free_reverb (struct _rvb *rvb) {
 	free (rvb->l_buf);
 	free (rvb->r_buf);
 	free (rvb);
 }
 
-void
+
+inline void
 do_reverb (struct _rvb *rvb, signed long int *buffer, int size) {
 	int i, j;
 	signed long int l_buf_flt = 0;

@@ -1,86 +1,96 @@
-.TH WildMidi_Init 3 "January 2009" WildMIDI "Programming Manual"
+.\" WildMidi_Init.3
+.\" 
+.\" Midi Wavetable Processing library
+.\"
+.\" Copyright (C)2001-2008 Chris Ison
+.\" 
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\" 
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\" 
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\" 
+.\" Email: cisos@bigpond.net.au
+.\" 	wildcode@users.sourceforge.net
+.\" 
+.\"	$Id: WildMidi_Init.3,v 1.2 2008/05/19 03:47:29 wildcode Exp $
+.\"
+.TH WildMidi_Init 3 2008-05-19 "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_Init -\ Initialize the library.
+WildMidi_Init \- Initialize the library
+.SH LIBRARY
+.B libWildMidi
 .SH SYNOPSIS
+.nf
 .B #include <wildmidi_lib.h>
-.
-.B int WildMidi_Init (const char *
-.I config_file,
-.B unsigned short int
-.I rate,
-.B unsigned short int
-.I options);
+.sp
+.BI "int WildMidi_Init (const char * " config_file, " unsigned short int " rate, " unsigned short int " options);
+.fi
 .SH DESCRIPTION
-.B WildMidi_Init()
-initializes libWildMIDI and prepares it for turning midi files into sweet(sometimes ear splitting) music.
-.SH OPTIONS
+Initializes the library to use the
+.BR config_file
+containing the gus pat information, the
+.BR rate
+you want it to sample at, and the
+.BR options
+to start with.
+.sp
+If you are going to be sending the audio data the library to a soundcard, it is best to initialize the soundcard first to ensure the exact rate is set.
 .TP
 .B config_file
-The full path and filename of a
-.BR wildmidi.cfg (5)
-compatable file.
+The full path/filename of the config file containing the gus patch information. 
+The config file format is the same as that used by timidity, and the library can use the same config you would use for timidity. There is no default config.
 .TP
 .B rate
-The desired audio output rate between 11000 and 65000.
+The rate you want the library to produce audio data at. For soundcard output set this to the same rate as the soundcard
 .TP
 .B options
-.RS
-.TP
-.B WM_MO_LINEAR_VOLUME
-libWildMIDI uses volume curves in some areas by default. Unfortunately some MIDI files were created on systems that didn't support volume curves so sound badly mixed in libWildMIDI. Using this flad will disable the use of volume curves.
-.TP
-.B WM_MO_EXPENSIVE_INTERPOLATION
-By default libWildMIDI uses linear(straight line) interpolation to fill in the gap between samples. Adding this option enables an interpelation engine that tries to rebuild the lost audio between samples.
-.TP
+These setup the internal mixer and resampler and effect the audio output of the library. Some options are changable on a per midi basis but default to the options you set here when the midi starts.
+.sp
+.IP
+.B WM_MO_LOG_VOLUME
+The library uses volume levels typically found in computer hardware. These can differ somewhat to volume levels used by midi hardware such as keyboards. This option sets the volume levels to what you'd expect on good quality midi hardware.
+Use this option if you intend playing midi files created on midi hardware.
+.sp
+This option can be changed with
+.BR WildMidi_SetOption (3)
+at any time on a per midi basis.
+.IP
+.B WM_MO_ENHANCED_RESAMPLING
+By default, this library uses triangle interpolation for the resampling of the sound samples. Setting this option enables the library to use a cobination of newton and 34 point guass based interpolation. There is a short delay when initializing the library with this option, and
+.BR WildMidi_GetOutput (3)
+will be slower during use due to the work involved in doing the interpolation.
+.sp
+This option can be changed with
+.BR WildMidi_SetOption (3)
+at any time on a per midi basis.
+.IP
 .B WM_MO_REVERB
-Enables a final mix reverb engine, which is currently just a proof of concept.
-.TP
-.B WM_MO_BIG_ENDIAN_OUTPUT
-Some systems requre the audio in big endian format so use this option of they do.
-.RE
-.SH FILES
-libWildMIDI does not contain a default configuration file. It is recommended that you use
-.I /etc/wildmidi.cfg
-as the default.
-.SH RETURN VALUE
-.TP
-.B 0
-Library successfully initialized
-.TP
-.B -1
-What did I screw up now?
-.SH DIAGNOSTICS
-.TP
-.B NULL config file pointer
-No config file was passed
-.TP
-.B invalid option
-One or more of the 
-.I options
-was not correct.
-.TP
-.B rate out of bounds, range is 11000 - 65000
-The
-.I rate
-passed to the function was outside acceptable range.
-.SH BUGS
-Since the config file is passed during the init, only one sample set is usuable at a time.
-.SH AUTHOR
-Chris Ison <wildcode at users.sourceforge.net>
+libWildMidi 0.2.3 has an 8 reflection modeled reverb engine, tuned to give more depth to the output without noticable echo. Use this option to give more depth to the output.
+Note: While extensively tested and tuned for performance, output will be slower due to the workload involved.
+.sp
+This option can be changed with
+.BR WildMidi_SetOption (3)
+at any time on a per midi basis.
+
+
+.SH "RETURN VALUE"
+returns -1 on error, otherwise returns 0
 .SH SEE ALSO
-.BR wildmidi.cfg (5),
-.BR WildMidi_Init (3),
-.BR WildMidi_GetString (3),
-.BR WildMidi_MasterVolume (3),
-.BR WildMidi_Open (3),
-.BR WildMidi_OpenBuffer (3),
-.BR WildMidi_LoadSamples (3),
-.BR WildMidi_GetOutput (3),
-.BR WildMidi_SetOption (3),
-.BR WildMidi_GetInfo (3),
-.BR WildMidi_FastSeek (3),
-.BR WildMidi_SampledSeek (3),
-.BR WildMidi_Close (3),
-.BR WildMidi_Shutdown (3)
-
-
+.Xr WildMidi_GetString 3 ,
+.Xr WildMidi_MasterVolume 3 ,
+.Xr WildMidi_Open 3 ,
+.Xr WildMidi_OpenBuffer 3 ,
+.Xr WildMidi_GetOutput 3 ,
+.Xr WildMidi_GetInfo 3 ,
+.Xr WildMidi_FastSeek 3 ,
+.Xr WildMidi_Close 3 ,
+.Xr WildMidi_Shutdown 3,
+.Xr WildMidi_SetOption 3
