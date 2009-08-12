@@ -1,6 +1,6 @@
 /*
-    file_io.c - Process files
-    Copyright (C) 2001-2009 Chris Ison
+    file_io.c Process files
+    Copyright (C) 2001-2008 Chris Ison
 
     This file is part of WildMIDI.
 
@@ -19,7 +19,8 @@
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
 	
-    Email: wildcode@users.sourceforge.net
+    Email: cisos@bigpond.net.au
+    	 wildcode@users.sourceforge.net
  
      $Id: file_io.c,v 1.15 2008/06/04 13:08:27 wildcode Exp $
 */

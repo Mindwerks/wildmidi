@@ -1,6 +1,6 @@
 /*
-    wildmidi.c - Player Demonstrating the Library
-    Copyright (C) 2001-2009 Chris Ison
+    wildmidi.c - Midi Player using the WildMidi Midi Processing Library
+    Copyright (C) 2001-2008 Chris Ison
 
     This file is part of WildMIDI.
 
@@ -19,9 +19,10 @@
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
 
-    Email: wildcode@users.sourceforge.net
+    Email: cisos@bigpond.net.au
+    	 wildcode@users.sourceforge.net
  
- 	$Id: wildmidi.c,v 1.21 2004/01/28 05:45:09 wildcode Exp $
+    $Id: wildmidi.c,v 1.77 2008/05/24 07:53:32 wildcode Exp $
 */
 
 #include "config.h"
@@ -416,8 +417,8 @@ open_alsa_output(void) {
 	snd_pcm_hw_params_t     *hw;
 	snd_pcm_sw_params_t     *sw;
 	int err;
-	int alsa_buffer_time, bits_per_sample;
-	unsigned int alsa_period_time;
+	int bits_per_sample;
+	unsigned int alsa_buffer_time, alsa_period_time;
 	snd_pcm_uframes_t alsa_buffer_size;
 	
 	if (!pcmname)
@@ -441,7 +442,7 @@ open_alsa_output(void) {
 		return -1;
 	}
 	
-	if (snd_pcm_hw_params_set_format (pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
+	if (snd_pcm_hw_params_set_format (pcm, hw, SND_PCM_FORMAT_S16) < 0) {
 		printf("ALSA does not support 16bit signed audio for your soundcard\n");
 		close_alsa_output();
 		return -1;
@@ -572,9 +573,7 @@ write_alsa_output (char * output_data, int output_size) {
 				if ((err = snd_pcm_prepare(pcm)) < 0)
 					printf("snd_pcm_prepare() failed.\n");
 				alsa_first_time = 1;
-				continue;
 			}
-			return err;
 		}
 		if (err != frames)
 			printf("snd_pcm_mmap_commit returned %d, expected %d\n", err, (int)frames);
@@ -586,7 +585,6 @@ write_alsa_output (char * output_data, int output_size) {
 			snd_pcm_start(pcm);
 		}
 	}
-	output_size = 0;
 	return 0;
 }
 
@@ -669,7 +667,7 @@ open_oss_output( void ) {
 		return -1;
 	}
 			
-	buffer = (unsigned char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
+	buffer = (char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
 	if (buffer == MAP_FAILED) {
 		printf("couldn't mmap %s\n",strerror(errno));
 		shutdown_output();
@@ -758,45 +756,44 @@ static struct option const long_options[] = {
 	{"master_volume",1,0,'m'},
 	{"config_file",1,0,'c'},
 	{"wavout",1,0,'o'},
-	{"linear_vol",0,0,'l'},
+	{"log_vol",0,0,'l'},
 	{"reverb",0,0,'b'},
 	{"midi_test",0,0,'t'},
 	{"test_bank",1,0,'k'},
 	{"test_patch",1,0,'p'},
-	{"expensive",0,0,'e'},
+	{"enhanced",0,0,'e'},
 	{"device",1,0,'d'},
 	{NULL,0,NULL,0}
 };
 
 void
 do_help (void) {
-	printf("  -v    --version        Display version\n");
-	printf("  -h    --help           This help.\n");
+	printf("  -v    --version          Display version\n");
+	printf("  -h    --help             This help.\n");
 #ifndef _WIN32
-	printf("  -d D  --device=D       Use device D for audio output instead\n");
-	printf("                         of the default\n");
+	printf("  -d D  --device=D         Use device D for audio output instead\n");
+	printf("                           of the default\n");
 #endif
 	printf("Software Wavetable Options\n");
-	printf("  -o W  --wavout=W       Saves the output to W in wav format\n");
-	printf("                         at 44100Hz 16 bit stereo\n");
-	printf("  -l    --linear_vol     Use linear volume adjustments\n");
-	printf("  -r N  --rate=N         output at N samples per second\n");
-	printf("  -c P  --config_file=P  P is the path and filename to your timidity.cfg\n");
-	printf("                         Defaults to /etc/timidity.cfg\n\n");
-	printf(" -m V  --master_volume=V Sets the master volumes, default is 100\n");
-	printf("                         range is 0-127 with 127 being the loudest\n");
+	printf("  -o W  --wavout=W         Saves the output to W in wav format\n");
+	printf("                           at 44100Hz 16 bit stereo\n");
+	printf("  -l    --log_vol          Use linear volume adjustments\n");
+	printf("  -r N  --rate=N           output at N samples per second\n");
+	printf("  -c P  --config_file=P    P is the path and filename to your timidity.cfg\n");
+	printf("                           Defaults to /etc/timidity.cfg\n\n");
+	printf("  -m V  --master_volume=V  Sets the master volumes, default is 100\n");
+	printf("                           range is 0-127 with 127 being the loudest\n");
 }
 
 void
 do_version (void) {
-	printf("WildMidi %s Open Source Midi Sequencer\n",PACKAGE_VERSION);
-	printf("Copyright (C) 2001-2009 Chris Ison wildcode@users.sourceforge.net\n\n");
+	printf("WildMidi %s Open Source Midi Sequencer\n",WILDMIDI_VERSION);
+	printf("Copyright (C) 2001-2008 Chris Ison wildcode@users.sourceforge.net\n\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\n");
-	printf("This is free software, and you are welcome to redistribute this player under\n");
-	printf("the terms of the GNU GENERAL PUBLIC LICENSE and the libraries under the terms\n");
-	printf("of the GNU LESSER GENERAL PUBLIC LICENSE\n\n");
-	printf("For more information see COPYING in the original source available from\n");
-	printf("http://wildmidi.sourceforge.net or go to http://www.gnu.org/licenses/\n\n");
+	printf("This is free software, and you are welcome to redistribute it\n");
+	printf("under the terms and conditions of the GNU General Public License version 3.\n");
+	printf("For more information see docs/gpl.txt for the player\n");
+    printf("and docs/lgpl.txt for the library\n\n");
 }
 
 void
@@ -828,7 +825,7 @@ main (int argc, char **argv) {
 	unsigned char *test_data = NULL;
 	unsigned char test_bank = 0;
 	unsigned char test_patch = 0;
-	static const char spinner[] ="|/-\\";
+	static char spinner[5]="|/-\\";
 	static int spinpoint = 0;
 
 #ifndef _WIN32
@@ -878,10 +875,10 @@ main (int argc, char **argv) {
 				strcpy(pcmname,optarg);
 				break;
 			case 'e': // Expensive Interpolation
-				mixer_options |= WM_MO_EXPENSIVE_INTERPOLATION;
+				mixer_options |= WM_MO_ENHANCED_RESAMPLING;
 				break;
 			case 'l': // linear volume
-				mixer_options |= WM_MO_LINEAR_VOLUME;
+				mixer_options |= WM_MO_LOG_VOLUME;
 				break;
 			case 't': // play test midis
 				test_midi = 1;
@@ -924,8 +921,9 @@ main (int argc, char **argv) {
 			}
 		}
 		printf("Initializing %s\n\n", WildMidi_GetString(WM_GS_VERSION));
-		printf(" +  Volume up       e  Better resampling     n  Next Midi\n");
-		printf(" -  Volume down     l  Linear volume         q  Quit\n\n");
+		printf(" +  Volume up       e  Enhanced resampling   n  Next Midi\n");
+		printf(" -  Volume down     r  Global Reverb         q  Quit\n");
+		printf("                    l  Log Volume\n\n");
 
 		if (WildMidi_Init (config_file, rate, mixer_options) == -1) {
 			return 0;
@@ -953,20 +951,20 @@ main (int argc, char **argv) {
 				if (real_file == NULL) {
 					real_file = strrchr(argv[optind], '\\');
 				}
-				midi_ptr = WildMidi_Open (argv[optind]);
-				if (midi_ptr == NULL) {
-					optind++;
-					continue;
-				}
-				wm_info = WildMidi_GetInfo(midi_ptr);
-
 				printf ("\rPlaying ");
 				if (real_file != NULL) {
 					printf("%s \n", (real_file+1));
 				} else {
 					printf("%s \n", argv[optind]);
 				}
-				optind++;
+				
+				midi_ptr = WildMidi_Open (argv[optind++]);
+				
+				if (midi_ptr == NULL) {
+					continue;
+				}
+				wm_info = WildMidi_GetInfo(midi_ptr);
+
 			} else {
 				if (test_count == midi_test_max) {
 					break;
@@ -984,11 +982,6 @@ main (int argc, char **argv) {
 			apr_mins = wm_info->approx_total_samples / (rate * 60);
 			apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
 
-			if (midi_ptr == NULL) {
-				fprintf(stderr,"\rSkipping %s\n",argv[optind]);
-				optind++;
-				continue;
-			}
 			mixer_options = wm_info->mixer_options;
 			WildMidi_LoadSamples(midi_ptr);
 			while (1) {
@@ -1009,16 +1002,16 @@ main (int argc, char **argv) {
 				if (ch) {
 					switch (ch) {
 						case 'l':
-							WildMidi_SetOption(midi_ptr, WM_MO_LINEAR_VOLUME, ((mixer_options & WM_MO_LINEAR_VOLUME) ^ WM_MO_LINEAR_VOLUME));
-							mixer_options ^= WM_MO_LINEAR_VOLUME;
+							WildMidi_SetOption(midi_ptr, WM_MO_LOG_VOLUME, ((mixer_options & WM_MO_LOG_VOLUME) ^ WM_MO_LOG_VOLUME));
+							mixer_options ^= WM_MO_LOG_VOLUME;
 							break;
-						case 'b':
+						case 'r':
 							WildMidi_SetOption(midi_ptr, WM_MO_REVERB, ((mixer_options & WM_MO_REVERB) ^ WM_MO_REVERB));	
 							mixer_options ^= WM_MO_REVERB;	
 							break;
 						case 'e':
-							WildMidi_SetOption(midi_ptr, WM_MO_EXPENSIVE_INTERPOLATION, ((mixer_options & WM_MO_EXPENSIVE_INTERPOLATION) ^ WM_MO_EXPENSIVE_INTERPOLATION));	
-							mixer_options ^= WM_MO_EXPENSIVE_INTERPOLATION;	
+							WildMidi_SetOption(midi_ptr, WM_MO_ENHANCED_RESAMPLING, ((mixer_options & WM_MO_ENHANCED_RESAMPLING) ^ WM_MO_ENHANCED_RESAMPLING));	
+							mixer_options ^= WM_MO_ENHANCED_RESAMPLING;	
 							break;
 						case 'n':
 							goto NEXTMIDI;
@@ -1050,10 +1043,13 @@ main (int argc, char **argv) {
 				}
 
 				if (count_diff < 4096) {
-					output_result = WildMidi_GetOutput (midi_ptr, output_buffer, (count_diff * 4));
+					output_result =  WildMidi_GetOutput (midi_ptr, output_buffer, (count_diff * 4));
 				} else {
 					output_result = WildMidi_GetOutput (midi_ptr, output_buffer, 16384);
 				}
+
+				if (output_result < 1)
+					break;
 
 				wm_info = WildMidi_GetInfo(midi_ptr);
 				perc_play =  (wm_info->current_sample * 100) / wm_info->approx_total_samples;
@@ -1061,13 +1057,13 @@ main (int argc, char **argv) {
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 				{
 					int mode_count = 0;
-					if (mixer_options & WM_MO_LINEAR_VOLUME) {
+					if (mixer_options & WM_MO_LOG_VOLUME) {
 						modes[mode_count++] = 'l';
 					}
 					if (mixer_options & WM_MO_REVERB) {
-						modes[mode_count++] = 'b';
+						modes[mode_count++] = 'r';
 					}
-					if (mixer_options & WM_MO_EXPENSIVE_INTERPOLATION) {
+					if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 						modes[mode_count++] = 'e';
 					}
 					if (mode_count !=3) {
@@ -1082,8 +1078,6 @@ main (int argc, char **argv) {
 					apr_mins, apr_secs, modes, master_volume, 
 					pro_mins, pro_secs, perc_play, spinner[spinpoint++%4]);
 
-				if (output_result == 0)
-					break;
 				send_output (output_buffer, output_result);
 			}
 NEXTMIDI:

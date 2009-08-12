@@ -1,61 +1,62 @@
-.TH WildMidi_GetOutput 3 "January 2009" WildMIDI "Programming Manual"
+.\" WildMidi_GetOutput.3
+.\" 
+.\" Midi Wavetable Processing library
+.\"
+.\" Copyright (C)2001-2008 Chris Ison
+.\" 
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\" 
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\" 
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\" 
+.\" Email: cisos@bigpond.net.au
+.\" 	wildcode@users.sourceforge.net
+.\" 
+.\"	$Id: WildMidi_GetOutput.3,v 1.2 2008/05/19 03:47:29 wildcode Exp $
+.\"
+.TH WildMidi_GetOutput 3 2008-05-19 "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_GetOutput -\ Retrieve Sample Date.
+WildMidi_GetOutput \- retrieve raw audio data
+.SH LIBRARY
+.B libWildMidi
 .SH SYNOPSIS
+.nf
 .B #include <wildmidi_lib.h>
-.
-.B int WildMidi_GetOutput (midi * 
-.I handle,
-.B char * 
-.I buffer,
-.B unsigned long int
-.I size);
+.sp
+.BI "int WildMidi_GetOutput (midi * " handle, " char * " buffer, " unsigned long int " size);
+.fi
 .SH DESCRIPTION
-.B WildMidi_GetOutput()
-stores
-.I size
-bytes of 16bit stereo audio data into
-.I buffer
-.SH OPTIONS
-.TP
-.B buffer
-.TP
-.B size
-.SH RETURN VALUE
-.TP
-.B ammount of buffer used
-if the buffer ammount used is less than the size you allocated then libWildMIDI has finished processing the MIDI.
-.BR WildMidi_Close (3)
-will need to be called if you don't want to do anything more with the midi.
-.TP
-.B -1
-What did I screw up now?
-.SH DIAGNOSTICS
-.TP
-.B size not a multiple of 4
-remember, the buffer stores 16bit stereo data, which means is needs 4 bytes just to store 1 sample. Keep
-.I size
-a multiple of 4 to avoid this error.
-.SH BUGS
-Return value a signed int and size is an unsigned int. Please limit 
-.I size
-to no more than 32768 bites.
-.SH AUTHOR
-Chris Ison <wildcode at users.sourceforge.net>
+Places 
+.BRsize
+bytes of audio data from the a previously opened midi 
+.BR handle 
+into a buffer pointer to by 
+.BR buffer.
+.sp
+.BR size
+needs to be a multiple of 4 as the data is stored in 16bit interleaved stereo format.
+.sp
+.SH "RETURN VALUE"
+Returns -1 on error, 0 when there is no more audio data, or then number of bytes of audio data writen to
+.BR buffer.
+.sp
+NOTE: if the return value is less than the size you gave, this does not denote an error, it simply means the lib reached the end of the midi before it could fill the buffer.
 .SH SEE ALSO
-.BR wildmidi.cfg (5),
-.BR WildMidi_Init (3),
-.BR WildMidi_GetString (3),
-.BR WildMidi_MasterVolume (3),
-.BR WildMidi_Open (3),
-.BR WildMidi_OpenBuffer (3),
-.BR WildMidi_LoadSamples (3),
-.BR WildMidi_GetOutput (3),
-.BR WildMidi_SetOption (3),
-.BR WildMidi_GetInfo (3),
-.BR WildMidi_FastSeek (3),
-.BR WildMidi_SampledSeek (3),
-.BR WildMidi_Close (3),
-.BR WildMidi_Shutdown (3)
-
-
+.Xr WildMidi_GetString 3 ,
+.Xr WildMidi_Init 3 ,
+.Xr WildMidi_MasterVolume 3 ,
+.Xr WildMidi_Open 3 ,
+.Xr WildMidi_OpenBuffer 3 ,
+.Xr WildMidi_SetOption 3 ,
+.Xr WildMidi_GetInfo 3 ,
+.Xr WildMidi_FastSeek 3 ,
+.Xr WildMidi_Close 3 ,
+.Xr WildMidi_Shutdown 3
