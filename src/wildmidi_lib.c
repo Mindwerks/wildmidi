@@ -3704,6 +3704,14 @@ WildMidi_Close (midi * handle) {
 		}
 		WM_Unlock(&patch_lock);
 		free (mdi->patches);
+		
+		for (i = 0; i < 4; i++) {
+            if (mdi->filter.delay[i][0] != NULL)
+                free(mdi->filter.delay[i][0]);
+            if (mdi->filter.delay[i][1] != NULL)
+                free(mdi->filter.delay[i][1]);
+        }
+        
 	}
 	if (mdi->data != NULL) {
 		free (mdi->data);
