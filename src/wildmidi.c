@@ -182,7 +182,7 @@ int (*send_output) (char * output_data, int output_size);
 void (*close_output) ( void );
 int audio_fd;
 
-inline void
+static inline void
 shutdown_output ( void ) {
 	printf("Shutting Down Sound System\n");
 	if (audio_fd != -1)
@@ -199,7 +199,7 @@ unsigned long int wav_size;
 int write_wav_output (char * output_data, int output_size);
 void close_wav_output ( void );
 
-int
+static int
 open_wav_output ( void ) {
 
 	char wav_hdr[] = { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
@@ -242,7 +242,7 @@ open_wav_output ( void ) {
 	return 0;
 }
 
-int
+static int
 write_wav_output (char * output_data, int output_size) {
 	if (write(audio_fd, output_data, output_size) < 0) {
 		printf("ERROR: Writing Wav %s\n", strerror(errno));
@@ -254,7 +254,7 @@ write_wav_output (char * output_data, int output_size) {
 	return 0;
 }
 
-void
+static void
 close_wav_output ( void ) {
 	char wav_count[4];
 	if (audio_fd == -1)
@@ -306,7 +306,7 @@ static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, 
 } 
 
 
-int
+static int
 open_mm_output ( void ) {
 	WAVEFORMATEX wfx; 
 	char *mm_buffer;
@@ -347,7 +347,7 @@ open_mm_output ( void ) {
 	return 0;
 }
 
-int 
+static int 
 write_mm_output (char * output_data, int output_size) {
 	WAVEHDR* current;
 	int free_size = 0;
@@ -386,7 +386,7 @@ write_mm_output (char * output_data, int output_size) {
 	return 0;
 }
 
-void
+static void
 close_mm_output ( void ) {
 	WAVEHDR* current;
 	int i, j;
@@ -412,7 +412,7 @@ static snd_pcm_channel_area_t *areas;
 int write_alsa_output (char * output_data, int output_size);
 void close_alsa_output ( void );
 
-int
+static int
 open_alsa_output(void) {
 	snd_pcm_hw_params_t     *hw;
 	snd_pcm_sw_params_t     *sw;
@@ -539,7 +539,7 @@ open_alsa_output(void) {
 	return 0;			
 }
 
-int 
+static int 
 write_alsa_output (char * output_data, int output_size) {
 	int cnt = 0, err;
 	snd_pcm_uframes_t offset, frames;
@@ -588,7 +588,7 @@ write_alsa_output (char * output_data, int output_size) {
 	return 0;
 }
 
-void 
+static void 
 close_alsa_output ( void ) {
 	snd_pcm_close (pcm);
 	free(areas);
@@ -611,7 +611,7 @@ struct audio_buf_info info;
 int write_oss_output (char * output_data, int output_size);
 void close_oss_output ( void );
 
-int
+static int
 open_oss_output( void ) {
 	int caps, rc, tmp;
 	unsigned long int omode = O_RDWR;
@@ -695,7 +695,7 @@ open_oss_output( void ) {
 	return 0;
 }
 
-int
+static int
 write_oss_output(char * output_data, int output_size) {
 	struct count_info count;
 	int data_read = 0;
@@ -731,7 +731,7 @@ write_oss_output(char * output_data, int output_size) {
 	return 0;
 }
 
-void
+static void
 close_oss_output(void) {
 	shutdown_output();
 	if (buffer != NULL)
@@ -766,7 +766,7 @@ static struct option const long_options[] = {
 	{NULL,0,NULL,0}
 };
 
-void
+static void
 do_help (void) {
 	printf("  -v    --version        Display version\n");
 	printf("  -h    --help           This help.\n");
@@ -785,7 +785,7 @@ do_help (void) {
 	printf("                         range is 0-127 with 127 being the loudest\n");
 }
 
-void
+static void
 do_version (void) {
 	printf("WildMidi %s Open Source Midi Sequencer\n",WILDMIDI_VERSION);
 	printf("Copyright (C) 2001-2004 Chris Ison wildcode@users.sourceforge.net\n\n");
@@ -795,7 +795,7 @@ do_version (void) {
 	printf("For more information see COPYING\n\n");
 }
 
-void
+static void
 do_syntax (void) {
 	printf("wildmidi [options] filename.mid\n\n");
 }

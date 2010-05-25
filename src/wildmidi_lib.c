@@ -197,14 +197,13 @@ struct _mdi {
 };
 
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
-
 double newt_coeffs[58][58];		/* for start/end of samples */
 float *gauss_table[(1<<10)] = {0};	/* don't need doubles */
 int gauss_window[35] = {0};
 int gauss_n = 34;	/* do not set this value higher than 34 */
 			/* 34 is as high as we can go before errors crop up */
 
-void init_gauss (void) {
+static void init_gauss (void) {
 	/* init gauss table */
 	int n = 34;
 	int m, i, k, n_half = (n>>1);
@@ -264,7 +263,7 @@ signed long int b[5][2];
 signed long int gain_in[4];
 signed long int gain_out[4];
 
-void init_lowpass (void) {
+static void init_lowpass (void) {
 	float c = 0;
 	int i;
 	float f[] = { 512.0, 1024.0, 2048.0, 4096.0 , 8192.0};
@@ -416,7 +415,7 @@ void (*do_event[])(unsigned char ch, struct _mdi *midifile, unsigned long int pt
  */
 
 
-void
+static void
 WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmfor, int error) {
 	const char * errors[] = {
 		"Unable to obtain memory\0",
@@ -445,7 +444,7 @@ WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmf
 
 }
 
-unsigned char *
+static unsigned char *
 WM_BufferFile (const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	char *data;
@@ -535,7 +534,7 @@ WM_BufferFile (const char *filename, unsigned long int *size) {
 	return data;						
 }
 
-inline void
+static inline void
 WM_Lock (int * wmlock) {
 	LOCK_START:
 	if (__builtin_expect(((*wmlock) == 0),1)) {
@@ -553,12 +552,12 @@ WM_Lock (int * wmlock) {
 	goto LOCK_START;
 }
 
-inline void
+static inline void
 WM_Unlock (int *wmlock) {
 	(*wmlock)--;
 }
 
-void
+static void
 WM_InitPatches ( void ) {
 	int i;
 	for (i = 0; i < 128; i++) {
@@ -566,7 +565,7 @@ WM_InitPatches ( void ) {
 	}	
 }
 
-void
+static void
 WM_FreePatches ( void ) {
 	int i;
 	struct _patch * tmp_patch;
@@ -597,7 +596,7 @@ WM_FreePatches ( void ) {
 	WM_Unlock(&patch_lock);
 }
 
-int
+static int
 WM_LoadConfig (const char *config_file) {
 	unsigned long int config_size = 0;
 	unsigned char *config_buffer =  NULL;
@@ -1175,7 +1174,7 @@ WM_LoadConfig (const char *config_file) {
  */
 
 /* 8bit signed */
-int
+static int
 convert_8s (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1202,7 +1201,7 @@ convert_8s (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 8bit signed ping pong */
-int
+static int
 convert_8sp (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -1271,7 +1270,7 @@ convert_8sp (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 8bit signed reverse */
-int
+static int
 convert_8sr (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1304,7 +1303,7 @@ convert_8sr (unsigned char *data, struct _sample *gus_sample ) {
 
 
 /* 8bit signed reverse ping pong */
-int
+static int
 convert_8srp (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -1371,7 +1370,7 @@ convert_8srp (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 8bit unsigned */
-int
+static int
 convert_8u (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1398,7 +1397,7 @@ convert_8u (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 8bit unsigned ping pong */
-int
+static int
 convert_8up (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -1467,7 +1466,7 @@ convert_8up (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 8bit unsigned reverse */
-int
+static int
 convert_8ur (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1499,7 +1498,7 @@ convert_8ur (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 8bit unsigned reverse ping pong */
-int
+static int
 convert_8urp (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -1566,7 +1565,7 @@ convert_8urp (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 16bit signed */
-int
+static int
 convert_16s (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1597,7 +1596,7 @@ convert_16s (unsigned char *data, struct _sample *gus_sample ) {
 }	
 
 /* 16bit signed ping pong */
-int
+static int
 convert_16sp (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -1674,7 +1673,7 @@ convert_16sp (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 16bit signed reverse */
-int
+static int
 convert_16sr (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1711,7 +1710,7 @@ convert_16sr (unsigned char *data, struct _sample *gus_sample ) {
 
 
 /* 16bit signed reverse ping pong */
-int
+static int
 convert_16srp (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -1784,7 +1783,7 @@ convert_16srp (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 16bit unsigned */
-int
+static int
 convert_16u (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1815,7 +1814,7 @@ convert_16u (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 16bit unsigned ping pong */
-int
+static int
 convert_16up (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -1892,7 +1891,7 @@ convert_16up (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 16bit unsigned reverse */
-int
+static int
 convert_16ur (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
@@ -1928,7 +1927,7 @@ convert_16ur (unsigned char *data, struct _sample *gus_sample ) {
 }
 
 /* 16bit unsigned reverse ping pong */
-int
+static int
 convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 	unsigned long int loop_length = gus_sample->loop_end - gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -2002,7 +2001,7 @@ convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 
 /* sample loading */
 
-int
+static int
 load_sample (struct _patch *sample_patch) {
 	unsigned char *gus_patch;
 	unsigned long int gus_size;
@@ -2185,7 +2184,7 @@ load_sample (struct _patch *sample_patch) {
 }
 
 
-struct _patch *
+static struct _patch *
 get_patch_data(struct _mdi *mdi, unsigned short patchid) {
 	struct _patch *search_patch;
 	
@@ -2213,7 +2212,7 @@ get_patch_data(struct _mdi *mdi, unsigned short patchid) {
 	return NULL;
 }
 
-void
+static void
 load_patch (struct _mdi *mdi, unsigned short patchid) {
 	int i;
 	struct _patch *tmp_patch = NULL;
@@ -2251,7 +2250,7 @@ load_patch (struct _mdi *mdi, unsigned short patchid) {
 }
 
 
-struct _sample *
+static struct _sample *
 get_sample_data (struct _patch *sample_patch, unsigned long int freq) {
 	struct _sample *last_sample = NULL;
 	struct _sample *return_sample = NULL;
@@ -2287,7 +2286,7 @@ get_sample_data (struct _patch *sample_patch, unsigned long int freq) {
 	return return_sample;
 }
 
-unsigned long int
+static unsigned long int
 read_var_length (struct _mdi *mdi, struct _miditrack *track) {
 	unsigned long int var_data = 0;
 	if (mdi->data[track->ptr] > 0x7f) {
@@ -2312,7 +2311,7 @@ read_var_length (struct _mdi *mdi, struct _miditrack *track) {
 	return var_data;
 }
 
-void
+static void
 do_note_off (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	struct _note *nte;
 
@@ -2356,7 +2355,7 @@ do_note_off (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	return;
 }
 
-inline unsigned long int
+static inline unsigned long int
 get_inc (struct _mdi *mdi, struct _note *nte) {
 	int ch = nte->noteid >> 8;
 	signed long int note_f;
@@ -2377,7 +2376,7 @@ get_inc (struct _mdi *mdi, struct _note *nte) {
 	return (((freq / ((WM_SampleRate * 100) / 1024)) * 1024 / nte->sample->inc_div));
 }
 
-inline signed short int
+static inline signed short int
 get_volume(struct _mdi *mdi, unsigned char ch, struct _note *nte) {
 	signed long int volume;
 	
@@ -2393,7 +2392,7 @@ get_volume(struct _mdi *mdi, unsigned char ch, struct _note *nte) {
 	return ((volume * nte->sample->peek_adjust) >> 10);
 }
 
-void
+static void
 do_note_on (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	struct _note *nte;
 	unsigned long int freq = 0;
@@ -2468,7 +2467,7 @@ do_note_on (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	nte->next = NULL;
 }
 
-void
+static void
 do_aftertouch (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	struct _note *nte;
 
@@ -2492,7 +2491,7 @@ do_aftertouch (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 }
 
 
-void
+static void
 do_pan_adjust (struct _mdi *mdi, unsigned char ch) {
 	signed short int pan_adjust = mdi->channel[ch].balance + mdi->channel[ch].pan;
 	signed long int left, right;
@@ -2517,7 +2516,7 @@ do_pan_adjust (struct _mdi *mdi, unsigned char ch) {
 	mdi->channel[ch].right_adjust = right;
 }
 
-void
+static void
 do_control (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	struct _note **note_data = mdi->note;
 	
@@ -2818,7 +2817,7 @@ do_control (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	}
 }
 
-void
+static void
 do_patch (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
 	if (ch != 9) {
@@ -2828,7 +2827,7 @@ do_patch (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	}
 }
 
-void
+static void
 do_channel_pressure (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	struct _note **note_data = mdi->note;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
@@ -2849,7 +2848,7 @@ do_channel_pressure (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) 
 	}
 }
 
-void
+static void
 do_pitch (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	struct _note **note_data = mdi->note;
 
@@ -2872,7 +2871,7 @@ do_pitch (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	}
 }
 
-void
+static void
 do_message (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	unsigned char event_type = 0xF0 | ch;
 	static unsigned long int tempo = 500000;
@@ -2890,13 +2889,13 @@ do_message (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 }
 
 
-void
+static void
 do_null (unsigned char ch, struct _mdi *mdi, unsigned long int ptr) {
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
 };
 
 
-void
+static void
 WM_ResetToStart(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *)handle;
 	int i;
@@ -2923,7 +2922,7 @@ WM_ResetToStart(midi * handle) {
 	}
 }
 
-void
+static void
 WM_RecalcSamples (midi * handle) {
 	struct _mdi *mdi = (struct _mdi *)handle;
 	struct _note **note_data = mdi->note;
@@ -3011,7 +3010,7 @@ WM_RecalcSamples (midi * handle) {
 	mdi->recalc_samples = 0;
 }
 
-void
+static void
 do_amp_setup_note_off (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
 
@@ -3027,7 +3026,7 @@ do_amp_setup_note_off (unsigned char ch, struct _mdi *mdi, struct _miditrack *tr
 	return;
 }
 
-void
+static void
 do_amp_setup_note_on (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
 	if (mdi->data[track->ptr+1] == 0x00) {
@@ -3065,7 +3064,7 @@ do_amp_setup_note_on (unsigned char ch, struct _mdi *mdi, struct _miditrack *tra
 	return;
 }
 
-void
+static void
 do_amp_setup_aftertouch (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	unsigned char pres = mdi->data[track->ptr+1];
 
@@ -3100,7 +3099,7 @@ do_amp_setup_aftertouch (unsigned char ch, struct _mdi *mdi, struct _miditrack *
 }
 
 
-void
+static void
 do_amp_setup_control (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	int i;
 
@@ -3158,7 +3157,7 @@ do_amp_setup_control (unsigned char ch, struct _mdi *mdi, struct _miditrack *tra
 	return;
 }
 
-void
+static void
 do_amp_setup_patch (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	if (ch == 9) {
 		mdi->channel[ch].bank = mdi->data[track->ptr];
@@ -3170,7 +3169,7 @@ do_amp_setup_patch (unsigned char ch, struct _mdi *mdi, struct _miditrack *track
 	return;
 }
 
-void
+static void
 do_amp_setup_channel_pressure (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	int i;
 	unsigned char pres = mdi->data[track->ptr];
@@ -3207,7 +3206,7 @@ do_amp_setup_channel_pressure (unsigned char ch, struct _mdi *mdi, struct _midit
 	return;
 }
 
-void
+static void
 do_amp_setup_pitch (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
 	track->running_event = 0xE0 | ch;
@@ -3215,7 +3214,7 @@ do_amp_setup_pitch (unsigned char ch, struct _mdi *mdi, struct _miditrack *track
 	return;
 }
 
-void
+static void
 do_amp_setup_message (unsigned char ch, struct _mdi *mdi, struct _miditrack *track) {
 	unsigned long int event_length;
 	unsigned char event_type = 0xF0 | ch;
@@ -3253,7 +3252,7 @@ do_amp_setup_message (unsigned char ch, struct _mdi *mdi, struct _miditrack *tra
 }
 
 
-struct _mdi *
+static struct _mdi *
 WM_ParseNewMidi(unsigned char *mididata, unsigned long int midisize ) {
 	int i;
 	unsigned char eot[] = { 0xff, 0x2f, 0x00}; 
