@@ -3363,7 +3363,6 @@ WM_ParseNewMidi(unsigned char *mididata, unsigned long int midisize ) {
 		first_handle->next = NULL;
 	} else {
 		tmp_handle = first_handle;
-			free(tmp_trackdata);
 		if (tmp_handle->next != NULL) {
 			while (tmp_handle->next != NULL)
 				tmp_handle = tmp_handle->next;
@@ -3371,6 +3370,7 @@ WM_ParseNewMidi(unsigned char *mididata, unsigned long int midisize ) {
 		tmp_handle->next = malloc(sizeof(struct _hndl));
 		if (tmp_handle->next == NULL) {
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM," to parse midi data", errno);
+			free(tmp_trackdata);
 			free(mdi->data);
 			free(mdi);
 			return NULL;
