@@ -2,7 +2,7 @@
 	wildmidi_lib.h
 
  	Midi Wavetable Processing library
- 
+
     Copyright (C) 2001-2010 Chris Ison
 
     This file is part of WildMIDI.
@@ -25,10 +25,10 @@
     Email: wildcode@users.sourceforge.net
 */
 
-#define WM_MO_LINEAR_VOLUME	0x0001  
-#define WM_MO_EXPENSIVE_INTERPOLATION 0x0002
+#define WM_MO_LOG_VOLUME	0x0001
+#define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
-#define WM_MO_BIG_ENDIAN_OUTPUT	0x0020  
+#define WM_MO_BIG_ENDIAN_OUTPUT	0x0020
 
 #define WM_GS_VERSION		0x0001
 
