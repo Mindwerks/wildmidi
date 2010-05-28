@@ -805,11 +805,11 @@ main (int argc, char **argv) {
 				pcmname = malloc (strlen(optarg)+1);
 				strcpy(pcmname,optarg);
 				break;
-			case 'e': // Expensive Interpolation
-				mixer_options |= WM_MO_EXPENSIVE_INTERPOLATION;
+			case 'e': // Enhanced Resampling
+				mixer_options |= WM_MO_ENHANCED_RESAMPLING;
 				break;
-			case 'l': // linear volume
-				mixer_options |= WM_MO_LINEAR_VOLUME;
+			case 'l': // log volume
+				mixer_options |= WM_MO_LOG_VOLUME;
 				break;
 			case 't': // play test midis
 				test_midi = 1;
@@ -937,8 +937,8 @@ main (int argc, char **argv) {
 				if (ch) {
 					switch (ch) {
 						case 'l':
-							WildMidi_SetOption(midi_ptr, WM_MO_LINEAR_VOLUME, ((mixer_options & WM_MO_LINEAR_VOLUME) ^ WM_MO_LINEAR_VOLUME));
-							mixer_options ^= WM_MO_LINEAR_VOLUME;
+							WildMidi_SetOption(midi_ptr, WM_MO_LOG_VOLUME, ((mixer_options & WM_MO_LOG_VOLUME) ^ WM_MO_LOG_VOLUME));
+							mixer_options ^= WM_MO_LOG_VOLUME;
 							break;
 #ifdef EXPERIMENT_626
 						case 'r':
@@ -947,8 +947,8 @@ main (int argc, char **argv) {
 							break;
 #endif
 						case 'e':
-							WildMidi_SetOption(midi_ptr, WM_MO_EXPENSIVE_INTERPOLATION, ((mixer_options & WM_MO_EXPENSIVE_INTERPOLATION) ^ WM_MO_EXPENSIVE_INTERPOLATION));
-							mixer_options ^= WM_MO_EXPENSIVE_INTERPOLATION;
+							WildMidi_SetOption(midi_ptr, WM_MO_ENHANCED_RESAMPLING, ((mixer_options & WM_MO_ENHANCED_RESAMPLING) ^ WM_MO_ENHANCED_RESAMPLING));
+							mixer_options ^= WM_MO_ENHANCED_RESAMPLING;
 							break;
 						case 'n':
 							goto NEXTMIDI;
@@ -991,13 +991,13 @@ main (int argc, char **argv) {
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 				{
 					int mode_count = 0;
-					if (mixer_options & WM_MO_LINEAR_VOLUME) {
+					if (mixer_options & WM_MO_LOG_VOLUME) {
 						modes[mode_count++] = 'l';
 					}
 					if (mixer_options & WM_MO_REVERB) {
 						modes[mode_count++] = 'r';
 					}
-					if (mixer_options & WM_MO_EXPENSIVE_INTERPOLATION) {
+					if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 						modes[mode_count++] = 'e';
 					}
 					if (mode_count !=3) {
