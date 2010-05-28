@@ -58,19 +58,6 @@ unsigned short int WM_MixerOptions = 0;
 
 char WM_Version[] = "WildMidi Processing Library " WILDMIDILIB_VERSION;
 
-struct _lowpass {
-	signed long int in[2];
-	signed long int out[2];
-};
-
-struct _filter {
-	signed long int *delay[4][2];
-	unsigned long int delay_pos[4][2];
-	struct _lowpass lowpass[4][2];
-	signed long int in[2][2];
-	signed long int out[2][2];
-};
-
 struct _env {
 	float time;
 	float level;
@@ -204,8 +191,6 @@ struct _mdi {
 	unsigned char ch_vol[16];
 	unsigned char ch_exp[16];
 	unsigned char note_vel[16][128];
-
-	struct _filter filter;
 };
 
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
@@ -269,47 +254,11 @@ static void init_gauss (void) {
 	}
 }
 
-unsigned long int delay_size[4][2];
-signed long int a[5][2];
-signed long int b[5][2];
-signed long int gain_in[4];
-signed long int gain_out[4];
-
-static void init_lowpass (void) {
-	float c = 0;
-	int i;
-	float f[] = { 512.0, 1024.0, 2048.0, 4096.0 , 8192.0};
-	float aa, ab, ba, bb;
-
-	for (i = 0; i < 5; i++) {
-		c = 1.0 / tan(3.141592654 * f[i] / WM_SampleRate);
-		aa = 1.0 / (1.0 + 1.4 * c + c * c);
-		ab = 2.0 * aa;
-		ba = 2.0 * (1.0 - c * c) * aa;
-		bb = (1.0 - 1.4 * c + c * c) * aa;
-		a[i][0] = (signed long int)(aa * 1024.0);
-		a[i][1] = (signed long int)(ab * 1024.0);
-		b[i][0] = (signed long int)(ba * 1024.0);
-		b[i][1] = (signed long int)(bb * 1024.0);
-	}
-	gain_in[0] = 772;
-	gain_out[0] = 772;
-	gain_in[1] = 570;
-	gain_out[1] = 570;
-	gain_in[2] = 520;
-	gain_out[2] = 520;
-	gain_in[3] = 512;
-	gain_out[3] = 512;
-
-	delay_size[0][0] = 2191 * WM_SampleRate / 44100;
-	delay_size[0][1] = (2191 + 19) * WM_SampleRate / 44100;
-	delay_size[1][0] = (2971 + 19) * WM_SampleRate / 44100;
-	delay_size[1][1] = 2971 * WM_SampleRate / 44100;
-	delay_size[2][0] = 3253 * WM_SampleRate / 44100;
-	delay_size[2][1] = (3253 + 19) * WM_SampleRate / 44100;
-	delay_size[3][0] = (3307 + 19) * WM_SampleRate / 44100;
-	delay_size[3][1] = 3307 * WM_SampleRate / 44100;
-
+static void free_gauss (void) {
+    int m;
+    for (m = 0; m < (1<<10); m++) {
+        free (gauss_table[m]);
+    }
 }
 
 struct _hndl {
@@ -3539,35 +3488,6 @@ WM_ParseNewMidi(unsigned char *mididata, unsigned long int midisize ) {
 		do_pan_adjust(mdi, i);
 	}
 
-	for (i = 0; i < 4; i++) {
-		mdi->filter.lowpass[i][0].in[0] = 0;
-		mdi->filter.lowpass[i][0].in[1] = 0;
-		mdi->filter.lowpass[i][1].in[0] = 0;
-		mdi->filter.lowpass[i][1].in[1] = 0;
-
-		mdi->filter.lowpass[i][0].out[0] = 0;
-		mdi->filter.lowpass[i][0].out[1] = 0;
-		mdi->filter.lowpass[i][1].out[0] = 0;
-		mdi->filter.lowpass[i][1].out[1] = 0;
-
-		mdi->filter.delay_pos[i][0] = 0;
-		mdi->filter.delay_pos[i][1] = 0;
-
-		mdi->filter.delay[i][0] = malloc(delay_size[i][0] * sizeof(signed long int));
-		mdi->filter.delay[i][1] = malloc(delay_size[i][1] * sizeof(signed long int));
-		memset (mdi->filter.delay[i][0], 0, (delay_size[i][0] * sizeof(signed long int)));
-		memset (mdi->filter.delay[i][1], 0, (delay_size[i][1] * sizeof(signed long int)));
-
-	}
-	mdi->filter.in[0][0] = 0;
-	mdi->filter.in[0][1] = 0;
-	mdi->filter.in[1][0] = 0;
-	mdi->filter.in[1][1] = 0;
-	mdi->filter.out[0][0] = 0;
-	mdi->filter.out[0][1] = 0;
-	mdi->filter.out[1][0] = 0;
-	mdi->filter.out[1][1] = 0;
-
 	free(tmp_trackdata);
 	return (mdi);
 }
@@ -3620,7 +3540,6 @@ WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short
 	patch_lock = 0;
 
 	init_gauss();
-	init_lowpass();
 	return 0;
 }
 
@@ -3716,21 +3635,16 @@ WildMidi_Close (midi * handle) {
 		}
 		WM_Unlock(&patch_lock);
 		free (mdi->patches);
-
-		for (i = 0; i < 4; i++) {
-            if (mdi->filter.delay[i][0] != NULL)
-                free(mdi->filter.delay[i][0]);
-            if (mdi->filter.delay[i][1] != NULL)
-                free(mdi->filter.delay[i][1]);
-        }
-
 	}
+
 	if (mdi->data != NULL) {
 		free (mdi->data);
 	}
+
 	if (mdi->tmp_info != NULL) {
 		free (mdi->tmp_info);
 	}
+
 	if (mdi->index != NULL)
 		free (mdi->index);
 	free (mdi);
@@ -4271,114 +4185,6 @@ WildMidi_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size)
 				right_mix /= 1024;
 			}
 
-#ifdef EXPERIMENT_626
-/*
- * ==========================
- * Experimental Reverb Engine
- * ==========================
- */
-
-			if (mdi->info.mixer_options & WM_MO_REVERB) {
-				signed long int filteral = mdi->filter.delay[0][0][mdi->filter.delay_pos[0][0]];
-				signed long int filterar = mdi->filter.delay[0][1][mdi->filter.delay_pos[0][1]];
-				signed long int filterbl = mdi->filter.delay[1][0][mdi->filter.delay_pos[1][0]];
-				signed long int filterbr = mdi->filter.delay[1][1][mdi->filter.delay_pos[1][1]];
-				signed long int filtercl = mdi->filter.delay[2][0][mdi->filter.delay_pos[2][0]];
-				signed long int filtercr = mdi->filter.delay[2][1][mdi->filter.delay_pos[2][1]];
-				signed long int filterdl = mdi->filter.delay[3][0][mdi->filter.delay_pos[3][0]];
-				signed long int filterdr = mdi->filter.delay[3][1][mdi->filter.delay_pos[3][1]];
-				signed long int tfal = (a[0][0] * filteral + a[0][1] * mdi->filter.lowpass[0][0].in[0] + a[0][0] * mdi->filter.lowpass[0][0].in[1] - b[0][0] * mdi->filter.lowpass[0][0].out[0] - b[0][1] * mdi->filter.lowpass[0][0].out[1]) / 1024;
-				signed long int tfar = (a[0][0] * filterar + a[0][1] * mdi->filter.lowpass[0][1].in[0] + a[0][0] * mdi->filter.lowpass[0][1].in[1] - b[0][0] * mdi->filter.lowpass[0][1].out[0] - b[0][1] * mdi->filter.lowpass[0][1].out[1]) / 1024;
-				signed long int tfbl = (a[1][0] * filterbl + a[1][1] * mdi->filter.lowpass[1][0].in[0] + a[1][0] * mdi->filter.lowpass[1][0].in[1] - b[1][0] * mdi->filter.lowpass[1][0].out[0] - b[1][1] * mdi->filter.lowpass[1][0].out[1]) / 1024;
-				signed long int tfbr = (a[1][0] * filterbr + a[1][1] * mdi->filter.lowpass[1][1].in[0] + a[1][0] * mdi->filter.lowpass[1][1].in[1] - b[1][0] * mdi->filter.lowpass[1][1].out[0] - b[1][1] * mdi->filter.lowpass[1][1].out[1]) / 1024;
-				signed long int tfcl = (a[2][0] * filtercl + a[2][1] * mdi->filter.lowpass[2][0].in[0] + a[2][0] * mdi->filter.lowpass[2][0].in[1] - b[2][0] * mdi->filter.lowpass[2][0].out[0] - b[2][1] * mdi->filter.lowpass[2][0].out[1]) / 1024;
-				signed long int tfcr = (a[2][0] * filtercr + a[2][1] * mdi->filter.lowpass[2][1].in[0] + a[2][0] * mdi->filter.lowpass[2][1].in[1] - b[2][0] * mdi->filter.lowpass[2][1].out[0] - b[2][1] * mdi->filter.lowpass[2][1].out[1]) / 1024;
-				signed long int tfdl = (a[3][0] * filterdl + a[3][1] * mdi->filter.lowpass[3][0].in[0] + a[3][0] * mdi->filter.lowpass[3][0].in[1] - b[3][0] * mdi->filter.lowpass[3][0].out[0] - b[3][1] * mdi->filter.lowpass[3][0].out[1]) / 1024;
-				signed long int tfdr = (a[3][0] * filterdr + a[3][1] * mdi->filter.lowpass[3][1].in[0] + a[3][0] * mdi->filter.lowpass[3][1].in[1] - b[3][0] * mdi->filter.lowpass[3][1].out[0] - b[3][1] * mdi->filter.lowpass[3][1].out[1]) / 1024;
-				signed long int tfl, tflo;
-				signed long int tfr, tfro;
-
-				mdi->filter.lowpass[0][0].in[1] = mdi->filter.lowpass[0][0].in[0];
-				mdi->filter.lowpass[0][0].in[0] = filteral;
-				mdi->filter.lowpass[0][1].in[1] = mdi->filter.lowpass[0][1].in[0];
-				mdi->filter.lowpass[0][1].in[0] = filterar;
-				mdi->filter.lowpass[1][0].in[1] = mdi->filter.lowpass[1][0].in[0];
-				mdi->filter.lowpass[1][0].in[0] = filterbl;
-				mdi->filter.lowpass[1][1].in[1] = mdi->filter.lowpass[1][1].in[0];
-				mdi->filter.lowpass[1][1].in[0] = filterbr;
-				mdi->filter.lowpass[2][0].in[1] = mdi->filter.lowpass[2][0].in[0];
-				mdi->filter.lowpass[2][0].in[0] = filtercl;
-				mdi->filter.lowpass[2][1].in[1] = mdi->filter.lowpass[2][1].in[0];
-				mdi->filter.lowpass[2][1].in[0] = filtercr;
-				mdi->filter.lowpass[3][0].in[1] = mdi->filter.lowpass[3][0].in[0];
-				mdi->filter.lowpass[3][0].in[0] = filterdl;
-				mdi->filter.lowpass[3][1].in[1] = mdi->filter.lowpass[3][1].in[0];
-				mdi->filter.lowpass[3][1].in[0] = filterdr;
-
-				mdi->filter.lowpass[0][0].out[1] = mdi->filter.lowpass[0][0].out[0];
-				mdi->filter.lowpass[0][0].out[0] = tfal;
-				mdi->filter.lowpass[0][1].out[1] = mdi->filter.lowpass[0][1].out[0];
-				mdi->filter.lowpass[0][1].out[0] = tfar;
-				mdi->filter.lowpass[1][0].out[1] = mdi->filter.lowpass[1][0].out[0];
-				mdi->filter.lowpass[1][0].out[0] = tfbl;
-				mdi->filter.lowpass[1][1].out[1] = mdi->filter.lowpass[1][1].out[0];
-				mdi->filter.lowpass[1][1].out[0] = tfbr;
-				mdi->filter.lowpass[2][0].out[1] = mdi->filter.lowpass[2][0].out[0];
-				mdi->filter.lowpass[2][0].out[0] = tfcl;
-				mdi->filter.lowpass[2][1].out[1] = mdi->filter.lowpass[2][1].out[0];
-				mdi->filter.lowpass[2][1].out[0] = tfcr;
-				mdi->filter.lowpass[3][0].out[1] = mdi->filter.lowpass[3][0].out[0];
-				mdi->filter.lowpass[3][0].out[0] = tfdl;
-				mdi->filter.lowpass[3][1].out[1] = mdi->filter.lowpass[3][1].out[0];
-				mdi->filter.lowpass[3][1].out[0] = tfdr;
-
-				mdi->filter.delay[0][0][mdi->filter.delay_pos[0][0]] = (tfbr * 405 + tfcr * 368) / 1024 + (left_mix * gain_in[0] / 1024);
-				mdi->filter.delay[0][1][mdi->filter.delay_pos[0][1]] = (tfbl * 402 + tfcl * 370) / 1024 + (right_mix * gain_in[0] / 1024);
-				mdi->filter.delay[1][0][mdi->filter.delay_pos[1][0]] = (tfar * -545 + tfdr * -364) / 1024 + (left_mix * gain_in[1] / 1024);
-				mdi->filter.delay[1][1][mdi->filter.delay_pos[1][1]] = (tfal * -550 + tfdl * -362) / 1024 + (right_mix * gain_in[1] / 1024);
-				mdi->filter.delay[2][0][mdi->filter.delay_pos[2][0]] = (tfar * 545 + tfdr * -364) / 1024 + (left_mix * gain_in[2] / 1024);
-				mdi->filter.delay[2][1][mdi->filter.delay_pos[2][1]] = (tfal * 550 + tfdl * 362) / 1024 + (right_mix * gain_in[2] / 1024);
-				mdi->filter.delay[3][0][mdi->filter.delay_pos[3][0]] = (tfbr * 405 + tfcr * -368) / 1024 + (left_mix * gain_in[3] / 1024);
-				mdi->filter.delay[3][1][mdi->filter.delay_pos[3][1]] = (tfbl * 402 + tfcl * -370) / 1024 + (right_mix * gain_in[3] / 1024);
-
-				tfl = ((tfal * gain_out[0] / 1024) + (tfbl * gain_out[1] / 1024) + (tfcl * gain_out[2] / 1024) + (tfdl * gain_out[3] / 1024));
-				tfr = ((tfar * gain_out[0] / 1024) + (tfbr * gain_out[1] / 1024) + (tfcr * gain_out[2] / 1024) + (tfdr * gain_out[3] / 1024));
-
-				tflo = (a[4][0] * tfl + a[4][1] * mdi->filter.in[0][0] + a[4][0] * mdi->filter.in[1][0] - b[4][0] * mdi->filter.out[0][0] - b[4][1] * mdi->filter.out[1][0]) / 1024;
-				tfro = (a[4][0] * tfr + a[4][1] * mdi->filter.in[0][1] + a[4][0] * mdi->filter.in[1][1] - b[4][0] * mdi->filter.out[0][1] - b[4][1] * mdi->filter.out[1][1]) / 1024;
-
-				mdi->filter.in[1][0] =  mdi->filter.in[0][0];
-				mdi->filter.in[0][0] = tfl;
-				mdi->filter.in[1][1] =  mdi->filter.in[0][1];
-				mdi->filter.in[0][1] = tfr;
-				mdi->filter.out[1][0] =  mdi->filter.out[0][0];
-				mdi->filter.out[0][0] = tflo;
-				mdi->filter.out[1][1] =  mdi->filter.out[0][1];
-				mdi->filter.out[0][1] = tfro;
-
-				left_mix += tflo;
-				right_mix += tfro;
-
-				mdi->filter.delay_pos[0][0]++;
-				mdi->filter.delay_pos[0][1]++;
-				mdi->filter.delay_pos[1][0]++;
-				mdi->filter.delay_pos[1][1]++;
-				mdi->filter.delay_pos[2][0]++;
-				mdi->filter.delay_pos[2][1]++;
-				mdi->filter.delay_pos[3][0]++;
-				mdi->filter.delay_pos[3][1]++;
-
-				if (mdi->filter.delay_pos[0][0] == delay_size[0][0]) mdi->filter.delay_pos[0][0] = 0;
-				if (mdi->filter.delay_pos[0][1] == delay_size[0][1]) mdi->filter.delay_pos[0][1] = 0;
-				if (mdi->filter.delay_pos[1][0] == delay_size[1][0]) mdi->filter.delay_pos[1][0] = 0;
-				if (mdi->filter.delay_pos[1][1] == delay_size[1][1]) mdi->filter.delay_pos[1][1] = 0;
-				if (mdi->filter.delay_pos[2][0] == delay_size[2][0]) mdi->filter.delay_pos[2][0] = 0;
-				if (mdi->filter.delay_pos[2][1] == delay_size[2][1]) mdi->filter.delay_pos[2][1] = 0;
-				if (mdi->filter.delay_pos[3][0] == delay_size[3][0]) mdi->filter.delay_pos[3][0] = 0;
-				if (mdi->filter.delay_pos[3][1] == delay_size[3][1]) mdi->filter.delay_pos[3][1] = 0;
-
-			}
-#endif
 			if (left_mix > 32767) {
 				left_mix = 32767;
 			} else if (left_mix < -32768) {
@@ -4658,114 +4464,6 @@ WildMidi_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) 
 				right_mix /= 1024;
 			}
 
-#ifdef EXPERIMENT_626
-/*
- * ==========================
- * Experimental Reverb Engine
- * ==========================
- */
-
-			if (mdi->info.mixer_options & WM_MO_REVERB) {
-				signed long int filteral = mdi->filter.delay[0][0][mdi->filter.delay_pos[0][0]];
-				signed long int filterar = mdi->filter.delay[0][1][mdi->filter.delay_pos[0][1]];
-				signed long int filterbl = mdi->filter.delay[1][0][mdi->filter.delay_pos[1][0]];
-				signed long int filterbr = mdi->filter.delay[1][1][mdi->filter.delay_pos[1][1]];
-				signed long int filtercl = mdi->filter.delay[2][0][mdi->filter.delay_pos[2][0]];
-				signed long int filtercr = mdi->filter.delay[2][1][mdi->filter.delay_pos[2][1]];
-				signed long int filterdl = mdi->filter.delay[3][0][mdi->filter.delay_pos[3][0]];
-				signed long int filterdr = mdi->filter.delay[3][1][mdi->filter.delay_pos[3][1]];
-				signed long int tfal = (a[0][0] * filteral + a[0][1] * mdi->filter.lowpass[0][0].in[0] + a[0][0] * mdi->filter.lowpass[0][0].in[1] - b[0][0] * mdi->filter.lowpass[0][0].out[0] - b[0][1] * mdi->filter.lowpass[0][0].out[1]) / 1024;
-				signed long int tfar = (a[0][0] * filterar + a[0][1] * mdi->filter.lowpass[0][1].in[0] + a[0][0] * mdi->filter.lowpass[0][1].in[1] - b[0][0] * mdi->filter.lowpass[0][1].out[0] - b[0][1] * mdi->filter.lowpass[0][1].out[1]) / 1024;
-				signed long int tfbl = (a[1][0] * filterbl + a[1][1] * mdi->filter.lowpass[1][0].in[0] + a[1][0] * mdi->filter.lowpass[1][0].in[1] - b[1][0] * mdi->filter.lowpass[1][0].out[0] - b[1][1] * mdi->filter.lowpass[1][0].out[1]) / 1024;
-				signed long int tfbr = (a[1][0] * filterbr + a[1][1] * mdi->filter.lowpass[1][1].in[0] + a[1][0] * mdi->filter.lowpass[1][1].in[1] - b[1][0] * mdi->filter.lowpass[1][1].out[0] - b[1][1] * mdi->filter.lowpass[1][1].out[1]) / 1024;
-				signed long int tfcl = (a[2][0] * filtercl + a[2][1] * mdi->filter.lowpass[2][0].in[0] + a[2][0] * mdi->filter.lowpass[2][0].in[1] - b[2][0] * mdi->filter.lowpass[2][0].out[0] - b[2][1] * mdi->filter.lowpass[2][0].out[1]) / 1024;
-				signed long int tfcr = (a[2][0] * filtercr + a[2][1] * mdi->filter.lowpass[2][1].in[0] + a[2][0] * mdi->filter.lowpass[2][1].in[1] - b[2][0] * mdi->filter.lowpass[2][1].out[0] - b[2][1] * mdi->filter.lowpass[2][1].out[1]) / 1024;
-				signed long int tfdl = (a[3][0] * filterdl + a[3][1] * mdi->filter.lowpass[3][0].in[0] + a[3][0] * mdi->filter.lowpass[3][0].in[1] - b[3][0] * mdi->filter.lowpass[3][0].out[0] - b[3][1] * mdi->filter.lowpass[3][0].out[1]) / 1024;
-				signed long int tfdr = (a[3][0] * filterdr + a[3][1] * mdi->filter.lowpass[3][1].in[0] + a[3][0] * mdi->filter.lowpass[3][1].in[1] - b[3][0] * mdi->filter.lowpass[3][1].out[0] - b[3][1] * mdi->filter.lowpass[3][1].out[1]) / 1024;
-				signed long int tfl, tflo;
-				signed long int tfr, tfro;
-
-				mdi->filter.lowpass[0][0].in[1] = mdi->filter.lowpass[0][0].in[0];
-				mdi->filter.lowpass[0][0].in[0] = filteral;
-				mdi->filter.lowpass[0][1].in[1] = mdi->filter.lowpass[0][1].in[0];
-				mdi->filter.lowpass[0][1].in[0] = filterar;
-				mdi->filter.lowpass[1][0].in[1] = mdi->filter.lowpass[1][0].in[0];
-				mdi->filter.lowpass[1][0].in[0] = filterbl;
-				mdi->filter.lowpass[1][1].in[1] = mdi->filter.lowpass[1][1].in[0];
-				mdi->filter.lowpass[1][1].in[0] = filterbr;
-				mdi->filter.lowpass[2][0].in[1] = mdi->filter.lowpass[2][0].in[0];
-				mdi->filter.lowpass[2][0].in[0] = filtercl;
-				mdi->filter.lowpass[2][1].in[1] = mdi->filter.lowpass[2][1].in[0];
-				mdi->filter.lowpass[2][1].in[0] = filtercr;
-				mdi->filter.lowpass[3][0].in[1] = mdi->filter.lowpass[3][0].in[0];
-				mdi->filter.lowpass[3][0].in[0] = filterdl;
-				mdi->filter.lowpass[3][1].in[1] = mdi->filter.lowpass[3][1].in[0];
-				mdi->filter.lowpass[3][1].in[0] = filterdr;
-
-				mdi->filter.lowpass[0][0].out[1] = mdi->filter.lowpass[0][0].out[0];
-				mdi->filter.lowpass[0][0].out[0] = tfal;
-				mdi->filter.lowpass[0][1].out[1] = mdi->filter.lowpass[0][1].out[0];
-				mdi->filter.lowpass[0][1].out[0] = tfar;
-				mdi->filter.lowpass[1][0].out[1] = mdi->filter.lowpass[1][0].out[0];
-				mdi->filter.lowpass[1][0].out[0] = tfbl;
-				mdi->filter.lowpass[1][1].out[1] = mdi->filter.lowpass[1][1].out[0];
-				mdi->filter.lowpass[1][1].out[0] = tfbr;
-				mdi->filter.lowpass[2][0].out[1] = mdi->filter.lowpass[2][0].out[0];
-				mdi->filter.lowpass[2][0].out[0] = tfcl;
-				mdi->filter.lowpass[2][1].out[1] = mdi->filter.lowpass[2][1].out[0];
-				mdi->filter.lowpass[2][1].out[0] = tfcr;
-				mdi->filter.lowpass[3][0].out[1] = mdi->filter.lowpass[3][0].out[0];
-				mdi->filter.lowpass[3][0].out[0] = tfdl;
-				mdi->filter.lowpass[3][1].out[1] = mdi->filter.lowpass[3][1].out[0];
-				mdi->filter.lowpass[3][1].out[0] = tfdr;
-
-				mdi->filter.delay[0][0][mdi->filter.delay_pos[0][0]] = (tfbr * 405 + tfcr * 368) / 1024 + (left_mix * gain_in[0] / 1024);
-				mdi->filter.delay[0][1][mdi->filter.delay_pos[0][1]] = (tfbl * 402 + tfcl * 370) / 1024 + (right_mix * gain_in[0] / 1024);
-				mdi->filter.delay[1][0][mdi->filter.delay_pos[1][0]] = (tfar * -545 + tfdr * -364) / 1024 + (left_mix * gain_in[1] / 1024);
-				mdi->filter.delay[1][1][mdi->filter.delay_pos[1][1]] = (tfal * -550 + tfdl * -362) / 1024 + (right_mix * gain_in[1] / 1024);
-				mdi->filter.delay[2][0][mdi->filter.delay_pos[2][0]] = (tfar * 545 + tfdr * -364) / 1024 + (left_mix * gain_in[2] / 1024);
-				mdi->filter.delay[2][1][mdi->filter.delay_pos[2][1]] = (tfal * 550 + tfdl * 362) / 1024 + (right_mix * gain_in[2] / 1024);
-				mdi->filter.delay[3][0][mdi->filter.delay_pos[3][0]] = (tfbr * 405 + tfcr * -368) / 1024 + (left_mix * gain_in[3] / 1024);
-				mdi->filter.delay[3][1][mdi->filter.delay_pos[3][1]] = (tfbl * 402 + tfcl * -370) / 1024 + (right_mix * gain_in[3] / 1024);
-
-				tfl = ((tfal * gain_out[0] / 1024) + (tfbl * gain_out[1] / 1024) + (tfcl * gain_out[2] / 1024) + (tfdl * gain_out[3] / 1024));
-				tfr = ((tfar * gain_out[0] / 1024) + (tfbr * gain_out[1] / 1024) + (tfcr * gain_out[2] / 1024) + (tfdr * gain_out[3] / 1024));
-
-				tflo = (a[4][0] * tfl + a[4][1] * mdi->filter.in[0][0] + a[4][0] * mdi->filter.in[1][0] - b[4][0] * mdi->filter.out[0][0] - b[4][1] * mdi->filter.out[1][0]) / 1024;
-				tfro = (a[4][0] * tfr + a[4][1] * mdi->filter.in[0][1] + a[4][0] * mdi->filter.in[1][1] - b[4][0] * mdi->filter.out[0][1] - b[4][1] * mdi->filter.out[1][1]) / 1024;
-
-				mdi->filter.in[1][0] =  mdi->filter.in[0][0];
-				mdi->filter.in[0][0] = tfl;
-				mdi->filter.in[1][1] =  mdi->filter.in[0][1];
-				mdi->filter.in[0][1] = tfr;
-				mdi->filter.out[1][0] =  mdi->filter.out[0][0];
-				mdi->filter.out[0][0] = tflo;
-				mdi->filter.out[1][1] =  mdi->filter.out[0][1];
-				mdi->filter.out[0][1] = tfro;
-
-				left_mix += tflo;
-				right_mix += tfro;
-
-				mdi->filter.delay_pos[0][0]++;
-				mdi->filter.delay_pos[0][1]++;
-				mdi->filter.delay_pos[1][0]++;
-				mdi->filter.delay_pos[1][1]++;
-				mdi->filter.delay_pos[2][0]++;
-				mdi->filter.delay_pos[2][1]++;
-				mdi->filter.delay_pos[3][0]++;
-				mdi->filter.delay_pos[3][1]++;
-
-				if (mdi->filter.delay_pos[0][0] == delay_size[0][0]) mdi->filter.delay_pos[0][0] = 0;
-				if (mdi->filter.delay_pos[0][1] == delay_size[0][1]) mdi->filter.delay_pos[0][1] = 0;
-				if (mdi->filter.delay_pos[1][0] == delay_size[1][0]) mdi->filter.delay_pos[1][0] = 0;
-				if (mdi->filter.delay_pos[1][1] == delay_size[1][1]) mdi->filter.delay_pos[1][1] = 0;
-				if (mdi->filter.delay_pos[2][0] == delay_size[2][0]) mdi->filter.delay_pos[2][0] = 0;
-				if (mdi->filter.delay_pos[2][1] == delay_size[2][1]) mdi->filter.delay_pos[2][1] = 0;
-				if (mdi->filter.delay_pos[3][0] == delay_size[3][0]) mdi->filter.delay_pos[3][0] = 0;
-				if (mdi->filter.delay_pos[3][1] == delay_size[3][1]) mdi->filter.delay_pos[3][1] = 0;
-
-			}
-#endif
 			if (left_mix > 32767) {
 				left_mix = 32767;
 			} else if (left_mix < -32768) {
@@ -4890,25 +4588,6 @@ WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short in
 		}
 	}
 
-	if (options & WM_MO_REVERB) {
-		for (i = 0; i < 4; i++) {
-			mdi->filter.lowpass[i][0].in[0] = 0;
-			mdi->filter.lowpass[i][0].in[1] = 0;
-			mdi->filter.lowpass[i][1].in[0] = 0;
-			mdi->filter.lowpass[i][1].in[1] = 0;
-
-			mdi->filter.lowpass[i][0].out[0] = 0;
-			mdi->filter.lowpass[i][0].out[1] = 0;
-			mdi->filter.lowpass[i][1].out[0] = 0;
-			mdi->filter.lowpass[i][1].out[1] = 0;
-
-			mdi->filter.delay_pos[i][0] = 0;
-			mdi->filter.delay_pos[i][1] = 0;
-
-			memset (mdi->filter.delay[i][0], 0, (delay_size[i][0] * sizeof(signed long int)));
-			memset (mdi->filter.delay[i][1], 0, (delay_size[i][1] * sizeof(signed long int)));
-		}
-	}
 	WM_Unlock(&mdi->lock);
 	return 0;
 }
@@ -4957,6 +4636,7 @@ WildMidi_Shutdown ( void ) {
 		}
 	}
 	WM_FreePatches();
+	free_gauss();
 	WM_Initialized = 0;
 	return 0;
 }
