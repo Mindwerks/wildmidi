@@ -43,6 +43,7 @@
 # include <windows.h>
 #endif
 #include "config.h"
+#include "wm_error.h"
 #include "wildmidi_lib.h"
 
 /*
@@ -650,17 +651,6 @@ static unsigned long int freq_table[] = {
 #define MIDI_EVENT_DEBUG(dx,dy)
 #endif
 
-#define WM_ERR_MEM		0
-#define WM_ERR_STAT		1
-#define WM_ERR_LOAD		2
-#define WM_ERR_OPEN		3
-#define WM_ERR_READ		4
-#define WM_ERR_INVALID		5
-#define WM_ERR_CORUPT		6
-#define WM_ERR_NOT_INIT		7
-#define WM_ERR_INVALID_ARG	8
-#define WM_ERR_ALR_INIT     9
-
 #define MAX_AUTO_AMP 2.0
 
 #define FPBITS 10
@@ -671,36 +661,6 @@ static unsigned long int freq_table[] = {
  * Internal Functions
  * =========================
  */
-
-
-static void
-WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmfor, int error) {
-	const char * errors[] = {
-		"Unable to obtain memory\0",
-		"Unable to stat\0",
-		"Unable to load\0",
-		"Unable to open\0",
-		"Unable to read\0",
-		"Invalid or Unsuported file format\0",
-		"File corrupt\0",
-		"Library not Initialized\0",
-		"Invalid argument\0"
-	};
-	if (wmfor != NULL) {
-		if (error != 0) {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s %s (%s)\n",func, lne, errors[wmerno], wmfor, strerror(error));
-		} else {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s %s\n",func, lne, errors[wmerno], wmfor);
-		}
-	} else {
-		if (error != 0) {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s (%s)\n",func, lne, errors[wmerno], strerror(error));
-		} else {
-			fprintf(stderr,"\rlibWildMidi(%s:%lu): ERROR %s\n",func, lne, errors[wmerno]);
-		}
-	}
-
-}
 
 static unsigned char *
 WM_BufferFile (const char *filename, unsigned long int *size) {
