@@ -705,12 +705,14 @@ do_help (void) {
 	printf("Software Wavetable Options\n");
 	printf("  -o W  --wavout=W       Saves the output to W in wav format\n");
 	printf("                         at 44100Hz 16 bit stereo\n");
-	printf("  -l    --linear_vol     Use linear volume adjustments\n");
+	printf("  -l    --log_vol        Use log volume adjustments\n");
 	printf("  -r N  --rate=N         output at N samples per second\n");
 	printf("  -c P  --config_file=P  P is the path and filename to your timidity.cfg\n");
 	printf("                         Defaults to /etc/timidity.cfg\n\n");
 	printf(" -m V  --master_volume=V Sets the master volumes, default is 100\n");
 	printf("                         range is 0-127 with 127 being the loudest\n");
+    printf(" -b    --reverb          Enable final output reverb engine\n");
+
 }
 
 static void
@@ -786,11 +788,9 @@ main (int argc, char **argv) {
 			case 'r': // SoundCard Rate
 				rate = atoi(optarg);
 				break;
-#ifdef EPERIMENT_626
 			case 'b': // Reverb
 				mixer_options ^= WM_MO_REVERB;
 				break;
-#endif
 			case 'm': // Master Volume
 				master_volume = (unsigned char)atoi(optarg);
 				break;
@@ -853,7 +853,8 @@ main (int argc, char **argv) {
 		}
 		printf("Initializing %s\n\n", WildMidi_GetString(WM_GS_VERSION));
 		printf(" +  Volume up       e  Better resampling     n  Next Midi\n");
-		printf(" -  Volume down     l  Linear volume         q  Quit\n\n");
+		printf(" -  Volume down     l  Log volume         q  Quit\n");
+        printf("                    r  Reverb\n\n");
 
 		if (WildMidi_Init (config_file, rate, mixer_options) == -1) {
 			return 0;
@@ -940,12 +941,10 @@ main (int argc, char **argv) {
 							WildMidi_SetOption(midi_ptr, WM_MO_LOG_VOLUME, ((mixer_options & WM_MO_LOG_VOLUME) ^ WM_MO_LOG_VOLUME));
 							mixer_options ^= WM_MO_LOG_VOLUME;
 							break;
-#ifdef EXPERIMENT_626
 						case 'r':
 							WildMidi_SetOption(midi_ptr, WM_MO_REVERB, ((mixer_options & WM_MO_REVERB) ^ WM_MO_REVERB));
 							mixer_options ^= WM_MO_REVERB;
 							break;
-#endif
 						case 'e':
 							WildMidi_SetOption(midi_ptr, WM_MO_ENHANCED_RESAMPLING, ((mixer_options & WM_MO_ENHANCED_RESAMPLING) ^ WM_MO_ENHANCED_RESAMPLING));
 							mixer_options ^= WM_MO_ENHANCED_RESAMPLING;
