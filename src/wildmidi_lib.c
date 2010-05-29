@@ -44,6 +44,7 @@
 #endif
 #include "config.h"
 #include "wm_error.h"
+#include "file_io.h"
 #include "wildmidi_lib.h"
 
 /*
@@ -661,96 +662,6 @@ static unsigned long int freq_table[] = {
  * Internal Functions
  * =========================
  */
-
-static unsigned char *
-WM_BufferFile (const char *filename, unsigned long int *size) {
-	int buffer_fd;
-	unsigned char *data;
-	struct stat buffer_stat;
-#ifndef _WIN32
-	char *home = NULL;
-	struct passwd *pwd_ent;
-	char buffer_dir[1024];
-#endif
-
-	char *buffer_file = malloc(strlen(filename) + 1);
-
-	if (buffer_file == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-		return NULL;
-	}
-
-	strcpy (buffer_file, filename);
-#ifndef _WIN32
-	if (strncmp(buffer_file,"~/",2) == 0) {
-		if ((pwd_ent = getpwuid (getuid ()))) {
-			home = pwd_ent->pw_dir;
-		} else {
-			home = getenv ("HOME");
-		}
-		if (home) {
-			buffer_file = realloc(buffer_file,(strlen(buffer_file) + strlen(home) + 1));
-			if (buffer_file == NULL) {
-				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-				free(buffer_file);
-				return NULL;
-			}
-			memmove((buffer_file + strlen(home)), (buffer_file + 1), (strlen(buffer_file)));
-			strncpy (buffer_file, home,strlen(home));
-		}
-	} else if (buffer_file[0] != '/') {
-		getcwd(buffer_dir,1024);
-		if (buffer_dir[strlen(buffer_dir)-1] != '/') {
-			buffer_dir[strlen(buffer_dir)+1] = '\0';
-			buffer_dir[strlen(buffer_dir)] = '/';
-		}
-		buffer_file = realloc(buffer_file,(strlen(buffer_file) + strlen(buffer_dir) + 1));
-		if (buffer_file == NULL) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-			free(buffer_file);
-			return NULL;
-		}
-		memmove((buffer_file + strlen(buffer_dir)), buffer_file, strlen(buffer_file)+1);
-		strncpy (buffer_file,buffer_dir,strlen(buffer_dir));
-	}
-#endif
-	if (stat(buffer_file,&buffer_stat)) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
-		free(buffer_file);
-		return NULL;
-	}
-	*size = buffer_stat.st_size;
-	data = malloc(*size);
-	if (data == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-		free(buffer_file);
-		return NULL;
-	}
-#ifdef _WIN32
-	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
-#else
-	if ((buffer_fd = open(buffer_file,O_RDONLY)) == -1) {
-#endif
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, errno);
-		free(buffer_file);
-		free(data);
-		return NULL;
-	}
-	if (read(buffer_fd,data,*size) != buffer_stat.st_size) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, errno);
-		free(buffer_file);
-		free(data);
-		close(buffer_fd);
-		return NULL;
-	}
-	close(buffer_fd);
-	free(buffer_file);
-	return data;
-}
 
 static inline void
 WM_Lock (int * wmlock) {
