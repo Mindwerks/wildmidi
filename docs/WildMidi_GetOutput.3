@@ -1,0 +1,64 @@
+.\" WildMidi_GetOutput.3
+.\"
+.\" Midi Wavetable Processing library
+.\"
+.\" Copyright (C)2001-2010 Chris Ison
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.\" Email: wildcode@users.sourceforge.net
+.\"
+.TH WildMidi_GetOutput 3 2010-06-03 "" "WildMidi Programmer's Manual"
+.SH NAME
+WildMidi_GetOutput \- retrieve raw audio data
+.SH LIBRARY
+.B libWildMidi
+.SH SYNOPSIS
+.nf
+.B #include <wildmidi_lib.h>
+.sp
+.BI "int WildMidi_GetOutput (midi * " handle, " char * " buffer, " unsigned long int " size);
+.fi
+.SH DESCRIPTION
+Places
+.BRsize
+bytes of audio data from the a previously opened midi
+.BR handle
+into a buffer pointer to by
+.BR buffer.
+.sp
+.BR size
+needs to be a multiple of 4 as the data is stored in 16bit interleaved stereo format.
+.sp
+.SH "RETURN VALUE"
+Returns -1 on error, 0 when there is no more audio data, or the number of bytes of audio data writen to
+.BR buffer.
+.sp
+NOTE: if the return value is less than the size you gave, this does not denote an error, it simply means the lib reached the end of the midi before it could fill the buffer.
+.SH BUGS
+.SH AUTHOR
+Chris Ison <wildcode@users.sourceforge.net>
+.SH SEE ALSO
+.BR WildMidi_GetString (3) ,
+.BR WildMidi_Init (3) ,
+.BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
+.BR WildMidi_OpenBuffer (3) ,
+.BR WildMidi_SetOption (3) ,
+.BR WildMidi_GetOutput (3) ,
+.BR WildMidi_GetInfo (3) ,
+.BR WildMidi_FastSeek (3) ,
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3) ,
+.BR WildMidi_Shutdown (3)
