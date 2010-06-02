@@ -1,0 +1,57 @@
+.\" WildMidi_GetString.3
+.\"
+.\" Midi Wavetable Processing library
+.\"
+.\" Copyright (C)2001-2010 Chris Ison
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.\" Email: wildcode@users.sourceforge.net
+.\"
+.TH WildMidi_GetString 3 2010-06-03 "" "WildMidi Programmer's Manual"
+.SH NAME
+WildMidi_GetString \- Get string from library
+.SH LIBRARY
+.B libWildMidi
+.SH SYNOPSIS
+.nf
+.B #include <wildmidi_lib.h>
+.sp
+.BI "const char *WildMidi_GetString (unsigned short int " info);
+.fi
+.SH DESCRIPTION
+Returns a string depending on what
+.BR info
+is set to.
+.TP
+.B WM_GS_VERSION
+Get version string contaiing full library name and version.
+.SH "RETURN VALUE"
+Returns a const char pointer to a string containing the string requested
+.SH BUGS
+.SH AUTHOR
+Chris Ison <wildcode@users.sourceforge.net>
+.SH SEE ALSO
+.BR WildMidi_GetString (3) ,
+.BR WildMidi_Init (3) ,
+.BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
+.BR WildMidi_OpenBuffer (3) ,
+.BR WildMidi_SetOption (3) ,
+.BR WildMidi_GetOutput (3) ,
+.BR WildMidi_GetInfo (3) ,
+.BR WildMidi_FastSeek (3) ,
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3) ,
+.BR WildMidi_Shutdown (3)

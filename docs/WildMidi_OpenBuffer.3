@@ -1,0 +1,61 @@
+.\" WildMidi_OpenBuffer.3
+.\"
+.\" Midi Wavetable Processing library
+.\"
+.\" Copyright (C)2001-2008 Chris Ison
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.\" Email: cisos@bigpond.net.au
+.\" 	wildcode@users.sourceforge.net
+.\"
+.\"	$Id: WildMidi_OpenBuffer.3,v 1.2 2008/05/19 03:47:29 wildcode Exp $
+.\"
+.TH WildMidi_OpenBuffer 3 2010-06-03 "" "WildMidi Programmer's Manual"
+.SH NAME
+WildMidi_OpenBuffer \- Open a midi file buffer for processing
+.SH LIBRARY
+.B libWildMidi
+.SH SYNOPSIS
+.nf
+.B #include <wildmidi_lib.h>
+.sp
+.BI "midi * WildMidi_OpenBuffer (unsigned char * " midibuffer " , unsigned long int " size);
+.fi
+.SH DESCRIPTION
+Open a midi file, that you have buffered in memory, for processing. The buffer needs to be in midi file format. Once passed WildMidi owns that buffer, any changes to the buffer will result in corutpion of the data within the lib. WildMidi will also free the buffer when its finished. So, set and forget, or suffer the evils that lay hidden within.
+.sp
+.BR midibuffer
+is a pointer to the buffer and
+.BR size
+is the size of the buffer in bytes.
+.sp
+.SH "RETURN VALUE"
+Returns NULL on error, otherwise returns a handle for the midi buffer opened.
+.SH BUGS
+.SH AUTHOR
+Chris Ison <wildcode@users.sourceforge.net>
+.SH SEE ALSO
+.BR WildMidi_GetString (3) ,
+.BR WildMidi_Init (3) ,
+.BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
+.BR WildMidi_OpenBuffer (3) ,
+.BR WildMidi_SetOption (3) ,
+.BR WildMidi_GetOutput (3) ,
+.BR WildMidi_GetInfo (3) ,
+.BR WildMidi_FastSeek (3) ,
+.BR WildMidi_SampledSeek (3),
+.BR WildMidi_Close (3) ,
+.BR WildMidi_Shutdown (3)
