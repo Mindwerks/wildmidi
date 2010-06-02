@@ -3266,6 +3266,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 		tmp_handle->next = NULL;
 		tmp_handle->handle = (void *)mdi;
 	}
+    mdi->copyright = NULL;
     mdi->info.mixer_options = WM_MixerOptions;
 
    	load_patch(mdi, 0x0000);
@@ -3492,16 +3493,45 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                         tracks[i] += 2;
                         running_event[i] = current_event;
                         break;
-                    case 0xF:
+                    case 0xF: // Meta Event
                         if (current_event == 0xFF)
                         {
-                            if ((tracks[i][0] == 0x2F) && (tracks[i][1] == 0x00))
+                            if (tracks[i][0] == 0x02) {
+                                // Copyright Event
+
+                                // Get Length
+                                tmp_length = 0;
+                                tracks[i]++;
+                                while (*tracks[i] > 0x7f)
+                                {
+                                    tmp_length = (tmp_length << 7) + (*tracks[i] & 0x7f);
+                                    tracks[i]++;
+                                }
+                                tmp_length = (tmp_length << 7) + (*tracks[i] & 0x7f);
+                                // Copy copyright info in the getinfo struct
+                                if mdi.info->copyright != NULL)
+                                {
+                                    mdi.info->copyright = realloc(strlen(mdi.info->copyright) + 1 + tmp_length + 1);
+                                    strncpy(mdi,info->copyright[strlen(mdi.info->copyright) + 1], tracks[i], tmp_length);
+                                    mdi.info->copyright[strlen(mdi.info->copyright) + 1 + tmp_length] = '\0';
+                                    mdi.info->copyright[strlen(mdi.info->copyright)] = '\n';
+
+                                } else
+                                {
+                                    mdi.info->copyright = malloc(tmp_length+1);
+                                    strncpy(mdi,info->copyright, tracks[i], tmp_length);
+                                    mdi.info->copyright[tmp_length] = '\0';
+                                }
+                                tracks[i] += tmp_length + 1;
+                            } else if ((tracks[i][0] == 0x2F) && (tracks[i][1] == 0x00))
                             {
+                                // End of Track
                                 end_of_tracks++;
                                 track_end[i] = 1;
                                 goto NEXT_TRACK;
                             } else if ((tracks[i][0] == 0x51) && (tracks[i][1] == 0x03))
                             {
+                                // Tempo
                                 tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8) + tracks[i][4];
                                 tracks[i] += 5;
                                 if (!tempo)
