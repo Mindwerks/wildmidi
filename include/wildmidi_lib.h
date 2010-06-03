@@ -33,7 +33,7 @@
 #define WM_GS_VERSION		0x0001
 
 struct _WM_Info {
-	unsigned char *copyright;
+	char *copyright;
 	unsigned long int current_sample;
 	unsigned long int approx_total_samples;
 	unsigned short int mixer_options;

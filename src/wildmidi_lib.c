@@ -3228,7 +3228,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     struct _hndl *tmp_handle = NULL;
 
     unsigned long int *track_delta;
-    unsigned char *track_end;
+    char *track_end;
     unsigned long int smallest_delta = 0;
     unsigned long int subtract_delta = 0;
     unsigned long int tmp_length = 0;
@@ -3266,7 +3266,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 		tmp_handle->next = NULL;
 		tmp_handle->handle = (void *)mdi;
 	}
-    mdi->copyright = NULL;
+    mdi->info.copyright = NULL;
     mdi->info.mixer_options = WM_MixerOptions;
 
    	load_patch(mdi, 0x0000);
@@ -3509,18 +3509,18 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                 }
                                 tmp_length = (tmp_length << 7) + (*tracks[i] & 0x7f);
                                 // Copy copyright info in the getinfo struct
-                                if mdi.info->copyright != NULL)
+                                if (mdi->info.copyright != NULL)
                                 {
-                                    mdi.info->copyright = realloc(strlen(mdi.info->copyright) + 1 + tmp_length + 1);
-                                    strncpy(mdi,info->copyright[strlen(mdi.info->copyright) + 1], tracks[i], tmp_length);
-                                    mdi.info->copyright[strlen(mdi.info->copyright) + 1 + tmp_length] = '\0';
-                                    mdi.info->copyright[strlen(mdi.info->copyright)] = '\n';
+                                    mdi->info.copyright = realloc(mdi->info.copyright, (strlen(mdi->info.copyright) + 1 + tmp_length + 1));
+                                    strncpy(&mdi->info.copyright[strlen(mdi->info.copyright) + 1], (char *)tracks[i], tmp_length);
+                                    mdi->info.copyright[strlen(mdi->info.copyright) + 1 + tmp_length] = '\0';
+                                    mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
 
                                 } else
                                 {
-                                    mdi.info->copyright = malloc(tmp_length+1);
-                                    strncpy(mdi,info->copyright, tracks[i], tmp_length);
-                                    mdi.info->copyright[tmp_length] = '\0';
+                                    mdi->info.copyright = malloc(tmp_length+1);
+                                    strncpy(mdi->info.copyright, (char *)tracks[i], tmp_length);
+                                    mdi->info.copyright[tmp_length] = '\0';
                                 }
                                 tracks[i] += tmp_length + 1;
                             } else if ((tracks[i][0] == 0x2F) && (tracks[i][1] == 0x00))
@@ -3687,8 +3687,8 @@ WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short
 	}
 	WM_MixerOptions = options;
 
-	if ((rate < 11000) || (rate > 65000)) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(rate out of bounds, range is 11000 - 65000)", 0);
+	if ((rate < 11025) || (rate > 65535)) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(rate out of bounds, range is 11025 - 65535)", 0);
 		WM_FreePatches();
 		return -1;
 	}
