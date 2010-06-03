@@ -182,7 +182,7 @@ int (*send_output) (char * output_data, int output_size);
 void (*close_output) ( void );
 int audio_fd;
 
-static inline void
+static void
 shutdown_output ( void ) {
 	printf("Shutting Down Sound System\n");
 	if (audio_fd != -1)
@@ -265,7 +265,11 @@ close_wav_output ( void ) {
 	wav_count[2] = (wav_size >> 16) & 0xFF;
 	wav_count[3] = (wav_size >> 24) & 0xFF;
 	lseek(audio_fd,40,SEEK_SET);
-	write(audio_fd,&wav_count,4);
+	if (write(audio_fd,&wav_count,4) < 0) {
+        printf("ERROR: Writing Wav %s\n", strerror(errno));
+		shutdown_output();
+	}
+
 
 	wav_size += 36;
 	wav_count[0] = (wav_size) & 0xFF;
@@ -273,7 +277,10 @@ close_wav_output ( void ) {
 	wav_count[2] = (wav_size >> 16) & 0xFF;
 	wav_count[3] = (wav_size >> 24) & 0xFF;
 	lseek(audio_fd,4,SEEK_SET);
-	write(audio_fd,&wav_count,4);
+    if (write(audio_fd,&wav_count,4) < 0) {
+        printf("ERROR: Writing Wav %s\n", strerror(errno));
+		shutdown_output();
+	}
 
 	shutdown_output();
 }
@@ -418,8 +425,10 @@ open_alsa_output(void) {
 	unsigned int alsa_buffer_time;
 	unsigned int alsa_period_time;
 
-	if (!pcmname)
-		pcmname = "default";
+	if (!pcmname) {
+	    pcmname = malloc (8);
+        strcpy(pcmname,"default\0");
+	}
 
 	if ((err = snd_pcm_open (&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 		printf("Error: audio open error: %s\n", snd_strerror (-err));
@@ -547,8 +556,11 @@ open_oss_output( void ) {
 	unsigned long int mmflags = MAP_FILE | MAP_SHARED;
 	unsigned long int sz = sysconf (_SC_PAGESIZE);
 
-	if (!pcmname)
-		pcmname = "/dev/dsp";
+   	if (!pcmname) {
+	    pcmname = malloc (8);
+        strcpy(pcmname,"default\0");
+	}
+
 	if ((audio_fd = open(pcmname, omode)) < 0) {
 		printf("ERROR: Unable to open /dev/dsp (%s)\n",strerror(errno));
 		return -1;
@@ -684,13 +696,13 @@ static struct option const long_options[] = {
 	{"master_volume",1,0,'m'},
 	{"config_file",1,0,'c'},
 	{"wavout",1,0,'o'},
-	{"linear_vol",0,0,'l'},
+	{"log_vol",0,0,'l'},
 	{"reverb",0,0,'b'},
-	{"midi_test",0,0,'t'},
+	{"test_midi",0,0,'t'},
 	{"test_bank",1,0,'k'},
 	{"test_patch",1,0,'p'},
-	{"expensive",0,0,'e'},
-	{"device",1,0,'d'},
+	{"enhanced_resample",0,0,'e'},
+	{"auddev",1,0,'d'},
 	{NULL,0,NULL,0}
 };
 
@@ -756,7 +768,7 @@ main (int argc, char **argv) {
 	unsigned char *test_data = NULL;
 	unsigned char test_bank = 0;
 	unsigned char test_patch = 0;
-	static char *spinner="|/-\\";
+	static char spinner[] ="|/-\\";
 	static int spinpoint = 0;
 
 #ifndef _WIN32

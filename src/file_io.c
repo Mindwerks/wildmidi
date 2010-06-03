@@ -45,6 +45,7 @@ unsigned char *
 WM_BufferFile (const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	unsigned char *data;
+	char *ret_data = NULL;
 	struct stat buffer_stat;
 #ifndef _WIN32
 	char *home = NULL;
@@ -80,7 +81,7 @@ WM_BufferFile (const char *filename, unsigned long int *size) {
 			strncpy (buffer_file, home,strlen(home));
 		}
 	} else if (buffer_file[0] != '/') {
-		getcwd(buffer_dir,1024);
+		ret_data = getcwd(buffer_dir,1024);
 		if (buffer_dir[strlen(buffer_dir)-1] != '/') {
 			buffer_dir[strlen(buffer_dir)+1] = '\0';
 			buffer_dir[strlen(buffer_dir)] = '/';
