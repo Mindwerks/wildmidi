@@ -1,16 +1,24 @@
-.TH WildMidi_Shutdown 3 2008-05-19 "" "WildMidi Programmer's Manual"
+.TH WildMidi_Shutdown 3 2010-6-4 "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_Shutdown \- Shutdown the library
+.sp
 .SH LIBRARY
 .B libWildMidi
+.sp
 .SH SYNOPSIS
 .nf
 .B #include <wildmidi_lib.h>
 .sp
 .BI "void WildMidi_Shutdown ( void ");
 .fi
+.sp
 .SH DESCRIPTION
-Shuts down the wildmidi library.
+Shuts down the wildmidi library, resetting data and freeing up memory used by the library.
+.sp
+Once this is called, the library is no-longer initiaized and
+.BR WildMidi_Init (3)
+will need to be called again.
+.sp
 .SH SEE ALSO
 .BR WildMidi_GetString (3) ,
 .BR WildMidi_Init (3) ,
@@ -26,10 +34,13 @@ Shuts down the wildmidi library.
 .BR WildMidi_Shutdown (3),
 .BR wildmidi (1),
 .BR wildmidi.cfg (5)
+.sp
 .SH BUGS
 No selectable device in win32 environment.
+.sp
 .SH AUTHOR
 Chris Ison <wildcode@users.sourceforge.net>
+.sp
 .SH COPYRIGHT
 Copyright (C) 2001-2010 Chris Ison
 .sp
