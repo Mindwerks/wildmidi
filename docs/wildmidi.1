@@ -1,120 +1,92 @@
-.TH wildmidi 1 2010-06-03 "" "WildMidi Player"
+.TH wildmidi 1 "05 June 2010" "" "WildMidi Player"
 .SH NAME
 wildmidi \- example player for libWildMidi
-.sp
+.PP
 .SH LIBRARY
 .B libWildMidi
-.sp
+.PP
 .SH FILES
 .B /etc/wildmidi.cfg
-.sp
+.PP
 .SH SYNOPSIS
-.B wildmidi [-behlv] [-c
-.I config-file
-.B ] [-d
-.I device
-.B ] [-m
-.I volume-level
-.B ] [-o
-.I wav-file
-.B ]
-.I midifile
-.B ...
-.sp
+.B wildmidi [-behlv] [-c \fIconfig-file\fB] [-d \fIdevice\fB] [-m \fIvolume-level\fB] [-o \fIwav-file\fB] \fImidifile ...
+.PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
-.sp
-.I midifile
-is processed by libWildMidi and the resulting audio is output by the player.
-.sp
-You can have more than one
-.I midifile
-on th command line and
-.B wildmidi
-will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example:
-.B wildmidi *.mid
-.sp
+.PP
+\fImidifile\fP is processed by libWildMidi and the resulting audio is output by the player.
+.PP
+You can have more than one \fImidifile\fB on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
+.PP
 .SH OPTIONS
-.IP "-b | --reverb"
+.IP "\fB\-b\fP | \fB\-\-reverb\fP"
 Turns on an 8 point reverb engine that adds depth to the final mix.
-.sp
-.IP "-c config-file | --config_file config-file"
-Uses the configuration file stated by
-.I config-file
-instead of
-.RI /etc/wildmidi.cfg
-.sp
-.IP "-d device | --auddev=device"
-Semd the audio to
-.I device
-instead of the default. ALSA defaults to the
-.I "system default"
-while OSS defaults to
-.I "/dev/dsp"
-and is ignored in win32 environments.
-.sp
-.IP "-e | --enhanced_resample"
+.P
+.IP "\fB\-c\fP \fIconfig-file\fP | \fB\-\-config_file\fP \fIconfig\-file\fP"
+Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmidi.cfg
+.PP
+.IP "\fB\-d\fP \fIdevice\fP | \fB\-\-auddev=\fIdevice\fP"
+Send the audio to \fIdevice\fP instead of the default. ALSA defaults to the system "default" while OSS defaults to "/dev/dsp". Win32 environments ignore this option.
+.PP
+.IP "\fB\-e\fP | \fB\-\-enhanced_resample\fP"
 Switches to a gauss based resampling algorithm which can improve the shape of the sound.
-.sp
-.IP "-h | --help"
+.PP
+.IP "\fB\-h\fP | \fB\-\-help\fP"
 Displays command line options
-.sp
-.IP "-l | --log_vol"
+.PP
+.IP "\fB\-l\fP | \fB\-\-log_vol\fP"
 Some MIDI files have been recorded on hardware that uses a volume curve, making them sound really badly mixed on other MIDI devices. Use this option to use volume curves.
-.sp
-.IP "-m volume-level | --master_volume=volume-level"
-Set the overall volume level to
-.I volume-level.
-The minimum is 0 and the maximum is 127, with the default being 100.
-.sp
-.IP "-o wav-file | --wavout wav-file"
-Records the audio in wav format to
-.I wav-file.
-.sp
-.IP "-r sndrate | --rate=sndrate"
-Set the audio output rate to N. The default rate is 32072.
-.sp
-.IP "-v | --version"
+.PP
+.IP "\fB\-m\fP \fIvolume\-level\fP | \fB\-\-master_volume=\fIvolume\-level\fP"
+Set the overall volume level to \fIvolume\-level\fP. The minimum is 0 and the maximum is 127, with the default being 100.
+.PP
+.IP "\fB\-o\fP \fIwav\-file\fP | \fB\-\-wavout=\fIwav\-file\fP"
+Records the audio in wav format to \fIwav-file\fP.
+.PP
+.IP "\fB\-r\fP \fIsndrate\fP | \fB\-\-rate=\fIsndrate\fP"
+Set the audio output rate to \fIsndrate\fP. The default rate is 32072.
+.PP
+.IP "\fB\-v\fP | \fB\-\-version\fP"
 Display version and copyright information
-.sp
+.PP
 .SH TEST OPTIONS
 These options are not designed for general use. Instead these options are designed to make it easier to listen to specific sound samples.
-.sp
-Note: These options are not displayed by -h | --help
-.sp
-.IP "-k N | --test_bank=N"
-Set the test bank to N. Range is 0 to 127.
-.sp
-.IP "-p N | --test_patch=N"
-Set the test patch to N. Range is 0 to 127.
-.sp
-.IP "-t | --test_midi"
+.PP
+Note: These options are not displayed by \fB\-h\fP | \fB\-\-help\fP
+.PP
+.IP "\fB-k\fP \fIN\fP | \fB\-\-test_bank=\fIN\fP"
+Set the test bank to \fIN\fP. Range is 0 to 127.
+.PP
+.IP "\fB\-p\fP \fIN\fP | \fB\-\-test_patch=\fIN\fP"
+Set the test patch to \fIN\fP. Range is 0 to 127.
+.PP
+.IP "\fB\-t\fP | \fB\-\-test_midi\fP"
 Plays the built in test midi which plays all 127 notes.
-.sp
+.PP
 .SH USER INTERFACE
 The player accepts limited user input that allows some interaction while playing midi files.
-.sp
-.IP +
+.PP
+.IP \fB\+\fP
 Turns the master volume up.
-.sp
-.IP -
+.PP
+.IP \fB\-\fP
 Turns the master volume down.
-.sp
-.IP e
+.PP
+.IP \fBe\fP
 Turns enhanced resampling on and off.
-.sp
-.IP l
+.PP
+.IP \fBl\fP
 Turns volume curves on and off.
-.sp
-.IP r
+.PP
+.IP \fBr\fP
 Turns the final mix reverb on and off.
-.sp
-.IP n
+.PP
+.IP \fBn\fP
 Play the next midi on the command line.
-.sp
-.IP q
+.PP
+.IP \fBq\fP
 Quit wildmidi.
-.sp
+.PP
 .SH SEE ALSO
 .BR WildMidi_GetString (3) ,
 .BR WildMidi_Init (3) ,
@@ -125,26 +97,22 @@ Quit wildmidi.
 .BR WildMidi_GetOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
-.BR WildMidi_SampledSeek (3),
+.BR WildMidi_SampledSeek (3) ,
 .BR WildMidi_Close (3) ,
-.BR WildMidi_Shutdown (3),
-.BR wildmidi (1),
+.BR WildMidi_Shutdown (3) ,
 .BR wildmidi.cfg (5)
-.sp
-.SH BUGS
-No selectable device in win32 environment.
-.sp
+.PP
 .SH AUTHOR
 Chris Ison <wildcode@users.sourceforge.net>
-.sp
+.PP
 .SH COPYRIGHT
 Copyright (C) 2001-2010 Chris Ison
-.sp
+.PP
 This file is part of WildMIDI.
-.sp
+.PP
 WildMIDI is free software: you can redistribute and/or modify the player under the terms of the GNU General Public License and you can redistribute and/or modify the library under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the licenses, or(at your option) any later version.
-.sp
+.PP
 WildMIDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and the GNU Lesser General Public License for more details.
-.sp
+.PP
 You should have received a copy of the GNU General Public License and the GNU Lesser General Public License along with WildMIDI. If not, see <http://www.gnu.org/licenses/>.
-.sp
+.PP

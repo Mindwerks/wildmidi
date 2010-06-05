@@ -1,24 +1,23 @@
-.TH WildMidi_MasterVolume 3 2010-06-03 "" "WildMidi Programmer's Manual"
+.TH WildMidi_MasterVolume 3 "05 June 2010" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_MasterVolume \- sets the overall audio level of the library.
 .SH LIBRARY
 .B libWildMidi
+.PP
 .SH SYNOPSIS
-.nf
 .B #include <wildmidi_lib.h>
-.sp
-.BI "int WildMidi_MasterVolume (unsigned char " master_volume);
-.fi
+.PP
+.B int WildMidi_MasterVolume (unsigned char \fImaster_volume\fP)
+.PP
 .SH DESCRIPTION
-Sets the overall library volume level to
-.BR master_volume.
-The range is between 0 and 127 with 100 being the default.
+Sets the overall library volume level to \fImaster_volume\fP. The range of \fImaster_volume\fP is between 0 and 127 with 100 being the default.
+.PP
 .SH "RETURN VALUE"
 Returns -1 on error otherwise returns 0
+.PP
 .SH SEE ALSO
 .BR WildMidi_GetString (3) ,
 .BR WildMidi_Init (3) ,
-.BR WildMidi_MasterVolume (3) ,
 .BR WildMidi_Open (3) ,
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
@@ -30,17 +29,18 @@ Returns -1 on error otherwise returns 0
 .BR WildMidi_Shutdown (3),
 .BR wildmidi (1),
 .BR wildmidi.cfg (5)
-.SH BUGS
+.PP
 .SH AUTHOR
 Chris Ison <wildcode@users.sourceforge.net>
+.PP
 .SH COPYRIGHT
 Copyright (C) 2001-2010 Chris Ison
-.sp
+.PP
 This file is part of WildMIDI.
-.sp
+.PP
 WildMIDI is free software: you can redistribute and/or modify the player under the terms of the GNU General Public License and you can redistribute and/or modify the library under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the licenses, or(at your option) any later version.
-.sp
+.PP
 WildMIDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and the GNU Lesser General Public License for more details.
-.sp
+.PP
 You should have received a copy of the GNU General Public License and the GNU Lesser General Public License along with WildMIDI. If not, see <http://www.gnu.org/licenses/>.
-.sp
+.PP
