@@ -1,24 +1,20 @@
-.TH WildMidi_Shutdown 3 2010-6-4 "" "WildMidi Programmer's Manual"
+.TH WildMidi_Shutdown 3 "05 June 2010" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_Shutdown \- Shutdown the library
-.sp
+.PP
 .SH LIBRARY
 .B libWildMidi
-.sp
+.PP
 .SH SYNOPSIS
-.nf
 .B #include <wildmidi_lib.h>
-.sp
-.BI "void WildMidi_Shutdown ( void ");
-.fi
-.sp
+.PP
+.B void WildMidi_Shutdown(\fIvoid\fP)
+.PP
 .SH DESCRIPTION
 Shuts down the wildmidi library, resetting data and freeing up memory used by the library.
-.sp
-Once this is called, the library is no-longer initiaized and
-.BR WildMidi_Init (3)
-will need to be called again.
-.sp
+.PP
+Once this is called, the library is no-longer initiaized and \fBWildMidi_Init\fP\fR(3)\fP will need to be called again.
+.PP
 .SH SEE ALSO
 .BR WildMidi_GetString (3) ,
 .BR WildMidi_Init (3) ,
@@ -29,26 +25,22 @@ will need to be called again.
 .BR WildMidi_GetOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
-.BR WildMidi_SampledSeek (3),
+.BR WildMidi_SampledSeek (3) ,
 .BR WildMidi_Close (3) ,
-.BR WildMidi_Shutdown (3),
-.BR wildmidi (1),
+.BR wildmidi (1) ,
 .BR wildmidi.cfg (5)
-.sp
-.SH BUGS
-No selectable device in win32 environment.
-.sp
+.PP
 .SH AUTHOR
 Chris Ison <wildcode@users.sourceforge.net>
-.sp
+.PP
 .SH COPYRIGHT
 Copyright (C) 2001-2010 Chris Ison
-.sp
+.PP
 This file is part of WildMIDI.
-.sp
+.PP
 WildMIDI is free software: you can redistribute and/or modify the player under the terms of the GNU General Public License and you can redistribute and/or modify the library under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the licenses, or(at your option) any later version.
-.sp
+.PP
 WildMIDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and the GNU Lesser General Public License for more details.
-.sp
+.PP
 You should have received a copy of the GNU General Public License and the GNU Lesser General Public License along with WildMIDI. If not, see <http://www.gnu.org/licenses/>.
-.sp
+.PP

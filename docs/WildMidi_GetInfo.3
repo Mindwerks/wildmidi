@@ -1,27 +1,56 @@
-.TH WildMidi_GetInfo 3 2010-06-03 "" "WildMidi Programmer's Manual"
+.TH WildMidi_GetInfo 3 "05 June 2010" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_GetInfo \- get information on a midi
 .SH LIBRARY
 .B libWildMidi
 .SH SYNOPSIS
-.nf
 .B #include <wildmidi_lib.h>
-.sp
-.BI "struct _WM_Info * WildMidi_GetInfo (midi * " handle);
-.fi
+.PP
+.B struct _WM_Info *WildMidi_GetInfo (midi *\fIhandle\fP);
+.PP
 .SH DESCRIPTION
-.B struct _WM_Info {
-.br
-.BI "   unsigned char * " copyright;
-.br
-.BI "   unsigned long int " current_sample;
-.br
-.BI "   unsigned long int " approx_total_samples;
-.br
-.BI "   unsigned short int " mixer_options;
-.br
-.B };
-.br
+Obtains information allowing you to determin song position, current options, and any copyright information for
+.PP
+.IP \fIhandle\fP
+The indentifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+.PP
+.SH RETURN VALUE
+On error returns NULL with an error message displayed to stderr.
+.PP
+Otherwise returns a pointer to a struct containing the information.
+.PP
+.nf
+struct _WM_Info {
+   char *\fIcopyright\fP;
+   unsigned long int \fIcurrent_sample\fP;
+   unsigned long int \fIapprox_total_samples\fP;
+   unsigned short int \fImixer_options\fP;
+};
+.fi
+.PP
+.IP \fIcopyright\fP
+A pointer to a \\0 terminated string containing any copyright MIDI events found while processing the MIDI file \fIhandle\fP refers to. If more than one copyright event was found then each one is separated by \\n
+.PP
+If \fIcopyright\fP is NULL then no copyright MIDI events were found.
+.PP
+.IP \fIcurrent_sample\fP
+This is the number of stereo samples libWildMidi has processed for the MIDI file refered to by \fIhandle\fP. You can use this value to determin the current playing time by dividing this value by the \fIrate\fP given when libWildMidi was initialized by \fBWildMidi_Init\fR(3)\fP.
+.PP
+.IP \fIapprox_total_samples\fP
+This is the total number of stereo samples libWildMidi expects to process. This can be used to obtain the total playing time by dividing this value by the \fIrate\fP given when libWildMidi was initialized by \fBWildMidi_Init\fP\fR(3).\fP Also when you divide \fIcurrent_sample\fP by this value and multiplying by 100, you have the percentage currently processed.
+.PP
+.IP \fImixer_options\fP
+.RS
+.IP WM_MO_LOG_VOLUME
+Using curved volume settings instead of linear ones.
+.PP
+.IP WM_MO_ENHANCED_RESAMPLING
+The enhanced resampler is active
+.PP
+.IP WM_MO_REVERB
+Reverb is being added to the final output.
+.RE
+.PP
 .SH SEE ALSO
 .BR WildMidi_GetString (3) ,
 .BR WildMidi_Init (3) ,
@@ -30,24 +59,24 @@ WildMidi_GetInfo \- get information on a midi
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
-.BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
-.BR WildMidi_SampledSeek (3),
+.BR WildMidi_SampledSeek (3) ,
 .BR WildMidi_Close (3) ,
-.BR WildMidi_Shutdown (3),
-.BR wildmidi (1),
+.BR WildMidi_Shutdown (3) ,
+.BR wildmidi (1) ,
 .BR wildmidi.cfg (5)
-.SH BUGS
+.PP
 .SH AUTHOR
 Chris Ison <wildcode@users.sourceforge.net>
+.PP
 .SH COPYRIGHT
 Copyright (C) 2001-2010 Chris Ison
-.sp
+.PP
 This file is part of WildMIDI.
-.sp
+.PP
 WildMIDI is free software: you can redistribute and/or modify the player under the terms of the GNU General Public License and you can redistribute and/or modify the library under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the licenses, or(at your option) any later version.
-.sp
+.PP
 WildMIDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and the GNU Lesser General Public License for more details.
-.sp
+.PP
 You should have received a copy of the GNU General Public License and the GNU Lesser General Public License along with WildMIDI. If not, see <http://www.gnu.org/licenses/>.
-.sp
+.PP
