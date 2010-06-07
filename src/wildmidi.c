@@ -497,6 +497,9 @@ open_alsa_output(void) {
 
 	send_output = write_alsa_output;
 	close_output = close_alsa_output;
+	if (pcmname != NULL) {
+	    free (pcmname);
+	}
 	return 0;
 }
 
