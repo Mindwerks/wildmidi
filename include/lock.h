@@ -25,7 +25,7 @@
 #ifndef __LOCK_H
 #define __LOCK_H
 
-static void WM_Lock (int * wmlock);
-static void WM_Unlock (int *wmlock);
+extern void WM_Lock (int * wmlock);
+extern void WM_Unlock (int *wmlock);
 
 #endif // __LOCK_H
