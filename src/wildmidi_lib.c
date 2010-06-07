@@ -45,6 +45,7 @@
 #include "config.h"
 #include "wm_error.h"
 #include "file_io.h"
+#include "lock.h"
 #include "reverb.h"
 #include "wildmidi_lib.h"
 
@@ -340,29 +341,6 @@ static unsigned long int freq_table[] = {
  * Internal Functions
  * =========================
  */
-
-static inline void
-WM_Lock (int * wmlock) {
-	LOCK_START:
-	if (__builtin_expect(((*wmlock) == 0),1)) {
-		(*wmlock)++;
-		if (__builtin_expect(((*wmlock) == 1), 1)) {
-			return;
-		}
-		(*wmlock)--;
-	}
-#ifdef _WIN32
-	Sleep(10);
-#else
-	usleep(500);
-#endif
-	goto LOCK_START;
-}
-
-static inline void
-WM_Unlock (int *wmlock) {
-	(*wmlock)--;
-}
 
 static void
 WM_InitPatches ( void ) {
