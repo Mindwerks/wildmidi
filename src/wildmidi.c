@@ -773,6 +773,7 @@ main (int argc, char **argv) {
 	unsigned char test_patch = 0;
 	static char spinner[] ="|/-\\";
 	static int spinpoint = 0;
+	unsigned long int seek_to_sample = 0;
 
 #ifndef _WIN32
 	int my_tty;
@@ -868,8 +869,8 @@ main (int argc, char **argv) {
 		}
 		printf("Initializing %s\n\n", WildMidi_GetString(WM_GS_VERSION));
 		printf(" +  Volume up       e  Better resampling     n  Next Midi\n");
-		printf(" -  Volume down     l  Log volume         q  Quit\n");
-        printf("                    r  Reverb\n\n");
+		printf(" -  Volume down     l  Log volume            q  Quit\n");
+        printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n\n");
 
 		if (WildMidi_Init (config_file, rate, mixer_options) == -1) {
 			return 0;
@@ -990,6 +991,39 @@ main (int argc, char **argv) {
 								WildMidi_MasterVolume(master_volume);
 							}
 							break;
+                        // seeking examples
+                        case ',': // fast seek backwards
+                            if (wm_info->current_sample < rate) {
+                                seek_to_sample = 0;
+                            } else {
+                                seek_to_sample = wm_info->current_sample - rate;
+                            }
+                            WildMidi_FastSeek(midi_ptr, &seek_to_sample);
+                            break;
+                        case '.': // fast seek forwards
+                            if ((wm_info->approx_total_samples - wm_info->current_sample) < rate) {
+                                seek_to_sample = wm_info->approx_total_samples;
+                            } else {
+                                seek_to_sample = wm_info->current_sample + rate;
+                            }
+                            WildMidi_FastSeek(midi_ptr, &seek_to_sample);
+                            break;
+                        case '<': // sampled seek backwards
+                            if (wm_info->current_sample < rate) {
+                                seek_to_sample = 0;
+                            } else {
+                                seek_to_sample = wm_info->current_sample - rate;
+                            }
+                            WildMidi_SampledSeek(midi_ptr, &seek_to_sample);
+                            break;
+                        case '>': // sampled seek fowards
+                            if ((wm_info->approx_total_samples - wm_info->current_sample) < rate) {
+                                seek_to_sample = wm_info->approx_total_samples;
+                            } else {
+                                seek_to_sample = wm_info->current_sample + rate;
+                            }
+                            WildMidi_SampledSeek(midi_ptr, &seek_to_sample);
+                            break;
 					}
 				}
 
