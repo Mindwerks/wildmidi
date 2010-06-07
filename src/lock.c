@@ -45,7 +45,7 @@
 
 */
 
-static void
+void
 WM_Lock (int * wmlock) {
 	LOCK_START:
 	/*
@@ -84,7 +84,7 @@ WM_Lock (int * wmlock) {
 */
 
 
-static void
+void
 WM_Unlock (int *wmlock) {
 	/*
 		We don't want a -1 lock so just to make sure
