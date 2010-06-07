@@ -3369,6 +3369,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         {
             printf("Midi File Too Short\n");
             free(tracks);
+            free(track_delta);
+            free(track_end);
+            free(running_event);
     		free(mdi);
     		return NULL;
         }
@@ -3376,6 +3379,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         if (strncmp((char *) midi_data,"MTrk",4) != 0) {
             printf("Expected Track Header\n");
             free(tracks);
+            free(track_delta);
+            free(track_end);
+            free(running_event);
     		free(mdi);
     		return NULL;
     	}
@@ -3391,6 +3397,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         {
             printf("Midi File Too Short\n");
             free(tracks);
+            free(track_delta);
+            free(track_end);
+            free(running_event);
     		free(mdi);
     		return NULL;
         }
@@ -3398,6 +3407,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         {
             printf("Corrupt Midi, Expected EOT\n");
             free(tracks);
+            free(track_delta);
+            free(track_end);
+            free(running_event);
             free(mdi);
             return NULL;
         }
@@ -3573,6 +3585,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                         free (tracks);
                         free (track_end);
                         free (track_delta);
+                        free(running_event);
                         if (mdi->events)
                             free (mdi->events);
                         free (mdi);
@@ -3622,6 +3635,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 		free (tracks);
         free (track_end);
         free (track_delta);
+        free (running_event);
         if (mdi->events)
             free (mdi->events);
         free (mdi);
@@ -3645,6 +3659,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 
     free (track_end);
     free (track_delta);
+    free (running_event);
     free (tracks);
     return mdi;
 }
@@ -3811,6 +3826,7 @@ midi *
 WildMidi_Open (const char *midifile) {
 	unsigned char *mididata = NULL;
 	unsigned long int midisize = 0;
+	midi * ret = NULL;
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
@@ -3825,7 +3841,9 @@ WildMidi_Open (const char *midifile) {
 		return NULL;
 	}
 
-	return (void *)WM_ParseNewMidi(mididata,midisize);
+    ret = (void *)WM_ParseNewMidi(mididata,midisize);
+    free (mididata);
+	return ret;
 }
 
 midi *
@@ -3849,20 +3867,12 @@ WildMidi_LoadSamples( midi * handle) {
 
 int
 WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos) {
-#if 0
 	struct _mdi *mdi = (struct _mdi *)handle;
-	struct _note **note_data = mdi->note;
-	void (*do_event[])(unsigned char ch, struct _mdi *midifile, unsigned long int ptr) = {
-		*do_null,
-		*do_null,
-		*do_aftertouch,
-		*do_control,
-		*do_patch,
-		*do_channel_pressure,
-		*do_pitch,
-		*do_message
-	};
 	unsigned long int real_samples_to_mix = 0;
+	unsigned long int count;
+	struct _event *event = mdi->current_event;
+   	struct _note **note_data = mdi->note;
+
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
@@ -3872,80 +3882,85 @@ WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)", 0);
 		return -1;
 	}
-	WM_Lock(&mdi->lock);
 	if (sample_pos == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL seek position pointer)", 0);
-		WM_Unlock(&mdi->lock);
 		return -1;
 	}
 
-	if (*sample_pos == mdi->info.current_sample) {
-		WM_Unlock(&mdi->lock);
-		return 0;
+	WM_Lock(&mdi->lock);
+
+    // make sure we havent asked for a positions beyond the end of the song.
+	if (*sample_pos > mdi->info.approx_total_samples) {
+	    // if so set the position to the end of the song
+        *sample_pos = mdi->info.approx_total_samples;
 	}
 
-	if (*sample_pos > mdi->info.current_sample) {
-		if ((mdi->sample_count == 0) && (mdi->index_count == mdi->index_size) && (mdi->last_note == 0)) {
-			*sample_pos = mdi->info.current_sample;
-			WM_Unlock(&mdi->lock);
-			return 0;
-		}
-	} else {
-		WM_ResetToStart(handle);
-	}
+    // was end of song requested and are we are there?
+    if (*sample_pos == mdi->info.current_sample) {
+        // yes
+        WM_Unlock(&mdi->lock);
+        return 0;
+    }
 
-	//reset all notes
-	if (note_data != mdi->last_note) {
-		do {
+    // did we want to fast forward?
+    if (mdi->info.current_sample < *sample_pos) {
+        // yes
+        count = *sample_pos - mdi->info.current_sample;
+    } else {
+        // no, reset values to start as the beginning
+        count = *sample_pos;
+        WM_ResetToStart(handle);
+        event = mdi->current_event;
+    }
+
+    // clear the note information
+	note_data = mdi->note;
+	if (note_data != NULL) {
+		while (note_data != NULL) {
 			(*note_data)->active = 0;
-			*note_data = NULL;
-			note_data++;
-		} while (note_data != mdi->last_note);
-		mdi->last_note = mdi->note;
+			note_data = (*note_data)->next;
+		}
 	}
 
-	while (*sample_pos != mdi->info.current_sample) {
-		if (!mdi->sample_count) {
-			if (mdi->index_count != mdi->index_size) {
+    // clear the reverb buffers since we not gonna be using them here
+    reset_reverb(mdi->reverb);
 
-				do {
-					if (mdi->index_count == mdi->index_size) {
-						break;
-					}
+    do {
+		if (__builtin_expect((!mdi->samples_to_mix),0)) {
+            while ((!mdi->samples_to_mix) && (event->do_event != NULL))
+            {
+                event->do_event(mdi, &event->event_data);
+                event++;
+                mdi->samples_to_mix = event->samples_to_next;
+                mdi->current_event = event;
+            }
 
-					if (mdi->index_count != 0) {
-						do_event[((mdi->index[mdi->index_count].event & 0xF0) >> 4) - 8]((mdi->index[mdi->index_count].event & 0x0F), mdi, mdi->index[mdi->index_count].offset);
-					}
-				} while (mdi->index[mdi->index_count++].delta == 0);
-
-				mdi->samples_to_mix += mdi->index[mdi->index_count-1].delta * mdi->samples_per_delta;
-				mdi->sample_count = mdi->samples_to_mix >> 10;
-				mdi->samples_to_mix %= 1024;
-			} else {
-				mdi->sample_count = WM_SampleRate;
-			}
+            if (!mdi->samples_to_mix)
+            {
+                if (event->do_event == NULL) {
+                    mdi->samples_to_mix = mdi->info.approx_total_samples - *sample_pos;
+                } else {
+                    mdi->samples_to_mix = count;
+                }
+            }
 		}
 
-		if (mdi->sample_count <= (*sample_pos - mdi->info.current_sample)) {
-			real_samples_to_mix = mdi->sample_count;
-			if (real_samples_to_mix == 0) {
-				continue;
-			}
+		if (__builtin_expect((mdi->samples_to_mix > count),0)) {
+			real_samples_to_mix = count;
 		} else {
-			real_samples_to_mix = (*sample_pos - mdi->info.current_sample);
+			real_samples_to_mix = mdi->samples_to_mix;
 		}
 
-		mdi->info.current_sample += real_samples_to_mix;
-		mdi->sample_count -= real_samples_to_mix;
-		if ((mdi->index_count == mdi->index_size) && (mdi->last_note == 0)) {
-			mdi->sample_count = 0;
-			*sample_pos = mdi->info.current_sample;
-			WM_Unlock(&mdi->lock);
-			return 0;
+		if (real_samples_to_mix == 0) {
+			break;
 		}
-	}
-	WM_Unlock(&mdi->lock);
-#endif
+
+		count -= real_samples_to_mix;
+		mdi->info.current_sample += real_samples_to_mix;
+		mdi->samples_to_mix -= real_samples_to_mix;
+	} while (count);
+
+    WM_Unlock(&mdi->lock);
 	return 0;
 }
 
@@ -4171,17 +4186,16 @@ WildMidi_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size)
 
 	do {
 		if (__builtin_expect((!mdi->samples_to_mix),0)) {
-            while ((!event->samples_to_next) && (event->do_event != NULL))
+            while ((!mdi->samples_to_mix) && (event->do_event != NULL))
             {
                 event->do_event(mdi, &event->event_data);
                 event++;
-            }
-            if (event->samples_to_next)
-            {
-                mdi->current_event = event;
                 mdi->samples_to_mix = event->samples_to_next;
-                event->samples_to_next = 0;
-            } else {
+                mdi->current_event = event;
+            }
+
+
+            if (!mdi->samples_to_mix) {
                 mdi->samples_to_mix = size >> 2;
             }
 		}
@@ -4394,17 +4408,16 @@ WildMidi_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) 
 
 	do {
 		if (__builtin_expect((!mdi->samples_to_mix),0)) {
-            while ((!event->samples_to_next) && (event->do_event != NULL))
+            while ((!mdi->samples_to_mix) && (event->do_event != NULL))
             {
                 event->do_event(mdi, &event->event_data);
                 event++;
-            }
-            if (event->samples_to_next)
-            {
-                mdi->current_event = event;
                 mdi->samples_to_mix = event->samples_to_next;
-                event->samples_to_next = 0;
-            } else {
+                mdi->current_event = event;
+            }
+
+
+            if (!mdi->samples_to_mix) {
                 mdi->samples_to_mix = size >> 2;
             }
 		}
@@ -4728,6 +4741,15 @@ WildMidi_GetInfo (midi * handle) {
 	mdi->tmp_info->current_sample = mdi->info.current_sample;
 	mdi->tmp_info->approx_total_samples = mdi->info.approx_total_samples;
 	mdi->tmp_info->mixer_options = mdi->info.mixer_options;
+	if (mdi->info.copyright != NULL) {
+        if (mdi->tmp_info->copyright != NULL) {
+            free (mdi->tmp_info->copyright);
+        }
+        mdi->tmp_info->copyright = malloc(strlen(mdi->info.copyright) + 1);
+        strcpy(mdi->tmp_info->copyright, mdi->info.copyright);
+	} else {
+        mdi->tmp_info->copyright = NULL;
+	}
 	WM_Unlock(&mdi->lock);
 	return mdi->tmp_info;
 }

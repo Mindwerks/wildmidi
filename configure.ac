@@ -9,15 +9,15 @@ AC_VALIDATE_CACHED_SYSTEM_TUPLE(
 	echo restart configure
 	exit 1
 )
-AM_INIT_AUTOMAKE(wildmidi, 0.2.3)
+AM_INIT_AUTOMAKE(wildmidi, 0.2.3alpha)
 PROGRAM=WildMidi
-WILDMIDI_VERSION=0.2.3
-WILDMIDILIB_VERSION=0.2.3
+WILDMIDI_VERSION=0.2.3alpha
+WILDMIDILIB_VERSION=0.2.3alpha
 
 AC_DEFINE_UNQUOTED(PROGRAM,             "$PROGRAM",["Proper" program name])
 AC_DEFINE_UNQUOTED(WILDMIDI_VERSION,    "$WILDMIDI_VERSION", [current program version])
 AC_DEFINE_UNQUOTED(WILDMIDILIB_VERSION,    "$WILDMIDILIB_VERSION", [current lib version])
- 
+
 AC_SUBST(PROGRAM)
 AC_SUBST(WILDMIDI_VERSION)
 AC_SUBST(WILDMIDILIB_VERSION)
@@ -105,7 +105,7 @@ AC_MSG_CHECKING(for Werror)
 if test "x$werror" = xyes; then
 	AC_MSG_RESULT(yes)
 	CFLAGS="$CFLAGS -Werror"
-else 
+else
 	AC_MSG_RESULT(no)
 fi
 
@@ -150,19 +150,19 @@ AC_ARG_WITH(efence,
         [  --with-efence           link with -lefence],
 		AC_CHECK_LIB(efence,malloc,LDFLAGS="$LDFLAGS -lefence")
 )
-		
+
 
 dnl CFLAGS for release and devel versions
 AC_ARG_ENABLE(debug,
     [  --enable-debug         compile with debugging],
-	debug=$enable_debug, debug=yes 
+	debug=$enable_debug, debug=yes
 )
 AC_MSG_CHECKING(for debug)
 if test "x$debug" = xyes; then
 	AC_MSG_RESULT(yes)
 	BUILD_TYPE="$BUILD_TYPE Debug"
 	CFLAGS="$CFLAGS -g"
-else 
+else
 	AC_MSG_RESULT(no)
 fi
 
@@ -242,7 +242,7 @@ case "$arch" in
 	*)
 		CFLAGS="$CFLAGS -march=$arch"
 		;;
-									
+
 esac
 
 case "$host_os" in
@@ -259,7 +259,7 @@ case "$host_os" in
 					[          that don't have alsa sound drivers installed)], USE_OSS=yes)
 
 			if test "x$USE_ALSA" = xyes ; then
-				if test "x$USE_OSS" = xno ; then 
+				if test "x$USE_OSS" = xno ; then
 					AUDDR="-lasound"
 					AC_DEFINE(HAVE_ALSA, 1, [Define this if your system uses alsa])
 					AC_TRY_COMPILE(
@@ -281,7 +281,7 @@ esac
 if test -d CVS; then
         AC_DEFINE(EXPERIMENT_626, 1, [Define this to enable all experimental code])
 fi
-		
+
 
 AC_SUBST(HAVE_ALSA)
 AC_SUBST(CFLAGS)
@@ -302,5 +302,5 @@ if test -d CVS; then
 	echo "WARNING: Developement source, expect problems."
 fi
 AC_MSG_RESULT([
-	You may now type make to build WildMidi 
+	You may now type make to build WildMidi
 ])

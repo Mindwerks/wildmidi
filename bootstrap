@@ -12,7 +12,7 @@ if test "$1" = "clean"; then
 	find . -name '*.orig' -type f -print0 | xargs -r0 rm -f
 	rm -f aclocal.m4 build-stamp changelog-stamp config.cache config.log \
 		  config.status configure configure-stamp install-sh libtool missing \
-		  mkinstalldirs 
+		  mkinstalldirs
 	rm -f compile config.guess config.sub depcomp ltmain.sh
 	rm -rf autom4te.cache
 
@@ -24,6 +24,7 @@ if test "$1" = "clean"; then
 	find . -name '.deps' -type d -print0 | xargs -r0 rm -rf
 	exit 0
 fi
+
 # Check libtoolize version, fix for Debian/Woody
 if test -z `which glibtoolize 2> /dev/null` ; then
 	libtoolize=libtoolize
@@ -47,7 +48,7 @@ if test -n "$lt" ; then
 		fi
 	fi
 else
-	echo Libtool not found. WildMidi CVS requires libtool to bootstrap itself.
+	echo Libtool not found. WildMidi SVN trunk requires libtool to bootstrap itself.
 	exit 1
 fi
 
@@ -70,7 +71,7 @@ if test -n "$ac" ; then
 		fi
 	fi
 else
-	echo Autoconf not found. WildMidi CVS requires autoconf to bootstrap itself.
+	echo Autoconf not found. WildMidi SVN trunk requires autoconf to bootstrap itself.
 	exit 1
 fi
 
@@ -90,7 +91,7 @@ if test -n "$am" ; then
 		fi
 	fi
 else
-	echo Automake not found. WildMidi CVS requires automake to bootstrap itself.
+	echo Automake not found. WildMidi SVN requires automake to bootstrap itself.
 	exit 1
 fi
 
