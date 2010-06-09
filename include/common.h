@@ -1,0 +1,103 @@
+/*
+	gus_pat.c
+
+ 	Midi Wavetable Processing library
+
+    Copyright (C) 2001-2010 Chris Ison
+
+    This file is part of WildMIDI.
+
+    WildMIDI is free software: you can redistribute and/or modify the player
+    under the terms of the GNU General Public License and you can redistribute
+    and/or modify the library under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation, either version 3 of
+    the licenses, or(at your option) any later version.
+
+    WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+    the GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU General Public License and the
+    GNU Lesser General Public License along with WildMIDI.  If not,  see
+    <http://www.gnu.org/licenses/>.
+
+    Email: wildcode@users.sourceforge.net
+*/
+
+#ifndef __COMMON_H
+#define __COMMON_H
+
+#define SAMPLE_16BIT 0x01
+#define SAMPLE_UNSIGNED 0x02
+#define SAMPLE_LOOP 0x04
+#define SAMPLE_PINGPONG 0x08
+#define SAMPLE_REVERSE 0x10
+#define SAMPLE_SUSTAIN 0x20
+#define SAMPLE_ENVELOPE 0x40
+
+#ifdef DEBUG_SAMPLES
+#define SAMPLE_CONVERT_DEBUG(dx) printf("\r%s\n",dx)
+#else
+#define SAMPLE_CONVERT_DEBUG(dx)
+#endif
+
+// Guspat Envelope Rate Timings
+// Row 1 = (4095.0/(x*(1.0/(1.6*14.0)))) / 1000000.0
+// Row 2 = (4095.0/(x*((1.0/(1.6*14.0))/8.0)))) / 1000000.0
+// Row 3 = (4095.0/(x*((1.0/(1.6*14.0))/64.0))) / 1000000.0
+// Row 4 = (4095.0/(x*((1.0/(1.6*14.0))/512.0))) / 1000000.0
+static float env_time_table[] = {
+    0.0, 0.091728000, 0.045864000, 0.030576000, 0.022932000, 0.018345600, 0.015288000, 0.013104000, 0.011466000, 0.010192000, 0.009172800, 0.008338909, 0.007644000, 0.007056000, 0.006552000, 0.006115200, 0.005733000, 0.005395765, 0.005096000, 0.004827789, 0.004586400, 0.004368000, 0.004169455, 0.003988174, 0.003822000, 0.003669120, 0.003528000, 0.003397333, 0.003276000, 0.003163034, 0.003057600, 0.002958968, 0.002866500, 0.002779636, 0.002697882, 0.002620800, 0.002548000, 0.002479135, 0.002413895, 0.002352000, 0.002293200, 0.002237268, 0.002184000, 0.002133209, 0.002084727, 0.002038400, 0.001994087, 0.001951660, 0.001911000, 0.001872000, 0.001834560, 0.001798588, 0.001764000, 0.001730717, 0.001698667, 0.001667782, 0.001638000, 0.001609263, 0.001581517, 0.001554712, 0.001528800, 0.001503738, 0.001479484, 0.001456000,
+    0.0, 0.733824000, 0.366912000, 0.244608000, 0.183456000, 0.146764800, 0.122304000, 0.104832000, 0.091728000, 0.081536000, 0.073382400, 0.066711273, 0.061152000, 0.056448000, 0.052416000, 0.048921600, 0.045864000, 0.043166118, 0.040768000, 0.038622316, 0.036691200, 0.034944000, 0.033355636, 0.031905391, 0.030576000, 0.029352960, 0.028224000, 0.027178667, 0.026208000, 0.025304276, 0.024460800, 0.023671742, 0.022932000, 0.022237091, 0.021583059, 0.020966400, 0.020384000, 0.019833081, 0.019311158, 0.018816000, 0.018345600, 0.017898146, 0.017472000, 0.017065674, 0.016677818, 0.016307200, 0.015952696, 0.015613277, 0.015288000, 0.014976000, 0.014676480, 0.014388706, 0.014112000, 0.013845736, 0.013589333, 0.013342255, 0.013104000, 0.012874105, 0.012652138, 0.012437695, 0.012230400, 0.012029902, 0.011835871, 0.011648000,
+    0.0, 5.870592000, 2.935296000, 1.956864000, 1.467648000, 1.174118400, 0.978432000, 0.838656000, 0.733824000, 0.652288000, 0.587059200, 0.533690182, 0.489216000, 0.451584000, 0.419328000, 0.391372800, 0.366912000, 0.345328941, 0.326144000, 0.308978526, 0.293529600, 0.279552000, 0.266845091, 0.255243130, 0.244608000, 0.234823680, 0.225792000, 0.217429333, 0.209664000, 0.202434207, 0.195686400, 0.189373935, 0.183456000, 0.177896727, 0.172664471, 0.167731200, 0.163072000, 0.158664649, 0.154489263, 0.150528000, 0.146764800, 0.143185171, 0.139776000, 0.136525395, 0.133422545, 0.130457600, 0.127621565, 0.124906213, 0.122304000, 0.119808000, 0.117411840, 0.115109647, 0.112896000, 0.110765887, 0.108714667, 0.106738036, 0.104832000, 0.102992842, 0.101217103, 0.099501559, 0.097843200, 0.096239213, 0.094686968, 0.093184000,
+    0.0, 46.964736000, 23.482368000, 15.654912000, 11.741184000, 9.392947200, 7.827456000, 6.709248000, 5.870592000, 5.218304000, 4.696473600, 4.269521455, 3.913728000, 3.612672000, 3.354624000, 3.130982400, 2.935296000, 2.762631529, 2.609152000, 2.471828211, 2.348236800, 2.236416000, 2.134760727, 2.041945043, 1.956864000, 1.878589440, 1.806336000, 1.739434667, 1.677312000, 1.619473655, 1.565491200, 1.514991484, 1.467648000, 1.423173818, 1.381315765, 1.341849600, 1.304576000, 1.269317189, 1.235914105, 1.204224000, 1.174118400, 1.145481366, 1.118208000, 1.092203163, 1.067380364, 1.043660800, 1.020972522, 0.999249702, 0.978432000, 0.958464000, 0.939294720, 0.920877176, 0.903168000, 0.886127094, 0.869717333, 0.853904291, 0.838656000, 0.823942737, 0.809736828, 0.796012475, 0.782745600, 0.769913705, 0.757495742, 0.745472000
+};
+
+
+unsigned short int WM_SampleRate;
+
+struct _sample {
+	unsigned long int data_length;
+	unsigned long int loop_start;
+	unsigned long int loop_end;
+	unsigned long int loop_size;
+	unsigned char loop_fraction;
+	unsigned short int rate;
+	unsigned long int freq_low;
+	unsigned long int freq_high;
+	unsigned long int freq_root;
+	unsigned char modes;
+	unsigned long int env_rate[7];
+	unsigned long int env_target[7];
+	unsigned long int inc_div;
+	signed short *data;
+	signed short max_peek;
+	signed short min_peek;
+	signed long int peek_adjust;
+	struct _sample *next;
+};
+
+struct _env {
+	float time;
+	float level;
+	unsigned char set;
+};
+
+struct _patch {
+	unsigned short patchid;
+	unsigned char loaded;
+	char *filename;
+	signed short int amp;
+	unsigned char keep;
+	unsigned char remove;
+	struct _env env[6];
+	unsigned char note;
+	unsigned long int inuse_count;
+	struct _sample *first_sample;
+	struct _patch *next;
+};
+
+
+
+#endif // __COMMON_H
