@@ -11,7 +11,7 @@ WildMidi_SampledSeek \- Move to a position in a midi file
 .B int WildMidi_SampledSeek (midi *\fIhandle\fP, unsigned short int *\fIsample_pos\fP)
 .PP
 .SH DESCRIPTION
-Process midi as if \fBWildMidi_GetOutput\fP\fR(3)\fP had been called until \fIsample_pos\fP samples from the beginning has been reached, but without returning the audio data. The next call to \fBWildMidi_GetOutput\fP\fR(3)\fP will behave as if you had been calling it all along.
+Process midi as if \fBWildMidi_GetOutput\fP\fR(3)\fP had been called until \fIsample_pos\fP samples from the beginning has been reached, but without returning the audio data. The next call to \fBWildMidi_GetOutput\fP\fR(3)\fP will behave as if you had been calling it all along, except reverb which restarted from this point if enabled. 
 .PP
 .IP \fIhandle\fP
 The indentifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
