@@ -774,6 +774,7 @@ main (int argc, char **argv) {
 	static char spinner[] ="|/-\\";
 	static int spinpoint = 0;
 	unsigned long int seek_to_sample = 0;
+    int inpause = 0;
 
 #ifndef _WIN32
 	int my_tty;
@@ -868,9 +869,10 @@ main (int argc, char **argv) {
 			}
 		}
 		printf("Initializing %s\n\n", WildMidi_GetString(WM_GS_VERSION));
-		printf(" +  Volume up       e  Better resampling     n  Next Midi\n");
-		printf(" -  Volume down     l  Log volume            q  Quit\n");
-        printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n\n");
+		printf(" +  Volume up        e  Better resampling    n  Next Midi\n");
+		printf(" -  Volume down      l  Log volume           q  Quit\n");
+        printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
+        printf("                     p  Pause On/Off\n\n");
 
 		if (WildMidi_Init (config_file, rate, mixer_options) == -1) {
 			return 0;
@@ -878,6 +880,7 @@ main (int argc, char **argv) {
 		WildMidi_MasterVolume(master_volume);
 
 		output_buffer = malloc(16384);
+
 		if (output_buffer == NULL) {
 			printf("Not enough ram, exiting\n");
 			WildMidi_Shutdown();
@@ -935,6 +938,7 @@ main (int argc, char **argv) {
 				continue;
 			}
 			mixer_options = wm_info->mixer_options;
+			fprintf(stderr, "\r");
 			while (1) {
 				count_diff = wm_info->approx_total_samples - wm_info->current_sample;
 				if (count_diff == 0)
@@ -966,6 +970,16 @@ main (int argc, char **argv) {
 							break;
 						case 'n':
 							goto NEXTMIDI;
+						case 'p':
+                            if (inpause) {
+                                inpause = 0;
+                                fprintf(stderr, "       \r");
+                            } else {
+                                inpause = 1;
+                                fprintf(stderr, "Paused \r");
+                                continue;
+                            }
+                            break;
 						case 'q':
 							printf("\n");
 							WildMidi_Close(midi_ptr);
@@ -1026,6 +1040,41 @@ main (int argc, char **argv) {
 					}
 				}
 
+				if (inpause) {
+                    wm_info = WildMidi_GetInfo(midi_ptr);
+                    perc_play =  (wm_info->current_sample * 100) / wm_info->approx_total_samples;
+                    pro_mins = wm_info->current_sample / (rate * 60);
+                    pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
+                    {
+                        int mode_count = 0;
+                        if (mixer_options & WM_MO_LOG_VOLUME) {
+                            modes[mode_count++] = 'l';
+                        }
+                        if (mixer_options & WM_MO_REVERB) {
+                            modes[mode_count++] = 'r';
+                        }
+                        if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
+                            modes[mode_count++] = 'e';
+                        }
+                        if (mode_count !=3) {
+                            do {
+                                modes[mode_count++] = ' ';
+                            } while (mode_count != 3);
+                        }
+                        modes[3] = '\0';
+                    }
+                    fprintf(stderr, "        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
+                        apr_mins, apr_secs, modes, master_volume,
+                        pro_mins, pro_secs, perc_play);
+
+#ifdef _WIN32
+                    Sleep(5);
+#else
+                    usleep(5000);
+#endif
+                    continue;
+				}
+
 				if (count_diff < 4096) {
 					output_result = WildMidi_GetOutput (midi_ptr, output_buffer, (count_diff * 4));
 				} else {
@@ -1054,8 +1103,7 @@ main (int argc, char **argv) {
 					}
 					modes[3] = '\0';
 				}
-				fprintf(stderr, "\r");
-				fprintf(stderr, "\t [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  ",
+				fprintf(stderr, "        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  \r",
 					apr_mins, apr_secs, modes, master_volume,
 					pro_mins, pro_secs, perc_play, spinner[spinpoint++%4]);
 
