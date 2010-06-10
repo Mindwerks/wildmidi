@@ -2138,9 +2138,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 
 	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME)
     {
-		mdi->amp = (281 * ((mdi->lin_max_vol << 10) / mdi->log_max_vol)) >> 10;
+		mdi->amp = (512 * ((mdi->lin_max_vol << 10) / mdi->log_max_vol)) >> 10;
 	} else {
-		mdi->amp = 281;
+		mdi->amp = 512;
 	}
     mdi->amp = (mdi->amp * (((lin_volume[127] * lin_volume[127]) << 10) / mdi->lin_max_vol)) >> 10;
 
@@ -3250,9 +3250,9 @@ WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short in
 
 	if (options & WM_MO_LOG_VOLUME) {
     	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {
-    		mdi->amp = (281 * ((mdi->lin_max_vol << 10) / mdi->log_max_vol)) >> 10;
+    		mdi->amp = (512 * ((mdi->lin_max_vol << 10) / mdi->log_max_vol)) >> 10;
 		} else {
-			mdi->amp = 281;
+			mdi->amp = 512;
 		}
 
    	    mdi->amp = (mdi->amp * (((lin_volume[127] * lin_volume[127]) << 10) / mdi->lin_max_vol)) >> 10;
