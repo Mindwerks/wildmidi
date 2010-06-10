@@ -935,7 +935,6 @@ main (int argc, char **argv) {
 				continue;
 			}
 			mixer_options = wm_info->mixer_options;
-			WildMidi_LoadSamples(midi_ptr);
 			while (1) {
 				count_diff = wm_info->approx_total_samples - wm_info->current_sample;
 				if (count_diff == 0)

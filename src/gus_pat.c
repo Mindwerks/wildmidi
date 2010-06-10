@@ -970,7 +970,7 @@ struct _sample * load_gus_pat (char * filename) {
 		printf("\rVibrato Sweep: %i, Rate: %i, Depth %i\n",
 			gus_patch[gus_ptr+52], gus_patch[gus_ptr+53], gus_patch[gus_ptr+54]);
 #endif
-		gus_sample->modes = gus_patch[gus_ptr+55] & 0x7F;
+		gus_sample->modes = gus_patch[gus_ptr+55];
 
 		if (gus_sample->loop_start > gus_sample->loop_end) {
 			tmp_loop = gus_sample->loop_end;

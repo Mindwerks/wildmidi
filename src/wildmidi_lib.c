@@ -964,6 +964,14 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
 			}
 		} else
 #endif
+		if (nte->modes & SAMPLE_CLAMPED) {
+			nte->env = 5;
+			if (nte->env_level > nte->sample->env_target[5]) {
+				nte->env_inc = -nte->sample->env_rate[5];
+			} else {
+				nte->env_inc = nte->sample->env_rate[5];
+			}
+		} else
 		{
 			if (nte->env < 4) {
 				nte->env = 4;
@@ -2253,18 +2261,23 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
 
 					note_data->env_level = note_data->sample->env_target[note_data->env];
 					switch (note_data->env) {
-						case 0:
+						case 2:
 							if (!(note_data->modes & SAMPLE_ENVELOPE)) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
-							}
-							break;
-						case 2:
-							if (note_data->modes & SAMPLE_SUSTAIN) {
+							} else if (note_data->modes & SAMPLE_SUSTAIN) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
+							} else if (note_data->modes & SAMPLE_CLAMPED) {
+							    note_data->env = 5;
+                                if (note_data->env_level > note_data->sample->env_target[5]) {
+                                    note_data->env_inc = -note_data->sample->env_rate[5];
+                                } else {
+                                    note_data->env_inc = note_data->sample->env_rate[5];
+                                }
+                                continue;
 							}
 							break;
 						case 5:
@@ -2535,18 +2548,23 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
 
 					note_data->env_level = note_data->sample->env_target[note_data->env];
 					switch (note_data->env) {
-						case 0:
+						case 2:
 							if (!(note_data->modes & SAMPLE_ENVELOPE)) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
-							}
-							break;
-						case 2:
-							if (note_data->modes & SAMPLE_SUSTAIN) {
+							} else if (note_data->modes & SAMPLE_SUSTAIN) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
+							} else if (note_data->modes & SAMPLE_CLAMPED) {
+							    note_data->env = 5;
+                                if (note_data->env_level > note_data->sample->env_target[5]) {
+                                    note_data->env_inc = -note_data->sample->env_rate[5];
+                                } else {
+                                    note_data->env_inc = note_data->sample->env_rate[5];
+                                }
+                                continue;
 							}
 							break;
 						case 5:
@@ -2869,11 +2887,6 @@ WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
 	}
 
 	return (void *)WM_ParseNewMidi(midibuffer,size);
-}
-
-int
-WildMidi_LoadSamples( midi * handle) {
-	return 0;
 }
 
 int

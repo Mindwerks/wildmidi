@@ -35,6 +35,7 @@
 #define SAMPLE_REVERSE 0x10
 #define SAMPLE_SUSTAIN 0x20
 #define SAMPLE_ENVELOPE 0x40
+#define SAMPLE_CLAMPED 0x80
 
 #ifdef DEBUG_SAMPLES
 #define SAMPLE_CONVERT_DEBUG(dx) printf("\r%s\n",dx)
