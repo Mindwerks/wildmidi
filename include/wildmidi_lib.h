@@ -28,7 +28,6 @@
 #define WM_MO_LOG_VOLUME	0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
-#define WM_MO_BIG_ENDIAN_OUTPUT	0x0020
 
 #define WM_GS_VERSION		0x0001
 
@@ -46,7 +45,6 @@ extern int WildMidi_Init (const char * config_file, unsigned short int rate, uns
 extern int WildMidi_MasterVolume (unsigned char master_volume);
 extern midi * WildMidi_Open (const char *midifile);
 extern midi * WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size);
-extern int WildMidi_LoadSamples ( midi * handle);
 extern int WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size);
 extern int WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short int setting);
 extern struct _WM_Info * WildMidi_GetInfo ( midi * handle );
