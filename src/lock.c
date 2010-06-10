@@ -1,6 +1,6 @@
 /*
     lock.c - data locking code for lib
-    Copyright (C) 2001-2010 Chris Ison
+    Copyright (C) Chris Ison 2001-2010
 
     This file is part of WildMIDI.
 
