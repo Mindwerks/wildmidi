@@ -1,4 +1,17 @@
+dnl Copyright (C) Chris Ison 2001-2010
+dnl Some parts (C) Quakeforge 2004
+dnl
+dnl This file is part of WildMidi
+dnl
+dnl WildMIDI is free software: you can redistribute and/or modify the player under the terms of the GNU General Public License and you can redistribute and/or modify the library under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the licenses, or(at your option) any later version.
+dnl
+dnl WildMIDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and the GNU Lesser General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License and the GNU Lesser General Public License along with WildMIDI. If not, see <http://www.gnu.org/licenses/>.
+dnl
+
 dnl Process this file with autoconf to produce a configure script.
+
 AC_PREREQ(2.52)
 AC_INIT(include/wildmidi_lib.h)
 AC_REVISION($Revision: 1.13 $) dnl

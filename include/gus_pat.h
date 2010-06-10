@@ -1,9 +1,9 @@
 /*
-	gus_pat.c
+	gus_pat.h
 
  	Midi Wavetable Processing library
 
-    Copyright (C) 2001-2010 Chris Ison
+    Copyright (C) Chris Ison 2001-2010
 
     This file is part of WildMIDI.
 
