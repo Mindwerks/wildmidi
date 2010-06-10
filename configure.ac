@@ -295,6 +295,7 @@ AC_OUTPUT(
  Makefile
  src/Makefile
  include/Makefile
+ docs/Makefile
 
 )
 if test -d CVS; then
