@@ -729,6 +729,9 @@ WM_LoadConfig (const char *config_file)
 							} else if (strcasecmp(line_tokens[token_count], "remove=sustain") == 0)
 							{
 								tmp_patch->remove |= SAMPLE_SUSTAIN;
+							} else if (strcasecmp(line_tokens[token_count], "remove=clamped") == 0)
+							{
+								tmp_patch->remove |= SAMPLE_CLAMPED;
 							}
 							token_count++;
 						}
@@ -807,6 +810,9 @@ load_sample (struct _patch *sample_patch) {
 
 		if ((sample_patch->remove & SAMPLE_SUSTAIN) && (guspat->modes & SAMPLE_SUSTAIN)) {
 			guspat->modes ^= SAMPLE_SUSTAIN;
+		}
+        if ((sample_patch->remove & SAMPLE_CLAMPED) && (guspat->modes & SAMPLE_CLAMPED)) {
+			guspat->modes ^= SAMPLE_CLAMPED;
 		}
 
 		for (i = 0; i < 6; i++) {
@@ -954,32 +960,30 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
 	if (nte->hold) {
 		nte->hold |= HOLD_OFF;
 	} else {
-#if 0 //FIXME: why am i not using this, or why is it still here
-		if (nte->modes & SAMPLE_SUSTAIN) {
-			nte->env = 3;
-			if (nte->env_level > nte->sample->env_target[3]) {
-				nte->env_inc = -nte->sample->env_rate[3];
-			} else {
-				nte->env_inc = nte->sample->env_rate[3];
-			}
-		} else
-#endif
 		if (nte->modes & SAMPLE_CLAMPED) {
-			nte->env = 5;
-			if (nte->env_level > nte->sample->env_target[5]) {
-				nte->env_inc = -nte->sample->env_rate[5];
-			} else {
-				nte->env_inc = nte->sample->env_rate[5];
+			if (nte->env < 5) {
+                nte->env = 5;
+                if (nte->env_level > nte->sample->env_target[5]) {
+                    nte->env_inc = -nte->sample->env_rate[5];
+                } else {
+                    nte->env_inc = nte->sample->env_rate[5];
+                }
 			}
-		} else
-		{
-			if (nte->env < 4) {
-				nte->env = 4;
-				if (nte->env_level > nte->sample->env_target[4]) {
-					nte->env_inc = -nte->sample->env_rate[4];
-				} else {
-					nte->env_inc = nte->sample->env_rate[4];
-				}
+		} else 	if (nte->modes & SAMPLE_SUSTAIN) {
+            if (nte->env < 3) {
+                nte->env = 3;
+                if (nte->env_level > nte->sample->env_target[3]) {
+                    nte->env_inc = -nte->sample->env_rate[3];
+                } else {
+                    nte->env_inc = nte->sample->env_rate[3];
+                }
+            }
+		} else if (nte->env < 4) {
+			nte->env = 4;
+			if (nte->env_level > nte->sample->env_target[4]) {
+				nte->env_inc = -nte->sample->env_rate[4];
+			} else {
+				nte->env_inc = nte->sample->env_rate[4];
 			}
 		}
 	}
@@ -1267,7 +1271,16 @@ do_control_channel_hold (struct _mdi *mdi, struct _event_data *data)
 				if ((note_data->noteid >> 8) == ch) {
 					if (note_data->hold & HOLD_OFF) {
 						if (note_data->modes & SAMPLE_ENVELOPE) {
-							if (note_data->env < 4) {
+							if (note_data->modes & SAMPLE_CLAMPED) {
+							    if (note_data->env < 5) {
+                                    note_data->env = 5;
+                                    if (note_data->env_level > note_data->sample->env_target[5]) {
+                                        note_data->env_inc = -note_data->sample->env_rate[5];
+                                    } else {
+                                        note_data->env_inc = note_data->sample->env_rate[5];
+                                    }
+							    }
+							} else if (note_data->env < 4) {
 								note_data->env = 4;
 								if (note_data->env_level > note_data->sample->env_target[4]) {
 									note_data->env_inc = -note_data->sample->env_rate[4];
@@ -2266,10 +2279,6 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
-							} else if (note_data->modes & SAMPLE_SUSTAIN) {
-								note_data->env_inc = 0;
-								note_data = note_data->next;
-								continue;
 							} else if (note_data->modes & SAMPLE_CLAMPED) {
 							    note_data->env = 5;
                                 if (note_data->env_level > note_data->sample->env_target[5]) {
@@ -2278,6 +2287,10 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
                                     note_data->env_inc = note_data->sample->env_rate[5];
                                 }
                                 continue;
+							} else if (note_data->modes & SAMPLE_SUSTAIN) {
+								note_data->env_inc = 0;
+								note_data = note_data->next;
+								continue;
 							}
 							break;
 						case 5:
@@ -2553,10 +2566,6 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
-							} else if (note_data->modes & SAMPLE_SUSTAIN) {
-								note_data->env_inc = 0;
-								note_data = note_data->next;
-								continue;
 							} else if (note_data->modes & SAMPLE_CLAMPED) {
 							    note_data->env = 5;
                                 if (note_data->env_level > note_data->sample->env_target[5]) {
@@ -2565,6 +2574,10 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
                                     note_data->env_inc = note_data->sample->env_rate[5];
                                 }
                                 continue;
+							} else if (note_data->modes & SAMPLE_SUSTAIN) {
+								note_data->env_inc = 0;
+								note_data = note_data->next;
+								continue;
 							}
 							break;
 						case 5:
