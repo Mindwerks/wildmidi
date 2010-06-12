@@ -814,6 +814,9 @@ load_sample (struct _patch *sample_patch) {
         if ((sample_patch->remove & SAMPLE_CLAMPED) && (guspat->modes & SAMPLE_CLAMPED)) {
 			guspat->modes ^= SAMPLE_CLAMPED;
 		}
+	    if (sample_patch->keep & SAMPLE_ENVELOPE) {
+	        guspat->modes |= SAMPLE_ENVELOPE;
+        }
 
 		for (i = 0; i < 6; i++) {
 			if (guspat->modes & SAMPLE_ENVELOPE) {
@@ -960,7 +963,13 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
 	if (nte->hold) {
 		nte->hold |= HOLD_OFF;
 	} else {
-		if (nte->modes & SAMPLE_CLAMPED) {
+        if (!(nte->modes & SAMPLE_ENVELOPE)) {
+            if (nte->modes & SAMPLE_LOOP) {
+                nte->modes ^= SAMPLE_LOOP;
+            }
+            nte->env_inc = 0;
+
+        } else if (nte->modes & SAMPLE_CLAMPED) {
 			if (nte->env < 5) {
                 nte->env = 5;
                 if (nte->env_level > nte->sample->env_target[5]) {
@@ -1288,6 +1297,11 @@ do_control_channel_hold (struct _mdi *mdi, struct _event_data *data)
 									note_data->env_inc = note_data->sample->env_rate[4];
 								}
 							}
+						} else {
+                            if (note_data->modes & SAMPLE_LOOP) {
+                                note_data->modes ^= SAMPLE_LOOP;
+                            }
+                            note_data->env_inc = 0;
 						}
     				}
 	    			note_data->hold = 0x00;
@@ -2274,8 +2288,17 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
 
 					note_data->env_level = note_data->sample->env_target[note_data->env];
 					switch (note_data->env) {
+						case 0:
+#if 0
+                            if (!(note_data->modes & SAMPLE_ENVELOPE)) {
+								note_data->env_inc = 0;
+								note_data = note_data->next;
+								continue;
+							}
+#endif
+							break;
 						case 2:
-							if (!(note_data->modes & SAMPLE_ENVELOPE)) {
+							if (note_data->modes & SAMPLE_SUSTAIN) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
@@ -2287,10 +2310,6 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
                                     note_data->env_inc = note_data->sample->env_rate[5];
                                 }
                                 continue;
-							} else if (note_data->modes & SAMPLE_SUSTAIN) {
-								note_data->env_inc = 0;
-								note_data = note_data->next;
-								continue;
 							}
 							break;
 						case 5:
@@ -2561,8 +2580,17 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
 
 					note_data->env_level = note_data->sample->env_target[note_data->env];
 					switch (note_data->env) {
+						case 0:
+#if 0
+                            if (!(note_data->modes & SAMPLE_ENVELOPE)) {
+								note_data->env_inc = 0;
+								note_data = note_data->next;
+								continue;
+							}
+#endif
+							break;
 						case 2:
-							if (!(note_data->modes & SAMPLE_ENVELOPE)) {
+							if (note_data->modes & SAMPLE_SUSTAIN) {
 								note_data->env_inc = 0;
 								note_data = note_data->next;
 								continue;
@@ -2574,10 +2602,6 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
                                     note_data->env_inc = note_data->sample->env_rate[5];
                                 }
                                 continue;
-							} else if (note_data->modes & SAMPLE_SUSTAIN) {
-								note_data->env_inc = 0;
-								note_data = note_data->next;
-								continue;
 							}
 							break;
 						case 5:
