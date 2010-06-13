@@ -978,6 +978,7 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
                     nte->env_inc = nte->sample->env_rate[5];
                 }
 			}
+#if 0
 		} else 	if (nte->modes & SAMPLE_SUSTAIN) {
             if (nte->env < 3) {
                 nte->env = 3;
@@ -987,6 +988,7 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
                     nte->env_inc = nte->sample->env_rate[3];
                 }
             }
+#endif
 		} else if (nte->env < 4) {
 			nte->env = 4;
 			if (nte->env_level > nte->sample->env_target[4]) {
@@ -3333,6 +3335,7 @@ WildMidi_GetInfo (midi * handle) {
 			WM_Unlock(&mdi->lock);
 			return NULL;
 		}
+		mdi->tmp_info->copyright = NULL;
 	}
 	mdi->tmp_info->current_sample = mdi->info.current_sample;
 	mdi->tmp_info->approx_total_samples = mdi->info.approx_total_samples;
