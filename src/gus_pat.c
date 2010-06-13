@@ -36,6 +36,25 @@
 #include "file_io.h"
 
 
+#ifdef DEBUG_GUSPAT
+#define GUSPAT_FILENAME_DEBUG(dx) fprintf(stderr,"\r%s\n",dx)
+
+#define GUSPAT_INT_DEBUG(dx,dy) fprintf(stderr,"\r%s: %i\n",dx,dy)
+
+#define GUSPAT_START_DEBUG() fprintf(stderr,"\r")
+#define GUSPAT_MODE_DEBUG(dx,dy,dz) if (dx & dy) fprintf(stderr,"%s",dz)
+#define GUSPAT_END_DEBUG() fprintf(stderr,"\n")
+#else
+#define GUSPAT_FILENAME_DEBUG(dx)
+
+#define GUSPAT_INT_DEBUG(dx,dy)
+
+#define GUSPAT_START_DEBUG()
+#define GUSPAT_MODE_DEBUG(dx,dy,dz)
+#define GUSPAT_END_DEBUG()
+#endif
+
+
 /*
  * sample data conversion functions
  * convert data to signed shorts
@@ -931,6 +950,9 @@ struct _sample * load_gus_pat (char * filename) {
 		return NULL;
 	}
 
+    GUSPAT_FILENAME_DEBUG(filename);
+    GUSPAT_INT_DEBUG("voices",gus_patch[83]);
+
 	no_of_samples = gus_patch[198];
 	gus_ptr = 239;
 	while (no_of_samples) {
@@ -971,6 +993,16 @@ struct _sample * load_gus_pat (char * filename) {
 			gus_patch[gus_ptr+52], gus_patch[gus_ptr+53], gus_patch[gus_ptr+54]);
 #endif
 		gus_sample->modes = gus_patch[gus_ptr+55];
+        GUSPAT_START_DEBUG();
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_16BIT, "16bit ");
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_UNSIGNED, "Unsigned ");
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_LOOP, "Loop ");
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_PINGPONG, "PingPong ");
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_REVERSE, "Reverse ");
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_SUSTAIN, "Sustain ");
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_ENVELOPE, "Envelope ");
+        GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_CLAMPED, "Clamped ");
+        GUSPAT_END_DEBUG();
 
 		if (gus_sample->loop_start > gus_sample->loop_end) {
 			tmp_loop = gus_sample->loop_end;
