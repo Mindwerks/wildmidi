@@ -35,7 +35,7 @@ The patches following this setting belong to MIDI instrument bank \fIN\fP.
 .IP "\fBdrumset\fP \fIN\fP"
 The patches following this setting belong to MIDI drum bank \fIN\fP.
 .PP
-.IP "\fIpatchno\fP \fIpatchfile\fP [\fBamp=\fP\fIvolume\fP] [\fBnote=\fP\fImiodinte\fP] [\fBkeep=loop\fP] [\fBkeep=env\fP] [\fBremove=sustain\fP] [\fBenv_level\fP[\fI0-5\fP]\fB=\fP\fIlevel\fP] [\fBenv_time\fP[\fI0-5\fP]\fB=\fP\fItime\fP]"
+.IP "\fIpatchno\fP \fIpatchfile\fP [\fBamp=\fP\fIvolume\fP] [\fBnote=\fP\fImiodinte\fP] [\fBkeep=loop\fP] [\fBkeep=env\fP] [\fBremove=sustain\fP] [\fBremove=clamped\fP] [\fBenv_level\fP[\fI0-5\fP]\fB=\fP\fIlevel\fP] [\fBenv_time\fP[\fI0-5\fP]\fB=\fP\fItime\fP]"
 .PP
 Example: 0 acpiano.pat amp=110
 .PP
@@ -53,13 +53,16 @@ Force the volume of the samples in this patch to \fIvolume\fP prior to using it.
 Use note \fImidinote\fP when playing the samples in this patch. NOTE: this is for instruments listed under drumset.
 .PP
 .IP "\fBkeep=loop\fP"
-Play the samples in this patch with the loop, when normally we would not.
+Play the samples in this patch with the loop, when normally we would not for this instrument.
 .PP
 .IP "\fBkeep=env\fP"
-Use the envelope data in this patch, when normally we wouldn't.
+Use the envelope data in this patch, when normally we wouldn't for this instrument.
 .PP
 .IP "\fBremove=sustain\fP"
-Remove the sustain envelope from this patch.
+Do note hold the note after the 3rd envelope until note off, which is what happens if the sustain bit is set in the patch file.
+.PP
+.IP "\fBremove=clamped\fP"
+Do not jump to 6th envelope on note off, which is what happens if the clamped bit is set in the patch file.
 .PP
 .IP "\fBenv_level\fP[\fI0-5\fP]\fB=\fP\fIlevel\fP"
 Set the envelope level to \fIlevel\fP with 1.0 being maximum, and 0.0 being minimum.
