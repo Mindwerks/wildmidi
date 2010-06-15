@@ -72,13 +72,7 @@ convert_8s (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data;
 		do {
-			*write_data = (*read_data++) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ = (*read_data++) << 8;
 		} while (read_data != read_end);
 		return 0;
 	}
@@ -104,13 +98,7 @@ convert_8sp (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data;
 		do {
-			*write_data = (*read_data++) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ = (*read_data++) << 8;
 		} while (read_data != read_end);
 
 		*write_data = (*read_data++ << 8);
@@ -123,11 +111,6 @@ convert_8sp (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data = (*read_data++) << 8;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data != read_end);
 
@@ -136,13 +119,7 @@ convert_8sp (unsigned char *data, struct _sample *gus_sample ) {
 		read_end = data + gus_sample->data_length;
 		if (__builtin_expect((read_data != read_end),1)) {
 			do {
-				*write_data_b = (*read_data++) << 8;
-				if (*write_data_b > gus_sample->max_peek) {
-					gus_sample->max_peek = *write_data_b;
-				} else if (*write_data_b < gus_sample->min_peek) {
-					gus_sample->min_peek = *write_data_b;
-				}
-				write_data_b++;
+				*write_data_b++ = (*read_data++) << 8;
 			} while (read_data != read_end);
 		}
 		gus_sample->loop_start += loop_length;
@@ -169,13 +146,7 @@ convert_8sr (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data + gus_sample->data_length - 1;
 		do {
-			*write_data = (*read_data++) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data--;
+			*write_data-- = (*read_data++) << 8;
 		} while (read_data != read_end);
 		tmp_loop = gus_sample->loop_end;
 		gus_sample->loop_end = gus_sample->data_length - gus_sample->loop_start;
@@ -206,13 +177,7 @@ convert_8srp (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data;
 		do {
-			*write_data = (*read_data--) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ = (*read_data--) << 8;
 		} while (read_data != read_end);
 
 		*write_data = (*read_data-- << 8);
@@ -225,11 +190,6 @@ convert_8srp (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data = (*read_data--) << 8;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data != read_end);
 
@@ -237,12 +197,7 @@ convert_8srp (unsigned char *data, struct _sample *gus_sample ) {
 		*write_data_b++ = *write_data;
 		read_end = data - 1;
 		do {
-			*write_data_b = (*read_data--) << 8;
-			if (*write_data_b > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data_b;
-			} else if (*write_data_b < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data_b;
-			}
+			*write_data_b++ = (*read_data--) << 8;
 			write_data_b++;
 		} while (read_data != read_end);
 		gus_sample->loop_start += loop_length;
@@ -268,13 +223,7 @@ convert_8u (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data;
 		do {
-			*write_data = ((*read_data++) ^ 0x80) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ = ((*read_data++) ^ 0x80) << 8;
 		} while (read_data != read_end);
 		gus_sample->modes ^= SAMPLE_UNSIGNED;
 		return 0;
@@ -300,13 +249,7 @@ convert_8up (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data;
 		do {
-			*write_data = ((*read_data++) ^ 0x80) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ = ((*read_data++) ^ 0x80) << 8;
 		} while (read_data != read_end);
 
 		*write_data = ((*read_data++) ^ 0x80) << 8;
@@ -319,11 +262,6 @@ convert_8up (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data = ((*read_data++) ^ 0x80) << 8;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data != read_end);
 
@@ -332,13 +270,7 @@ convert_8up (unsigned char *data, struct _sample *gus_sample ) {
 		read_end = data + gus_sample->data_length;
 		if (__builtin_expect((read_data != read_end),1)) {
 			do {
-				*write_data_b = ((*read_data++) ^ 0x80) << 8;
-				if (*write_data_b > gus_sample->max_peek) {
-					gus_sample->max_peek = *write_data_b;
-				} else if (*write_data_b < gus_sample->min_peek) {
-					gus_sample->min_peek = *write_data_b;
-				}
-				write_data_b++;
+				*write_data_b++ = ((*read_data++) ^ 0x80) << 8;
 			} while (read_data != read_end);
 		}
 		gus_sample->loop_start += loop_length;
@@ -365,13 +297,7 @@ convert_8ur (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data + gus_sample->data_length - 1;
 		do {
-			*write_data = ((*read_data++) ^ 0x80) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data--;
+			*write_data-- = ((*read_data++) ^ 0x80) << 8;
 		} while (read_data != read_end);
 		tmp_loop = gus_sample->loop_end;
 		gus_sample->loop_end = gus_sample->data_length - gus_sample->loop_start;
@@ -401,13 +327,7 @@ convert_8urp (unsigned char *data, struct _sample *gus_sample ) {
 	if (__builtin_expect((gus_sample->data != NULL),1)) {
 		write_data = gus_sample->data;
 		do {
-			*write_data = ((*read_data--) ^ 0x80) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ = ((*read_data--) ^ 0x80) << 8;
 		} while (read_data != read_end);
 
 		*write_data = ((*read_data--) ^ 0x80) << 8;
@@ -420,11 +340,6 @@ convert_8urp (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data = ((*read_data--) ^ 0x80) << 8;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data != read_end);
 
@@ -432,13 +347,7 @@ convert_8urp (unsigned char *data, struct _sample *gus_sample ) {
 		*write_data_b++ = *write_data;
 		read_end = data - 1;
 		do {
-			*write_data_b = ((*read_data--) ^ 0x80) << 8;
-			if (*write_data_b > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data_b;
-			} else if (*write_data_b < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data_b;
-			}
-			write_data_b++;
+			*write_data_b++ = ((*read_data--) ^ 0x80) << 8;
 		} while (read_data != read_end);
 		gus_sample->loop_start += loop_length;
 		gus_sample->loop_end += dloop_length;
@@ -464,13 +373,7 @@ convert_16s (unsigned char *data, struct _sample *gus_sample ) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = *read_data++;
-			*write_data |= (*read_data++) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ |= (*read_data++) << 8;
 		} while (read_data < read_end);
 
 		gus_sample->loop_start >>= 1;
@@ -500,13 +403,7 @@ convert_16sp (unsigned char *data, struct _sample *gus_sample ) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = (*read_data++);
-			*write_data |= (*read_data++) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ |= (*read_data++) << 8;
 		} while (read_data < read_end);
 
 		*write_data = (*read_data++);
@@ -521,11 +418,6 @@ convert_16sp (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data |= (*read_data++) << 8;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data < read_end);
 
@@ -536,13 +428,7 @@ convert_16sp (unsigned char *data, struct _sample *gus_sample ) {
 		if (__builtin_expect((read_data != read_end),1)) {
 			do {
 				*write_data_b = *(read_data++);
-				*write_data_b |= (*read_data++) << 8;
-				if (*write_data_b > gus_sample->max_peek) {
-					gus_sample->max_peek = *write_data_b;
-				} else if (*write_data_b < gus_sample->min_peek) {
-					gus_sample->min_peek = *write_data_b;
-				}
-				write_data_b++;
+				*write_data_b++ |= (*read_data++) << 8;
 			} while (read_data < read_end);
 		}
 		gus_sample->loop_start += loop_length;
@@ -573,13 +459,7 @@ convert_16sr (unsigned char *data, struct _sample *gus_sample ) {
 		write_data = gus_sample->data + (gus_sample->data_length >> 1) - 1;
 		do {
 			*write_data = *read_data++;
-			*write_data |= (*read_data++) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data--;
+			*write_data-- |= (*read_data++) << 8;
 		} while (read_data < read_end);
 		tmp_loop = gus_sample->loop_end;
 		gus_sample->loop_end = gus_sample->data_length - gus_sample->loop_start;
@@ -615,13 +495,7 @@ convert_16srp (unsigned char *data, struct _sample *gus_sample ) {
 		do {
 
 			*write_data = (*read_data--) << 8;
-			*write_data |= *read_data--;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ |= *read_data--;
 		} while (read_data < read_end);
 
 		*write_data = (*read_data-- << 8);
@@ -636,11 +510,6 @@ convert_16srp (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data |= *read_data--;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data < read_end);
 
@@ -650,13 +519,7 @@ convert_16srp (unsigned char *data, struct _sample *gus_sample ) {
 		read_end = data - 1;
 		do {
 			*write_data_b = (*read_data--) << 8;
-			*write_data_b |= *read_data--;
-			if (*write_data_b > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data_b;
-			} else if (*write_data_b < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data_b;
-			}
-			write_data_b++;
+			*write_data_b++ |= *read_data--;
 		} while (read_data < read_end);
 		gus_sample->loop_start += loop_length;
 		gus_sample->loop_end += dloop_length;
@@ -682,13 +545,7 @@ convert_16u (unsigned char *data, struct _sample *gus_sample ) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = *read_data++;
-			*write_data |= ((*read_data++) ^ 0x80) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ |= ((*read_data++) ^ 0x80) << 8;
 		} while (read_data < read_end);
 		gus_sample->loop_start >>= 1;
 		gus_sample->loop_end >>= 1;
@@ -718,13 +575,7 @@ convert_16up (unsigned char *data, struct _sample *gus_sample ) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = (*read_data++);
-			*write_data |= ((*read_data++) ^ 0x80) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ |= ((*read_data++) ^ 0x80) << 8;
 		} while (read_data < read_end);
 
 		*write_data = (*read_data++);
@@ -739,11 +590,6 @@ convert_16up (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data |= ((*read_data++) ^ 0x80) << 8;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data < read_end);
 
@@ -754,12 +600,7 @@ convert_16up (unsigned char *data, struct _sample *gus_sample ) {
 		if (__builtin_expect((read_data != read_end),1)) {
 			do {
 				*write_data_b = (*read_data++);
-				*write_data_b |= ((*read_data++) ^ 0x80) << 8;
-				if (*write_data_b > gus_sample->max_peek) {
-					gus_sample->max_peek = *write_data_b;
-				} else if (*write_data_b < gus_sample->min_peek) {
-					gus_sample->min_peek = *write_data_b;
-				}
+				*write_data_b++ |= ((*read_data++) ^ 0x80) << 8;
 				write_data_b++;
 			} while (read_data < read_end);
 		}
@@ -791,13 +632,7 @@ convert_16ur (unsigned char *data, struct _sample *gus_sample ) {
 		write_data = gus_sample->data + (gus_sample->data_length >> 1) - 1;
 		do {
 			*write_data = *read_data++;
-			*write_data |= ((*read_data++) ^ 0x80) << 8;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data--;
+			*write_data-- |= ((*read_data++) ^ 0x80) << 8;
 		} while (read_data < read_end);
 		tmp_loop = gus_sample->loop_end;
 		gus_sample->loop_end = gus_sample->data_length - gus_sample->loop_start;
@@ -831,13 +666,7 @@ convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = ((*read_data--) ^ 0x80) << 8;
-			*write_data |= *read_data--;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
-			write_data++;
+			*write_data++ |= *read_data--;
 		} while (read_data < read_end);
 
 		*write_data = ((*read_data--) ^ 0x80) << 8;
@@ -852,11 +681,6 @@ convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 			*write_data |= *read_data--;
 			*write_data_a-- = *write_data;
 			*write_data_b++ = *write_data;
-			if (*write_data > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data;
-			} else if (*write_data < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data;
-			}
 			write_data++;
 		} while (read_data < read_end);
 
@@ -866,13 +690,7 @@ convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 		read_end = data - 1;
 		do {
 			*write_data_b = ((*read_data--) ^ 0x80) << 8;
-			*write_data_b |= *read_data--;
-			if (*write_data_b > gus_sample->max_peek) {
-				gus_sample->max_peek = *write_data_b;
-			} else if (*write_data_b < gus_sample->min_peek) {
-				gus_sample->min_peek = *write_data_b;
-			}
-			write_data_b++;
+			*write_data_b++ |= *read_data--;
 		} while (read_data < read_end);
 		gus_sample->loop_start += loop_length;
 		gus_sample->loop_end += dloop_length;
@@ -1034,19 +852,9 @@ struct _sample * load_gus_pat (char * filename) {
 		gus_ptr += 96;
 		tmp_cnt = gus_sample->data_length;
 
-/* convert to float */
-		gus_sample->min_peek = 0;
-		gus_sample->max_peek = 0;
-
 		if (do_convert[(((gus_sample->modes & 0x18) >> 1)| (gus_sample->modes & 0x03))](&gus_patch[gus_ptr], gus_sample) == -1) {
             free(gus_patch);
 			return NULL;
-		}
-
-		if (gus_sample->max_peek > (-gus_sample->min_peek)) {
-			gus_sample->peek_adjust = 33553408 / gus_sample->max_peek;
-		} else {
-			gus_sample->peek_adjust = 33554432 / (-gus_sample->min_peek);
 		}
 
 		gus_ptr += tmp_cnt;

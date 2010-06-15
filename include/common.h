@@ -73,9 +73,6 @@ struct _sample {
 	unsigned long int env_target[7];
 	unsigned long int inc_div;
 	signed short *data;
-	signed short max_peek;
-	signed short min_peek;
-	signed long int peek_adjust;
 	struct _sample *next;
 };
 
