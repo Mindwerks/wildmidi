@@ -140,10 +140,6 @@ struct _mdi {
 	unsigned long int patch_count;
 	signed short int amp;
 
-// setup data for auto amp
-	signed long int log_max_vol;
-	signed long int lin_max_vol;
-
     struct _rvb *reverb;
 };
 
@@ -833,8 +829,6 @@ load_sample (struct _patch *sample_patch) {
 			}
 		}
 
-		guspat->peek_adjust = (guspat->peek_adjust * sample_patch->amp) >> 10;
-
         guspat = guspat->next;
     } while (guspat != NULL);
     return 0;
@@ -1035,7 +1029,9 @@ get_volume(struct _mdi *mdi, unsigned char ch, struct _note *nte) {
 		lin_volume[mdi->channel[ch].expression] *
 		lin_volume[nte->velocity]) / 1048576;
     }
-	return ((volume * nte->sample->peek_adjust) >> 10);
+
+    volume = volume * nte->patch->amp / 100;
+	return (volume);
 }
 
 static void
@@ -1157,6 +1153,7 @@ static void
 do_pan_adjust (struct _mdi *mdi, unsigned char ch) {
 	signed short int pan_adjust = mdi->channel[ch].balance + mdi->channel[ch].pan;
 	signed long int left, right;
+    int amp =  32;
 
 	if (pan_adjust > 63) {
 		pan_adjust = 63;
@@ -1166,11 +1163,11 @@ do_pan_adjust (struct _mdi *mdi, unsigned char ch) {
 
 	pan_adjust += 64;
 	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {
- 		left =  (pan_volume[127 - pan_adjust] * WM_MasterVolume * mdi->amp) / 1048576;
- 		right = (pan_volume[pan_adjust] * WM_MasterVolume * mdi->amp) / 1048576;
+ 		left =  (pan_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
+ 		right = (pan_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
 	} else {
-        left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * mdi->amp) / 1048576;
-		right= (lin_volume[pan_adjust] * WM_MasterVolume * mdi->amp) / 1048576;
+        left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
+		right= (lin_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
  	}
 
 	mdi->channel[ch].left_adjust = left;
@@ -1557,12 +1554,6 @@ midi_setup_noteon (struct _mdi *mdi, unsigned char channel, unsigned char note, 
         mdi->events[mdi->event_count].samples_to_next = 0;
         mdi->event_count++;
     }
-
-    if ((lin_volume[mdi->channel[channel].volume] * lin_volume[velocity]) > mdi->lin_max_vol)
-        mdi->lin_max_vol = lin_volume[mdi->channel[channel].volume] * lin_volume[velocity];
-
-    if ((sqr_volume[mdi->channel[channel].volume] * sqr_volume[velocity]) > mdi->log_max_vol)
-        mdi->log_max_vol = sqr_volume[mdi->channel[channel].volume] * sqr_volume[velocity];
 
     if (channel == 9)
         load_patch(mdi, ((mdi->channel[channel].bank << 8) | (note | 0x80)));
@@ -2164,14 +2155,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     mdi->current_event = &mdi->events[0];
     mdi->samples_to_mix = 0;
     mdi->note = NULL;
-
-	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME)
-    {
-		mdi->amp = (512 * ((mdi->lin_max_vol << 10) / mdi->log_max_vol)) >> 10;
-	} else {
-		mdi->amp = 512;
-	}
-    mdi->amp = (mdi->amp * (((lin_volume[127] * lin_volume[127]) << 10) / mdi->lin_max_vol)) >> 10;
 
     WM_ResetToStart(mdi);
 
@@ -3288,13 +3271,6 @@ WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short in
 	mdi->info.mixer_options = ((mdi->info.mixer_options & (0x00FF ^ options)) | (options & setting));
 
 	if (options & WM_MO_LOG_VOLUME) {
-    	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {
-    		mdi->amp = (512 * ((mdi->lin_max_vol << 10) / mdi->log_max_vol)) >> 10;
-		} else {
-			mdi->amp = 512;
-		}
-
-   	    mdi->amp = (mdi->amp * (((lin_volume[127] * lin_volume[127]) << 10) / mdi->lin_max_vol)) >> 10;
 
 		for (i = 0; i < 16; i++) {
 			do_pan_adjust(mdi, i);
