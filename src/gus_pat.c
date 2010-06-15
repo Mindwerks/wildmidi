@@ -601,7 +601,6 @@ convert_16up (unsigned char *data, struct _sample *gus_sample ) {
 			do {
 				*write_data_b = (*read_data++);
 				*write_data_b++ |= ((*read_data++) ^ 0x80) << 8;
-				write_data_b++;
 			} while (read_data < read_end);
 		}
 		gus_sample->loop_start += loop_length;
