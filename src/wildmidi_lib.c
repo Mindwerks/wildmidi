@@ -215,6 +215,7 @@ static void free_gauss (void) {
     int m;
     for (m = 0; m < (1<<10); m++) {
         free (gauss_table[m]);
+        gauss_table[m] = NULL;
     }
 }
 
