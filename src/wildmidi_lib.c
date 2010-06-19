@@ -674,7 +674,7 @@ WM_LoadConfig (const char *config_file)
 									WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(syntax error in patch 	line)", 0);
 								} else
 								{
-									tmp_patch->note = (atoi(&line_tokens[token_count][5]) << 10) / 100;
+									tmp_patch->note = atoi(&line_tokens[token_count][5]);
 								}
 							} else if (strncasecmp(line_tokens[token_count], "env_time", 8) == 0)
 							{
