@@ -1081,6 +1081,9 @@ main (int argc, char **argv) {
 					output_result = WildMidi_GetOutput (midi_ptr, output_buffer, 16384);
 				}
 
+                if (output_result <= 0)
+                    break;
+
 				wm_info = WildMidi_GetInfo(midi_ptr);
 				perc_play =  (wm_info->current_sample * 100) / wm_info->approx_total_samples;
 				pro_mins = wm_info->current_sample / (rate * 60);
@@ -1107,8 +1110,6 @@ main (int argc, char **argv) {
 					apr_mins, apr_secs, modes, master_volume,
 					pro_mins, pro_secs, perc_play, spinner[spinpoint++%4]);
 
-				if (output_result == 0)
-					break;
 				send_output (output_buffer, output_result);
 			}
 NEXTMIDI:
