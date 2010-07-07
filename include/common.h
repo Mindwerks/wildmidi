@@ -1,5 +1,5 @@
 /*
-	gus_pat.c
+	common.h
 
  	Midi Wavetable Processing library
 

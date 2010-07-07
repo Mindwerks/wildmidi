@@ -12,7 +12,7 @@ dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.65)
+AC_PREREQ([2.65])
 AC_INIT([WildMidi],[0.2.3.2],[http://sourceforge.net/tracker/?group_id=42635&atid=433744],[wildmidi],[http://wildmidi.sourceforge.net])
 AC_REVISION([$Revision: 1.14 $])
 AC_CONFIG_SRCDIR([src/wildmidi_lib.c])
@@ -103,39 +103,72 @@ AC_CHECK_HEADERS(
 
 AC_C_BIGENDIAN
 
-CFLAGS="$CFLAGS -Wall"
-AC_ARG_ENABLE(werror,
-    [  --disable-werror      disable fail on compile warnings],    werror=$enable_werror,
-	werror=yes
-)
-
-AC_MSG_CHECKING(for Werror)
-if test "x$werror" = xyes; then
-	AC_MSG_RESULT(yes)
-	CFLAGS="$CFLAGS -Werror"
-else
-	AC_MSG_RESULT(no)
-fi
-
+CFLAGS="$CFLAGS -Wall -Wextra -pedantic"
 LDFLAGS=
 
-AC_ARG_ENABLE(optimize,
-    [  --disable-optimize      compile without optimizations (for development)],    optimize=$enable_optimize,
-	optimize=no
+
+AC_ARG_ENABLE([werror],
+    [AS_HELP_STRING([--disable-werror],
+        [disable fail on compile warnings])],
+    [werror=$enable_werror],
+	[werror=yes]
 )
-AC_MSG_CHECKING(for optimization)
+if test "x$werror" = xyes; then
+	CFLAGS="$CFLAGS -Werror"
+fi
+
+
+AC_ARG_ENABLE([debug],
+    [AS_HELP_STRING([--enable-debug],
+        [compile with debugging])],
+	[debug=$enable_debug],
+	[debug=no]
+)
+if test "x$debug" = xyes; then
+	BUILD_TYPE="$BUILD_TYPE Debug"
+	CFLAGS="$CFLAGS -g"
+fi
+
+
+AC_ARG_ENABLE([profile],
+	[AS_HELP_STRING([--enable-profile],
+        [compile with profiling (for development)])],
+	[profile=$enable_profile],
+	[profile=no]
+)
+if test "x$profile" = xyes; then
+	BUILD_TYPE="$BUILD_TYPE Profile"
+	CFLAGS="`echo $CFLAGS | sed -e 's/-fomit-frame-pointer//g'` -pg -fprofile-arcs"
+	LDFLAGS="$LDFLAGS -pg -fprofile-arcs"
+fi
+
+
+AC_ARG_ENABLE([optimize],
+    [AS_HELP_STRING([--disable-optimize],
+        [compile without optimizations (for development)])],
+    [optimize=$enable_optimize],
+	[optimize=yes]
+)
 if test "x$optimize" = xyes; then
-    AC_MSG_RESULT(yes)
 	if test "x$GCC" = xyes; then
 		BUILD_TYPE="$BUILD_TYPE Optimized"
-		CFLAGS="$CFLAGS -O2 -std=gnu99 -frename-registers -finline-limit=32000 -Winline -ffast-math -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -fstrict-aliasing -pipe -Wall -Werror -Wwrite-strings -fno-common"
-		dnl CFLAGS="$CFLAGS -O2 -std=gnu99 -frename-registers -finline-limit=32000 -Winline -ffast-math -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -fstrict-aliasing -pipe -Wall -Werror -fno-common"
-	else
+		CFLAGS="$CFLAGS -O2 -std=gnu99 -frename-registers -finline-limit=32000 -Winline -ffast-math -funroll-loops -fexpensive-optimizations -finline-functions"
+    else
 		CFLAGS="$CFLAGS -O2"
 	fi
-else
-	AC_MSG_RESULT(no)
 fi
+
+
+AC_ARG_ENABLE([temps],
+	[AS_HELP_STRING([--enable-temps],
+        [compile with save-temps])],
+	[temps=$enable_temps],
+	[temps=no]
+)
+if test "x$temps" = xyes; then
+	CFLAGS="$CFLAGS -save-temps"
+fi
+
 
 AC_MSG_CHECKING(for __builtin_expect)
 AC_TRY_COMPILE(
@@ -160,37 +193,32 @@ AC_ARG_WITH(efence,
 )
 
 
-dnl CFLAGS for release and devel versions
-AC_ARG_ENABLE(debug,
-    [  --enable-debug         compile with debugging],
-	debug=$enable_debug, debug=yes
-)
-AC_MSG_CHECKING(for debug)
-if test "x$debug" = xyes; then
-	AC_MSG_RESULT(yes)
-	BUILD_TYPE="$BUILD_TYPE Debug"
-	CFLAGS="$CFLAGS -g"
-else
-	AC_MSG_RESULT(no)
+case "$host_os" in
+	*mingw*)
+		default_wildmidiconf="wildmidi.cfg"
+		;;
+	*freebsd*)
+		default_timifityconf="/usr/local/share/wildmidi/wildmidi.cfg"
+		;;
+	*)
+		default_wildmidiconf="/etc/wildmidi.cfg"
+		;;
+esac
+
+AC_ARG_WITH(wildmidi-cfg,
+[  --with-wildmidi-cfg=FILE  If set will change the name and location of the
+                          wildmidi config file used by WildMidi.  Defaults to
+                          ./wildmidi.cfg - win32 mingw
+                          /usr/local/share/wildmidi/wildmidi.cfg - FreeBSD
+                          /etc/wildmidi.cfg - everything else],
+wildmidiconf="$withval", wildmidiconf="auto")
+if test "x$wildmidiconf" = "xauto" || test "x$wildmidiconf" = "xyes" || \
+	test "x$wildmidiconf" = "xno"; then  dnl yes/no sanity checks
+	wildmidiconf="$default_wildmidiconf"
 fi
 
-AC_ARG_ENABLE(profile,
-	[  --enable-profile        compile with profiling (for development)],
-	profile=$enable_profile
-)
-if test "x$profile" = xyes; then
-	BUILD_TYPE="$BUILD_TYPE Profile"
-	CFLAGS="`echo $CFLAGS | sed -e 's/-fomit-frame-pointer//g'` -pg -fprofile-arcs"
-	LDFLAGS="$LDFLAGS -pg -fprofile-arcs"
-fi
+AC_DEFINE_UNQUOTED(WILDMIDI_CFG, "$wildmidiconf", [Define this to the location of the wildmidi config file])
 
-AC_ARG_ENABLE(temps,
-	[  --enable-temps        compile with save-temps],
-	temps=$enable_temps
-)
-if test "x$temps" = xyes; then
-	CFLAGS="$CFLAGS -save-temps"
-fi
 
 AC_ARG_WITH(amd,
     [  --with-amd              Optimize for AMD processors instead of Intel],
@@ -198,35 +226,6 @@ AC_ARG_WITH(amd,
 	HAVE_AMD="no"
 )
 
-dnl Add more targets here if required.
-
-case "$host_os" in
-	*mingw*)
-		default_timidityconf="timidity.cfg"
-		;;
-	*freebsd*)
-		default_timifityconf="/usr/local/share/timidity/timidity.cfg"
-		;;
-	*)
-		default_timidityconf="/etc/timidity.cfg"
-		;;
-esac
-
-AC_ARG_WITH(timidity-cfg,
-[  --with-timidity-cfg=FILE  If set will change the name and location of the
-                          timidity config file used by WildMidi.  Defaults to
-                          ./timidity.cfg - win32 mingw
-                          /usr/local/share/timidity/timidity.cfg - FreeBSD
-                          /etc/timidity.cfg - everything else],
-timidityconf="$withval", timidityconf="auto")
-if test "x$timidityconf" = "xauto" || test "x$timidityconf" = "xyes" || \
-	test "x$timidityconf" = "xno"; then  dnl yes/no sanity checks
-	timidityconf="$default_timidityconf"
-fi
-
-AC_DEFINE_UNQUOTED(TIMIDITY_CFG, "$timidityconf", [Define this to the location of the timidity config file])
-
-AC_MSG_CHECKING(for special compiler settings)
 
 AC_ARG_WITH(arch,
 	[  --with-arch=ARCH        control compiler architecture directly],
@@ -286,9 +285,6 @@ case "$host_os" in
 		fi
        ;;
 esac
-if test -d CVS; then
-        AC_DEFINE(EXPERIMENT_626, 1, [Define this to enable all experimental code])
-fi
 
 
 AC_SUBST(HAVE_ALSA)
@@ -306,10 +302,7 @@ AC_OUTPUT(
  docs/Makefile
 
 )
-if test -d CVS; then
-	echo " "
-	echo "WARNING: Developement source, expect problems."
-fi
+
 AC_MSG_RESULT([
 	You may now type make to build WildMidi
 ])
