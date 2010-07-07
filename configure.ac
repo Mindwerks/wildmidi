@@ -12,31 +12,13 @@ dnl
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.52)
-AC_INIT(include/wildmidi_lib.h)
-AC_REVISION($Revision: 1.13 $) dnl
-AM_CONFIG_HEADER(include/config.h)
-AC_CANONICAL_SYSTEM
-AC_VALIDATE_CACHED_SYSTEM_TUPLE(
-	rm $cache_file
-	echo restart configure
-	exit 1
-)
-AM_INIT_AUTOMAKE(wildmidi, 0.2.3.1)
-PROGRAM=WildMidi
-WILDMIDI_VERSION=0.2.3.1
-WILDMIDILIB_VERSION=0.2.3.1
+AC_PREREQ(2.65)
+AC_INIT([WildMidi],[0.2.3.2],[http://sourceforge.net/tracker/?group_id=42635&atid=433744],[wildmidi],[http://wildmidi.sourceforge.net])
+AC_REVISION([$Revision: 1.14 $])
+AC_CONFIG_SRCDIR([src/wildmidi_lib.c])
+AC_CONFIG_HEADERS([include/config.h])
 
-AC_DEFINE_UNQUOTED(PROGRAM,             "$PROGRAM",["Proper" program name])
-AC_DEFINE_UNQUOTED(WILDMIDI_VERSION,    "$WILDMIDI_VERSION", [current program version])
-AC_DEFINE_UNQUOTED(WILDMIDILIB_VERSION,    "$WILDMIDILIB_VERSION", [current lib version])
-
-AC_SUBST(PROGRAM)
-AC_SUBST(WILDMIDI_VERSION)
-AC_SUBST(WILDMIDILIB_VERSION)
-
-ISODATE=`date +%Y-%m-%d`
-AC_SUBST(ISODATE)
+AM_INIT_AUTOMAKE
 
 # set libtool versioning
 # +1 :  0 : +1   == new interface that does not break old one.
@@ -51,7 +33,7 @@ AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)
 AC_SUBST(LT_AGE)
 
-AC_LANG_C
+AC_LANG([C])
 
 if test ${CFLAGS-unset} = unset; then
 	CFLAGS=""
