@@ -38,6 +38,19 @@ AC_SUBST(WILDMIDILIB_VERSION)
 ISODATE=`date +%Y-%m-%d`
 AC_SUBST(ISODATE)
 
+# set libtool versioning
+# +1 :  0 : +1   == new interface that does not break old one.
+# +1 :  0 :  0   == changed/removed an interface. Breaks old apps.
+#  ? : +1 :  ?   == internal changes that doesn't break anything.
+# CURRENT : REVISION : AGE
+LT_CURRENT=1
+LT_REVISION=0
+LT_AGE=0
+
+AC_SUBST(LT_CURRENT)
+AC_SUBST(LT_REVISION)
+AC_SUBST(LT_AGE)
+
 AC_LANG_C
 
 if test ${CFLAGS-unset} = unset; then

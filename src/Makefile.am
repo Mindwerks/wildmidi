@@ -15,7 +15,8 @@ INCLUDES=		-I$(top_srcdir)/include
 lib_LTLIBRARIES=	libWildMidi.la
 libWildMidi_la_SOURCES=		wm_error.c file_io.c reverb.c lock.c gus_pat.c wildmidi_lib.c
 libWildMidi_la_CFLAGS=		$(PREFER_NON_PIC)
-libWildMidi_la_LDFLAGS=		-shared -lm -lc $(LDFLAGS) -no-undefined -export-symbols-regex '^WildMidi.*'
+libWildMidi_la_LDFLAGS=		-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) -shared $(LDFLAGS) -no-undefined -export-symbols-regex '^WildMidi.*'
+libWildMidi_la_LIBADD=      -lm -lc
 
 bin_PROGRAMS= wildmidi
 wildmidi_libs=			./libWildMidi.la
