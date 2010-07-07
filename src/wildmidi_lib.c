@@ -2754,7 +2754,7 @@ WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short
 	}
 	WM_MixerOptions = options;
 
-	if ((rate < 11025) || (rate > 65535)) {
+	if (rate < 11025) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(rate out of bounds, range is 11025 - 65535)", 0);
 		WM_FreePatches();
 		return -1;

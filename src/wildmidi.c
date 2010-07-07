@@ -202,7 +202,7 @@ static void close_wav_output ( void );
 static int
 open_wav_output ( void ) {
 
-	char wav_hdr[] = { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
+	unsigned char wav_hdr[] = { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
 				0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74, 0x20,
 				0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00,
 				0x44, 0xAC, 0x00, 0x00, 0x10, 0xB1, 0x02, 0x00,
@@ -844,9 +844,9 @@ main (int argc, char **argv) {
 	}
 
 	if (!config_file) {
-		config_file = malloc(sizeof(TIMIDITY_CFG)+1);
-		strncpy (config_file, TIMIDITY_CFG, sizeof(TIMIDITY_CFG));
-		config_file[sizeof(TIMIDITY_CFG)] = '\0';
+		config_file = malloc(sizeof(WILDMIDI_CFG)+1);
+		strncpy (config_file, WILDMIDI_CFG, sizeof(WILDMIDI_CFG));
+		config_file[sizeof(WILDMIDI_CFG)] = '\0';
 	}
 	if ((optind < argc) || (test_midi)) {
 		printf("Initializing Sound System\n");
