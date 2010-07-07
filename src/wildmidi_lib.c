@@ -61,7 +61,7 @@ static int WM_Initialized = 0;
 static signed short int WM_MasterVolume = 948;
 static unsigned short int WM_MixerOptions = 0;
 
-static char WM_Version[] = "WildMidi Processing Library " WILDMIDILIB_VERSION;
+static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
 struct _patch *patch[128];
 

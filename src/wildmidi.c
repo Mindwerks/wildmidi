@@ -732,14 +732,14 @@ do_help (void) {
 
 static void
 do_version (void) {
-	printf("WildMidi %s Open Source Midi Sequencer\n",WILDMIDI_VERSION);
+	printf("\nWildMidi %s Open Source Midi Sequencer\n",PACKAGE_VERSION);
 	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
-	printf("\n");
-	printf("\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
 	printf("under the terms and conditions of the GNU General Public License version 3.\n");
 	printf("For more information see COPYING\n\n");
+	printf("Report bugs to %s\n",PACKAGE_BUGREPORT);
+	printf("WildMIDI homepage at %s\n\n",PACKAGE_URL);
 }
 
 static void
