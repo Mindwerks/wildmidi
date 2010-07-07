@@ -84,6 +84,15 @@ Turns the final mix reverb on and off.
 .IP \fBn\fP
 Play the next midi on the command line.
 .PP
+.IP \fBp\fP
+Pause the playback. Note: since the audio is buffered it will stop when the audio buffer is empty.
+.PP
+.IP \fB.\fP
+Seek forward 1 second. Note: Clears active midi events and will only play midi events from after the new position.
+.PP
+.IP \fB,\fP
+Seek backwards 1 second. Note: Clears active midi events and will only play midi events from after the new position.
+.PP
 .IP \fBq\fP
 Quit wildmidi.
 .PP
@@ -97,7 +106,6 @@ Quit wildmidi.
 .BR WildMidi_GetOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
-.BR WildMidi_SampledSeek (3) ,
 .BR WildMidi_Close (3) ,
 .BR WildMidi_Shutdown (3) ,
 .BR wildmidi.cfg (5)
