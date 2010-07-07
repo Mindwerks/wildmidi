@@ -49,7 +49,6 @@ extern int WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int s
 extern int WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short int setting);
 extern struct _WM_Info * WildMidi_GetInfo ( midi * handle );
 extern int WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos);
-extern int WildMidi_SampledSeek ( midi * handle, unsigned long int *sample_pos);
 extern int WildMidi_Close (midi * handle);
 extern int WildMidi_Shutdown ( void );
 // extern void WildMidi_ReverbSet(midi * handle, float width, float wet, float dry, float damp, float roomsize);
