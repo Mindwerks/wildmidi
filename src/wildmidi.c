@@ -1021,21 +1021,7 @@ main (int argc, char **argv) {
                             }
                             WildMidi_FastSeek(midi_ptr, &seek_to_sample);
                             break;
-                        case '<': // sampled seek backwards
-                            if (wm_info->current_sample < rate) {
-                                seek_to_sample = 0;
-                            } else {
-                                seek_to_sample = wm_info->current_sample - rate;
-                            }
-                            WildMidi_SampledSeek(midi_ptr, &seek_to_sample);
-                            break;
-                        case '>': // sampled seek fowards
-                            if ((wm_info->approx_total_samples - wm_info->current_sample) < rate) {
-                                seek_to_sample = wm_info->approx_total_samples;
-                            } else {
-                                seek_to_sample = wm_info->current_sample + rate;
-                            }
-                            WildMidi_SampledSeek(midi_ptr, &seek_to_sample);
+                        default:
                             break;
 					}
 				}
