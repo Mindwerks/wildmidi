@@ -70,7 +70,7 @@ reset_reverb (struct _rvb *rvb) {
 	2 speaker positions
 	1 listener position
 
-	Sounds come from the speakers to all reflective points and to the listener.
+	Sounds come from the speakers to all points and to the listener.
 	Sound comes from the reflective points to the listener.
 	These sounds are combined, put through a filter that mimics surface absorbtion.
 	The combined sounds are also sent to the reflective points on the opposite side.
@@ -78,7 +78,7 @@ reset_reverb (struct _rvb *rvb) {
 */
 
 struct _rvb *
-init_reverb(int rate) {
+init_reverb(int rate, float room_x, float room_y) {
 	struct _rvb *rtn_rvb = malloc(sizeof(struct _rvb));
 
 	int i = 0;
@@ -88,7 +88,7 @@ init_reverb(int rate) {
        double x;
        double y;
 	};
-
+#if 0
 	struct _coord SPL = { 2.5, 5.0 }; // Left Speaker Position
 	struct _coord SPR = { 7.5, 5.0 }; // Right Speaker Position
 	struct _coord LSN = { 5.0, 15 }; // Listener Position
@@ -103,6 +103,38 @@ init_reverb(int rate) {
 		{ 15.0, 6.66666 },
 		{ 10.0, 0.0 }
 	};
+#else
+	struct _coord SPL; // Left Speaker Position
+	struct _coord SPR; // Right Speaker Position
+	struct _coord LSN; // Listener Position
+	// position of the reflective points
+	struct _coord RFN[8];
+
+	SPL.x = room_x / 4.0;
+	SPR.x = room_x / 4.0 * 3.0;
+	SPL.y = room_y / 10.0;
+	SPR.y = room_y / 10.0;
+	LSN.x = room_x / 2.0;
+	LSN.y = room_y / 10.0 * 9.0;
+
+	RFN[0].x = room_x / 3.0;
+	RFN[0].y = 0.0;
+	RFN[1].x = 0.0;
+	RFN[1].y = room_y / 3.0;
+	RFN[2].x = 0.0;
+	RFN[2].y = room_y / 3.0 * 2.0;
+	RFN[3].x = room_x / 3.0;
+	RFN[3].y = room_y;
+	RFN[4].x = room_x / 3.0 * 2.0;
+	RFN[4].y = room_y;
+	RFN[5].x = room_x;
+	RFN[5].y = room_y / 3.0 * 2.0;
+	RFN[6].x = room_x;
+	RFN[6].y = room_y / 3.0;
+	RFN[7].x = room_x / 3.0 * 2.0;
+	RFN[7].y = 0.0;
+
+#endif
 
 	//distance
 	double SPL_DST[8];

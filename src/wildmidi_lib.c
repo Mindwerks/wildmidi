@@ -65,6 +65,9 @@ static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
 struct _patch *patch[128];
 
+float reverb_room_width = 15.0;
+float reverb_room_length = 20.0;
+
 static int patch_lock;
 
 struct _channel {
@@ -507,6 +510,44 @@ WM_LoadConfig (const char *config_file)
 							return -1;
 						}
 						patchid = ((atoi(line_tokens[1]) & 0xFF ) << 8) | 0x80;
+					} else if (strcasecmp(line_tokens[0],"reverb_room_width") == 0) {
+						if (!isdigit(line_tokens[1][0])) {
+							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in reverb_room_width line)", 0);
+							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+							WM_FreePatches();
+							if (config_dir != NULL)
+								free (config_dir);
+							free (line_tokens);
+							free (config_buffer);
+							return -1;
+						}
+						reverb_room_width = atof(line_tokens[1]);
+						if (reverb_room_width < 1.0) {
+						    WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_width < 1.0 meters, setting to minimum of 1.0 meter)", 0);
+						    reverb_room_width = 1.0;
+						} else if (reverb_room_width > 100.0) {
+						    WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_width > 100.0 meters, setting to maximum of 100.0 meters)", 0);
+						    reverb_room_width = 100.0;
+						}
+					} else if (strcasecmp(line_tokens[0],"reverb_room_length") == 0) {
+						if (!isdigit(line_tokens[1][0])) {
+							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in reverb_room_length line)", 0);
+							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+							WM_FreePatches();
+							if (config_dir != NULL)
+								free (config_dir);
+							free (line_tokens);
+							free (config_buffer);
+							return -1;
+						}
+						reverb_room_length = atof(line_tokens[1]);
+						if (reverb_room_length < 1.0) {
+						    WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_length < 1.0 meters, setting to minimum of 1.0 meter)", 0);
+						    reverb_room_length = 1.0;
+						} else if (reverb_room_length > 100.0) {
+						    WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_length > 100.0 meters, setting to maximum of 100.0 meters)", 0);
+						    reverb_room_length = 100.0;
+						}
 					} else if (isdigit(line_tokens[0][0])) {
 						patchid = (patchid & 0xFF80) | (atoi(line_tokens[0]) & 0x7F);
 						if (patch[(patchid & 0x7F)] == NULL) {
@@ -1163,13 +1204,13 @@ do_pan_adjust (struct _mdi *mdi, unsigned char ch) {
 	}
 
 	pan_adjust += 64;
-	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {
+//	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {
  		left =  (pan_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
  		right = (pan_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
-	} else {
-        left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
-		right= (lin_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
- 	}
+//	} else {
+//      left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
+//		right= (lin_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
+// 	}
 
 	mdi->channel[ch].left_adjust = left;
 	mdi->channel[ch].right_adjust = right;
@@ -2140,7 +2181,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     }
     mdi->info.approx_total_samples += WM_SampleRate * 3;
 
-    if ((mdi->reverb = init_reverb(WM_SampleRate)) == NULL) {
+    if ((mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width, reverb_room_length)) == NULL) {
 		printf("Reverb Init Failed\n");
 		free (tracks);
         free (track_end);

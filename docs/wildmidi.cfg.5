@@ -1,4 +1,4 @@
-.TH wildmidi.cfg 5 "05 June 2010" "" "WildMidi Config File"
+.TH wildmidi.cfg 5 "09 July 2010" "" "WildMidi Config File"
 .SH NAME
 wildmidi.cfg \- Config file for libWildMidi
 .PP
@@ -77,6 +77,17 @@ Example: set 1st enevelope time to 1sec - \fBenv_time0=\fP1000
 Example: set 3rd enevelope time to 0.5secs- \fBenv_time2=\fP500
 .RE
 .PP
+.IP "\fBreverb_room_width\fP \fIfval\fP"
+Set the room width for the reverb engine in meters. \fIfval\fP is a float value in meters. Minimum setting is 1.0 meters, maximum setting is 100.0 meters, and default is 15.0 meters.
+.IP
+Example: set room width to 30 meters - \fBreverb_room_width 30\fP
+.PP
+.IP "\fBreverb_room_length\fP \fIfval\fP"
+Set the room length for the reverb engine in meters. \fIfval\fP is a float value in meters. . Minimum setting is 1.0 meters, maximum setting is 100.0 meters, and default is 20.0 meters.
+.IP
+Example: set room length to 40 meters - \fBreverb_room_length 40\fP
+.PP
+
 .SH SEE ALSO
 .BR WildMidi_GetString (3) ,
 .BR WildMidi_Init (3) ,
