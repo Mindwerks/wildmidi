@@ -50,7 +50,7 @@ struct _rvb {
 };
 
 extern void reset_reverb (struct _rvb *rvb);
-extern struct _rvb *init_reverb(int rate);
+extern struct _rvb *init_reverb(int rate, float room_x, float room_y);
 extern void free_reverb (struct _rvb *rvb);
 extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
 

@@ -35,20 +35,18 @@
 #include "wm_error.h"
 #include "file_io.h"
 
-
 #ifdef DEBUG_GUSPAT
 #define GUSPAT_FILENAME_DEBUG(dx) fprintf(stderr,"\r%s\n",dx)
 
 #define GUSPAT_INT_DEBUG(dx,dy) fprintf(stderr,"\r%s: %i\n",dx,dy)
-
+#define GUSPAT_FLOAT_DEBUG(dx,dy) fprintf(stderr,"\r%s: %f\n",dx,dy)
 #define GUSPAT_START_DEBUG() fprintf(stderr,"\r")
 #define GUSPAT_MODE_DEBUG(dx,dy,dz) if (dx & dy) fprintf(stderr,"%s",dz)
 #define GUSPAT_END_DEBUG() fprintf(stderr,"\n")
 #else
 #define GUSPAT_FILENAME_DEBUG(dx)
-
 #define GUSPAT_INT_DEBUG(dx,dy)
-
+#define GUSPAT_FLOAT_DEBUG(dx,dy)
 #define GUSPAT_START_DEBUG()
 #define GUSPAT_MODE_DEBUG(dx,dy,dz)
 #define GUSPAT_END_DEBUG()
@@ -833,15 +831,19 @@ struct _sample * load_gus_pat (char * filename) {
 			if (gus_sample->modes & SAMPLE_ENVELOPE) {
 				unsigned char env_rate = gus_patch[gus_ptr+37+i];
 				gus_sample->env_target[i] = 16448 * gus_patch[gus_ptr+43+i];
+                GUSPAT_INT_DEBUG("Envelope Level",gus_patch[gus_ptr+43+i]);
+				GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[env_rate]);
 				gus_sample->env_rate[i]  = (unsigned long int)(4194303.0 / ((float)WM_SampleRate * env_time_table[env_rate]));
 
 					if (gus_sample->env_rate[i] == 0) {
 						fprintf(stderr,"\rWarning: libWildMidi %s found invalid envelope(%lu) rate setting in %s. Using %f instead.\n",__FUNCTION__, i, filename, env_time_table[63]);
 						gus_sample->env_rate[i]  = (unsigned long int)(4194303.0 / ((float)WM_SampleRate * env_time_table[63]));
+                GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 					}
 			} else {
 				gus_sample->env_target[i] = 4194303;
 				gus_sample->env_rate[i]  = (unsigned long int)(4194303.0 / ((float)WM_SampleRate * env_time_table[63]));
+                GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 			}
 		}
 
