@@ -65,10 +65,11 @@ static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
 struct _patch *patch[128];
 
-float reverb_room_width = 15.0;
-float reverb_room_length = 20.0;
-float reverb_listen_posx = 7.5;
-float reverb_listen_posy = 15.0;
+float reverb_room_width 16.875
+float reverb_room_length 22.5
+
+float reverb_listen_posx = 8.4375;
+float reverb_listen_posy = 16.875;
 
 static int patch_lock;
 
