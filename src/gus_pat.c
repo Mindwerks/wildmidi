@@ -827,6 +827,16 @@ struct _sample * load_gus_pat (char * filename) {
 		}
 
 
+/*
+    FIXME: Experimental Hacky Fix
+*/
+
+        if (env_time_table[gus_patch[gus_ptr+40]] < env_time_table[gus_patch[gus_ptr+41]]) {
+            unsigned char tmp_hack_rate = gus_patch[gus_ptr+41];
+            gus_patch[gus_ptr+41] = gus_patch[gus_ptr+40];
+            gus_patch[gus_ptr+40] = tmp_hack_rate;
+        }
+
 		for (i = 0; i < 6; i++) {
 			if (gus_sample->modes & SAMPLE_ENVELOPE) {
 				unsigned char env_rate = gus_patch[gus_ptr+37+i];
