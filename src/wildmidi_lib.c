@@ -71,6 +71,8 @@ float reverb_room_length 22.5
 float reverb_listen_posx = 8.4375;
 float reverb_listen_posy = 16.875;
 
+int fix_release = 0;
+
 static int patch_lock;
 
 struct _channel {
@@ -628,7 +630,9 @@ WM_LoadConfig (const char *config_file)
 						    WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_listen_posy set outside of room)", 0);
 						    reverb_listen_posy = reverb_room_length * 0.75;
 						}
-					} else if (isdigit(line_tokens[0][0])) {
+					} else if (strcasecmp(line_tokens[0],"guspat_editor_author_cant_read_so_fix_release_time_for_me") == 0) {
+					    fix_release = 1;
+                    } else if (isdigit(line_tokens[0][0])) {
 						patchid = (patchid & 0xFF80) | (atoi(line_tokens[0]) & 0x7F);
 						if (patch[(patchid & 0x7F)] == NULL) {
 							patch[(patchid & 0x7F)] = malloc (sizeof(struct _patch));
@@ -888,7 +892,7 @@ load_sample (struct _patch *sample_patch) {
 
 
 
-    if ((guspat = load_gus_pat(sample_patch->filename)) == NULL) {
+    if ((guspat = load_gus_pat(sample_patch->filename, fix_release)) == NULL) {
         return -1;
     }
 

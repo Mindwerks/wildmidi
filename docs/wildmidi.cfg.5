@@ -23,6 +23,11 @@ drumset 0
 .fi
 .PP
 .SH SYNTAX
+.IP "\fBguspat_editor_author_cant_read_so_fix_release_time_for_me\fP"
+Some patch file editors switch the 4th and 5th envelopes around making the sould play much longer than intended in players that stuck to the Gravis Ultrasound patch standard. Including this option in the config enables a fix that detects this oversight, playing the sound samples as if they were correct.
+.IP
+NOTE: This is a global setting. If it is found to affect good patch samples it will be moved to a per patch setting in a future version.
+.PP
 .IP "\fBdir\fP \fIdir\-name\fP"
 Change the search path for config and patch files to \fIdir\-name\fP. This is specific to the current config file and carried to any included config file unless they have their own \fBdir\fP setting. Any included file that has its own \fBdir\fP setting does not effect the \fBdir\fP setting of the current config file.
 .PP

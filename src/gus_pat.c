@@ -704,7 +704,7 @@ convert_16urp (unsigned char *data, struct _sample *gus_sample ) {
 
 /* sample loading */
 
-struct _sample * load_gus_pat (char * filename) {
+struct _sample * load_gus_pat (char * filename, int fix_release) {
 
 	unsigned char *gus_patch;
 	unsigned long int gus_size;
@@ -831,10 +831,12 @@ struct _sample * load_gus_pat (char * filename) {
     FIXME: Experimental Hacky Fix
 */
 
-        if (env_time_table[gus_patch[gus_ptr+40]] < env_time_table[gus_patch[gus_ptr+41]]) {
-            unsigned char tmp_hack_rate = gus_patch[gus_ptr+41];
-            gus_patch[gus_ptr+41] = gus_patch[gus_ptr+40];
-            gus_patch[gus_ptr+40] = tmp_hack_rate;
+        if (fix_release) {
+            if (env_time_table[gus_patch[gus_ptr+40]] < env_time_table[gus_patch[gus_ptr+41]]) {
+                unsigned char tmp_hack_rate = gus_patch[gus_ptr+41];
+                gus_patch[gus_ptr+41] = gus_patch[gus_ptr+40];
+                gus_patch[gus_ptr+40] = tmp_hack_rate;
+            }
         }
 
 		for (i = 0; i < 6; i++) {

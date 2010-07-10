@@ -28,6 +28,6 @@
 #ifndef __GUS_PAT_H
 #define __GUS_PAT_H
 
-extern struct _sample * load_gus_pat (char * filename);
+extern struct _sample * load_gus_pat (char * filename, int fix_release);
 
 #endif // __GUS_PAT_H
