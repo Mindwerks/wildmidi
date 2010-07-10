@@ -65,13 +65,16 @@ static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
 struct _patch *patch[128];
 
-float reverb_room_width 16.875
-float reverb_room_length 22.5
+float reverb_room_width = 16.875;
+float reverb_room_length = 22.5;
 
 float reverb_listen_posx = 8.4375;
 float reverb_listen_posy = 16.875;
 
 int fix_release = 0;
+int auto_amp = 0;
+int auto_amp_with_amp = 0;
+
 
 static int patch_lock;
 
@@ -632,6 +635,11 @@ WM_LoadConfig (const char *config_file)
 						}
 					} else if (strcasecmp(line_tokens[0],"guspat_editor_author_cant_read_so_fix_release_time_for_me") == 0) {
 					    fix_release = 1;
+                    } else if (strcasecmp(line_tokens[0],"auto_amp") == 0) {
+					    auto_amp = 1;
+                    } else if (strcasecmp(line_tokens[0],"auto_amp_with_amp") == 0) {
+					    auto_amp = 1;
+					    auto_amp_with_amp = 1;
                     } else if (isdigit(line_tokens[0][0])) {
 						patchid = (patchid & 0xFF80) | (atoi(line_tokens[0]) & 0x7F);
 						if (patch[(patchid & 0x7F)] == NULL) {
@@ -882,8 +890,8 @@ WM_LoadConfig (const char *config_file)
 int
 load_sample (struct _patch *sample_patch) {
     struct _sample *guspat = NULL;
-
-    int i = 0;
+    struct _sample *tmp_sample = NULL;
+    unsigned int i = 0;
 
     // we only want to try loading the guspat once.
 
@@ -894,6 +902,39 @@ load_sample (struct _patch *sample_patch) {
 
     if ((guspat = load_gus_pat(sample_patch->filename, fix_release)) == NULL) {
         return -1;
+    }
+
+    if (auto_amp) {
+        signed short int tmp_max = 0;
+        signed short int tmp_min = 0;
+        signed short samp_max = 0;
+        signed short samp_min = 0;
+        tmp_sample = guspat;
+        do {
+            samp_max = 0;
+            samp_min = 0;
+            for (i = 0; i < (tmp_sample->data_length >> 10); i++) {
+                if (tmp_sample->data[i] > samp_max) samp_max = tmp_sample->data[i];
+                if (tmp_sample->data[i] < samp_min) samp_min = tmp_sample->data[i];
+
+            }
+            if (samp_max > tmp_max) tmp_max = samp_max;
+            if (samp_min < tmp_min) tmp_min = samp_min;
+            tmp_sample = tmp_sample->next;
+        } while (tmp_sample != NULL);
+        if (auto_amp_with_amp) {
+            if (tmp_max >= -tmp_min) {
+                sample_patch->amp = (sample_patch->amp * ((32767 << 10) / tmp_max)) >> 10;
+            } else {
+                sample_patch->amp = (sample_patch->amp * ((32768 << 10) / -tmp_min)) >> 10;
+            }
+        } else {
+            if (tmp_max >= -tmp_min) {
+                sample_patch->amp = (32767 << 10) / tmp_max;
+            } else {
+                sample_patch->amp = (32768 << 10) / -tmp_min;
+            }
+        }
     }
 
     sample_patch->first_sample = guspat;
