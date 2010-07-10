@@ -548,8 +548,8 @@ unsigned long int buffer_delay;
 unsigned long int counter;
 struct audio_buf_info info;
 
-int write_oss_output (char * output_data, int output_size);
-void close_oss_output ( void );
+static int write_oss_output (char * output_data, int output_size);
+static void close_oss_output ( void );
 
 static int
 open_oss_output( void ) {

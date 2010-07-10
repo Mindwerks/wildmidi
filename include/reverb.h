@@ -30,11 +30,11 @@
 
 struct _rvb {
 	/* filter data */
-	signed long int l_buf_flt_in[6][2];
-	signed long int l_buf_flt_out[6][2];
-	signed long int r_buf_flt_in[6][2];
-	signed long int r_buf_flt_out[6][2];
-	signed long int coeff[6][5];
+	signed long int l_buf_flt_in[8][6][2];
+	signed long int l_buf_flt_out[8][6][2];
+	signed long int r_buf_flt_in[8][6][2];
+	signed long int r_buf_flt_out[8][6][2];
+	signed long int coeff[8][6][5];
 	/* buffer data */
 	signed long int *l_buf;
 	signed long int *r_buf;
@@ -50,7 +50,7 @@ struct _rvb {
 };
 
 extern void reset_reverb (struct _rvb *rvb);
-extern struct _rvb *init_reverb(int rate, float room_x, float room_y);
+extern struct _rvb *init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y);
 extern void free_reverb (struct _rvb *rvb);
 extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
 
