@@ -28,6 +28,12 @@ Some patch file editors switch the 4th and 5th envelopes around making the sould
 .IP
 NOTE: This is a global setting. If it is found to affect good patch samples it will be moved to a per patch setting in a future version.
 .PP
+.IP "\fBauto_amp\fP"
+Forces WildMIDI to amplify samples to their maximum level ignoring the amp=% in the patch lines of the config.
+.PP
+.IP "\fBauto_amp_with_amp\fP"
+Forces WildMIDI to amplify samples to their maximum level then apply the amp=% in the patch lines of the config.
+.PP
 .IP "\fBdir\fP \fIdir\-name\fP"
 Change the search path for config and patch files to \fIdir\-name\fP. This is specific to the current config file and carried to any included config file unless they have their own \fBdir\fP setting. Any included file that has its own \fBdir\fP setting does not effect the \fBdir\fP setting of the current config file.
 .PP
