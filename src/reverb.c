@@ -43,20 +43,22 @@
 */
 void
 reset_reverb (struct _rvb *rvb) {
-	int i,j;
+	int i,j, k;
 	for (i = 0; i < rvb->l_buf_size; i++) {
 		rvb->l_buf[i] = 0;
 	}
 	for (i = 0; i < rvb->r_buf_size; i++) {
 		rvb->r_buf[i] = 0;
 	}
-	for (i = 0; i < 6; i++) {
-		for (j = 0; j < 2; j++) {
-			rvb->l_buf_flt_in[i][j] = 0;
-			rvb->l_buf_flt_out[i][j] = 0;
-			rvb->r_buf_flt_in[i][j] = 0;
-			rvb->r_buf_flt_out[i][j] = 0;
-		}
+	for (k = 0; k < 8; k++) {
+        for (i = 0; i < 6; i++) {
+            for (j = 0; j < 2; j++) {
+                rvb->l_buf_flt_in[k][i][j] = 0;
+                rvb->l_buf_flt_out[k][i][j] = 0;
+                rvb->r_buf_flt_in[k][i][j] = 0;
+                rvb->r_buf_flt_out[k][i][j] = 0;
+            }
+        }
 	}
 }
 
@@ -78,9 +80,9 @@ reset_reverb (struct _rvb *rvb) {
 */
 
 struct _rvb *
-init_reverb(int rate, float room_x, float room_y) {
+init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y) {
 	struct _rvb *rtn_rvb = malloc(sizeof(struct _rvb));
-
+	int j = 0;
 	int i = 0;
 
 
@@ -91,7 +93,6 @@ init_reverb(int rate, float room_x, float room_y) {
 #if 0
 	struct _coord SPL = { 2.5, 5.0 }; // Left Speaker Position
 	struct _coord SPR = { 7.5, 5.0 }; // Right Speaker Position
-	struct _coord LSN = { 5.0, 15 }; // Listener Position
 	// position of the reflective points
 	struct _coord RFN[] = {
 		{ 5.0, 0.0 },
@@ -106,7 +107,6 @@ init_reverb(int rate, float room_x, float room_y) {
 #else
 	struct _coord SPL; // Left Speaker Position
 	struct _coord SPR; // Right Speaker Position
-	struct _coord LSN; // Listener Position
 	// position of the reflective points
 	struct _coord RFN[8];
 
@@ -114,8 +114,6 @@ init_reverb(int rate, float room_x, float room_y) {
 	SPR.x = room_x / 4.0 * 3.0;
 	SPL.y = room_y / 10.0;
 	SPR.y = room_y / 10.0;
-	LSN.x = room_x / 2.0;
-	LSN.y = room_y / 10.0 * 9.0;
 
 	RFN[0].x = room_x / 3.0;
 	RFN[0].y = 0.0;
@@ -144,79 +142,61 @@ init_reverb(int rate, float room_x, float room_y) {
 	double MAXL_DST = 0.0;
 	double MAXR_DST = 0.0;
 
-	double SPL_LSN_XOFS = SPL.x - LSN.x;
-	double SPL_LSN_YOFS = SPL.y - LSN.y;
+	double SPL_LSN_XOFS = SPL.x - listen_x;
+	double SPL_LSN_YOFS = SPL.y - listen_y;
 	double SPL_LSN_DST = sqrtf((SPL_LSN_XOFS * SPL_LSN_XOFS) + (SPL_LSN_YOFS * SPL_LSN_YOFS));
 
-	double SPR_LSN_XOFS = SPR.x - LSN.x;
-	double SPR_LSN_YOFS = SPR.y - LSN.y;
+    if (SPL_LSN_DST > MAXL_DST) MAXL_DST = SPL_LSN_DST;
+
+	double SPR_LSN_XOFS = SPR.x - listen_x;
+	double SPR_LSN_YOFS = SPR.y - listen_y;
 	double SPR_LSN_DST = sqrtf((SPR_LSN_XOFS * SPR_LSN_XOFS) + (SPR_LSN_YOFS * SPR_LSN_YOFS));
+
+	if (SPR_LSN_DST > MAXR_DST) MAXR_DST = SPR_LSN_DST;
+
+
+    /*
+		filters set at 125Hz, 250Hz, 500Hz, 1000Hz, 2000Hz, 4000Hz
+	*/
+	double Freq[] = {125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0};
+
+	double dbAirAbs[] = {-0.00044, -0.00131, -0.002728, -0.004665, -0.009887, -0.029665};
+
+	/*
+		modify these to adjust the absorption qualities of the surface.
+		Remember that lower frequencies are less effected by surfaces
+	*/
+
+	/*
+        -0.009, -0.009, -0.017, -0.017, -0.017, -0.026
+        -0.915, -3.098, -4.437, -6.021, -7.959, -10.458
+        -0.061, -3.098, -6.021, -10.458, -10.458, -7.959
+	 */
+    double dbAttn[8][6] = {
+        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
+        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
+        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
+        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942}
+    };
 
 
 	if (rtn_rvb == NULL) {
 		return NULL;
 	}
 
-	/*
-		setup Peaking band EQ filter
-		filter based on public domain code by Tom St Denis
-		http://www.musicdsp.org/showone.php?id=64
-	*/
-	for (i = 0; i < 6; i++) {
-		/*
-			filters set at 125Hz, 250Hz, 500Hz, 1000Hz, 2000Hz, 4000Hz
-		*/
-		double Freq[] = {125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0};
-
-		/*
-			modify these to adjust the absorption qualities of the surface.
-			Remember that lower frequencies are less effected by surfaces
-		*/
-		double dbAttn[] = {-0.0, -6.0, -13.0, -21.0, -30.0, -40.0};
-		//double dbAttn[] = {-40.0, -30.0, -21.0, -13.0, -6.0, -0.0};
-		double srate = (double)rate;
-		double bandwidth = 2.0;
-		double omega = 2.0 * M_PI * Freq[i] / srate;
-		double sn = sin(omega);
-		double cs = cos(omega);
-		double alpha = sn * sinh(M_LN2 /2 * bandwidth * omega /sn);
-		double A = pow(10.0, (dbAttn[i] / 40.0));
-		/*
-			Peaking band EQ filter
-		*/
-		double b0 = 1 + (alpha * A);
-		double b1 = -2 * cs;
-		double b2 = 1 - (alpha * A);
-		double a0 = 1 + (alpha /A);
-		double a1 = -2 * cs;
-		double a2 = 1 - (alpha /A);
-
-		rtn_rvb->coeff[i][0] = (signed long int)((b0 /a0) * 1024.0);
-		rtn_rvb->coeff[i][1] = (signed long int)((b1 /a0) * 1024.0);
-		rtn_rvb->coeff[i][2] = (signed long int)((b2 /a0) * 1024.0);
-		rtn_rvb->coeff[i][3] = (signed long int)((a1 /a0) * 1024.0);
-		rtn_rvb->coeff[i][4] = (signed long int)((a2 /a0) * 1024.0);
-	}
-
-	/* setup the reverb now */
-
-	if (SPL_LSN_DST > MAXL_DST) MAXL_DST = SPL_LSN_DST;
-	if (SPR_LSN_DST > MAXR_DST) MAXR_DST = SPR_LSN_DST;
-
-	for (i = 0; i < 8; i++) {
+    for (j = 0; j < 8; j++) {
 		double SPL_RFL_XOFS = 0;
 		double SPL_RFL_YOFS = 0;
 		double SPR_RFL_XOFS = 0;
 		double SPR_RFL_YOFS = 0;
-		double RFN_XOFS = 0;
-		double RFN_YOFS = 0;
+        double RFN_XOFS = listen_x - RFN[j].x;
+        double RFN_YOFS = listen_y - RFN[j].y;
+        RFN_DST[j] = sqrtf((RFN_XOFS * RFN_XOFS) + (RFN_YOFS * RFN_YOFS));
 
-		/* distance from listener to reflective surface */
-		RFN_XOFS = LSN.x - RFN[i].x;
-		RFN_YOFS = LSN.y - RFN[i].y;
-		RFN_DST[i] = sqrtf((RFN_XOFS * RFN_XOFS) + (RFN_YOFS * RFN_YOFS));
-
-		/* distance from speaker to 1st reflective surface */
 		SPL_RFL_XOFS = SPL.x - RFN[i].x;
 		SPL_RFL_YOFS = SPL.y - RFN[i].y;
 		SPR_RFL_XOFS = SPR.x - RFN[i].x;
@@ -229,6 +209,7 @@ init_reverb(int rate, float room_x, float room_y) {
 		*/
 		SPL_DST[i] += RFN_DST[i];
 
+		/* so i dont have to delay speaker output */
 		SPL_DST[i] -= SPL_LSN_DST;
 
 		if (i < 4) {
@@ -239,26 +220,48 @@ init_reverb(int rate, float room_x, float room_y) {
 
 		SPR_DST[i] += RFN_DST[i];
 
-		SPR_DST[i] -= SPR_LSN_DST;
+		/* so i dont have to delay speaker output */
+        SPR_DST[i] -= SPR_LSN_DST;
+
 		if (i < 4) {
 			if (SPR_DST[i] > MAXL_DST) MAXL_DST = SPR_DST[i];
 		} else {
 			if (SPR_DST[i] > MAXR_DST) MAXR_DST = SPR_DST[i];
 		}
 
+        RFN_DST[j] *= 2.0;
 
+        if (j < 4) {
+            if (RFN_DST[j] > MAXL_DST) MAXL_DST = RFN_DST[j];
+        } else {
+            if (RFN_DST[j] > MAXR_DST) MAXR_DST = RFN_DST[j];
+        }
 
-		/*
-			Double the reflection distance so that we get the full distance traveled
-		*/
-		RFN_DST[i] *= 2.0;
+        for (i = 0; i < 6; i++) {
+            double srate = (double)rate;
+            double bandwidth = 2.0;
+            double omega = 2.0 * M_PI * Freq[i] / srate;
+            double sn = sin(omega);
+            double cs = cos(omega);
+            double alpha = sn * sinh(M_LN2 /2 * bandwidth * omega /sn);
+            double A = pow(10.0, ((dbAttn[j][i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
+            /*
+                Peaking band EQ filter
+            */
+            double b0 = 1 + (alpha * A);
+            double b1 = -2 * cs;
+            double b2 = 1 - (alpha * A);
+            double a0 = 1 + (alpha /A);
+            double a1 = -2 * cs;
+            double a2 = 1 - (alpha /A);
 
-		if (i < 4) {
-			if (RFN_DST[i] > MAXL_DST) MAXL_DST = RFN_DST[i];
-		} else {
-			if (RFN_DST[i] > MAXR_DST) MAXR_DST = RFN_DST[i];
-		}
-	}
+            rtn_rvb->coeff[j][i][0] = (signed long int)((b0 /a0) * 1024.0);
+            rtn_rvb->coeff[j][i][1] = (signed long int)((b1 /a0) * 1024.0);
+            rtn_rvb->coeff[j][i][2] = (signed long int)((b2 /a0) * 1024.0);
+            rtn_rvb->coeff[j][i][3] = (signed long int)((a1 /a0) * 1024.0);
+            rtn_rvb->coeff[j][i][4] = (signed long int)((a2 /a0) * 1024.0);
+        }
+    }
 
 	/* init the reverb buffers */
 	rtn_rvb->l_buf_size = (int)((float)rate * (MAXL_DST / 340.29));
@@ -297,12 +300,12 @@ free_reverb (struct _rvb *rvb) {
 
 void
 do_reverb (struct _rvb *rvb, signed long int *buffer, int size) {
-	int i, j;
+	int i, j, k;
 	signed long int l_buf_flt = 0;
 	signed long int r_buf_flt = 0;
 	signed long int l_rfl = 0;
 	signed long int r_rfl = 0;
-	int vol_div = 32;
+	int vol_div = 64;
 
 	for (i = 0; i < size; i += 2) {
 		signed long int tmp_l_val = 0;
@@ -336,29 +339,31 @@ do_reverb (struct _rvb *rvb, signed long int *buffer, int size) {
 		rvb->r_buf[rvb->r_out] = 0;
 		rvb->r_out = (rvb->r_out + 1) % rvb->r_buf_size;
 
-		for (j = 0; j < 6; j++) {
-			l_buf_flt = ((l_rfl * rvb->coeff[j][0]) +
-				(rvb->l_buf_flt_in[j][0] * rvb->coeff[j][1]) +
-				(rvb->l_buf_flt_in[j][1] * rvb->coeff[j][2]) -
-				(rvb->l_buf_flt_out[j][0] * rvb->coeff[j][3]) -
-				(rvb->l_buf_flt_out[j][1] * rvb->coeff[j][4])) / 1024;
-			rvb->l_buf_flt_in[j][1] = rvb->l_buf_flt_in[j][0];
-			rvb->l_buf_flt_in[j][0] = l_rfl;
-			rvb->l_buf_flt_out[j][1] = rvb->l_buf_flt_out[j][0];
-			rvb->l_buf_flt_out[j][0] = l_buf_flt;
-			buffer[i] += l_buf_flt;
+        for (k = 0; k < 8; k ++) {
+            for (j = 0; j < 6; j++) {
+                l_buf_flt = ((l_rfl * rvb->coeff[k][j][0]) +
+                    (rvb->l_buf_flt_in[k][j][0] * rvb->coeff[k][j][1]) +
+                    (rvb->l_buf_flt_in[k][j][1] * rvb->coeff[k][j][2]) -
+                    (rvb->l_buf_flt_out[k][j][0] * rvb->coeff[k][j][3]) -
+                    (rvb->l_buf_flt_out[k][j][1] * rvb->coeff[k][j][4])) / 1024;
+                rvb->l_buf_flt_in[k][j][1] = rvb->l_buf_flt_in[k][j][0];
+                rvb->l_buf_flt_in[k][j][0] = l_rfl;
+                rvb->l_buf_flt_out[k][j][1] = rvb->l_buf_flt_out[k][j][0];
+                rvb->l_buf_flt_out[k][j][0] = l_buf_flt;
+                buffer[i] += l_buf_flt / 8;
 
-			r_buf_flt = ((r_rfl * rvb->coeff[j][0]) +
-				(rvb->r_buf_flt_in[j][0] * rvb->coeff[j][1]) +
-				(rvb->r_buf_flt_in[j][1] * rvb->coeff[j][2]) -
-				(rvb->r_buf_flt_out[j][0] * rvb->coeff[j][3]) -
-				(rvb->r_buf_flt_out[j][1] * rvb->coeff[j][4])) / 1024;
-			rvb->r_buf_flt_in[j][1] = rvb->r_buf_flt_in[j][0];
-			rvb->r_buf_flt_in[j][0] = r_rfl;
-			rvb->r_buf_flt_out[j][1] = rvb->r_buf_flt_out[j][0];
-			rvb->r_buf_flt_out[j][0] = r_buf_flt;
-			buffer[i+1] += r_buf_flt;
-		}
+                r_buf_flt = ((r_rfl * rvb->coeff[k][j][0]) +
+                    (rvb->r_buf_flt_in[k][j][0] * rvb->coeff[k][j][1]) +
+                    (rvb->r_buf_flt_in[k][j][1] * rvb->coeff[k][j][2]) -
+                    (rvb->r_buf_flt_out[k][j][0] * rvb->coeff[k][j][3]) -
+                    (rvb->r_buf_flt_out[k][j][1] * rvb->coeff[k][j][4])) / 1024;
+                rvb->r_buf_flt_in[k][j][1] = rvb->r_buf_flt_in[k][j][0];
+                rvb->r_buf_flt_in[k][j][0] = r_rfl;
+                rvb->r_buf_flt_out[k][j][1] = rvb->r_buf_flt_out[k][j][0];
+                rvb->r_buf_flt_out[k][j][0] = r_buf_flt;
+                buffer[i+1] += r_buf_flt / 8;
+            }
+        }
 
 		/*
 			add filtered result back into the buffers but on the opposite side
