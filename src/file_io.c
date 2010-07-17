@@ -45,10 +45,10 @@ unsigned char *
 WM_BufferFile (const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	unsigned char *data;
-	char *ret_data = NULL;
 	struct stat buffer_stat;
 #ifndef _WIN32
-	char *home = NULL;
+	char *ret_data = NULL;
+    char *home = NULL;
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
 #endif

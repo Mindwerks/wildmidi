@@ -501,7 +501,7 @@ WM_LoadConfig (const char *config_file)
 						}
 					} else if (strcasecmp(line_tokens[0],"source") == 0) {
 # if (defined _WIN32) && !(defined __CYGWIN__)
-						if (!((isalpha(line_tokens[1][0])) && (strncmp(&line_token[1][1]":\\",2) == 0)) && (config_dir != NULL)) {
+						if (!((isalpha(line_tokens[1][0])) && (strncmp(&line_tokens[1][1],":\\",2) == 0)) && (config_dir != NULL)) {
 # else
 						if ((line_tokens[1][0] != '/') && (line_tokens[1][0] != '~') && (config_dir != NULL)) {
 # endif

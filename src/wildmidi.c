@@ -293,8 +293,8 @@ WAVEHDR header;
 unsigned long int mm_buffer_count;
 static CRITICAL_SECTION waveCriticalSection;
 
-int write_mm_output (char * output_data, int output_size);
-void close_mm_output ( void );
+static int write_mm_output (char * output_data, int output_size);
+static void close_mm_output ( void );
 
 WAVEHDR *mm_blocks;
 #define MM_BLOCK_SIZE 16384
@@ -305,6 +305,15 @@ unsigned long int mm_current_block = 0;
 
 static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2 ) {
 	int* freeBlockCounter = (int*)dwInstance;
+	HWAVEOUT tmp_hWaveOut = hWaveOut;
+	DWORD tmp_dwParam1 = dwParam1;
+	DWORD tmp_dwParam2 = dwParam2;	
+	
+    tmp_hWaveOut = hWaveOut;
+    tmp_dwParam1 = dwParam2;
+    tmp_dwParam2 = dwParam1;
+    
+
 	if(uMsg != WOM_DONE)
 		return;
 	EnterCriticalSection(&waveCriticalSection);
