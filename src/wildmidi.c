@@ -307,12 +307,12 @@ static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, 
 	int* freeBlockCounter = (int*)dwInstance;
 	HWAVEOUT tmp_hWaveOut = hWaveOut;
 	DWORD tmp_dwParam1 = dwParam1;
-	DWORD tmp_dwParam2 = dwParam2;	
-	
+	DWORD tmp_dwParam2 = dwParam2;
+
     tmp_hWaveOut = hWaveOut;
     tmp_dwParam1 = dwParam2;
     tmp_dwParam2 = dwParam1;
-    
+
 
 	if(uMsg != WOM_DONE)
 		return;
@@ -910,12 +910,6 @@ main (int argc, char **argv) {
 				if (real_file == NULL) {
 					real_file = strrchr(argv[optind], '\\');
 				}
-				midi_ptr = WildMidi_Open (argv[optind]);
-				if (midi_ptr == NULL) {
-					optind++;
-					continue;
-				}
-				wm_info = WildMidi_GetInfo(midi_ptr);
 
 				printf ("\rPlaying ");
 				if (real_file != NULL) {
@@ -923,6 +917,14 @@ main (int argc, char **argv) {
 				} else {
 					printf("%s \n", argv[optind]);
 				}
+
+				midi_ptr = WildMidi_Open (argv[optind]);
+				if (midi_ptr == NULL) {
+					optind++;
+					continue;
+				}
+				wm_info = WildMidi_GetInfo(midi_ptr);
+
 				optind++;
 			} else {
 				if (test_count == midi_test_max) {
@@ -1124,6 +1126,7 @@ NEXTMIDI:
 		usleep(5000);
 #endif
 		if (WildMidi_Shutdown() == -1)
+
 			printf("oops\n");
 		printf("Shutting down Sound System\n");
 		close_output();

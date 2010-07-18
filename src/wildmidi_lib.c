@@ -1885,6 +1885,38 @@ midi_setup_pitch (struct _mdi *mdi, unsigned char channel, unsigned short pitch)
 }
 
 
+static int
+add_handle(void * handle) {
+    struct _hndl *tmp_handle = NULL;
+
+    if (first_handle == NULL) {
+		first_handle = malloc(sizeof(struct _hndl));
+		if (first_handle == NULL) {
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM," to get ram", errno);
+			return -1;
+		}
+		first_handle->handle = handle;
+		first_handle->prev = NULL;
+		first_handle->next = NULL;
+	} else {
+		tmp_handle = first_handle;
+		if (tmp_handle->next != NULL) {
+			while (tmp_handle->next != NULL)
+				tmp_handle = tmp_handle->next;
+		}
+		tmp_handle->next = malloc(sizeof(struct _hndl));
+		if (tmp_handle->next == NULL) {
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM," to get ram", errno);
+			return -1;
+		}
+		tmp_handle->next->prev = tmp_handle;
+		tmp_handle = tmp_handle->next;
+		tmp_handle->next = NULL;
+		tmp_handle->handle = handle;
+	}
+    return 0;
+}
+
 static struct _mdi *
 WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 {
@@ -1901,8 +1933,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     unsigned long int sample_count = 0;
     unsigned long int sample_remainder = 0;
 
-    struct _hndl *tmp_handle = NULL;
-
     unsigned long int *track_delta;
     char *track_end;
     unsigned long int smallest_delta = 0;
@@ -1915,33 +1945,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     mdi = malloc(sizeof (struct _mdi));
     memset(mdi, 0, (sizeof(struct _mdi)));
 
-    if (first_handle == NULL) {
-		first_handle = malloc(sizeof(struct _hndl));
-		if (first_handle == NULL) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM," to parse midi data", errno);
-			free(mdi);
-			return NULL;
-		}
-		first_handle->handle = (void *)mdi;
-		first_handle->prev = NULL;
-		first_handle->next = NULL;
-	} else {
-		tmp_handle = first_handle;
-		if (tmp_handle->next != NULL) {
-			while (tmp_handle->next != NULL)
-				tmp_handle = tmp_handle->next;
-		}
-		tmp_handle->next = malloc(sizeof(struct _hndl));
-		if (tmp_handle->next == NULL) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM," to parse midi data", errno);
-			free(mdi);
-			return NULL;
-		}
-		tmp_handle->next->prev = tmp_handle;
-		tmp_handle = tmp_handle->next;
-		tmp_handle->next = NULL;
-		tmp_handle->handle = (void *)mdi;
-	}
     mdi->info.copyright = NULL;
     mdi->info.mixer_options = WM_MixerOptions;
 
@@ -3061,11 +3064,19 @@ WildMidi_Open (const char *midifile) {
 
     ret = (void *)WM_ParseNewMidi(mididata,midisize);
     free (mididata);
+
+    if (ret != NULL) {
+        int hdlret = 0;
+        hdlret = add_handle(ret);
+    }
+
 	return ret;
 }
 
 midi *
 WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
+	midi * ret = NULL;
+
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return NULL;
@@ -3075,7 +3086,14 @@ WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
 		return NULL;
 	}
 
-	return (void *)WM_ParseNewMidi(midibuffer,size);
+	ret = (void *)WM_ParseNewMidi(midibuffer,size);
+
+    if (ret != NULL) {
+        int hdlret = 0;
+        hdlret = add_handle(ret);
+    }
+
+	return ret;
 }
 
 int
