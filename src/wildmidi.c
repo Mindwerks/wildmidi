@@ -307,12 +307,11 @@ static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, 
 	int* freeBlockCounter = (int*)dwInstance;
 	HWAVEOUT tmp_hWaveOut = hWaveOut;
 	DWORD tmp_dwParam1 = dwParam1;
-	DWORD tmp_dwParam2 = dwParam2;
-
+	DWORD tmp_dwParam2 = dwParam2;	
+	
     tmp_hWaveOut = hWaveOut;
     tmp_dwParam1 = dwParam2;
     tmp_dwParam2 = dwParam1;
-
 
 	if(uMsg != WOM_DONE)
 		return;
@@ -694,11 +693,6 @@ close_oss_output(void) {
 #endif // HAVE_ALSA
 #endif
 
-/*
- ==============================
- ==============================
- ==============================
-*/
 
 
 static struct option const long_options[] = {
@@ -1145,8 +1139,4 @@ NEXTMIDI:
 	printf("\r");
 	return 0;
 }
-
-//============================
-//============================
-//============================
 
