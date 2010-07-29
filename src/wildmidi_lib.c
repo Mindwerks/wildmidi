@@ -2371,7 +2371,13 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
 
 
             if (!mdi->samples_to_mix) {
-                mdi->samples_to_mix = size >> 2;
+                if (mdi->info.current_sample >= mdi->info.approx_total_samples) {
+                    break;
+                } else if ((mdi->info.approx_total_samples - mdi->info.current_sample) > (size >> 2)) {
+                    mdi->samples_to_mix = size >> 2;
+                } else {
+                    mdi->samples_to_mix = mdi->info.approx_total_samples - mdi->info.current_sample;
+                }
             }
 		}
 		if (__builtin_expect((mdi->samples_to_mix > (size >> 2)),1)) {
@@ -2633,7 +2639,13 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
 
 
             if (!mdi->samples_to_mix) {
-                mdi->samples_to_mix = size >> 2;
+                if (mdi->info.current_sample >= mdi->info.approx_total_samples) {
+                    break;
+                } else if ((mdi->info.approx_total_samples - mdi->info.current_sample) > (size >> 2)) {
+                    mdi->samples_to_mix = size >> 2;
+                } else {
+                    mdi->samples_to_mix = mdi->info.approx_total_samples - mdi->info.current_sample;
+                }
             }
 		}
 		if (__builtin_expect((mdi->samples_to_mix > (size >> 2)),1)) {
