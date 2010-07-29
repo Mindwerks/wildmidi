@@ -75,7 +75,8 @@ convert_8s (unsigned char *data, struct _sample *gus_sample ) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    WM_ERROR_NEW("(%s:%i) ERROR: calloc failed (%s)", __FUNCTION__, __LINE__, strerror(errno));
+//	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 

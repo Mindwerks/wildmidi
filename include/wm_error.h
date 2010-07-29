@@ -39,7 +39,7 @@
 #define WM_ERR_INVALID_ARG	8
 #define WM_ERR_ALR_INIT     9
 
-extern void
-WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmfor, int error);
+extern void WM_ERROR_NEW (const char * wmfmt, ...);
+extern void WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmfor, int error);
 
 #endif //__WM_ERROR_H

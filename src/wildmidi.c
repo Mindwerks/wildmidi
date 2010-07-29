@@ -184,7 +184,7 @@ int audio_fd;
 
 static void
 shutdown_output ( void ) {
-	printf("Shutting Down Sound System\n");
+	printf("Shutting Down Sound System\r\n");
 	if (audio_fd != -1)
 		close(audio_fd);
 }
@@ -231,7 +231,7 @@ open_wav_output ( void ) {
 	}
 
 	if (write(audio_fd, &wav_hdr, 44) < 0) {
-		printf("ERROR: Writing Header %s\n", strerror(errno));
+		printf("ERROR: Writing Header %s\r\n", strerror(errno));
 		shutdown_output();
 		return -1;
 	}
@@ -245,7 +245,7 @@ open_wav_output ( void ) {
 static int
 write_wav_output (char * output_data, int output_size) {
 	if (write(audio_fd, output_data, output_size) < 0) {
-		printf("ERROR: Writing Wav %s\n", strerror(errno));
+		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
 		return -1;
 	}
@@ -266,7 +266,7 @@ close_wav_output ( void ) {
 	wav_count[3] = (wav_size >> 24) & 0xFF;
 	lseek(audio_fd,40,SEEK_SET);
 	if (write(audio_fd,&wav_count,4) < 0) {
-        printf("ERROR: Writing Wav %s\n", strerror(errno));
+        printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
 	}
 
@@ -278,7 +278,7 @@ close_wav_output ( void ) {
 	wav_count[3] = (wav_size >> 24) & 0xFF;
 	lseek(audio_fd,4,SEEK_SET);
     if (write(audio_fd,&wav_count,4) < 0) {
-        printf("ERROR: Writing Wav %s\n", strerror(errno));
+        printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
 	}
 
@@ -330,7 +330,7 @@ open_mm_output ( void ) {
 	InitializeCriticalSection(&waveCriticalSection);
 
 	if((mm_buffer = HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, ((MM_BLOCK_SIZE + sizeof(WAVEHDR)) * MM_BLOCK_COUNT))) == NULL)  {
-		printf("Memory allocation error\n");
+		printf("Memory allocation error\r\n");
 		return -1;
 	}
 
@@ -352,7 +352,7 @@ open_mm_output ( void ) {
 	wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
 
 	if(waveOutOpen( &hWaveOut, WAVE_MAPPER, &wfx, (DWORD_PTR)mmOutProc, (DWORD_PTR)&mm_free_blocks, CALLBACK_FUNCTION ) != MMSYSERR_NOERROR) {
-		printf("unable to open WAVE_MAPPER device\n");
+		printf("unable to open WAVE_MAPPER device\r\n");
 		return -1;
 	 }
 
@@ -439,37 +439,37 @@ open_alsa_output(void) {
 	}
 
 	if ((err = snd_pcm_open (&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-		printf("Error: audio open error: %s\n", snd_strerror (-err));
+		printf("Error: audio open error: %s\r\n", snd_strerror (-err));
 		return -1;
 	}
 
 	snd_pcm_hw_params_alloca (&hw);
 
 	if ((err = snd_pcm_hw_params_any(pcm, hw)) < 0) {
-		printf("ERROR: No configuration available for playback: %s\n", snd_strerror(-err));
+		printf("ERROR: No configuration available for playback: %s\r\n", snd_strerror(-err));
 
 		return -1;
 	}
 
 	if ((err = snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-		printf("Cannot set mmap'ed mode: %s.\n", snd_strerror(-err));
+		printf("Cannot set mmap'ed mode: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
 	if (snd_pcm_hw_params_set_format (pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
-		printf("ALSA does not support 16bit signed audio for your soundcard\n");
+		printf("ALSA does not support 16bit signed audio for your soundcard\r\n");
 		close_alsa_output();
 		return -1;
 	}
 
 	if (snd_pcm_hw_params_set_channels (pcm, hw, 2) < 0) {
-		printf("ALSA does not support stereo for your soundcard\n");
+		printf("ALSA does not support stereo for your soundcard\r\n");
 		close_alsa_output();
 		return -1;
 	}
 
 	if (snd_pcm_hw_params_set_rate_near(pcm, hw, &rate, 0) < 0) {
-		printf("ALSA does not support %iHz for your soundcard\n",rate);
+		printf("ALSA does not support %iHz for your soundcard\r\n",rate);
 		close_alsa_output();
 		return -1;
 	}
@@ -479,19 +479,19 @@ open_alsa_output(void) {
 
 	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw, &alsa_buffer_time, 0)) < 0)
 	{
-		printf("Set buffer time failed: %s.\n", snd_strerror(-err));
+		printf("Set buffer time failed: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
 	if ((err = snd_pcm_hw_params_set_period_time_near(pcm, hw, &alsa_period_time, 0)) < 0)
 	{
-		printf("Set period time failed: %s.\n", snd_strerror(-err));
+		printf("Set period time failed: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
 	if (snd_pcm_hw_params(pcm, hw) < 0)
 	{
-		printf("Unable to install hw params\n");
+		printf("Unable to install hw params\r\n");
 		return -1;
 	}
 
@@ -499,7 +499,7 @@ open_alsa_output(void) {
 	snd_pcm_sw_params_current(pcm, sw);
 	if (snd_pcm_sw_params(pcm, sw) < 0)
 	{
-		printf("Unable to install sw params\n");
+		printf("Unable to install sw params\r\n");
 		return -1;
 	}
 
@@ -521,7 +521,7 @@ write_alsa_output (char * output_data, int output_size) {
         if ((err = snd_pcm_writei(pcm, output_data, frames)) < 0) {
 			if (snd_pcm_state(pcm) == SND_PCM_STATE_XRUN) {
 				if ((err = snd_pcm_prepare(pcm)) < 0)
-					printf("snd_pcm_prepare() failed.\n");
+					printf("snd_pcm_prepare() failed.\r\n");
 				alsa_first_time = 1;
 				continue;
 			}
@@ -573,26 +573,26 @@ open_oss_output( void ) {
 	}
 
 	if ((audio_fd = open(pcmname, omode)) < 0) {
-		printf("ERROR: Unable to open /dev/dsp (%s)\n",strerror(errno));
+		printf("ERROR: Unable to open /dev/dsp (%s)\r\n",strerror(errno));
 		return -1;
 	}
 	if (ioctl (audio_fd, SNDCTL_DSP_RESET, 0) < 0) {
-		printf("ERROR: Unable to reset /dev/dsp\n");
+		printf("ERROR: Unable to reset /dev/dsp\r\n");
 		shutdown_output();
 		return -1;
 	}
 	if (ioctl (audio_fd, SNDCTL_DSP_GETCAPS, &caps) == -1) {
-		printf("ERROR: Driver Too Old\n");
+		printf("ERROR: Driver Too Old\r\n");
 		shutdown_output();
 		return -1;
 	}
 	if (!(caps & DSP_CAP_TRIGGER) || !(caps & DSP_CAP_MMAP)) {
-		printf ("Sound device can't do memory-mapped I/O.\n");
+		printf ("Sound device can't do memory-mapped I/O.\r\n");
 		shutdown_output();
 		return -1;
 	}
 	if (ioctl (audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
-		printf ("Um, can't do GETOSPACE?\n");
+		printf ("Um, can't do GETOSPACE?\r\n");
 		shutdown_output();
 		return -1;
 	}
@@ -600,34 +600,34 @@ open_oss_output( void ) {
 
 	rc = AFMT_S16_LE;
 	if (ioctl (audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0 ) {
-		printf("Can't set 16bit\n");
+		printf("Can't set 16bit\r\n");
 		shutdown_output();;
 		return -1;
 	}
 
 	tmp = 2;
 	if (ioctl (audio_fd, SNDCTL_DSP_CHANNELS, &tmp) < 0) {
-		printf("Can't set stereo\n");
+		printf("Can't set stereo\r\n");
 		shutdown_output();
 		return -1;
 	}
 
 	if (ioctl (audio_fd, SNDCTL_DSP_SPEED, &rate) < 0) {
-		printf("ERROR: /dev/dsp does not support %iHz output\n",rate);
+		printf("ERROR: /dev/dsp does not support %iHz output\r\n",rate);
 		shutdown_output();
 		return -1;
 	}
 
 	buffer = (unsigned char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
 	if (buffer == MAP_FAILED) {
-		printf("couldn't mmap %s\n",strerror(errno));
+		printf("couldn't mmap %s\r\n",strerror(errno));
 		shutdown_output();
 		return -1;
 	}
 
 	tmp = 0;
 	if (ioctl (audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
-		printf("Couldn't toggle\n");
+		printf("Couldn't toggle\r\n");
 		munmap (buffer, info.fragstotal * info.fragsize);
 		shutdown_output();
 		return -1;
@@ -635,7 +635,7 @@ open_oss_output( void ) {
 
 	tmp = PCM_ENABLE_OUTPUT;
 	if (ioctl (audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
-		printf("Couldn't toggle\n");
+		printf("Couldn't toggle\r\n");
 		munmap (buffer, info.fragstotal * info.fragsize);
 		shutdown_output();
 		return -1;
@@ -654,7 +654,7 @@ write_oss_output(char * output_data, int output_size) {
 	while (output_size != 0) {
 		while (1) {
 			if (ioctl (audio_fd, SNDCTL_DSP_GETOPTR, &count) == -1) {
-				printf("Dead Sound\n");
+				printf("Dead Sound\r\n");
 				munmap (buffer, info.fragstotal * info.fragsize);
 				shutdown_output();
 				return -1;
@@ -714,40 +714,40 @@ static struct option const long_options[] = {
 
 static void
 do_help (void) {
-	printf("  -v    --version        Display version\n");
-	printf("  -h    --help           This help.\n");
+	printf("  -v    --version        Display version\r\n");
+	printf("  -h    --help           This help.\r\n");
 #ifndef _WIN32
-	printf("  -d D  --device=D       Use device D for audio output instead\n");
-	printf("                         of the default\n");
+	printf("  -d D  --device=D       Use device D for audio output instead\r\n");
+	printf("                         of the default\r\n");
 #endif
-	printf("Software Wavetable Options\n");
-	printf("  -o W  --wavout=W       Saves the output to W in wav format\n");
-	printf("                         at 44100Hz 16 bit stereo\n");
-	printf("  -l    --log_vol        Use log volume adjustments\n");
-	printf("  -r N  --rate=N         output at N samples per second\n");
-	printf("  -c P  --config_file=P  P is the path and filename to your timidity.cfg\n");
-	printf("                         Defaults to /etc/timidity.cfg\n\n");
-	printf(" -m V  --master_volume=V Sets the master volumes, default is 100\n");
-	printf("                         range is 0-127 with 127 being the loudest\n");
-    printf(" -b    --reverb          Enable final output reverb engine\n");
+	printf("Software Wavetable Options\r\n");
+	printf("  -o W  --wavout=W       Saves the output to W in wav format\r\n");
+	printf("                         at 44100Hz 16 bit stereo\r\n");
+	printf("  -l    --log_vol        Use log volume adjustments\r\n");
+	printf("  -r N  --rate=N         output at N samples per second\r\n");
+	printf("  -c P  --config_file=P  P is the path and filename to your timidity.cfg\r\n");
+	printf("                         Defaults to /etc/timidity.cfg\n\r\n");
+	printf(" -m V  --master_volume=V Sets the master volumes, default is 100\r\n");
+	printf("                         range is 0-127 with 127 being the loudest\r\n");
+    printf(" -b    --reverb          Enable final output reverb engine\r\n");
 
 }
 
 static void
 do_version (void) {
-	printf("\nWildMidi %s Open Source Midi Sequencer\n",PACKAGE_VERSION);
-	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
-	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\n");
-	printf("This is free software, and you are welcome to redistribute it\n");
-	printf("under the terms and conditions of the GNU General Public License version 3.\n");
-	printf("For more information see COPYING\n\n");
-	printf("Report bugs to %s\n",PACKAGE_BUGREPORT);
-	printf("WildMIDI homepage at %s\n\n",PACKAGE_URL);
+	printf("\nWildMidi %s Open Source Midi Sequencer\r\n",PACKAGE_VERSION);
+	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\r\n");
+	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\r\n");
+	printf("This is free software, and you are welcome to redistribute it\r\n");
+	printf("under the terms and conditions of the GNU General Public License version 3.\r\n");
+	printf("For more information see COPYING\n\r\n");
+	printf("Report bugs to %s\r\n",PACKAGE_BUGREPORT);
+	printf("WildMIDI homepage at %s\n\r\n",PACKAGE_URL);
 }
 
 static void
 do_syntax (void) {
-	printf("wildmidi [options] filename.mid\n\n");
+	printf("wildmidi [options] filename.mid\n\r\n");
 }
 
 int
@@ -841,7 +841,7 @@ main (int argc, char **argv) {
 				test_patch = (unsigned char)atoi(optarg);
 				break;
 			default:
-				printf ("Unknown Option -%o ??\n", i);
+				printf ("Unknown Option -%o ??\r\n", i);
 				return 0;
 		}
 	}
@@ -852,7 +852,7 @@ main (int argc, char **argv) {
 		config_file[sizeof(WILDMIDI_CFG)] = '\0';
 	}
 	if ((optind < argc) || (test_midi)) {
-		printf("Initializing Sound System\n");
+		printf("Initializing Sound System\r\n");
 
 		if (wav_file[0] != '\0') {
 			if (open_wav_output() == -1) {
@@ -871,11 +871,11 @@ main (int argc, char **argv) {
 				return 0;
 			}
 		}
-		printf("Initializing %s\n\n", WildMidi_GetString(WM_GS_VERSION));
-		printf(" +  Volume up        e  Better resampling    n  Next Midi\n");
-		printf(" -  Volume down      l  Log volume           q  Quit\n");
-        printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
-        printf("                     p  Pause On/Off\n\n");
+		printf("Initializing %s\n\r\n", WildMidi_GetString(WM_GS_VERSION));
+		printf(" +  Volume up        e  Better resampling    n  Next Midi\r\n");
+		printf(" -  Volume down      l  Log volume           q  Quit\r\n");
+        printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\r\n");
+        printf("                     p  Pause On/Off\n\r\n");
 
 		if (WildMidi_Init (config_file, rate, mixer_options) == -1) {
 			return 0;
@@ -885,7 +885,7 @@ main (int argc, char **argv) {
 		output_buffer = malloc(16384);
 
 		if (output_buffer == NULL) {
-			printf("Not enough ram, exiting\n");
+			printf("Not enough ram, exiting\r\n");
 			WildMidi_Shutdown();
 			return 0;
 		}
@@ -905,11 +905,11 @@ main (int argc, char **argv) {
 					real_file = strrchr(argv[optind], '\\');
 				}
 
-				printf ("\rPlaying ");
+				printf ("Playing ");
 				if (real_file != NULL) {
-					printf("%s \n", (real_file+1));
+					printf("%s \r\n", (real_file+1));
 				} else {
-					printf("%s \n", argv[optind]);
+					printf("%s \r\n", argv[optind]);
 				}
 
 				midi_ptr = WildMidi_Open (argv[optind]);
@@ -931,14 +931,14 @@ main (int argc, char **argv) {
 				midi_ptr = WildMidi_OpenBuffer(test_data, 633);
 				wm_info = WildMidi_GetInfo(midi_ptr);
 				test_count++;
-				printf ("\rPlaying test midi no. %i\n", test_count);
+				printf ("Playing test midi no. %i\r\n", test_count);
 			}
 
 			apr_mins = wm_info->approx_total_samples / (rate * 60);
 			apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
 
 			if (midi_ptr == NULL) {
-				fprintf(stderr,"\rSkipping %s\n",argv[optind]);
+				fprintf(stderr,"Skipping %s\r\n",argv[optind]);
 				optind++;
 				continue;
 			}
@@ -986,10 +986,10 @@ main (int argc, char **argv) {
                             }
                             break;
 						case 'q':
-							printf("\n");
+							printf("\r\n");
 							WildMidi_Close(midi_ptr);
 							WildMidi_Shutdown();
-							printf("Shutting down Sound System\n");
+							printf("Shutting down Sound System\r\n");
 							close_output();
 #ifndef _WIN32
 							if (isatty(my_tty))
@@ -1104,9 +1104,9 @@ main (int argc, char **argv) {
 				send_output (output_buffer, output_result);
 			}
 NEXTMIDI:
-			fprintf(stderr, "\n\r");
+			fprintf(stderr, "\r\n");
 			if (WildMidi_Close(midi_ptr) == -1) {
-				printf ("oops\n");
+				printf ("oops\r\n");
 			}
 			memset(output_buffer, 0, 16384);
 			send_output (output_buffer, 16384);
@@ -1121,15 +1121,15 @@ NEXTMIDI:
 #endif
 		if (WildMidi_Shutdown() == -1)
 
-			printf("oops\n");
-		printf("Shutting down Sound System\n");
+			printf("oops\r\n");
+		printf("Shutting down Sound System\r\n");
 		close_output();
 #ifndef _WIN32
 		if (isatty(my_tty))
 			resetty();
 #endif
 	} else {
-		printf("ERROR: No midi file given\n");
+		printf("ERROR: No midi file given\r\n");
 		do_syntax();
 		return 0;
 	}

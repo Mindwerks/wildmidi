@@ -27,8 +27,18 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include <stdarg.h>
 #include "wm_error.h"
+
+void
+WM_ERROR_NEW (const char * wmfmt, ...) {
+	va_list		args;
+	fprintf(stderr,"\r");
+    va_start (args, wmfmt);
+	vfprintf (stderr, wmfmt, args);
+	va_end (args);
+	fprintf(stderr,"\n");
+}
 
 void
 WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmfor, int error) {
@@ -58,3 +68,5 @@ WM_ERROR( const char * func, unsigned long int lne, int wmerno, const char * wmf
 	}
 
 }
+
+
