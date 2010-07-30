@@ -14,7 +14,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
 AC_INIT([WildMidi],[0.2.3.4],[http://sourceforge.net/tracker/?group_id=42635&atid=433744],[wildmidi],[http://wildmidi.sourceforge.net])
-AC_REVISION([$Revision: 1.14 $])
+AC_REVISION([$Revision: 1.15 $])
 AC_CONFIG_SRCDIR([src/wildmidi_lib.c])
 AC_CONFIG_HEADERS([include/config.h])
 
@@ -26,8 +26,8 @@ AM_INIT_AUTOMAKE
 #  ? : +1 :  ?   == internal changes that doesn't break anything.
 # CURRENT : REVISION : AGE
 LT_CURRENT=1
-LT_REVISION=1
-LT_AGE=1
+LT_REVISION=2
+LT_AGE=0
 
 AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)
