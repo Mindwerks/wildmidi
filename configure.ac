@@ -38,6 +38,12 @@ AC_LANG([C])
 if test ${CFLAGS-unset} = unset; then
 	CFLAGS=""
 fi
+
+if test ${LDFLAGS-unset} = unset; then
+	LDFLAGS=""
+fi
+
+
 if test ${AR-unset} = unset; then
 	AR="ar"
 fi
@@ -104,8 +110,6 @@ AC_CHECK_HEADERS(
 AC_C_BIGENDIAN
 
 CFLAGS="$CFLAGS -Wall -Wextra -pedantic"
-LDFLAGS=
-
 
 AC_ARG_ENABLE([werror],
     [AS_HELP_STRING([--disable-werror],
