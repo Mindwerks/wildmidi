@@ -1,5 +1,5 @@
 /*
-	DevTest_GusPat.c
+	DevTest.c
 
  	Display Information about the Gravis Ultrasound patch file.
 
@@ -27,6 +27,8 @@
     Email: wildcode@users.sourceforge.netchar
 */
 
+#include "config.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -42,7 +44,6 @@
 # include <pwd.h>
 #endif
 
-#include "config.h"
 
 static struct option const long_options[] = {
 	{"debug-level",1,0,'d'},

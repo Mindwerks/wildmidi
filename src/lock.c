@@ -22,6 +22,7 @@
     Email: wildcode@users.sourceforge.net
 */
 
+#include "config.h"
 
 #ifdef _WIN32
 #include <windows.h>
