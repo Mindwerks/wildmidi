@@ -25,6 +25,8 @@
     Email: wildcode@users.sourceforge.net
 */
 
+#include "config.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -42,7 +44,6 @@
 #ifdef _WIN32
 # include <windows.h>
 #endif
-#include "config.h"
 #include "wm_error.h"
 #include "file_io.h"
 #include "lock.h"

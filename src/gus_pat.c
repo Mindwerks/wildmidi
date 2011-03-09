@@ -25,6 +25,8 @@
     Email: wildcode@users.sourceforge.net
 */
 
+#include "config.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

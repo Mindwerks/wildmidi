@@ -25,6 +25,8 @@
     Email: wildcode@users.sourceforge.net
 */
 
+#include "config.h"
+
 #include <stdlib.h>
 
 #include "internal_midi.h"
