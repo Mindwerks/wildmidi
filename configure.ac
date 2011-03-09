@@ -1,4 +1,4 @@
-dnl Copyright (C) Chris Ison 2001-2010
+dnl Copyright (C) Chris Ison 2001-2011
 dnl Some parts (C) Quakeforge 2004
 dnl
 dnl This file is part of WildMidi
@@ -13,7 +13,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([WildMidi],[0.2.3.5dev],[http://sourceforge.net/tracker/?group_id=42635&atid=433744],[wildmidi],[http://wildmidi.sourceforge.net])
+AC_INIT([WildMidi],[0.2.4.0dev],[http://sourceforge.net/tracker/?group_id=42635&atid=433744],[wildmidi],[http://wildmidi.sourceforge.net])
 AC_REVISION([$Revision: 1.16 $])
 AC_CONFIG_SRCDIR([src/wildmidi_lib.c])
 AC_CONFIG_HEADERS([include/config.h])
@@ -26,7 +26,7 @@ AM_INIT_AUTOMAKE
 #  ? : +1 :  ?   == internal changes that doesn't break anything.
 # CURRENT : REVISION : AGE
 LT_CURRENT=1
-LT_REVISION=2
+LT_REVISION=3
 LT_AGE=0
 
 AC_SUBST(LT_CURRENT)

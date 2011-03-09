@@ -5,7 +5,7 @@
 
     NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
 
-    Copyright (C) Chris Ison 2001-2010
+    Copyright (C) Chris Ison 2001-2011
 
     This file is part of WildMIDI.
 

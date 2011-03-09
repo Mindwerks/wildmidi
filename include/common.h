@@ -3,7 +3,7 @@
 
  	Midi Wavetable Processing library
 
-    Copyright (C) Chris Ison 2001-2010
+    Copyright (C) Chris Ison 2001-2011
 
     This file is part of WildMIDI.
 
