@@ -340,7 +340,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                         printf ("Corrupt Midi, Missing or Corrupt Track Data\n");
                         return -1;
                     }
-                    if (verbose) printf("Note Off: chan(%i) note(%i) vel(%i)\n",(event & 0x4),midi_data[0],midi_data[1]);
+                    if (verbose) printf("Note Off: chan(%i) note(%i) vel(%i)\n",(event & 0x0F),midi_data[0],midi_data[1]);
                     midi_data += 2;
                     midi_size -= 2;
                     running_event = event;
@@ -350,7 +350,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                         printf ("Corrupt Midi, Missing or Corrupt Track Data\n");
                         return -1;
                     }
-                    if (verbose) printf("Note On: chan(%i) note(%i) vel(%i)\n",(event & 0x4),midi_data[0],midi_data[1]);
+                    if (verbose) printf("Note On: chan(%i) note(%i) vel(%i)\n",(event & 0x0F),midi_data[0],midi_data[1]);
                     midi_data += 2;
                     midi_size -= 2;
                     running_event = event;
@@ -360,7 +360,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                         printf ("Corrupt Midi, Missing or Corrupt Track Data\n");
                         return -1;
                     }
-                    if (verbose) printf("Aftertouch: chan(%i) note(%i) vel(%i)\n",(event & 0x4),midi_data[0],midi_data[1]);
+                    if (verbose) printf("Aftertouch: chan(%i) note(%i) vel(%i)\n",(event & 0x0F),midi_data[0],midi_data[1]);
                     midi_data += 2;
                     midi_size -= 2;
                     running_event = event;
@@ -370,7 +370,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                         printf ("Corrupt Midi, Missing or Corrupt Track Data\n");
                         return -1;
                     }
-                    if (verbose) printf("controler: chan(%i) ctrl(%i) set(%i)\n",(event & 0x4),midi_data[0],midi_data[1]);
+                    if (verbose) printf("controler: chan(%i) ctrl(%i) set(%i)\n",(event & 0x0F),midi_data[0],midi_data[1]);
                     midi_data += 2;
                     midi_size -= 2;
                     running_event = event;
@@ -390,7 +390,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                         printf ("Corrupt Midi, Missing or Corrupt Track Data\n");
                         return -1;
                     }
-                    if (verbose) printf("Channel Pressure: chan(%i) pres(%i)\n",(event & 0x4),*midi_data);
+                    if (verbose) printf("Channel Pressure: chan(%i) pres(%i)\n",(event & 0x0F),*midi_data);
                     midi_data++;
                     midi_size--;
                     running_event = event;
@@ -400,7 +400,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                         printf ("Corrupt Midi, Missing or Corrupt Track Data\n");
                         return -1;
                     }
-                    if (verbose) printf("Set Pitch: chan(%i) note(%i)\n",(event & 0x4),((midi_data[0] << 7) | midi_data[1]));
+                    if (verbose) printf("Set Pitch: chan(%i) note(%i)\n",(event & 0x0F),((midi_data[0] << 7) | midi_data[1]));
                     midi_data += 2;
                     midi_size -= 2;
                     running_event = event;
@@ -441,7 +441,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                                 return -1;
                             }
                         } else {
-                            if (verbose) printf ("Meta Event: Unsupported\n");
+                            if (verbose) printf ("Meta Event: Unsupported (%i)\n", *midi_data);
                         }
                         midi_data++;
                         midi_size--;
@@ -546,13 +546,13 @@ test_guspat(unsigned char * gus_patch, unsigned long int filesize, unsigned int 
         if (verbose) {
             printf("Modes: ");
             if (gus_patch[gus_ptr+55] & 0x01) printf("16 Bit  ");
-            if (gus_patch[gus_ptr+55] & 0x01) printf("Unsigned  ");
-            if (gus_patch[gus_ptr+55] & 0x01) printf("Loop  ");
-            if (gus_patch[gus_ptr+55] & 0x01) printf("Ping Pong  ");
-            if (gus_patch[gus_ptr+55] & 0x01) printf("Reverse  ");
-            if (gus_patch[gus_ptr+55] & 0x01) printf("Sustain  ");
-            if (gus_patch[gus_ptr+55] & 0x01) printf("Envelope  ");
-            if (gus_patch[gus_ptr+55] & 0x01) printf("Clamped Release  ");
+            if (gus_patch[gus_ptr+55] & 0x02) printf("Unsigned  ");
+            if (gus_patch[gus_ptr+55] & 0x04) printf("Loop  ");
+            if (gus_patch[gus_ptr+55] & 0x08) printf("Ping Pong  ");
+            if (gus_patch[gus_ptr+55] & 0x10) printf("Reverse  ");
+            if (gus_patch[gus_ptr+55] & 0x20) printf("Sustain  ");
+            if (gus_patch[gus_ptr+55] & 0x40) printf("Envelope  ");
+            if (gus_patch[gus_ptr+55] & 0x80) printf("Clamped Release  ");
             printf("\n");
 
             printf("Sample End\n\n");
