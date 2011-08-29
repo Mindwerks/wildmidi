@@ -25,7 +25,7 @@ AM_INIT_AUTOMAKE
 # +1 :  0 :  0   == changed/removed an interface. Breaks old apps.
 #  ? : +1 :  ?   == internal changes that doesn't break anything.
 # CURRENT : REVISION : AGE
-LT_CURRENT=1
+LT_CURRENT=2
 LT_REVISION=3
 LT_AGE=0
 

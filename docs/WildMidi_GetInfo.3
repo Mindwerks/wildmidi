@@ -24,6 +24,7 @@ struct _WM_Info {
    char *\fIcopyright\fP;
    unsigned long int \fIcurrent_sample\fP;
    unsigned long int \fIapprox_total_samples\fP;
+   unsigned long int \fItotal_midi_time\fP;
    unsigned short int \fImixer_options\fP;
 };
 .fi
@@ -38,6 +39,9 @@ This is the number of stereo samples libWildMidi has processed for the MIDI file
 .PP
 .IP \fIapprox_total_samples\fP
 This is the total number of stereo samples libWildMidi expects to process. This can be used to obtain the total playing time by dividing this value by the \fIrate\fP given when libWildMidi was initialized by \fBWildMidi_Init\fP\fR(3).\fP Also when you divide \fIcurrent_sample\fP by this value and multiplying by 100, you have the percentage currently processed.
+.PP
+.IP \fItotal_midi_time\fP
+This is the total time of MIDI events in 1/1000's of a second. It differs from \fIapprox_total_samples\fP in that it only states the total time within the MIDI file and does not take into account the extra bit of time to finish playing sampling smoothly.
 .PP
 .IP \fImixer_options\fP
 .RS
