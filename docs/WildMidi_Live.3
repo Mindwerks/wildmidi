@@ -7,10 +7,24 @@ WildMidi_Live \- Push a midi event into the head of the processing buffer.
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B int WildMidi_Live (unsigned long \fmidievent\fP)
+.B int WildMidi_Live (midi * \fIhandle\fP, unsigned long int \fImidi_event\fP)
 .PP
 .SH DESCRIPTION
-Places \fmidievent\fP at the head of the processing buffer so it is the next event processed.
+Places \fImidi_event\fP at the head of the processing buffer so it is the next event processed.
+.PP
+.IP \fIhandle\fP
+The indentifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+.PP
+.IP \fImidi_event\fP
+The midi data that WildMIDI is to process. bits 31-24 contain the event and channel info with bits 23-0 containing the data shifted left.
+.PP
+.nf
+Example: Note on event
+    event_byte = 0x91;
+    note_byte = 0x7f;
+    velocity_byte = 0x65;
+    midi_event = (event_byte << 24) | (note_byte << 16) | (velocity_byte << 8);
+.fi
 .PP
 .SH "RETURN VALUE"
 Returns -1 on error otherwise returns 0
