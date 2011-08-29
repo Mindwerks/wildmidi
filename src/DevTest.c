@@ -430,6 +430,17 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                                 printf ("Corrupt Midi, Bad End Of Track\n");
                                 return -1;
                             }
+                        } else if (*midi_data == 0x21) {
+                            if (verbose) printf ("Meta Event: Port Prefix: ");
+                            if (midi_size < 3) {
+                                printf("Corrupt Midi, Corrupt or Missing Data\n");
+                                return -1;
+                            }
+                            if (midi_data[1] != 0x01) {
+                                printf ("Corrupt Midi, Bad Port Prefix\n");
+                                return -1;
+                            }
+                            if (verbose) printf ("%i\n",(int)midi_data[2]);
                         } else if (*midi_data == 0x51) {
                             if (verbose) printf ("Meta Event: Tempo\n");
                             if (midi_size < 2) {
