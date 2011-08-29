@@ -307,8 +307,8 @@ static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, 
 	int* freeBlockCounter = (int*)dwInstance;
 	HWAVEOUT tmp_hWaveOut = hWaveOut;
 	DWORD tmp_dwParam1 = dwParam1;
-	DWORD tmp_dwParam2 = dwParam2;	
-	
+	DWORD tmp_dwParam2 = dwParam2;
+
     tmp_hWaveOut = hWaveOut;
     tmp_dwParam1 = dwParam2;
     tmp_dwParam2 = dwParam1;
@@ -750,6 +750,23 @@ do_syntax (void) {
 	printf("wildmidi [options] filename.mid\n\r\n");
 }
 
+static void *midi_ptr =  NULL;
+
+#if (defined _WIN32) || (defined __CYGWIN__)
+void CALLBACK midi_callback(HMIDIIN midi_in, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
+{
+    void * tmp_data = midi_in;
+    tmp_data = &dwInstance;
+    tmp_data = &dwParam2;
+
+    if (uMsg == MIM_DATA)
+    {
+        fprintf(stderr,"\r\n%lx\r\n",dwParam1);
+        WildMidi_Live(midi_ptr,dwParam1);
+    }
+}
+#endif
+
 int
 main (int argc, char **argv) {
 	struct _WM_Info * wm_info = NULL;
@@ -757,7 +774,6 @@ main (int argc, char **argv) {
 	int option_index = 0;
 	unsigned long int mixer_options = 0;
 	static char *config_file = NULL;
-	void *midi_ptr =  NULL;
 	unsigned char master_volume = 100;
 	int output_result = 0;
 	char * output_buffer = NULL;
@@ -778,6 +794,7 @@ main (int argc, char **argv) {
 	static int spinpoint = 0;
 	unsigned long int seek_to_sample = 0;
     int inpause = 0;
+    int input_dev_no = -1;
 
 #ifndef _WIN32
 	int my_tty;
@@ -792,10 +809,13 @@ main (int argc, char **argv) {
 #define resetty() (_tty.c_oflag = _res_oflg, _tty.c_lflag = _res_lflg,\
 		(void) tcsetattr(my_tty, TCSADRAIN, &_tty))
 #endif
+#if (defined _WIN32) || (defined __CYGWIN__)
+    HMIDIIN midi_in;
+#endif
 
 	do_version();
 	while (1) {
-		i = getopt_long (argc, argv, "vho:lr:c:m:btk:p:ed:", long_options, &option_index);
+		i = getopt_long (argc, argv, "vho:lr:c:m:btk:p:ed:i:", long_options, &option_index);
 		if (i == -1)
 			break;
 		switch (i) {
@@ -840,6 +860,9 @@ main (int argc, char **argv) {
 			case 'p': // set test patch
 				test_patch = (unsigned char)atoi(optarg);
 				break;
+            case 'i': // set input device
+                input_dev_no = atoi(optarg);
+                break;
 			default:
 				printf ("Unknown Option -%o ??\r\n", i);
 				return 0;
@@ -897,6 +920,24 @@ main (int argc, char **argv) {
 			fcntl(0, F_SETFL, FNONBLOCK);
 		}
 #endif
+#if (defined _WIN32) || (defined __CYGWIN__)
+		if (input_dev_no != -1)
+		{
+            if (midiInOpen(&midi_in, input_dev_no, (DWORD)midi_callback, (DWORD)NULL, CALLBACK_FUNCTION) != MMSYSERR_NOERROR)
+            {
+                printf("Failed to open midi device 0x%02x.\n", input_dev_no);
+                input_dev_no = -1;
+            } else {
+                if (midiInStart(midi_in) != MMSYSERR_NOERROR)
+                {
+                    printf("Failed to start midi device 0x%02x.\n", input_dev_no);
+                    midiInClose(midi_in);
+                    input_dev_no = -1;
+                }
+            }
+		}
+#endif
+
 
 		while ((optind < argc) || (test_midi)) {
 			if (!test_midi) {
