@@ -26,8 +26,8 @@ AM_INIT_AUTOMAKE
 #  ? : +1 :  ?   == internal changes that doesn't break anything.
 # CURRENT : REVISION : AGE
 LT_CURRENT=2
-LT_REVISION=3
-LT_AGE=0
+LT_REVISION=0
+LT_AGE=1
 
 AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)

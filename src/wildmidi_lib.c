@@ -1998,9 +1998,9 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
     memmove(&mdi->events[event_ofs + 1], &mdi->events[event_ofs], ((mdi->event_count - event_ofs) * sizeof(struct _event)));
     mdi->event_count++;
 
-    unsigned char midi_event = (midi_data >> 24) & 0xFF;
-    unsigned char midi_data1 = (midi_data >> 16) & 0xFF;
-    unsigned char midi_data2 = (midi_data >> 8) & 0xFF;
+    unsigned char midi_event = midi_data & 0xFF;
+    unsigned char midi_data1 = (midi_data >> 8) & 0xFF;
+    unsigned char midi_data2 = (midi_data >> 16) & 0xFF;
     void (*tmp_event)(struct _mdi *mdi, struct _event_data *data) = NULL;
     unsigned long int tmp_data = 0;
     switch ((midi_event >> 4)& 0xF)
