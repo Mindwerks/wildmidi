@@ -180,6 +180,8 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
     unsigned int i;
     unsigned int divisions = 96;
     unsigned char running_event;
+    unsigned char *sysex_store = NULL;
+    unsigned long int sysex_store_ofs = 0;
 
     if (strncmp((char *) midi_data,"RIFF",4) == 0)
     {
@@ -406,17 +408,97 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                     running_event = event;
                     break;
                 case 0xF:
-                    if (event == 0xF0) {
-                        if (verbose) printf("Sysex Event which we ignore\n");
+                    if ((event == 0xF0) || (event == 0xF7)){
+                        unsigned long int sysex_size = 0;
+                        if (verbose) printf("Sysex Event which we mostly ignore\n");
                         running_event = 0;
-                        while (*midi_data != 0xF7) {
+                        while (*midi_data > 0x7F)
+                        {
+                            sysex_size = (sysex_size << 7) | (*midi_data & 0x7F);
                             midi_data++;
-                            if (midi_size == 0) {
-                                printf ("Corrupt Midi, Missing or Corrupt Track Data\n");
-                                return -1;
-                            }
-                            midi_size--;
                         }
+                        sysex_size = (sysex_size << 7) | (*midi_data & 0x7F);
+                        midi_data++;
+
+                        sysex_store = realloc(sysex_store, (sysex_store_ofs + sysex_size));
+                        memcpy(&sysex_store[sysex_store_ofs], midi_data,sysex_size);
+                        sysex_store_ofs += sysex_size;
+
+                        if (sysex_store[sysex_store_ofs - 1] == 0xF7)
+                        {
+                            unsigned long int sysex_ofs = 0;
+                            unsigned char tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
+                            if (strncmp((const char *)tmpsysexdata,(const char *)sysex_store,4) == 0)
+                            {
+                                unsigned char sysex_cs = 0;
+                                sysex_ofs = 4;
+
+                                do {
+                                    sysex_cs += sysex_store[sysex_ofs];
+                                    if (sysex_cs > 0x7F)
+                                    {
+                                        sysex_cs -= 0x80;
+                                    }
+                                    sysex_ofs++;
+                                } while (sysex_store[sysex_ofs + 1] != 0xF7);
+                                sysex_cs = 0x80 - sysex_cs;
+                                if(sysex_cs != sysex_store[sysex_ofs])
+                                {
+                                    printf("Roland Sysex Checksum Error: ");
+                                    sysex_ofs = 0;
+                                    do {
+                                        printf("%02x ", sysex_store[sysex_ofs]);
+                                        sysex_ofs++;
+                                    } while (sysex_ofs != sysex_store_ofs);
+                                    printf("\n");
+                                } else {
+                                    if (sysex_store[4] == 0x40)
+                                    {
+                                        if (((sysex_store[5] & 0xF0) == 0x10) && (sysex_store[6] == 0x15))
+                                        {
+                                            // Roland Drum Track Setting
+                                            unsigned char sysex_ch = 0x0F & sysex_store[5];
+                                            if (sysex_ch == 0x00)
+                                            {
+                                                sysex_ch = 0x09;
+                                            } else if (sysex_ch <= 0x09)
+                                            {
+                                                sysex_ch -= 1;
+                                            }
+                                            if (verbose) printf("Additional Drum Channel(0x%02x) Setting: 0x%02x\n", sysex_ch, sysex_store[7]);
+                                        } else if ((sysex_store[5] == 0x00) && (sysex_store[6] == 0x7F) && (sysex_store[7] == 0x00))
+                                        {
+                                            // Roland GS Reset
+                                            if (verbose) printf("GS Reset\n");
+                                        } else
+                                        {
+                                            goto UNKNOWNSYSEX;
+                                        }
+                                    } else
+                                    {
+                                        goto UNKNOWNSYSEX;
+                                    }
+                                }
+                            } else
+                            {
+                                UNKNOWNSYSEX:
+                                if (verbose)
+                                {
+                                    printf("Unknown Sysex: ");
+                                    sysex_ofs = 0;
+                                    do {
+                                        printf("%02x ", sysex_store[sysex_ofs]);
+                                        sysex_ofs++;
+                                    } while (sysex_ofs != sysex_store_ofs);
+                                    printf("\n");
+                                }
+                            }
+                            free(sysex_store);
+                            sysex_store = NULL;
+                            sysex_store_ofs = 0;
+                        }
+
+                        midi_data += sysex_size;
                     } else if (event == 0xFF) {
                          if (*midi_data == 0x02) {
                             if (verbose) printf ("Meta Event: Copyright\n");

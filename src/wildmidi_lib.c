@@ -154,6 +154,7 @@ struct _mdi {
 	signed short int amp;
 
     struct _rvb *reverb;
+    unsigned char live_running_event;
 };
 
 struct _event {
@@ -1671,14 +1672,9 @@ do_sysex_roland_drum_track (struct _mdi *mdi, struct _event_data *data) {
 }
 
 static void
-WM_ResetToStart(midi * handle) {
-	struct _mdi *mdi = (struct _mdi *)handle;
-	int i;
-
-    mdi->current_event = mdi->events;
-	mdi->samples_to_mix = 0;
-	mdi->info.current_sample= 0;
-
+do_sysex_roland_reset (struct _mdi *mdi, struct _event_data *data)
+{
+    int i;
 	for (i=0; i<16; i++) {
 		mdi->channel[i].bank = 0;
 		mdi->channel[i].patch = NULL;
@@ -1697,6 +1693,18 @@ WM_ResetToStart(midi * handle) {
 		do_pan_adjust(mdi, i);
 	}
 	mdi->channel[9].isdrum = 1;
+}
+
+static void
+WM_ResetToStart(midi * handle) {
+	struct _mdi *mdi = (struct _mdi *)handle;
+	int i;
+
+    mdi->current_event = mdi->events;
+	mdi->samples_to_mix = 0;
+	mdi->info.current_sample= 0;
+
+    do_sysex_roland_reset(mdi,NULL);
 }
 
 static int
@@ -1924,6 +1932,25 @@ midi_setup_sysex_roland_drum_track (struct _mdi *mdi, unsigned char channel, uns
     return 0;
 }
 
+static int
+midi_setup_sysex_roland_reset (struct _mdi *mdi)
+{
+    if ((mdi->event_count) && (mdi->events[mdi->event_count - 1].do_event == NULL))
+    {
+        mdi->events[mdi->event_count - 1].do_event = *do_sysex_roland_reset;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data = 0;
+    } else {
+        mdi->events = realloc(mdi->events,((mdi->event_count + 1) * sizeof(struct _event)));
+        mdi->events[mdi->event_count].do_event = *do_sysex_roland_reset;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data = 0;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return 0;
+}
+
 
 static int
 add_handle(void * handle) {
@@ -1955,6 +1982,128 @@ add_handle(void * handle) {
 		tmp_handle->handle = handle;
 	}
     return 0;
+}
+
+static void
+WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
+{
+    // get event offset
+    unsigned long int event_ofs = 0;
+    while (mdi->events[event_ofs] != mdi->current_event)
+    {
+        event_ofs++;
+    }
+    mdi->events = realloc(mdi->events, sizeof(struct _event) * (mdi->event_count + 1));
+
+    memmove(&mdi->events[event_ofs + 1], &mdi->events[event_ofs], ((mdi->event_count - event_ofs) * sizeof(struct _event)));
+    mdi->event_count++;
+
+    unsigned char midi_event = (midi_data >> 24) & 0xFF;
+    unsigned char midi_data1 = (midi_data >> 16) & 0xFF;
+    unsigned char midi_data2 = (midi_data >> 8) & 0xFF;
+    unsigned char midi_data3 = midi_data & 0xFF;
+    void (*tmp_event)(struct _mdi *mdi, struct _event_data *data) = NULL;
+
+    switch ((midi_event >> 4)& 0xF)
+    {
+        case 0x8:
+            tmp_event = *do_note_off;
+            tmp_data = (midi_data1 << 8) | midi_data2;
+            break;
+        case 0x9:
+            if (midi_data2 != 0)
+            {
+                tmp_event = *do_note_on;
+            } else {
+                tmp_event = *do_note_off;
+            }
+            tmp_data = (midi_data1 << 8) | midi_data2;
+            if (mdi->channel[channel].isdrum)
+            load_patch(mdi, ((mdi->channel[channel].bank << 8) | (midi_data1 | 0x80)));
+            break;
+        case 0xA:
+            tmp_event = *do_aftertouch;
+            tmp_data = (midi_data1 << 8) | midi_data2;
+            break;
+        case 0xB:
+            switch (midi_data1)
+            {
+                case 0:
+                    tmp_event = *do_control_bank_select;
+                    break;
+                case 6:
+                    tmp_event = *do_control_data_entry_course;
+                    break;
+                case 7:
+                    tmp_event = *do_control_channel_volume;
+                    break;
+                case 8:
+                    tmp_event = *do_control_channel_balance;
+                    break;
+                case 10:
+                    tmp_event = *do_control_channel_pan;
+                    break;
+                case 11:
+                    tmp_event = *do_control_channel_expression;
+                    break;
+                case 38:
+                    tmp_event = *do_control_data_entry_fine;
+                    break;
+                case 64:
+                    tmp_event = *do_control_channel_hold;
+                    break;
+                case 96:
+                    tmp_event = *do_control_data_increment;
+                    break;
+                case 97:
+                    tmp_event = *do_control_data_decrement;
+                    break;
+                case 100:
+                    tmp_event = *do_control_registered_param_fine;
+                    break;
+                case 101:
+                    tmp_event = *do_control_registered_param_course;
+                    break;
+                case 120:
+                    tmp_event = *do_control_channel_sound_off;
+                    break;
+                case 121:
+                    tmp_event = *do_control_channel_controllers_off;
+                    break;
+                case 123:
+                    tmp_event = *do_control_channel_notes_off;
+                    break;
+                default:
+                    return;
+            }
+            tmp_data = midi_data2;
+            break;
+        case 0xC:
+            tmp_event = *do_patch;
+            tmp_data = midi_data1;
+            if (mdi->channel[channel].isdrum)
+            {
+                mdi->channel[channel].bank = tmp_data;
+            } else {
+                load_patch(mdi, ((mdi->channel[channel].bank << 8) | tmp_data));
+            }
+
+            break;
+        case 0xD:
+            tmp_event = *do_channel_pressure;
+            tmp_data = midi_data1;
+            break;
+        case 0xE:
+            tmp_event = *do_pitch;
+            tmp_data = (midi_data2 << 7) | (midi_data1 & 0x7F);
+            break;
+    }
+
+    mdi->events[event_ofs].do_event = tmp_event;
+    mdi->events[event_ofs].channel = midi_event & 0xF;
+    mdi->events[event_ofs].event_data.data = tmp_data;
+    mdi->events[event_ofs].samples_to_next = mdi->samples_to_mix;
+    mdi->samples_to_mix = 0;
 }
 
 static struct _mdi *
@@ -2323,18 +2472,25 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                     if (sysex_cs == sysex_store[sysex_ofs])
                                     {
                                         // process roland sysex event
-                                        if ((sysex_store[4] == 0x40) && ((sysex_store[5] & 0xF0) == 0x10) && (sysex_store[6] == 0x15))
+                                        if (sysex_store[4] == 0x40)
                                         {
-                                            // Roland Drum Track Setting
-                                            unsigned char sysex_ch = 0x0F & sysex_store[5];
-                                            if (sysex_ch == 0x00)
+                                            if (((sysex_store[5] & 0xF0) == 0x10) && (sysex_store[6] == 0x15))
                                             {
-                                                sysex_ch = 0x09;
-                                            } else if (sysex_ch <= 0x09)
+                                                // Roland Drum Track Setting
+                                                unsigned char sysex_ch = 0x0F & sysex_store[5];
+                                                if (sysex_ch == 0x00)
+                                                {
+                                                    sysex_ch = 0x09;
+                                                } else if (sysex_ch <= 0x09)
+                                                {
+                                                    sysex_ch -= 1;
+                                                }
+                                                midi_setup_sysex_roland_drum_track(mdi, sysex_ch, sysex_store[7]);
+                                            } else if ((sysex_store[5] == 0x00) && (sysex_store[6] == 0x7F) && (sysex_store[7] == 0x00))
                                             {
-                                                sysex_ch -= 1;
+                                                // Roland GS Reset
+                                                midi_setup_sysex_roland_reset(mdi, 0, 0);
                                             }
-                                            midi_setup_sysex_roland_drum_track(mdi, sysex_ch, sysex_store[7]);
                                         }
                                     }
                                 }
@@ -2402,6 +2558,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         mdi->info.approx_total_samples -= mdi->events[mdi->event_count - 1].samples_to_next;
         mdi->event_count--;
     }
+    mdi->info.total_midi_time = (mdi->info.approx_total_samples * 1000) / WM_SampleRate;
     mdi->info.approx_total_samples += WM_SampleRate * 3;
 
     if ((mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width, reverb_room_length, reverb_listen_posx, reverb_listen_posy)) == NULL) {
@@ -2420,6 +2577,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     mdi->current_event = &mdi->events[0];
     mdi->samples_to_mix = 0;
     mdi->note = NULL;
+    mdi->live_running_event = 0;
 
     WM_ResetToStart(mdi);
 
@@ -3335,6 +3493,58 @@ WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size) {
 	} else {
 		return WM_GetOutput_Linear (handle, buffer, size);
 	}
+}
+
+int
+WildMidi_Live (midi * handle, unsigned long int midi_event)
+{
+    unsigned char live_event = midi_event >> 24;
+    struct _mdi *mdi = (struct _mdi *)handle;
+
+	if (!WM_Initialized) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
+		return -1;
+	}
+	if (handle == NULL) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)", 0);
+		return -1;
+	}
+	WM_Lock(&mdi->lock);
+	if (!WM_Initialized) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
+		return -1;
+	}
+	if (handle == NULL) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)", 0);
+		return -1;
+	}
+	WM_Lock(&mdi->lock);
+
+    if (live_event >= 0xF0)
+    {
+        // we dont support these live
+        return 0;
+    }
+
+    if (live_event < 0x80)
+    {
+        // IMPORTANT: App needs to keep track of running event so it can pass the right amount of data
+        // NOTE: We may actually require app to pass event so this may not be needed
+        if (mdi->live_running_event > 0)
+        {
+            // FIXME: Need to determine if this is the way I will actually do it
+            midi_event = (mdi->live_running_event << 24) | ((midi_event >> 8) & 0x00FFFFFF);
+        } else
+        {
+            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(Unknown Live Event)", 0);
+            return -1;
+        }
+    } else {
+        mdi->live_running_event = live_event;
+    }
+
+    WM_InjectEventAtHead(mdi, midi_event);
+    return 0;
 }
 
 int
