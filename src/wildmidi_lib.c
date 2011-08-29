@@ -1674,7 +1674,8 @@ do_sysex_roland_drum_track (struct _mdi *mdi, struct _event_data *data) {
 static void
 do_sysex_roland_reset (struct _mdi *mdi, struct _event_data *data)
 {
-    int i;
+    unsigned char ch = data->channel;
+    int i = ch;
 	for (i=0; i<16; i++) {
 		mdi->channel[i].bank = 0;
 		mdi->channel[i].patch = NULL;
@@ -1698,7 +1699,6 @@ do_sysex_roland_reset (struct _mdi *mdi, struct _event_data *data)
 static void
 WM_ResetToStart(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *)handle;
-	int i;
 
     mdi->current_event = mdi->events;
 	mdi->samples_to_mix = 0;
@@ -1989,7 +1989,7 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
 {
     // get event offset
     unsigned long int event_ofs = 0;
-    while (mdi->events[event_ofs] != mdi->current_event)
+    while (&mdi->events[event_ofs] != mdi->current_event)
     {
         event_ofs++;
     }
@@ -2001,9 +2001,8 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
     unsigned char midi_event = (midi_data >> 24) & 0xFF;
     unsigned char midi_data1 = (midi_data >> 16) & 0xFF;
     unsigned char midi_data2 = (midi_data >> 8) & 0xFF;
-    unsigned char midi_data3 = midi_data & 0xFF;
     void (*tmp_event)(struct _mdi *mdi, struct _event_data *data) = NULL;
-
+    unsigned long int tmp_data = 0;
     switch ((midi_event >> 4)& 0xF)
     {
         case 0x8:
@@ -2018,8 +2017,8 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
                 tmp_event = *do_note_off;
             }
             tmp_data = (midi_data1 << 8) | midi_data2;
-            if (mdi->channel[channel].isdrum)
-            load_patch(mdi, ((mdi->channel[channel].bank << 8) | (midi_data1 | 0x80)));
+            if (mdi->channel[midi_event & 0xF].isdrum)
+            load_patch(mdi, ((mdi->channel[midi_event & 0xF].bank << 8) | (midi_data1 | 0x80)));
             break;
         case 0xA:
             tmp_event = *do_aftertouch;
@@ -2081,11 +2080,11 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
         case 0xC:
             tmp_event = *do_patch;
             tmp_data = midi_data1;
-            if (mdi->channel[channel].isdrum)
+            if (mdi->channel[midi_event & 0xF].isdrum)
             {
-                mdi->channel[channel].bank = tmp_data;
+                mdi->channel[midi_event & 0xF].bank = tmp_data;
             } else {
-                load_patch(mdi, ((mdi->channel[channel].bank << 8) | tmp_data));
+                load_patch(mdi, ((mdi->channel[midi_event & 0xF].bank << 8) | tmp_data));
             }
 
             break;
@@ -2100,7 +2099,7 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
     }
 
     mdi->events[event_ofs].do_event = tmp_event;
-    mdi->events[event_ofs].channel = midi_event & 0xF;
+    mdi->events[event_ofs].event_data.channel = midi_event & 0xF;
     mdi->events[event_ofs].event_data.data = tmp_data;
     mdi->events[event_ofs].samples_to_next = mdi->samples_to_mix;
     mdi->samples_to_mix = 0;
@@ -2489,7 +2488,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                             } else if ((sysex_store[5] == 0x00) && (sysex_store[6] == 0x7F) && (sysex_store[7] == 0x00))
                                             {
                                                 // Roland GS Reset
-                                                midi_setup_sysex_roland_reset(mdi, 0, 0);
+                                                midi_setup_sysex_roland_reset(mdi);
                                             }
                                         }
                                     }
