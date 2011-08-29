@@ -94,6 +94,7 @@ struct _channel {
 	signed short int pitch_range;
 	signed long int pitch_adjust;
 	unsigned short reg_data;
+	unsigned char isdrum;
 };
 
 #define HOLD_OFF 0x02
@@ -898,9 +899,6 @@ load_sample (struct _patch *sample_patch) {
 
     sample_patch->loaded = 1;
 
-
-
-
     if ((guspat = load_gus_pat(sample_patch->filename, fix_release)) == NULL) {
         return -1;
     }
@@ -1118,7 +1116,7 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
 		return;
 	}
 
-	if ((ch == 9) && (!(nte->modes & SAMPLE_LOOP))) {
+	if ((mdi->channel[ch].isdrum) && (!(nte->modes & SAMPLE_LOOP))) {
 		return;
 	}
 
@@ -1214,7 +1212,6 @@ do_note_on (struct _mdi *mdi, struct _event_data *data) {
 	unsigned char note = (data->data >> 8);
 	unsigned char velocity = (data->data & 0xFF);
 
-
 	if (velocity == 0x00) {
 	    do_note_off(mdi, data);
 		return;
@@ -1222,7 +1219,7 @@ do_note_on (struct _mdi *mdi, struct _event_data *data) {
 
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
 
-	if (ch != 9) {
+	if (!mdi->channel[ch].isdrum) {
 		patch = mdi->channel[ch].patch;
 		if (patch == NULL) {
 			return;
@@ -1541,7 +1538,7 @@ do_control_channel_controllers_off (struct _mdi *mdi, struct _event_data *data)
     unsigned char ch = data->channel;
 
 	mdi->channel[ch].expression = 127;
-	mdi->channel[ch].pressure = 0;
+	mdi->channel[ch].pressure = 127;
 	mdi->channel[ch].volume = 100;
 	mdi->channel[ch].pan = 0;
 	mdi->channel[ch].balance = 0;
@@ -1577,7 +1574,7 @@ do_control_channel_notes_off (struct _mdi *mdi, struct _event_data *data)
 	struct _note *note_data = mdi->note;
     unsigned char ch = data->channel;
 
-	if (ch == 9)
+	if (mdi->channel[ch].isdrum)
 		return;
 	if (note_data != NULL) {
 		do {
@@ -1606,7 +1603,7 @@ static void
 do_patch (struct _mdi *mdi, struct _event_data *data) {
     unsigned char ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
-	if (ch != 9) {
+	if (!mdi->channel[ch].isdrum) {
         mdi->channel[ch].patch = get_patch_data(mdi, ((mdi->channel[ch].bank << 8) | data->data));
 	} else {
 		mdi->channel[ch].bank = data->data;
@@ -1661,6 +1658,19 @@ do_pitch (struct _mdi *mdi, struct _event_data *data) {
 }
 
 static void
+do_sysex_roland_drum_track (struct _mdi *mdi, struct _event_data *data) {
+    unsigned char ch = data->channel;
+
+	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
+
+	if (data->data > 0) {
+		mdi->channel[ch].isdrum = 1;
+	} else {
+		mdi->channel[ch].isdrum = 0;
+	}
+}
+
+static void
 WM_ResetToStart(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *)handle;
 	int i;
@@ -1683,8 +1693,10 @@ WM_ResetToStart(midi * handle) {
 		mdi->channel[i].pitch = 0;
 		mdi->channel[i].pitch_range = 200;
 		mdi->channel[i].reg_data = 0xFFFF;
+        mdi->channel[i].isdrum = 0;
 		do_pan_adjust(mdi, i);
 	}
+	mdi->channel[9].isdrum = 1;
 }
 
 static int
@@ -1723,7 +1735,7 @@ midi_setup_noteon (struct _mdi *mdi, unsigned char channel, unsigned char note, 
         mdi->event_count++;
     }
 
-    if (channel == 9)
+    if (mdi->channel[channel].isdrum)
         load_patch(mdi, ((mdi->channel[channel].bank << 8) | (note | 0x80)));
     return 0;
 }
@@ -1836,7 +1848,7 @@ midi_setup_patch (struct _mdi *mdi, unsigned char channel, unsigned char patch)
         mdi->events[mdi->event_count].samples_to_next = 0;
         mdi->event_count++;
     }
-    if (channel == 9)
+    if (mdi->channel[channel].isdrum)
     {
         mdi->channel[channel].bank = patch;
     } else {
@@ -1882,6 +1894,33 @@ midi_setup_pitch (struct _mdi *mdi, unsigned char channel, unsigned short pitch)
         mdi->events[mdi->event_count].samples_to_next = 0;
         mdi->event_count++;
     }
+    return 0;
+}
+
+static int
+midi_setup_sysex_roland_drum_track (struct _mdi *mdi, unsigned char channel, unsigned short setting)
+{
+    if ((mdi->event_count) && (mdi->events[mdi->event_count - 1].do_event == NULL))
+    {
+        mdi->events[mdi->event_count - 1].do_event = *do_sysex_roland_drum_track;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data = setting;
+    } else {
+        mdi->events = realloc(mdi->events,((mdi->event_count + 1) * sizeof(struct _event)));
+        mdi->events[mdi->event_count].do_event = *do_sysex_roland_drum_track;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+
+    if (setting > 0)
+    {
+        mdi->channel[channel].isdrum = 1;
+    } else {
+        mdi->channel[channel].isdrum = 0;
+    }
+
     return 0;
 }
 
@@ -1933,6 +1972,8 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     unsigned int samples_per_delta = 0;
     unsigned long int sample_count = 0;
     unsigned long int sample_remainder = 0;
+    unsigned char *sysex_store = NULL;
+    unsigned long int sysex_store_len = 0;
 
     unsigned long int *track_delta;
     char *track_end;
@@ -1958,8 +1999,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 		mdi->channel[i].pitch_range = 200;
 		mdi->channel[i].reg_data = 0xFFFF;
 		mdi->channel[i].patch = get_patch_data(mdi, 0x0000);
+		mdi->channel[i].isdrum = 0;
 	}
-
+	mdi->channel[9].isdrum = 1;
 
     if (strncmp((char *) midi_data,"RIFF",4) == 0)
     {
@@ -2241,14 +2283,66 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                 tmp_length = (tmp_length << 7) + (*tracks[i] & 0x7f);
                                 tracks[i] += tmp_length + 1;
                             }
-                        } else if (current_event == 0xF0)
+                        } else if ((current_event == 0xF0) || (current_event == 0xF7))
                         {
-                            running_event[i] = 0;
-                            while (*tracks[i] != 0xF7)
+                            // Roland Sysex Events
+                            unsigned long int sysex_len = 0;
+                            while (*tracks[i] > 0x7F)
                             {
+                                sysex_len = (sysex_len << 7) + (*tracks[i] &0x7F);
                                 tracks[i]++;
                             }
+                            sysex_len = (sysex_len << 7) + (*tracks[i] &0x7F);
                             tracks[i]++;
+
+                            running_event[i] = 0;
+
+                            sysex_store = realloc(sysex_store, sizeof(unsigned char) * (sysex_store_len + sysex_len));
+                            memcpy(&sysex_store[sysex_store_len], tracks[i], sysex_len);
+                            sysex_store_len += sysex_len;
+
+                            if (sysex_store[sysex_store_len - 1] == 0xF7)
+                            {
+                                unsigned char tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
+                                if (strncmp((const char *)tmpsysexdata,(const char *)sysex_store,4) == 0)
+                                {
+
+                                    //checksum
+                                    unsigned char sysex_cs = 0;
+                                    unsigned int sysex_ofs = 4;
+                                    do {
+                                        sysex_cs += sysex_store[sysex_ofs];
+                                        if (sysex_cs > 0x7F)
+                                        {
+                                            sysex_cs -= 0x80;
+                                        }
+                                        sysex_ofs++;
+                                    } while (sysex_store[sysex_ofs + 1] != 0xF7);
+                                    sysex_cs = 128 - sysex_cs;
+                                    // is roland sysex message valid
+                                    if (sysex_cs == sysex_store[sysex_ofs])
+                                    {
+                                        // process roland sysex event
+                                        if ((sysex_store[4] == 0x40) && ((sysex_store[5] & 0xF0) == 0x10) && (sysex_store[6] == 0x15))
+                                        {
+                                            // Roland Drum Track Setting
+                                            unsigned char sysex_ch = 0x0F & sysex_store[5];
+                                            if (sysex_ch == 0x00)
+                                            {
+                                                sysex_ch = 0x09;
+                                            } else if (sysex_ch <= 0x09)
+                                            {
+                                                sysex_ch -= 1;
+                                            }
+                                            midi_setup_sysex_roland_drum_track(mdi, sysex_ch, sysex_store[7]);
+                                        }
+                                    }
+                                }
+                                free(sysex_store);
+                                sysex_store = NULL;
+                                sysex_store_len = 0;
+                            }
+                            tracks[i] += sysex_len;
                         } else {
                             printf("Um, WTF is this?\n");
                             free (tracks);
