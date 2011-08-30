@@ -65,7 +65,10 @@ if test "$1" = gcc; then
 	AC_MSG_CHECKING(for gcc version)
 	CCVER="gcc `gcc --version`"
 	AC_MSG_RESULT($CCVER)
+	CFLAGS="$CFLAGS -std=c99 -U__STRICT_ANSI__"
 fi
+
+LDFLAGS="$LDFLAGS -lm -lc"
 
 case "$host_os" in
 	mingw32*)
@@ -76,7 +79,7 @@ case "$host_os" in
 			case "$build_os" in
 				cygwin*)
 					CFLAGS="$CFLAGS -mno-cygwin -mconsole"
-					LDFLAGS="-L/usr/lib/w32api $LDFLAGS"
+					LDFLAGS="$LDFLAGS -L/usr/lib/w32api $LDFLAGS"
 					CPPFLAGS="$CPPFLAGS $CFLAGS"
 					;;
 				*)

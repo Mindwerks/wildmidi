@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -51,6 +52,10 @@
 #include "gus_pat.h"
 #include "common.h"
 #include "wildmidi_lib.h"
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 /*
  * =========================
@@ -141,6 +146,7 @@ struct _mdi {
     struct _event *events;
     struct _event *current_event;
     unsigned long int event_count;
+    unsigned long int current_event_count;
 
     unsigned short midi_master_vol;
 	struct _WM_Info info;
@@ -154,7 +160,6 @@ struct _mdi {
 	signed short int amp;
 
     struct _rvb *reverb;
-    unsigned char live_running_event;
 };
 
 struct _event {
@@ -1674,9 +1679,10 @@ do_sysex_roland_drum_track (struct _mdi *mdi, struct _event_data *data) {
 static void
 do_sysex_roland_reset (struct _mdi *mdi, struct _event_data *data)
 {
-    unsigned char ch = data->channel;
-    int i = ch;
-	for (i=0; i<16; i++) {
+    unsigned char ch = 0;
+    if (data != NULL) ch = data->channel;
+
+	for (int i=0; i<16; i++) {
 		mdi->channel[i].bank = 0;
 		mdi->channel[i].patch = NULL;
 		mdi->channel[i].hold = 0;
@@ -1701,6 +1707,7 @@ WM_ResetToStart(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *)handle;
 
     mdi->current_event = mdi->events;
+    mdi->current_event_count = 0;
 	mdi->samples_to_mix = 0;
 	mdi->info.current_sample= 0;
 
@@ -1987,17 +1994,6 @@ add_handle(void * handle) {
 static void
 WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
 {
-    // get event offset
-    unsigned long int event_ofs = 0;
-    while (&mdi->events[event_ofs] != mdi->current_event)
-    {
-        event_ofs++;
-    }
-    mdi->events = realloc(mdi->events, sizeof(struct _event) * (mdi->event_count + 1));
-
-    memmove(&mdi->events[event_ofs + 1], &mdi->events[event_ofs], ((mdi->event_count - event_ofs) * sizeof(struct _event)));
-    mdi->event_count++;
-
     unsigned char midi_event = midi_data & 0xFF;
     unsigned char midi_data1 = (midi_data >> 8) & 0xFF;
     unsigned char midi_data2 = (midi_data >> 16) & 0xFF;
@@ -2098,11 +2094,53 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
             break;
     }
 
-    mdi->events[event_ofs].do_event = tmp_event;
-    mdi->events[event_ofs].event_data.channel = midi_event & 0xF;
-    mdi->events[event_ofs].event_data.data = tmp_data;
-    mdi->events[event_ofs].samples_to_next = mdi->samples_to_mix;
+    struct _event *old_events = mdi->events;
+    mdi->events = realloc(mdi->events, sizeof(struct _event) * (mdi->event_count + 1));
+    if (mdi->events != old_events)
+    {
+        mdi->current_event = mdi->events + (mdi->current_event - old_events);
+    }
+    mdi->event_count++;
+    unsigned long int data_size = sizeof(struct _event) * (mdi->event_count - mdi->current_event_count);
+    memmove(&mdi->events[mdi->current_event_count + 1], &mdi->events[mdi->current_event_count], data_size);
+
+    mdi->current_event->do_event = tmp_event;
+    mdi->current_event->event_data.channel = midi_event & 0xF;
+    mdi->current_event->event_data.data = tmp_data;
+    mdi->current_event->samples_to_next = mdi->samples_to_mix;
     mdi->samples_to_mix = 0;
+}
+
+static struct _mdi *
+Init_MDI (void)
+{
+    struct _mdi *mdi;
+
+    mdi = malloc(sizeof (struct _mdi));
+    memset(mdi, 0, (sizeof(struct _mdi)));
+
+    mdi->info.copyright = NULL;
+    mdi->info.mixer_options = WM_MixerOptions;
+
+   	load_patch(mdi, 0x0000);
+
+    mdi->events = malloc(sizeof(struct _event));
+    mdi->events[0].do_event = NULL;
+    mdi->events[0].event_data.channel = 0;
+    mdi->events[0].event_data.data = 0;
+    mdi->events[0].samples_to_next = 0;
+    mdi->event_count++;
+
+    mdi->current_event = mdi->events;
+    mdi->current_event_count = 1;
+	mdi->samples_to_mix = 0;
+	mdi->info.current_sample= 0;
+	mdi->info.total_midi_time = 0;
+    mdi->info.approx_total_samples = 0;
+
+    do_sysex_roland_reset(mdi,NULL);
+
+    return mdi;
 }
 
 static struct _mdi *
@@ -2131,25 +2169,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     unsigned char current_event;
     unsigned char *running_event;
 
-
-    mdi = malloc(sizeof (struct _mdi));
-    memset(mdi, 0, (sizeof(struct _mdi)));
-
-    mdi->info.copyright = NULL;
-    mdi->info.mixer_options = WM_MixerOptions;
-
-   	load_patch(mdi, 0x0000);
-
-	for (i=0; i<16; i++) {
-		mdi->channel[i].volume = 100;
-		mdi->channel[i].pressure = 127;
-		mdi->channel[i].expression = 127;
-		mdi->channel[i].pitch_range = 200;
-		mdi->channel[i].reg_data = 0xFFFF;
-		mdi->channel[i].patch = get_patch_data(mdi, 0x0000);
-		mdi->channel[i].isdrum = 0;
-	}
-	mdi->channel[9].isdrum = 1;
+    mdi = Init_MDI();
 
     if (strncmp((char *) midi_data,"RIFF",4) == 0)
     {
@@ -2574,9 +2594,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 
     mdi->info.current_sample = 0;
     mdi->current_event = &mdi->events[0];
+    mdi->current_event_count = 0;
     mdi->samples_to_mix = 0;
     mdi->note = NULL;
-    mdi->live_running_event = 0;
 
     WM_ResetToStart(mdi);
 
@@ -2619,6 +2639,7 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
                 event++;
                 mdi->samples_to_mix = event->samples_to_next;
                 mdi->current_event = event;
+                mdi->current_event_count++;
             }
 
 
@@ -2887,6 +2908,7 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
                 event++;
                 mdi->samples_to_mix = event->samples_to_next;
                 mdi->current_event = event;
+                mdi->current_event_count++;
             }
 
 
@@ -3346,11 +3368,10 @@ WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
 		return NULL;
 	}
 	if (midibuffer == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL midi data buffer)", 0);
-		return NULL;
+        ret = Init_MDI();
+	} else {
+        ret = (void *)WM_ParseNewMidi(midibuffer,size);
 	}
-
-	ret = (void *)WM_ParseNewMidi(midibuffer,size);
 
     if (ret != NULL) {
         int hdlret = 0;
@@ -3497,7 +3518,6 @@ WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size) {
 int
 WildMidi_Live (midi * handle, unsigned long int midi_event)
 {
-    unsigned char live_event = midi_event >> 24;
     struct _mdi *mdi = (struct _mdi *)handle;
 
 	if (!WM_Initialized) {
@@ -3509,40 +3529,11 @@ WildMidi_Live (midi * handle, unsigned long int midi_event)
 		return -1;
 	}
 	WM_Lock(&mdi->lock);
-	if (!WM_Initialized) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
-		return -1;
-	}
-	if (handle == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)", 0);
-		return -1;
-	}
-	WM_Lock(&mdi->lock);
-
-    if (live_event >= 0xF0)
-    {
-        // we dont support these live
-        return 0;
-    }
-
-    if (live_event < 0x80)
-    {
-        // IMPORTANT: App needs to keep track of running event so it can pass the right amount of data
-        // NOTE: We may actually require app to pass event so this may not be needed
-        if (mdi->live_running_event > 0)
-        {
-            // FIXME: Need to determine if this is the way I will actually do it
-            midi_event = (mdi->live_running_event << 24) | ((midi_event >> 8) & 0x00FFFFFF);
-        } else
-        {
-            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(Unknown Live Event)", 0);
-            return -1;
-        }
-    } else {
-        mdi->live_running_event = live_event;
-    }
 
     WM_InjectEventAtHead(mdi, midi_event);
+
+	WM_Unlock(&mdi->lock);
+
     return 0;
 }
 
