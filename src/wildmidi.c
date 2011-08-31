@@ -874,7 +874,8 @@ main (int argc, char **argv) {
 		strncpy (config_file, WILDMIDI_CFG, sizeof(WILDMIDI_CFG));
 		config_file[sizeof(WILDMIDI_CFG)] = '\0';
 	}
-	if ((optind < argc) || (test_midi) || (input_dev_no != -1)) {
+//	if ((optind < argc) || (test_midi) || (input_dev_no != -1)) {
+	if ((optind < argc) || (test_midi)) {
 		printf("Initializing Sound System\r\n");
 
 		if (wav_file[0] != '\0') {
@@ -939,14 +940,19 @@ main (int argc, char **argv) {
 #endif
 
 
-		while ((optind < argc) || (test_midi) || (input_dev_no != -1)) {
+//		while ((optind < argc) || (test_midi) || (input_dev_no != -1)) {
+		while ((optind < argc) || (test_midi)) {
 			if (!test_midi) {
 			    if (input_dev_no != -1)
 			    {
-			         midi_ptr = WildMidi_OpenBuffer(NULL, 0);
-			         wm_info = WildMidi_GetInfo(midi_ptr);
-			         printf("Playing from midi device %i\n",input_dev_no);
-			    } else
+/*
+                    midi_ptr = WildMidi_OpenBuffer(NULL, 0);
+			        wm_info = WildMidi_GetInfo(midi_ptr);
+			        printf("Playing from midi device %i\n",input_dev_no);
+*/
+                    printf("Also accepting input from midi device %i\n",input_dev_no);
+			    }
+//			    } else
 			    {
                     char * real_file = strrchr(argv[optind], '/');
                     if (real_file == NULL) {
@@ -997,7 +1003,8 @@ main (int argc, char **argv) {
 			while (1) {
                 count_diff = wm_info->approx_total_samples - wm_info->current_sample;
 
-				if ((count_diff == 0) && (input_dev_no == -1))
+//				if ((count_diff == 0) && (input_dev_no == -1))
+				if (count_diff == 0)
 					break;
 
 				ch = 0;
@@ -1084,16 +1091,19 @@ main (int argc, char **argv) {
 
 				if (inpause) {
                     wm_info = WildMidi_GetInfo(midi_ptr);
-                    if (input_dev_no == -1)
+//                    if (input_dev_no == -1)
                     {
                         perc_play =  (wm_info->current_sample * 100) / wm_info->approx_total_samples;
                         pro_mins = wm_info->current_sample / (rate * 60);
                         pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
+                    }
+/*
                     } else {
                         perc_play = 0;
                         pro_mins = 0;
                         pro_secs = 0;
                     }
+*/
                     {
                         int mode_count = 0;
                         if (mixer_options & WM_MO_LOG_VOLUME) {
@@ -1124,26 +1134,30 @@ main (int argc, char **argv) {
                     continue;
 				}
 
-				if (count_diff < 4096) {
+//				if ((count_diff < 4096) && (input_dev_no == -1)) {
+				if (count_diff < 1024) {
 					output_result = WildMidi_GetOutput (midi_ptr, output_buffer, (count_diff * 4));
 				} else {
-					output_result = WildMidi_GetOutput (midi_ptr, output_buffer, 16384);
+					output_result = WildMidi_GetOutput (midi_ptr, output_buffer, 4096);
 				}
 
                 if ((output_result <= 0) && (input_dev_no == -1))
                     break;
 
 				wm_info = WildMidi_GetInfo(midi_ptr);
-				if (input_dev_no == -1)
+//				if (input_dev_no == -1)
 				{
                     perc_play =  (wm_info->current_sample * 100) / wm_info->approx_total_samples;
                     pro_mins = wm_info->current_sample / (rate * 60);
                     pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
+				}
+/*
 				} else {
                     perc_play = 0;
                     pro_mins = 0;
                     pro_secs = 0;
 				}
+*/
 				{
 					int mode_count = 0;
 					if (mixer_options & WM_MO_LOG_VOLUME) {
