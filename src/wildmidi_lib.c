@@ -2094,15 +2094,14 @@ WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
             break;
     }
 
-    struct _event *old_events = mdi->events;
-    mdi->events = realloc(mdi->events, sizeof(struct _event) * (mdi->event_count + 1));
-    if (mdi->events != old_events)
-    {
-        mdi->current_event = mdi->events + (mdi->current_event - old_events);
-    }
-    mdi->event_count++;
+//    struct _event *old_events = mdi->events;
     unsigned long int data_size = sizeof(struct _event) * (mdi->event_count - mdi->current_event_count);
+
+    mdi->events = realloc(mdi->events, sizeof(struct _event) * (mdi->event_count + 1));
+    mdi->current_event = &mdi->events[mdi->current_event_count];
+
     memmove(&mdi->events[mdi->current_event_count + 1], &mdi->events[mdi->current_event_count], data_size);
+    mdi->event_count++;
 
     mdi->current_event->do_event = tmp_event;
     mdi->current_event->event_data.channel = midi_event & 0xF;
@@ -2132,7 +2131,7 @@ Init_MDI (void)
     mdi->event_count++;
 
     mdi->current_event = mdi->events;
-    mdi->current_event_count = 1;
+    mdi->current_event_count = 0;
 	mdi->samples_to_mix = 0;
 	mdi->info.current_sample= 0;
 	mdi->info.total_midi_time = 0;
@@ -2641,7 +2640,6 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
                 mdi->current_event = event;
                 mdi->current_event_count++;
             }
-
 
             if (!mdi->samples_to_mix) {
                 if (mdi->info.current_sample >= mdi->info.approx_total_samples) {
@@ -3323,7 +3321,11 @@ WildMidi_Close (midi * handle) {
 	if (mdi->tmp_info != NULL) {
 		free (mdi->tmp_info);
 	}
-    free_reverb(mdi->reverb);
+
+    if (mdi->reverb != NULL) {
+        free_reverb(mdi->reverb);
+    }
+
 	free (mdi);
 	// no need to unlock cause the struct containing the lock no-longer exists;
 	return 0;
