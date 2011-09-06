@@ -162,18 +162,17 @@ init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y
 	*/
 	double Freq[] = {125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0};
 
+	// numbers calculated from
+	// 101.325 kPa, 20 deg C, 50% relative humidity
 	double dbAirAbs[] = {-0.00044, -0.00131, -0.002728, -0.004665, -0.009887, -0.029665};
 
 	/*
 		modify these to adjust the absorption qualities of the surface.
 		Remember that lower frequencies are less effected by surfaces
-	*/
 
-	/*
-        -0.009, -0.009, -0.017, -0.017, -0.017, -0.026
-        -0.915, -3.098, -4.437, -6.021, -7.959, -10.458
-        -0.061, -3.098, -6.021, -10.458, -10.458, -7.959
-	 */
+		Note: I am currently playing with the values and finding the ideal surfaces
+		for nice default reverb.
+	*/
     double dbAttn[8][6] = {
         {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
         {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
@@ -184,7 +183,15 @@ init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y
         {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
         {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942}
     };
+    /*
 
+    double dbAttn[6] = {
+    // concrete covered in carpet
+//        -0.175, -0.537, -1.412, -4.437, -7.959, -7.959
+    // pleated drapes
+        -0.630, -3.223, -5.849, -12.041, -10.458, -7.959
+    };
+    */
 
 	if (rtn_rvb == NULL) {
 		return NULL;
@@ -247,6 +254,7 @@ init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y
             double cs = cos(omega);
             double alpha = sn * sinh(M_LN2 /2 * bandwidth * omega /sn);
             double A = pow(10.0, ((dbAttn[j][i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
+//            double A = pow(10.0, ((dbAttn[i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
             /*
                 Peaking band EQ filter
             */

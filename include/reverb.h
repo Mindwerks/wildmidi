@@ -47,6 +47,7 @@ struct _rvb {
 	int l_in[4];
 	int r_in[4];
 	int gain;
+    unsigned long int max_reverb_time;
 };
 
 extern void reset_reverb (struct _rvb *rvb);

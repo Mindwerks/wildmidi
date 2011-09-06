@@ -1108,6 +1108,7 @@ get_sample_data (struct _patch *sample_patch, unsigned long int freq) {
 	return return_sample;
 }
 
+
 static void
 do_note_off (struct _mdi *mdi, struct _event_data *data) {
 	struct _note *nte;
@@ -1671,8 +1672,10 @@ do_sysex_roland_drum_track (struct _mdi *mdi, struct _event_data *data) {
 
 	if (data->data > 0) {
 		mdi->channel[ch].isdrum = 1;
+		mdi->channel[ch].patch = NULL;
 	} else {
 		mdi->channel[ch].isdrum = 0;
+		mdi->channel[ch].patch = get_patch_data(mdi,0);
 	}
 }
 
@@ -1684,7 +1687,11 @@ do_sysex_roland_reset (struct _mdi *mdi, struct _event_data *data)
 
 	for (int i=0; i<16; i++) {
 		mdi->channel[i].bank = 0;
-		mdi->channel[i].patch = NULL;
+		if (i != 9) {
+            mdi->channel[i].patch = get_patch_data(mdi,0);
+		} else {
+            mdi->channel[i].patch = NULL;
+		}
 		mdi->channel[i].hold = 0;
 		mdi->channel[i].volume = 100;
 		mdi->channel[i].pressure = 127;
@@ -1868,6 +1875,7 @@ midi_setup_patch (struct _mdi *mdi, unsigned char channel, unsigned char patch)
         mdi->channel[channel].bank = patch;
     } else {
         load_patch(mdi, ((mdi->channel[channel].bank << 8) | patch));
+        mdi->channel[channel].patch = get_patch_data(mdi, ((mdi->channel[channel].bank << 8) | patch));
     }
     return 0;
 }
@@ -2142,6 +2150,51 @@ Init_MDI (void)
     return mdi;
 }
 
+unsigned long int
+get_decay_samples (struct _patch *patch, unsigned char note) {
+
+    struct _sample *sample = NULL;
+    unsigned long int freq = 0;
+    unsigned long int decay_samples = 0;
+
+    if (patch == NULL)
+        return 0;
+
+    // first get the freq we need so we can check the right sample
+    if (patch->patchid & 0x80)
+    {
+    // is a drum patch
+		if (patch->note) {
+			freq = freq_table[(patch->note % 12) * 100] >> (10 -(patch->note / 12));
+		} else {
+			freq = freq_table[(note % 12) * 100] >> (10 -(note / 12));
+		}
+    } else {
+		freq = freq_table[(note % 12) * 100] >> (10 -(note / 12));
+    }
+
+
+    // get the sample
+	sample = get_sample_data(patch, (freq / 100));
+
+    if (sample == NULL)
+        return 0;
+
+    if (patch->patchid & 0x80)
+    {
+        float sratedata = ((float)sample->rate / (float)WM_SampleRate) * (float)(sample->data_length >> 10);
+        decay_samples = (unsigned long int)sratedata;
+//        printf("Drums (%i / %i) * %lu = %f\n", sample->rate, WM_SampleRate, (sample->data_length >> 10), sratedata);
+    } else if (sample->modes & SAMPLE_CLAMPED) {
+        decay_samples = (4194303 / sample->env_rate[5]);
+//        printf("clamped 4194303 / %lu = %lu\n", sample->env_rate[5], decay_samples);
+    } else {
+        decay_samples = ((4194303 - sample->env_target[4]) / sample->env_rate[4]) + (sample->env_target[4] / sample->env_rate[5]);
+//        printf("NOT clamped ((4194303 - %lu) / %lu) + (%lu / %lu)) = %lu\n", sample->env_target[4], sample->env_rate[4], sample->env_target[4], sample->env_rate[5], decay_samples);
+    }
+    return decay_samples;
+}
+
 static struct _mdi *
 WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 {
@@ -2165,8 +2218,10 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     unsigned long int smallest_delta = 0;
     unsigned long int subtract_delta = 0;
     unsigned long int tmp_length = 0;
-    unsigned char current_event;
+    unsigned char current_event = 0;
+    unsigned char current_event_ch = 0;
     unsigned char *running_event;
+    unsigned long int decay_samples = 0;
 
     mdi = Init_MDI();
 
@@ -2308,6 +2363,7 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         track_end[i] = 0;
         running_event[i] = 0;
         track_delta[i] = 0;
+        decay_samples = 0;
         while (*tracks[i] > 0x7F)
         {
               track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
@@ -2316,6 +2372,8 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
         tracks[i]++;
     }
+
+
 
     while (end_of_tracks != no_tracks)
     {
@@ -2357,14 +2415,42 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                         return NULL;
                     }
                 }
+                current_event_ch = current_event & 0x0F;
                 switch (current_event >> 4)
                 {
                     case 0x8:
-                        midi_setup_noteoff (mdi, (current_event & 0x0F), tracks[i][0], tracks[i][1]);
+                        NOTEOFF:
+                        midi_setup_noteoff (mdi, current_event_ch, tracks[i][0], tracks[i][1]);
+                        // To better calculate samples needed after the end of midi,
+                        // we calculate samples for decay for note off
+                        {
+                            unsigned long int tmp_decay_samples = 0;
+                            struct _patch *tmp_patch = NULL;
+                            if (mdi->channel[current_event_ch].isdrum)
+                            {
+                                tmp_patch = get_patch_data(mdi, ((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80));
+//                                if (tmp_patch == NULL) printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);
+                            } else {
+                                tmp_patch = mdi->channel[current_event_ch].patch;
+//                                if (tmp_patch == NULL) printf("Channel %i patch not loaded\n", current_event_ch);
+                            }
+                            tmp_decay_samples = get_decay_samples(tmp_patch, tracks[i][0]);
+                            // if the note off decay is more than the decay we currently tracking then
+                            // we set it to new decay.
+                            if (tmp_decay_samples > decay_samples)
+                            {
+                                decay_samples = tmp_decay_samples;
+                            }
+                        }
+
                         tracks[i] += 2;
                         running_event[i] = current_event;
                         break;
                     case 0x9:
+                        if (tracks[i][1] == 0)
+                        {
+                            goto NOTEOFF;
+                        }
                         midi_setup_noteon (mdi, (current_event & 0x0F), tracks[i][0], tracks[i][1]);
                         tracks[i] += 2;
                         running_event[i] = current_event;
@@ -2570,14 +2656,26 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
             mdi->event_count++;
         }
         mdi->info.approx_total_samples += sample_count;
+//        printf("Decay Samples = %lu\n",decay_samples);
+        if (decay_samples > sample_count) {
+            decay_samples -= sample_count;
+        } else {
+            decay_samples = 0;
+        }
+
     }
     if ((mdi->event_count) && (mdi->events[mdi->event_count - 1].do_event == NULL))
     {
         mdi->info.approx_total_samples -= mdi->events[mdi->event_count - 1].samples_to_next;
         mdi->event_count--;
     }
+    // Set total MIDI time to 1/1000's seconds
     mdi->info.total_midi_time = (mdi->info.approx_total_samples * 1000) / WM_SampleRate;
-    mdi->info.approx_total_samples += WM_SampleRate * 3;
+    //mdi->info.approx_total_samples += WM_SampleRate * 3;
+
+    // Add additional samples needed for decay
+    mdi->info.approx_total_samples += decay_samples;
+//    printf("decay_samples = %lu\n",decay_samples);
 
     if ((mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width, reverb_room_length, reverb_listen_posx, reverb_listen_posy)) == NULL) {
 		printf("Reverb Init Failed\n");
