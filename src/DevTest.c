@@ -256,11 +256,11 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
     divisions = *midi_data++ << 8;
 	divisions |= *midi_data++;
     midi_size -= 2;
-    if (verbose) printf("Divisions: %i\n", tmp_val);
+    if (verbose) printf("Divisions: %i\n", divisions);
 
     if (divisions & 0x00008000)
     {
-        printf("Division Type Note Supported\n");
+        printf("Division Type Not Supported\n");
         return -1;
     }
 

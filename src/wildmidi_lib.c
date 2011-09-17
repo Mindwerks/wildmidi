@@ -2207,9 +2207,10 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     unsigned int i;
     unsigned int divisions = 96;
     unsigned int tempo = 500000;
-    unsigned int samples_per_delta = 0;
+    float samples_per_delta_f = 0.0;
     unsigned long int sample_count = 0;
-    unsigned long int sample_remainder = 0;
+    float sample_count_tmp = 0;
+    float sample_remainder = 0;
     unsigned char *sysex_store = NULL;
     unsigned long int sysex_store_len = 0;
 
@@ -2295,12 +2296,17 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     midi_size -= 2;
     if (divisions & 0x00008000)
     {
-        printf("Division Type Note Supported\n");
+        printf("Division Type Not Supported\n");
         free (mdi);
         return NULL;
     }
 
-    samples_per_delta = (WM_SampleRate << 10) / ((1000000 * divisions) / tempo);
+    //samples_per_delta = (WM_SampleRate << 10) / ((1000000 * divisions) / tempo);
+    {
+        //Slow but needed for accuracy
+        samples_per_delta_f = ((((float)tempo / (float)divisions) / 1000000.0) * (float)WM_SampleRate);
+        //samples_per_delta = (unsigned long int)samples_per_delta_f;
+    }
     tracks = malloc (sizeof(char *) * no_tracks);
     track_delta = malloc (sizeof(unsigned long int) * no_tracks);
     track_end = malloc (sizeof(unsigned char) * no_tracks);
@@ -2522,9 +2528,20 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                 tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8) + tracks[i][4];
                                 tracks[i] += 5;
                                 if (!tempo)
-                                    samples_per_delta = (WM_SampleRate << 10) / (2 * divisions);
-                                else
-                                    samples_per_delta = (WM_SampleRate << 10) / ((1000000 * divisions) / tempo);
+                                    tempo = 500000;
+
+                                //samples_per_delta = (WM_SampleRate << 10) / ((1000000 * divisions) / tempo);
+                                {
+                                    if (WM_MixerOptions && WM_MO_WHOLETEMPO)
+                                    {
+                                        float bpm_f = 60000000.0 / (float)tempo;
+                                        tempo = 60000000 / (unsigned long int)bpm_f;
+                                    }
+                                    //Slow but needed for accuracy
+                                    samples_per_delta_f = ((((float)tempo / (float)divisions) / 1000000.0) * (float)WM_SampleRate);
+                                    //samples_per_delta = (unsigned long int)samples_per_delta_f;
+                                }
+
                             } else {
                                 tmp_length = 0;
                                 tracks[i]++;
@@ -2642,8 +2659,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         }
 
         subtract_delta = smallest_delta;
-        sample_count = ((smallest_delta * samples_per_delta) + sample_remainder) >> 10;
-        sample_remainder = sample_count & 0x3FF;
+        sample_count_tmp = (((float)smallest_delta * samples_per_delta_f) + sample_remainder);
+        sample_count = (unsigned long int)sample_count_tmp;
+        sample_remainder = sample_count_tmp - (float)sample_count;
         if ((mdi->event_count) && (mdi->events[mdi->event_count - 1].do_event == NULL))
         {
             mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
@@ -3298,7 +3316,7 @@ WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short
 		return -1;
 	}
 
-	if (options & 0xFFD8) {
+	if (options & 0x7FD8) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)", 0);
 		WM_FreePatches();
 		return -1;

@@ -709,6 +709,7 @@ static struct option const long_options[] = {
 	{"test_patch",1,0,'p'},
 	{"enhanced_resample",0,0,'e'},
 	{"auddev",1,0,'d'},
+	{"wholetempo",0,0,'w'},
 	{NULL,0,NULL,0}
 };
 
@@ -720,6 +721,8 @@ do_help (void) {
 	printf("  -d D  --device=D       Use device D for audio output instead\r\n");
 	printf("                         of the default\r\n");
 #endif
+    printf("MIDI Options\r\n");
+    printf("  -w    --wholetempo       round down tempo to whole number\r\n");
 	printf("Software Wavetable Options\r\n");
 	printf("  -o W  --wavout=W       Saves the output to W in wav format\r\n");
 	printf("                         at 44100Hz 16 bit stereo\r\n");
@@ -736,7 +739,7 @@ do_help (void) {
 static void
 do_version (void) {
 	printf("\nWildMidi %s Open Source Midi Sequencer\r\n",PACKAGE_VERSION);
-	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\r\n");
+	printf("Copyright (C) Chris Ison 2001-2011 wildcode@users.sourceforge.net\n\r\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\r\n");
 	printf("This is free software, and you are welcome to redistribute it\r\n");
 	printf("under the terms and conditions of the GNU General Public License version 3.\r\n");
@@ -815,7 +818,7 @@ main (int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long (argc, argv, "vho:lr:c:m:btk:p:ed:i:", long_options, &option_index);
+		i = getopt_long (argc, argv, "vho:lr:c:m:btk:p:ed:i:w", long_options, &option_index);
 		if (i == -1)
 			break;
 		switch (i) {
@@ -862,6 +865,9 @@ main (int argc, char **argv) {
 				break;
             case 'i': // set input device
                 input_dev_no = atoi(optarg);
+                break;
+            case 'w': // whole number tempo
+                mixer_options |= WM_MO_WHOLETEMPO;
                 break;
 			default:
 				printf ("Unknown Option -%o ??\r\n", i);
