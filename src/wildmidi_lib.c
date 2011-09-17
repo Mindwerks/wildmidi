@@ -2301,7 +2301,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         return NULL;
     }
 
-    //samples_per_delta = (WM_SampleRate << 10) / ((1000000 * divisions) / tempo);
     {
         //Slow but needed for accuracy
         samples_per_delta_f = ((((float)tempo / (float)divisions) / 1000000.0) * (float)WM_SampleRate);
@@ -2530,7 +2529,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                 if (!tempo)
                                     tempo = 500000;
 
-                                //samples_per_delta = (WM_SampleRate << 10) / ((1000000 * divisions) / tempo);
                                 {
                                     if (WM_MixerOptions && WM_MO_WHOLETEMPO)
                                     {
@@ -2539,7 +2537,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                     }
                                     //Slow but needed for accuracy
                                     samples_per_delta_f = ((((float)tempo / (float)divisions) / 1000000.0) * (float)WM_SampleRate);
-                                    //samples_per_delta = (unsigned long int)samples_per_delta_f;
                                 }
 
                             } else {
