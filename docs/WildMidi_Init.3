@@ -31,6 +31,9 @@ By default libWildMidi uses linear interpolation for the resampling of the sound
 .PP
 .IP WM_MO_REVERB
 libWildMidi has an 8 reflection reverb engine. Use this option to give more depth to the output.
+.PP
+.IP WM_MO_WHOLETEMPO
+In some cases libWildMidi has been used in projects that to not support fractional 'beats per minute'(BPM). Since MIDI specifications allow for fractional BPM, libWildMidi has included a "work around" for projects that do not support them. By adding WM_MO_WHOLETEMPO to the initialization options, libWildMidi will round down fractional BPM's to nearest whole number.
 .RE
 .PP
 .SH SEE ALSO
