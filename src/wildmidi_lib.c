@@ -2208,6 +2208,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
     unsigned int divisions = 96;
     unsigned int tempo = 500000;
     float samples_per_delta_f = 0.0;
+    float microseconds_per_pulse = 0.0;
+    float pulses_per_second = 0.0;
+
     unsigned long int sample_count = 0;
     float sample_count_tmp = 0;
     float sample_remainder = 0;
@@ -2303,8 +2306,9 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 
     {
         //Slow but needed for accuracy
-        samples_per_delta_f = ((((float)tempo / (float)divisions) / 1000000.0) * (float)WM_SampleRate);
-        //samples_per_delta = (unsigned long int)samples_per_delta_f;
+        microseconds_per_pulse = (float)tempo / (float)divisions;
+        pulses_per_second = 1000000.0 / microseconds_per_pulse;
+        samples_per_delta_f = (float)WM_SampleRate / pulses_per_second;
     }
     tracks = malloc (sizeof(char *) * no_tracks);
     track_delta = malloc (sizeof(unsigned long int) * no_tracks);
@@ -2535,8 +2539,12 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                         float bpm_f = 60000000.0 / (float)tempo;
                                         tempo = 60000000 / (unsigned long int)bpm_f;
                                     }
-                                    //Slow but needed for accuracy
-                                    samples_per_delta_f = ((((float)tempo / (float)divisions) / 1000000.0) * (float)WM_SampleRate);
+                                    {
+                                        //Slow but needed for accuracy
+                                        microseconds_per_pulse = (float)tempo / (float)divisions;
+                                        pulses_per_second = 1000000.0 / microseconds_per_pulse;
+                                        samples_per_delta_f = (float)WM_SampleRate / pulses_per_second;
+                                    }
                                 }
 
                             } else {
