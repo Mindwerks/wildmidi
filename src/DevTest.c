@@ -175,6 +175,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
     unsigned char *next_track;
     unsigned char event;
     unsigned int delta;
+    unsigned long int delta_accum;
     unsigned int meta_length;
     unsigned int no_tracks;
     unsigned int i;
@@ -182,6 +183,11 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
     unsigned char running_event;
     unsigned char *sysex_store = NULL;
     unsigned long int sysex_store_ofs = 0;
+    unsigned long int tempo = 500000;
+    float beats_per_minute = 0.0;
+    float microseconds_per_pulse = 0.0;
+    float pulses_per_second = 0.0;
+    float samples_per_delta_f = 0.0;
 
     if (strncmp((char *) midi_data,"RIFF",4) == 0)
     {
@@ -256,14 +262,24 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
     divisions = *midi_data++ << 8;
 	divisions |= *midi_data++;
     midi_size -= 2;
-    if (verbose) printf("Divisions: %i\n", divisions);
-
-    if (divisions & 0x00008000)
+    if (verbose)
     {
-        printf("Division Type Not Supported\n");
-        return -1;
-    }
+        printf("Divisions: %i\n", divisions);
 
+        if (divisions & 0x00008000)
+        {
+            printf("Division Type Not Supported\n");
+            return -1;
+        }
+
+        //Slow but needed for accuracy
+        beats_per_minute = 60000000.0 / (float)tempo;
+        microseconds_per_pulse = (float)tempo / (float)divisions;
+        pulses_per_second = 1000000.0 / microseconds_per_pulse;
+        samples_per_delta_f = 44100.0 / pulses_per_second;
+        if (verbose) printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute, samples_per_delta_f);
+
+    }
     for (i = 0; i < no_tracks; i++)
     {
         if (midi_size < 8)
@@ -301,6 +317,7 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
         }
 
         next_track = midi_data + track_size;
+        delta_accum = 0;
         while (midi_data < next_track) {
             delta = 0;
             while (*midi_data > 0x7F) {
@@ -319,7 +336,12 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                 return -1;
             }
             midi_size--;
-            if (verbose) printf("Delta: %i\n", delta);
+            delta_accum += delta;
+            // tempo microseconds per quarter note
+            // divisions pulses per quarter note
+            //if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));
+            if (verbose) printf("Delta: %i, Accumilated Delta: %i\n", delta, delta_accum);
+
 
             if (*midi_data < 0x80) {
                 if (running_event == 0) {
@@ -533,6 +555,13 @@ test_midi(unsigned char * midi_data, unsigned long int midi_size, unsigned int v
                                 printf ("Corrupt Midi, Bad Tempo\n");
                                 return -1;
                             }
+                            tempo = (midi_data[2] << 16) | (midi_data[3] << 8) | midi_data[4];
+                            beats_per_minute = 60000000.0 / (float)tempo;
+                            microseconds_per_pulse = (float)tempo / (float)divisions;
+                            pulses_per_second = 1000000.0 / microseconds_per_pulse;
+                            samples_per_delta_f = 44100.0 / pulses_per_second;
+                            if (verbose) printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute, samples_per_delta_f);
+
                         } else {
                             if (verbose) printf ("Meta Event: Unsupported (%i)\n", *midi_data);
                         }
