@@ -710,6 +710,7 @@ static struct option const long_options[] = {
 	{"enhanced_resample",0,0,'e'},
 	{"auddev",1,0,'d'},
 	{"wholetempo",0,0,'w'},
+	{"roundtempo",0,0,'n'},
 	{NULL,0,NULL,0}
 };
 
@@ -723,6 +724,7 @@ do_help (void) {
 #endif
     printf("MIDI Options\r\n");
     printf("  -w    --wholetempo       round down tempo to whole number\r\n");
+    printf("  -n    --roundtempo       round tempo to nearest whole number\r\n");
 	printf("Software Wavetable Options\r\n");
 	printf("  -o W  --wavout=W       Saves the output to W in wav format\r\n");
 	printf("                         at 44100Hz 16 bit stereo\r\n");
@@ -818,7 +820,7 @@ main (int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long (argc, argv, "vho:lr:c:m:btk:p:ed:i:w", long_options, &option_index);
+		i = getopt_long (argc, argv, "vho:lr:c:m:btk:p:ed:i:wn", long_options, &option_index);
 		if (i == -1)
 			break;
 		switch (i) {
@@ -868,6 +870,9 @@ main (int argc, char **argv) {
                 break;
             case 'w': // whole number tempo
                 mixer_options |= WM_MO_WHOLETEMPO;
+                break;
+            case 'n': // whole number tempo
+                mixer_options |= WM_MO_ROUNDTEMPO;
                 break;
 			default:
 				printf ("Unknown Option -%o ??\r\n", i);

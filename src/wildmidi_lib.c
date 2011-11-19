@@ -2304,6 +2304,15 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
         return NULL;
     }
 
+    if (WM_MixerOptions && WM_MO_WHOLETEMPO)
+    {
+        float bpm_f = 60000000.0 / (float)tempo;
+        tempo = 60000000 / (unsigned long int)bpm_f;
+    } else if (WM_MixerOptions && WM_MO_ROUNDTEMPO)
+    {
+        float bpm_fr = 60000000.0 / (float)tempo + 0.5;
+        tempo = 60000000 / (unsigned long int)bpm_fr;
+    }
     {
         //Slow but needed for accuracy
         microseconds_per_pulse = (float)tempo / (float)divisions;
@@ -2404,7 +2413,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                     continue;
                 }
             }
-
             do {
                 if (*tracks[i] > 0x7F)
                 {
@@ -2538,6 +2546,10 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
                                     {
                                         float bpm_f = 60000000.0 / (float)tempo;
                                         tempo = 60000000 / (unsigned long int)bpm_f;
+                                    } else if (WM_MixerOptions && WM_MO_ROUNDTEMPO)
+                                    {
+                                        float bpm_fr = 60000000.0 / (float)tempo + 0.5;
+                                        tempo = 60000000 / (unsigned long int)bpm_fr;
                                     }
                                     {
                                         //Slow but needed for accuracy
