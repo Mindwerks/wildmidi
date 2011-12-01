@@ -18,12 +18,12 @@ libWildMidi_la_CFLAGS=		$(PREFER_NON_PIC)
 libWildMidi_la_LDFLAGS=		-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) -shared $(LDFLAGS) -no-undefined -export-symbols-regex '^WildMidi.*'
 libWildMidi_la_LIBADD=      -lm -lc
 
-bin_PROGRAMS= wildmidi wildmididebug
+bin_PROGRAMS= wildmidi
 wildmidi_libs=			$(top_builddir)/src/libWildMidi.la
 wildmidi_SOURCES=		wildmidi.c
 wildmidi_LDADD=			$(AUDDR) $(LDFLAGS) $(wildmidi_libs)
 wildmidi_DEPENDENCIES=	$(wildmidi_libs)
 
-wildmididebug_SOURCES=		wm_error.c file_io.c reverb.c lock.c gus_pat.c wildmidi_lib.c wildmidi.c
-wildmididebug_LDADD=		$(AUDDR) $(LDFLAGS)
+## wildmididebug_SOURCES=		wm_error.c file_io.c reverb.c lock.c gus_pat.c wildmidi_lib.c wildmidi.c
+## wildmididebug_LDADD=		$(AUDDR) $(LDFLAGS)
 

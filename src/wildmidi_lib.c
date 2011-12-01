@@ -146,7 +146,6 @@ struct _mdi {
     struct _event *events;
     struct _event *current_event;
     unsigned long int event_count;
-    unsigned long int current_event_count;
 
     unsigned short midi_master_vol;
 	struct _WM_Info info;
@@ -1714,7 +1713,6 @@ WM_ResetToStart(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *)handle;
 
     mdi->current_event = mdi->events;
-    mdi->current_event_count = 0;
 	mdi->samples_to_mix = 0;
 	mdi->info.current_sample= 0;
 
@@ -1999,125 +1997,6 @@ add_handle(void * handle) {
     return 0;
 }
 
-static void
-WM_InjectEventAtHead(struct _mdi *mdi, unsigned long int midi_data)
-{
-    unsigned char midi_event = midi_data & 0xFF;
-    unsigned char midi_data1 = (midi_data >> 8) & 0xFF;
-    unsigned char midi_data2 = (midi_data >> 16) & 0xFF;
-    void (*tmp_event)(struct _mdi *mdi, struct _event_data *data) = NULL;
-    unsigned long int tmp_data = 0;
-    switch ((midi_event >> 4)& 0xF)
-    {
-        case 0x8:
-            tmp_event = *do_note_off;
-            tmp_data = (midi_data1 << 8) | midi_data2;
-            break;
-        case 0x9:
-            if (midi_data2 != 0)
-            {
-                tmp_event = *do_note_on;
-            } else {
-                tmp_event = *do_note_off;
-            }
-            tmp_data = (midi_data1 << 8) | midi_data2;
-            if (mdi->channel[midi_event & 0xF].isdrum)
-            load_patch(mdi, ((mdi->channel[midi_event & 0xF].bank << 8) | (midi_data1 | 0x80)));
-            break;
-        case 0xA:
-            tmp_event = *do_aftertouch;
-            tmp_data = (midi_data1 << 8) | midi_data2;
-            break;
-        case 0xB:
-            switch (midi_data1)
-            {
-                case 0:
-                    tmp_event = *do_control_bank_select;
-                    break;
-                case 6:
-                    tmp_event = *do_control_data_entry_course;
-                    break;
-                case 7:
-                    tmp_event = *do_control_channel_volume;
-                    break;
-                case 8:
-                    tmp_event = *do_control_channel_balance;
-                    break;
-                case 10:
-                    tmp_event = *do_control_channel_pan;
-                    break;
-                case 11:
-                    tmp_event = *do_control_channel_expression;
-                    break;
-                case 38:
-                    tmp_event = *do_control_data_entry_fine;
-                    break;
-                case 64:
-                    tmp_event = *do_control_channel_hold;
-                    break;
-                case 96:
-                    tmp_event = *do_control_data_increment;
-                    break;
-                case 97:
-                    tmp_event = *do_control_data_decrement;
-                    break;
-                case 100:
-                    tmp_event = *do_control_registered_param_fine;
-                    break;
-                case 101:
-                    tmp_event = *do_control_registered_param_course;
-                    break;
-                case 120:
-                    tmp_event = *do_control_channel_sound_off;
-                    break;
-                case 121:
-                    tmp_event = *do_control_channel_controllers_off;
-                    break;
-                case 123:
-                    tmp_event = *do_control_channel_notes_off;
-                    break;
-                default:
-                    return;
-            }
-            tmp_data = midi_data2;
-            break;
-        case 0xC:
-            tmp_event = *do_patch;
-            tmp_data = midi_data1;
-            if (mdi->channel[midi_event & 0xF].isdrum)
-            {
-                mdi->channel[midi_event & 0xF].bank = tmp_data;
-            } else {
-                load_patch(mdi, ((mdi->channel[midi_event & 0xF].bank << 8) | tmp_data));
-            }
-
-            break;
-        case 0xD:
-            tmp_event = *do_channel_pressure;
-            tmp_data = midi_data1;
-            break;
-        case 0xE:
-            tmp_event = *do_pitch;
-            tmp_data = (midi_data2 << 7) | (midi_data1 & 0x7F);
-            break;
-    }
-
-//    struct _event *old_events = mdi->events;
-    unsigned long int data_size = sizeof(struct _event) * (mdi->event_count - mdi->current_event_count);
-
-    mdi->events = realloc(mdi->events, sizeof(struct _event) * (mdi->event_count + 1));
-    mdi->current_event = &mdi->events[mdi->current_event_count];
-
-    memmove(&mdi->events[mdi->current_event_count + 1], &mdi->events[mdi->current_event_count], data_size);
-    mdi->event_count++;
-
-    mdi->current_event->do_event = tmp_event;
-    mdi->current_event->event_data.channel = midi_event & 0xF;
-    mdi->current_event->event_data.data = tmp_data;
-    mdi->current_event->samples_to_next = mdi->samples_to_mix;
-    mdi->samples_to_mix = 0;
-}
-
 static struct _mdi *
 Init_MDI (void)
 {
@@ -2139,7 +2018,6 @@ Init_MDI (void)
     mdi->event_count++;
 
     mdi->current_event = mdi->events;
-    mdi->current_event_count = 0;
 	mdi->samples_to_mix = 0;
 	mdi->info.current_sample= 0;
 	mdi->info.total_midi_time = 0;
@@ -2726,7 +2604,6 @@ WM_ParseNewMidi (unsigned char *midi_data, unsigned int midi_size)
 
     mdi->info.current_sample = 0;
     mdi->current_event = &mdi->events[0];
-    mdi->current_event_count = 0;
     mdi->samples_to_mix = 0;
     mdi->note = NULL;
 
@@ -2771,7 +2648,6 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
                 event++;
                 mdi->samples_to_mix = event->samples_to_next;
                 mdi->current_event = event;
-                mdi->current_event_count++;
             }
 
             if (!mdi->samples_to_mix) {
@@ -3039,7 +2915,6 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
                 event++;
                 mdi->samples_to_mix = event->samples_to_next;
                 mdi->current_event = event;
-                mdi->current_event_count++;
             }
 
 
@@ -3503,10 +3378,10 @@ WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
 		return NULL;
 	}
 	if (midibuffer == NULL) {
-        ret = Init_MDI();
-	} else {
-        ret = (void *)WM_ParseNewMidi(midibuffer,size);
-	}
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL midi data buffer)", 0);
+		return NULL;
+    }
+    ret = (void *)WM_ParseNewMidi(midibuffer,size);
 
     if (ret != NULL) {
         int hdlret = 0;
@@ -3648,28 +3523,6 @@ WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size) {
 	} else {
 		return WM_GetOutput_Linear (handle, buffer, size);
 	}
-}
-
-int
-WildMidi_Live (midi * handle, unsigned long int midi_event)
-{
-    struct _mdi *mdi = (struct _mdi *)handle;
-
-	if (!WM_Initialized) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
-		return -1;
-	}
-	if (handle == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)", 0);
-		return -1;
-	}
-	WM_Lock(&mdi->lock);
-
-    WM_InjectEventAtHead(mdi, midi_event);
-
-	WM_Unlock(&mdi->lock);
-
-    return 0;
 }
 
 int

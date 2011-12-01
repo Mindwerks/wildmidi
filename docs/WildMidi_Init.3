@@ -33,7 +33,10 @@ By default libWildMidi uses linear interpolation for the resampling of the sound
 libWildMidi has an 8 reflection reverb engine. Use this option to give more depth to the output.
 .PP
 .IP WM_MO_WHOLETEMPO
-In some cases libWildMidi has been used in projects that to not support fractional 'beats per minute'(BPM). Since MIDI specifications allow for fractional BPM, libWildMidi has included a "work around" for projects that do not support them. By adding WM_MO_WHOLETEMPO to the initialization options, libWildMidi will round down fractional BPM's to nearest whole number.
+Ignores the fractional or decimal part of a tempo setting. If you are having timing issues try \fIWM_MO_ROUNDTEMPO\fP before trying this option. This option added due to some software not supporting fractional tempos allowable in the MIDI specification.
+.PP
+.IP WM_MO_ROUNDTEMPO
+Rounds the fractional or decimal part of a tempo setting. Try this option is you are having timing issues, if this fails then try \fIWM_MO_WHOLETEMPO\fP. This option added due to some software not supporting fractional tempos allowable in the MIDI specification.
 .RE
 .PP
 .SH SEE ALSO
