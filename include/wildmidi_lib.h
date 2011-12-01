@@ -55,4 +55,3 @@ extern int WildMidi_Close (midi * handle);
 extern int WildMidi_Shutdown ( void );
 // NOTE: Not Yet Implemented Or Tested Properly
 extern int WildMidi_Live(midi * handle, unsigned long int midi_event);
-// extern void WildMidi_ReverbSet(midi * handle, float width, float wet, float dry, float damp, float roomsize);

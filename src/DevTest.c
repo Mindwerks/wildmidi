@@ -24,7 +24,7 @@
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
 
-    Email: wildcode@users.sourceforge.netchar
+    Email: wildcode@users.sourceforge.net
 */
 
 #include "config.h"
