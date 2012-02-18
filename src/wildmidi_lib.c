@@ -3,7 +3,7 @@
 
  	Midi Wavetable Processing library
 
-    Copyright (C) Chris Ison 2001-2011
+    Copyright (C) Chris Ison 2001-2012
 
     This file is part of WildMIDI.
 
@@ -99,6 +99,7 @@ struct _channel {
 	signed short int pitch_range;
 	signed long int pitch_adjust;
 	unsigned short reg_data;
+	unsigned char reg_non;
 	unsigned char isdrum;
 };
 
@@ -1358,9 +1359,11 @@ do_control_data_entry_course (struct _mdi *mdi, struct _event_data *data)
     unsigned char ch = data->channel;
 	int data_tmp;
 
-	if (mdi->channel[ch].reg_data == 0x0000) { // Pitch Bend Range
+	if ((mdi->channel[ch].reg_non == 0) && (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
 		data_tmp = mdi->channel[ch].pitch_range % 100;
 		mdi->channel[ch].pitch_range = data->data * 100 + data_tmp;
+	//	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);
+	//	printf("Data Entry Course: data %li\n\r",data->data);
 	}
 }
 
@@ -1428,9 +1431,11 @@ do_control_data_entry_fine (struct _mdi *mdi, struct _event_data *data)
     unsigned char ch = data->channel;
 	int data_tmp;
 
-	if (mdi->channel[ch].reg_data == 0x0000) { // Pitch Bend Range
+	if ((mdi->channel[ch].reg_non == 0) &&(mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
 		data_tmp = mdi->channel[ch].pitch_range / 100;
 		mdi->channel[ch].pitch_range = (data_tmp * 100) + data->data;
+//		printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);
+//		printf("Data Entry Fine: data: %li\n\r", data->data);
 	}
 
 }
@@ -1487,7 +1492,7 @@ do_control_data_increment (struct _mdi *mdi, struct _event_data *data)
 {
     unsigned char ch = data->channel;
 
-	if (mdi->channel[ch].reg_data == 0x0000) { // Pitch Bend Range
+	if ((mdi->channel[ch].reg_non == 0) && (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
 	    if (mdi->channel[ch].pitch_range < 0x3FFF)
     		mdi->channel[ch].pitch_range++;
 	}
@@ -1498,10 +1503,16 @@ do_control_data_decrement (struct _mdi *mdi, struct _event_data *data)
 {
     unsigned char ch = data->channel;
 
-	if (mdi->channel[ch].reg_data == 0x0000) { // Pitch Bend Range
+	if ((mdi->channel[ch].reg_non == 0) && (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
 	    if (mdi->channel[ch].pitch_range > 0)
     		mdi->channel[ch].pitch_range--;
 	}
+}
+static void
+do_control_non_registered_param (struct _mdi *mdi, struct _event_data *data)
+{
+    unsigned char ch = data->channel;
+	mdi->channel[ch].reg_non = 1;
 }
 
 static void
@@ -1509,6 +1520,7 @@ do_control_registered_param_fine (struct _mdi *mdi, struct _event_data *data)
 {
     unsigned char ch = data->channel;
 	mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x3F80) | data->data;
+	mdi->channel[ch].reg_non = 0;
 }
 
 static void
@@ -1516,6 +1528,7 @@ do_control_registered_param_course (struct _mdi *mdi, struct _event_data *data)
 {
     unsigned char ch = data->channel;
 	mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x7F) | (data->data << 7);
+    mdi->channel[ch].reg_non = 0;
 }
 
 static void
@@ -1652,7 +1665,7 @@ do_pitch (struct _mdi *mdi, struct _event_data *data) {
 	} else {
 		mdi->channel[ch].pitch_adjust = mdi->channel[ch].pitch_range * mdi->channel[ch].pitch / 8191;
 	}
-
+     
 	if (note_data != NULL) {
 		do {
 			if ((note_data->noteid >> 8 ) == ch) {
@@ -1818,6 +1831,9 @@ midi_setup_control (struct _mdi *mdi, unsigned char channel, unsigned char contr
         case 97:
             tmp_event = *do_control_data_decrement;
             break;
+        case 98:
+        case 99:
+            tmp_event = *do_control_non_registered_param; 
         case 100:
             tmp_event = *do_control_registered_param_fine;
             break;
