@@ -121,6 +121,7 @@ struct _note {
 	struct _note *replay;
 	struct _note *next;
 	unsigned long int vol_lvl;
+	unsigned char is_off;
 };
 
 struct _miditrack {
@@ -1108,26 +1109,11 @@ get_sample_data (struct _patch *sample_patch, unsigned long int freq) {
 	return return_sample;
 }
 
+static void do_note_off_extra (struct _note *nte) {
 
-static void
-do_note_off (struct _mdi *mdi, struct _event_data *data) {
-	struct _note *nte;
-	unsigned char ch = data->channel;
-
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
-
-	nte = &mdi->note_table[0][ch][(data->data >> 8)];
-	if (!nte->active)
-		nte = &mdi->note_table[1][ch][(data->data >> 8)];
-	if (!nte->active) {
-		return;
-	}
-
-	if ((mdi->channel[ch].isdrum) && (!(nte->modes & SAMPLE_LOOP))) {
-		return;
-	}
-
-	if (nte->hold) {
+	nte->is_off = 0;
+	
+    if (nte->hold) {
 		nte->hold |= HOLD_OFF;
 	} else {
         if (!(nte->modes & SAMPLE_ENVELOPE)) {
@@ -1145,7 +1131,7 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
                     nte->env_inc = nte->sample->env_rate[5];
                 }
 			}
-#if 0
+#if 1
 		} else 	if (nte->modes & SAMPLE_SUSTAIN) {
             if (nte->env < 3) {
                 nte->env = 3;
@@ -1165,6 +1151,33 @@ do_note_off (struct _mdi *mdi, struct _event_data *data) {
 			}
 		}
 	}
+	return;
+       
+}
+
+static void
+do_note_off (struct _mdi *mdi, struct _event_data *data) {
+	struct _note *nte;
+	unsigned char ch = data->channel;
+
+	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
+
+	nte = &mdi->note_table[0][ch][(data->data >> 8)];
+	if (!nte->active)
+		nte = &mdi->note_table[1][ch][(data->data >> 8)];
+	if (!nte->active) {
+		return;
+	}
+
+	if ((mdi->channel[ch].isdrum) && (!(nte->modes & SAMPLE_LOOP))) {
+		return;
+	}
+    
+    if (nte->env == 0) {
+        nte->is_off = 1;        
+    } else {
+        do_note_off_extra(nte);
+    }
 	return;
 }
 
@@ -1294,6 +1307,7 @@ do_note_on (struct _mdi *mdi, struct _event_data *data) {
 	nte->hold = mdi->channel[ch].hold;
 	nte->vol_lvl = get_volume(mdi, ch, nte);
 	nte->replay = NULL;
+	nte->is_off = 0;
 }
 
 static void
@@ -1695,9 +1709,10 @@ static void
 do_sysex_roland_reset (struct _mdi *mdi, struct _event_data *data)
 {
     unsigned char ch = 0;
+    int i;
     if (data != NULL) ch = data->channel;
 
-	for (int i=0; i<16; i++) {
+	for (i=0; i<16; i++) {
 		mdi->channel[i].bank = 0;
 		if (i != 9) {
             mdi->channel[i].patch = get_patch_data(mdi,0);
@@ -2827,7 +2842,12 @@ WM_GetOutput_Linear (midi * handle, char * buffer, unsigned long int size) {
 							continue;
 					}
 					note_data->env++;
-					if (note_data->env_level > note_data->sample->env_target[note_data->env]) {
+					
+					if (note_data->is_off == 1) {
+                        do_note_off_extra(note_data);
+                    }
+					
+                    if (note_data->env_level > note_data->sample->env_target[note_data->env]) {
 						note_data->env_inc = -note_data->sample->env_rate[note_data->env];
 					} else {
 						note_data->env_inc = note_data->sample->env_rate[note_data->env];
@@ -3125,6 +3145,11 @@ WM_GetOutput_Gauss (midi * handle, char * buffer, unsigned long int size) {
 							continue;
 					}
 					note_data->env++;
+
+					if (note_data->is_off == 1) {
+                        do_note_off_extra(note_data);
+                    }
+
 					if (note_data->env_level > note_data->sample->env_target[note_data->env]) {
 						note_data->env_inc = -note_data->sample->env_rate[note_data->env];
 					} else {
