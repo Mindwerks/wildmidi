@@ -1,3 +1,12 @@
+-- new todo
+We're under new management!
+Convert to cmake asap
+Update with latest patches
+Fix typos
+Get this working on windows visual studios
+harmonize with linux
+
+-- old todo
 Remove malloc from GetOutput
 
 Add function to support "live" midi events
