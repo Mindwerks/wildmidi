@@ -1173,7 +1173,7 @@ int main(int argc, char **argv) {
 }
 
 int msleep(unsigned long milisec) {
-	struct timespec req = { 0 };
+	struct timespec req = { 0, 0 };
 	time_t sec = (int) (milisec / 1000);
 	milisec = milisec - (sec * 1000);
 	req.tv_sec = sec;
