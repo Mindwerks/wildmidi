@@ -11,12 +11,6 @@ SET(wildmidi_library_SRCS
     gus_pat.c
 )
 
-# Setup our wildmidi player
-SET(wildmidi_executable_SRCS
-    ${wildmidi_library_SRCS}
-    wildmidi.c
-)
-
 # Headers:
 SET(wildmidi_executable_HDRS)
 
@@ -43,12 +37,21 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
 
 SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME wildmidi CLEAN_DIRECT_OUTPUT 1)
 
+
+# Setup our wildmidi player
+SET(wildmidi_executable_SRCS
+    wildmidi.c
+)
+
 ADD_EXECUTABLE(wildmidi 
     ${wildmidi_executable_SRCS}
 )
 
-TARGET_LINK_LIBRARIES(wildmidi     
-    ${ALSA_LIBRARY} 
+ADD_DEPENDENCIES(wildmidi wildmidi_static)
+
+TARGET_LINK_LIBRARIES(wildmidi 
+    ${ALSA_LIBRARY}
+    ${CMAKE_CURRENT_BINARY_DIR}/libwildmidi.a 
     libm.so
     )
 
