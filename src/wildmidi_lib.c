@@ -25,6 +25,8 @@
     Email: wildcode@users.sourceforge.net
 */
 
+#define UNUSED(x) (void)(x)
+
 #include "config.h"
 
 #include <ctype.h>
@@ -43,8 +45,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #ifdef _WIN32
-# include <windows.h>
+#include <windows.h>
 #endif
+
 #include "wm_error.h"
 #include "file_io.h"
 #include "lock.h"
@@ -80,7 +83,6 @@ float reverb_listen_posy = 16.875;
 int fix_release = 0;
 int auto_amp = 0;
 int auto_amp_with_amp = 0;
-
 
 static int patch_lock;
 
@@ -1708,11 +1710,8 @@ do_sysex_roland_drum_track (struct _mdi *mdi, struct _event_data *data) {
 static void
 do_sysex_roland_reset (struct _mdi *mdi, struct _event_data *data)
 {
-    unsigned char ch = 0;
-    int i;
-    if (data != NULL) ch = data->channel;
-
-	for (i=0; i<16; i++) {
+	UNUSED(data);
+	for (int i=0; i<16; i++) {
 		mdi->channel[i].bank = 0;
 		if (i != 9) {
             mdi->channel[i].patch = get_patch_data(mdi,0);
@@ -3405,6 +3404,7 @@ WildMidi_Open (const char *midifile) {
     if (ret != NULL) {
         int hdlret = 0;
         hdlret = add_handle(ret);
+        if (hdlret != 0) exit(hdlret);
     }
 
 	return ret;
@@ -3427,6 +3427,7 @@ WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size) {
     if (ret != NULL) {
         int hdlret = 0;
         hdlret = add_handle(ret);
+        if (hdlret != 0) exit(hdlret);
     }
 
 	return ret;
@@ -3673,5 +3674,16 @@ WildMidi_Shutdown ( void ) {
 	free_gauss();
 	WM_Initialized = 0;
 	return 0;
+}
+
+char *strdup(const char *str)
+{
+    int n = strlen(str) + 1;
+    char *dup = malloc(n * sizeof(char));
+    if(dup)
+    {
+        strcpy(dup, str);
+    }
+    return dup;
 }
 
