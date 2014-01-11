@@ -20,8 +20,9 @@ ADD_LIBRARY(wildmidi_static STATIC
     )
 
 TARGET_LINK_LIBRARIES(wildmidi_static 
-    ${ALSA_LIBRARY} 
-    libm.so
+    ${ALSA_LIBRARY}
+    ${OSS_LIBRARY}
+    ${M_LIBRARY}
     )
 
 SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES OUTPUT_NAME wildmidi CLEAN_DIRECT_OUTPUT 1)
@@ -31,8 +32,9 @@ ADD_LIBRARY(wildmidi_dynamic SHARED
     )
 
 TARGET_LINK_LIBRARIES(wildmidi_dynamic 
-    ${ALSA_LIBRARY} 
-    libm.so
+    ${ALSA_LIBRARY}
+    ${OSS_LIBRARY}
+    ${M_LIBRARY}
     )
 
 SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME wildmidi CLEAN_DIRECT_OUTPUT 1)
@@ -50,9 +52,9 @@ ADD_EXECUTABLE(wildmidi
 ADD_DEPENDENCIES(wildmidi wildmidi_static)
 
 TARGET_LINK_LIBRARIES(wildmidi 
-    ${ALSA_LIBRARY}
     ${CMAKE_CURRENT_BINARY_DIR}/libwildmidi.a 
-    libm.so
+    ${M_LIBRARY}
+    ${ALSA_LIBRARY}
     )
 
 # add install target:
