@@ -24,6 +24,8 @@ IF(NOT WIN32 AND NOT APPLE)
         endif()
     endif()
     
+    find_library(M_LIBRARY m)
+    
     ## Debian and non debian Linux building
     IF (DPKG_PROGRAM)
         ## Debian specific
