@@ -56,4 +56,4 @@ TARGET_LINK_LIBRARIES(wildmidi
     )
 
 # add install target:
-#INSTALL(TARGETS wildmidi DESTINATION bin)
+INSTALL(TARGETS wildmidi DESTINATION bin)
