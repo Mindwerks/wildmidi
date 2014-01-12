@@ -20,7 +20,7 @@ IF(NOT WIN32 AND NOT APPLE)
     else(ALSA_FOUND)
         find_package(OSS)
         if(OSS_FOUND)
-            add_definitions( -DHAVE_OSS=1 )
+            add_definitions( -DHAVE_LINUX_SOUNDCARD_H=1 )
         endif()
     endif()
     
