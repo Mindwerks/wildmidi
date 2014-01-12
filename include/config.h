@@ -1,10 +1,5 @@
 /* include/config.h.  Generated from config.h.cmake by configure.  */
 
-/* Define this if the GCC __builtin_expect keyword is available */
-#ifndef HAVE___BUILTIN_EXPECT
-# define __builtin_expect(x,c) x
-#endif
-
 /* Name of package */
 #define PACKAGE "wildmidi"
 
@@ -31,3 +26,13 @@
 
 /* Define this to the location of the wildmidi config file */
 #define WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg"
+
+/* Set our global defines here */
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
+
+/* Define this if the GCC __builtin_expect keyword is available */
+#ifndef HAVE___BUILTIN_EXPECT
+#define __builtin_expect(x,c) x
+#endif
