@@ -1,7 +1,6 @@
 /* include/config.h.  Generated from config.h.cmake by configure.  */
 
 /* Define this if the GCC __builtin_expect keyword is available */
-#define HAVE___BUILTIN_EXPECT 1
 #ifndef HAVE___BUILTIN_EXPECT
 # define __builtin_expect(x,c) x
 #endif
@@ -16,7 +15,7 @@
 #define PACKAGE_NAME "WildMidi"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "WildMidi 0.2.3.5"
+#define PACKAGE_STRING "WildMidi 0.3.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "wildmidi"
@@ -25,22 +24,10 @@
 #define PACKAGE_URL "https://github.com/psi29a/wildmidi"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.2.3.5"
+#define PACKAGE_VERSION "0.3.0"
 
 /* Version number of package */
-#define VERSION "0.2.3.5"
+#define VERSION "0.3.0"
 
 /* Define this to the location of the wildmidi config file */
-#define WILDMIDI_CFG "wildmidi.cfg"
-
-/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
- significant byte first (like Motorola and SPARC, unlike Intel). */
-#if defined AC_APPLE_UNIVERSAL_BUILD
-# if defined __BIG_ENDIAN__
-#  define WORDS_BIGENDIAN 1
-# endif
-#else
-# ifndef WORDS_BIGENDIAN
-/* #  undef WORDS_BIGENDIAN */
-# endif
-#endif
+#define WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg"

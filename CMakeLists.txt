@@ -33,9 +33,11 @@ IF(NOT WIN32 AND NOT APPLE)
         endif()
     endif()
     
+    # find our math lib
     find_library(M_LIBRARY m)
-    SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg")
     
+    # set our default linux config
+    SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg")
     
     ## Debian and non debian Linux building
     IF (DPKG_PROGRAM)
