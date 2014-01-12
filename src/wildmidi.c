@@ -26,7 +26,6 @@
  */
 
 #include "config.h"
-#include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -35,18 +34,19 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #ifndef _WIN32
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 #if (defined _WIN32) || (defined __CYGWIN__)
-# include <conio.h>
-# include <windows.h>
-# include <mmsystem.h>
+#include <conio.h>
+#include <windows.h>
+#include <mmsystem.h>
+#include <io.h>
 #else
 # ifdef HAVE_ALSA
 #  include <alsa/asoundlib.h>
