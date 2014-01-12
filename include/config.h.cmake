@@ -1,7 +1,6 @@
 /* include/config.h.  Generated from config.h.cmake by configure.  */
 
 /* Define this if the GCC __builtin_expect keyword is available */
-#define HAVE___BUILTIN_EXPECT 1
 #ifndef HAVE___BUILTIN_EXPECT
 # define __builtin_expect(x,c) x
 #endif
@@ -32,15 +31,3 @@
 
 /* Define this to the location of the wildmidi config file */
 #define WILDMIDI_CFG "@WILDMIDI_CFG@"
-
-/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
- significant byte first (like Motorola and SPARC, unlike Intel). */
-#if defined AC_APPLE_UNIVERSAL_BUILD
-# if defined __BIG_ENDIAN__
-#  define WORDS_BIGENDIAN 1
-# endif
-#else
-# ifndef WORDS_BIGENDIAN
-/* #  undef WORDS_BIGENDIAN */
-# endif
-#endif
