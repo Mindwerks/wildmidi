@@ -75,7 +75,7 @@
 #pragma alloca
 #   else
 #    ifndef alloca /* predefined by HP cc +Olibcalls */
-void *alloca (size_t);
+void *alloca(size_t);
 #    endif
 #   endif
 #  endif
@@ -632,7 +632,7 @@ static int open_oss_output(void) {
 
 	buffer = (unsigned char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd,
 			0);
-	if (buffer == MAP_FAILED ) {
+	if (buffer == MAP_FAILED) {
 		printf("couldn't mmap %s\r\n", strerror(errno));
 		shutdown_output();
 		return -1;
@@ -732,8 +732,8 @@ static void do_help(void) {
 	printf("  -l    --log_vol        Use log volume adjustments\r\n");
 	printf("  -r N  --rate=N         output at N samples per second\r\n");
 	printf(
-			"  -c P  --config_file=P  P is the path and filename to your timidity.cfg\r\n");
-	printf("                         Defaults to /etc/timidity.cfg\n\r\n");
+			"  -c P  --config_file=P  P is the path and filename to your wildmidi.cfg\r\n");
+	printf("                         Defaults to %s\n\r\n", WILDMIDI_CFG);
 	printf(
 			" -m V  --master_volume=V Sets the master volumes, default is 100\r\n");
 	printf(

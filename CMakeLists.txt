@@ -2,6 +2,12 @@
 PROJECT(wildmidi)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+# Version
+set (WILDMIDI_VERSION_MAJOR 0)
+set (WILDMIDI_VERSION_MINOR 3)
+set (WILDMIDI_VERSION_RELEASE 0)
+set (WILDMIDI_VERSION "${WILDMIDI_VERSION_MAJOR}.${WILDMIDI_VERSION_MINOR}.${WILDMIDI_VERSION_RELEASE}")
+
 # Find Macros
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -9,6 +15,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 if(CMAKE_COMPILER_IS_GNUCC)
     add_definitions( -std=c99 -D_POSIX_C_SOURCE=200809L -pedantic -Wall -W )
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+# default config locaiton
+SET(WILDMIDI_CFG "wildmidi.cfg")
 
 # UNIX-like environments
 IF(NOT WIN32 AND NOT APPLE)
@@ -25,6 +34,8 @@ IF(NOT WIN32 AND NOT APPLE)
     endif()
     
     find_library(M_LIBRARY m)
+    SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg")
+    
     
     ## Debian and non debian Linux building
     IF (DPKG_PROGRAM)
