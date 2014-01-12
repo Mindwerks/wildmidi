@@ -46,6 +46,8 @@
 #include <sys/types.h>
 #ifdef _WIN32
 #include <windows.h>
+#define strcasecmp _stricmp
+#define strncasecmp _tcsnicmp
 #endif
 
 #include "wm_error.h"
@@ -55,10 +57,6 @@
 #include "gus_pat.h"
 #include "common.h"
 #include "wildmidi_lib.h"
-
-#ifndef M_PI
-#define M_PI           3.14159265358979323846
-#endif
 
 /*
  * =========================
