@@ -6,9 +6,6 @@
 # define __builtin_expect(x,c) x
 #endif
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
-
 /* Name of package */
 #define PACKAGE "wildmidi"
 
@@ -37,7 +34,7 @@
 #define WILDMIDI_CFG "wildmidi.cfg"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
-   significant byte first (like Motorola and SPARC, unlike Intel). */
+ significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD
 # if defined __BIG_ENDIAN__
 #  define WORDS_BIGENDIAN 1

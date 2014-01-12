@@ -16,7 +16,7 @@
 #define PACKAGE_NAME "WildMidi"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "WildMidi @WILDMIDI_VERSION@"
+#define PACKAGE_STRING "WildMidi 0.3.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "wildmidi"
@@ -25,13 +25,13 @@
 #define PACKAGE_URL "https://github.com/psi29a/wildmidi"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "@WILDMIDI_VERSION@"
+#define PACKAGE_VERSION "0.3.0"
 
 /* Version number of package */
-#define VERSION "@WILDMIDI_VERSION@"
+#define VERSION "0.3.0"
 
 /* Define this to the location of the wildmidi config file */
-#define WILDMIDI_CFG "@WILDMIDI_CFG@"
+#define WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
  significant byte first (like Motorola and SPARC, unlike Intel). */

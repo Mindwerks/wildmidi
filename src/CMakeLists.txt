@@ -1,5 +1,5 @@
 # Setup up our config file
-#configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/config.h")
+configure_file ("${CMAKE_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/config.h")
 
 # Setup our wildmidi library that we link to
 SET(wildmidi_library_SRCS
