@@ -45,6 +45,11 @@ IF(NOT WIN32 AND NOT APPLE)
     ENDIF (DPKG_PROGRAM)
 ENDIF(NOT WIN32 AND NOT APPLE)
 
+IF (APPLE)
+   FIND_LIBRARY(COREAUDIO_LIBRARY CoreAudio)
+   FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation )
+ENDIF (APPLE)
+
 #add_definitions( -static  )
 
 # ######### General setup ##########
