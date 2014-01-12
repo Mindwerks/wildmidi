@@ -25,7 +25,7 @@
 #define VERSION "0.3.0"
 
 /* Define this to the location of the wildmidi config file */
-#define WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg"
+#define WILDMIDI_CFG "wildmidi.cfg"
 
 /* Set our global defines here */
 #ifndef M_PI
@@ -33,6 +33,10 @@
 #endif
 
 /* Define this if the GCC __builtin_expect keyword is available */
-#ifndef HAVE___BUILTIN_EXPECT
+#ifndef __builtin_expect
 #define __builtin_expect(x,c) x
+#endif
+
+#ifndef inline
+#define inline __inline
 #endif
