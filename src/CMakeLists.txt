@@ -38,6 +38,7 @@ IF(WIN32)
     SET(LIBRARY_DYN_NAME "wildmidi_dynamic")
     SET(LIBRARY_STATIC_NAME "wildmidi_static")
 ELSE(WIN32)
+    SET(LIBRARY_DYN_NAME "wildmidi")
     SET(LIBRARY_STATIC_NAME "wildmidi")
 ENDIF(WIN32)
 
