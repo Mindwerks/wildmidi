@@ -11,6 +11,7 @@ SET(wildmidi_library_SRCS
     gus_pat.c
 )
 
+
 # Headers:
 SET(wildmidi_executable_HDRS)
 
@@ -44,10 +45,16 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
 SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME wildmidi CLEAN_DIRECT_OUTPUT 1)
 
 
+IF(WIN32)
+    SET(GETOPT getopt.c getopt_long.c)
+ENDIF(WIN32)
+
 # Setup our wildmidi player
 SET(wildmidi_executable_SRCS
+    ${GETOPT}
     wildmidi.c
 )
+
 
 ADD_EXECUTABLE(wildmidi 
     ${wildmidi_executable_SRCS}

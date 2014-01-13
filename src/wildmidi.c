@@ -40,6 +40,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+int msleep(unsigned long millisec);
 #endif
 
 #if (defined _WIN32) || (defined __CYGWIN__)
@@ -87,8 +88,6 @@ void *alloca(size_t);
 #endif
 
 #include "wildmidi_lib.h"
-
-int msleep(unsigned long millisec);
 
 struct _midi_test {
 	unsigned char *data;
@@ -1172,6 +1171,7 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+#ifndef _WIN32
 int msleep(unsigned long milisec) {
 	struct timespec req = { 0, 0 };
 	time_t sec = (int) (milisec / 1000);
@@ -1182,3 +1182,4 @@ int msleep(unsigned long milisec) {
 		continue;
 	return 1;
 }
+#endif
