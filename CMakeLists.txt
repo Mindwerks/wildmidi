@@ -52,6 +52,11 @@ IF (APPLE)
    FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation )
 ENDIF (APPLE)
 
+IF (WIN32)
+    link_libraries (winmm)
+#    FIND_LIBRARY(WINMM_LIBRARY Winmm.lib REQUIRED)
+ENDIF (WIN32)
+
 #add_definitions( -static  )
 
 # ######### General setup ##########
