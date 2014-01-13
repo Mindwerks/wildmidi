@@ -42,7 +42,7 @@ void WM_ERROR_NEW(const char * wmfmt, ...) {
 
 void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
 		const char * wmfor, int error) {
-	const char * errors[] = { "Unable to obtain memory\0", "Unable to stat\0",
+	static const char * errors[] = { "Unable to obtain memory\0", "Unable to stat\0",
 			"Unable to load\0", "Unable to open\0", "Unable to read\0",
 			"Invalid or Unsuported file format\0", "File corrupt\0",
 			"Library not Initialized\0", "Invalid argument\0" };
