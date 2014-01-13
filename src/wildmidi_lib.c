@@ -755,12 +755,12 @@ static int WM_LoadConfig(const char *config_file) {
 							return -1;
 						}
 						reverb_room_width = (float) atof(line_tokens[1]);
-						if (reverb_room_width < 1.0) {
+						if (reverb_room_width < 1.0f) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_room_width < 1.0 meters, setting to minimum of 1.0 meter)",
 									0);
-							reverb_room_width = 1.0;
-						} else if (reverb_room_width > 100.0) {
+							reverb_room_width = 1.0f;
+						} else if (reverb_room_width > 100.0f) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_room_width > 100.0 meters, setting to maximum of 100.0 meters)",
 									0);
@@ -782,12 +782,12 @@ static int WM_LoadConfig(const char *config_file) {
 							return -1;
 						}
 						reverb_room_length = (float) atof(line_tokens[1]);
-						if (reverb_room_length < 1.0) {
+						if (reverb_room_length < 1.0f) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_room_length < 1.0 meters, setting to minimum of 1.0 meter)",
 									0);
-							reverb_room_length = 1.0;
-						} else if (reverb_room_length > 100.0) {
+							reverb_room_length = 1.0f;
+						} else if (reverb_room_length > 100.0f) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_room_length > 100.0 meters, setting to maximum of 100.0 meters)",
 									0);
@@ -814,7 +814,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_listen_posx set outside of room)",
 									0);
-							reverb_listen_posx = reverb_room_width / (float) 2.0;
+							reverb_listen_posx = reverb_room_width / 2.0f;
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posy") == 0) {
@@ -837,7 +837,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_listen_posy set outside of room)",
 									0);
-							reverb_listen_posy = reverb_room_length * (float) 0.75;
+							reverb_listen_posy = reverb_room_length * 0.75f;
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"guspat_editor_author_cant_read_so_fix_release_time_for_me")
@@ -1051,12 +1051,12 @@ static int WM_LoadConfig(const char *config_file) {
 												"(syntax error in patch 	line)",
 												0);
 									} else {
-										tmp_patch->env[env_no].time = atof(
+										tmp_patch->env[env_no].time = (float) atof(
 												&line_tokens[token_count][10]);
 										if ((tmp_patch->env[env_no].time
-												> 45000.0)
+												> 45000.0f)
 												|| (tmp_patch->env[env_no].time
-														< 1.47)) {
+														< 1.47f)) {
 											WM_ERROR(__FUNCTION__, __LINE__,
 													WM_ERR_INVALID,
 													"(range error in patch line)",
@@ -1085,11 +1085,11 @@ static int WM_LoadConfig(const char *config_file) {
 												"(syntax error in patch line)",
 												0);
 									} else {
-										tmp_patch->env[env_no].level = atof(
+										tmp_patch->env[env_no].level = (float) atof(
 												&line_tokens[token_count][11]);
-										if ((tmp_patch->env[env_no].level > 1.0)
+										if ((tmp_patch->env[env_no].level > 1.0f)
 												|| (tmp_patch->env[env_no].level
-														< 0.0)) {
+														< 0.0f)) {
 											WM_ERROR(__FUNCTION__, __LINE__,
 													WM_ERR_INVALID,
 													"(range error in patch line)",
@@ -1591,7 +1591,7 @@ static void do_aftertouch(struct _mdi *mdi, struct _event_data *data) {
 static void do_pan_adjust(struct _mdi *mdi, unsigned char ch) {
 	signed short int pan_adjust = mdi->channel[ch].balance
 			+ mdi->channel[ch].pan;
-	signed long int left, right;
+	signed short int left, right;
 	int amp = 32;
 
 	if (pan_adjust > 63) {
@@ -1959,8 +1959,9 @@ static void do_sysex_roland_drum_track(struct _mdi *mdi,
 }
 
 static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
-	UNUSED(data);
-	for (int i = 0; i < 16; i++) {
+    int i;
+	for (i = 0; i < 16; i++) 
+    {
 		mdi->channel[i].bank = 0;
 		if (i != 9) {
 			mdi->channel[i].patch = get_patch_data(mdi, 0);
@@ -1973,8 +1974,8 @@ static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 		mdi->channel[i].expression = 127;
 		mdi->channel[i].balance = 0;
 		mdi->channel[i].pan = 0;
-		mdi->channel[i].left_adjust = 1.0;
-		mdi->channel[i].right_adjust = 1.0;
+		mdi->channel[i].left_adjust = 1;
+		mdi->channel[i].right_adjust = 1;
 		mdi->channel[i].pitch = 0;
 		mdi->channel[i].pitch_range = 200;
 		mdi->channel[i].reg_data = 0xFFFF;
@@ -1982,6 +1983,7 @@ static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 		do_pan_adjust(mdi, i);
 	}
 	mdi->channel[9].isdrum = 1;
+    UNUSED(data); // NOOP, to please the compiler gods
 }
 
 static void WM_ResetToStart(midi * handle) {
@@ -2452,16 +2454,16 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	}
 
 	if (WM_MixerOptions && WM_MO_WHOLETEMPO) {
-		float bpm_f = 60000000.0 / (float) tempo;
+		float bpm_f = (float) ( 60000000 / tempo );
 		tempo = 60000000 / (unsigned long int) bpm_f;
 	} else if (WM_MixerOptions && WM_MO_ROUNDTEMPO) {
-		float bpm_fr = 60000000.0 / (float) tempo + 0.5;
+		float bpm_fr = (float) ( 60000000 / tempo ) + 0.5f;
 		tempo = 60000000 / (unsigned long int) bpm_fr;
 	}
 	{
 		//Slow but needed for accuracy
 		microseconds_per_pulse = (float) tempo / (float) divisions;
-		pulses_per_second = 1000000.0 / microseconds_per_pulse;
+		pulses_per_second = (float) 1000000 / microseconds_per_pulse;
 		samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
 	}
 	tracks = malloc(sizeof(char *) * no_tracks);
@@ -2689,13 +2691,13 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 							{
 								if (WM_MixerOptions && WM_MO_WHOLETEMPO) {
-									float bpm_f = 60000000.0 / (float) tempo;
+									float bpm_f = (float) (60000000 / tempo);
 									tempo = 60000000
 											/ (unsigned long int) bpm_f;
 								} else if (WM_MixerOptions
 										&& WM_MO_ROUNDTEMPO) {
-									float bpm_fr = 60000000.0 / (float) tempo
-											+ 0.5;
+									float bpm_fr = (float) (60000000 / tempo)
+											+ 0.5f;
 									tempo = 60000000
 											/ (unsigned long int) bpm_fr;
 								}
@@ -2703,7 +2705,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 									//Slow but needed for accuracy
 									microseconds_per_pulse = (float) tempo
 											/ (float) divisions;
-									pulses_per_second = 1000000.0
+									pulses_per_second = 1000000.0f
 											/ microseconds_per_pulse;
 									samples_per_delta_f = (float) WM_SampleRate
 											/ pulses_per_second;
@@ -3304,7 +3306,7 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 						} while (gptr <= gend);
 					}
 
-					premix = y * vol_mul / 1024;
+					premix = (long) (y * vol_mul / 1024);
 
 					left_mix += premix
 							* mdi->channel[note_data->noteid >> 8].left_adjust;
