@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #ifdef _WIN32
 #include <windows.h>
+#include <tchar.h>
 #define strcasecmp _stricmp
 #define strncasecmp _tcsnicmp
 #endif
@@ -753,7 +754,7 @@ static int WM_LoadConfig(const char *config_file) {
 							free(config_buffer);
 							return -1;
 						}
-						reverb_room_width = atof(line_tokens[1]);
+						reverb_room_width = (float) atof(line_tokens[1]);
 						if (reverb_room_width < 1.0) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_room_width < 1.0 meters, setting to minimum of 1.0 meter)",
@@ -780,7 +781,7 @@ static int WM_LoadConfig(const char *config_file) {
 							free(config_buffer);
 							return -1;
 						}
-						reverb_room_length = atof(line_tokens[1]);
+						reverb_room_length = (float) atof(line_tokens[1]);
 						if (reverb_room_length < 1.0) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_room_length < 1.0 meters, setting to minimum of 1.0 meter)",
@@ -807,13 +808,13 @@ static int WM_LoadConfig(const char *config_file) {
 							free(config_buffer);
 							return -1;
 						}
-						reverb_listen_posx = atof(line_tokens[1]);
+						reverb_listen_posx = (float) atof(line_tokens[1]);
 						if ((reverb_listen_posx > reverb_room_width)
 								|| (reverb_listen_posx < 0.0)) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_listen_posx set outside of room)",
 									0);
-							reverb_listen_posx = reverb_room_width / 2.0;
+							reverb_listen_posx = reverb_room_width / (float) 2.0;
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posy") == 0) {
@@ -830,13 +831,13 @@ static int WM_LoadConfig(const char *config_file) {
 							free(config_buffer);
 							return -1;
 						}
-						reverb_listen_posy = atof(line_tokens[1]);
+						reverb_listen_posy = (float) atof(line_tokens[1]);
 						if ((reverb_listen_posy > reverb_room_width)
 								|| (reverb_listen_posy < 0.0)) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(reverb_listen_posy set outside of room)",
 									0);
-							reverb_listen_posy = reverb_room_length * 0.75;
+							reverb_listen_posy = reverb_room_length * (float) 0.75;
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"guspat_editor_author_cant_read_so_fix_release_time_for_me")
