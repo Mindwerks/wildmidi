@@ -11,9 +11,14 @@ SET(wildmidi_library_SRCS
     gus_pat.c
 )
 
-
 # Headers:
 SET(wildmidi_executable_HDRS)
+
+# set our target paths
+SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+SET(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+
+MESSAGE(STATUS "${CMAKE_BINARY_DIR}")
 
 # actual target:
 ADD_LIBRARY(wildmidi_static STATIC 
@@ -28,7 +33,15 @@ TARGET_LINK_LIBRARIES(wildmidi_static
     ${COREFOUNDATION_LIBRARY}
     )
 
-SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES OUTPUT_NAME wildmidi CLEAN_DIRECT_OUTPUT 1)
+
+IF(WIN32)
+    SET(LIBRARY_DYN_NAME "wildmidi_dynamic")
+    SET(LIBRARY_STATIC_NAME "wildmidi_static")
+ELSE(WIN32)
+    SET(LIBRARY_STATIC_NAME "wildmidi")
+ENDIF(WIN32)
+
+SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1)
 
 ADD_LIBRARY(wildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
@@ -42,11 +55,13 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
     ${COREFOUNDATION_LIBRARY}
     )
 
-SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME wildmidi CLEAN_DIRECT_OUTPUT 1)
-
+SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1)
 
 IF(WIN32)
     SET(GETOPT getopt.c getopt_long.c)
+    SET(WINLIB "${CMAKE_BINARY_DIR}\\Release\\wildmidi_static.lib")
+ELSE(WIN32)
+    SET(UNIXLIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
 ENDIF(WIN32)
 
 # Setup our wildmidi player
@@ -63,7 +78,8 @@ ADD_EXECUTABLE(wildmidi
 ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
 
 TARGET_LINK_LIBRARIES(wildmidi 
-    ${CMAKE_CURRENT_BINARY_DIR}/libwildmidi.a 
+    ${WINLIB}
+    ${UNIXLIB}
     ${M_LIBRARY}
     ${ALSA_LIBRARY}
     ${COREAUDIO_LIBRARY}

@@ -1,8 +1,9 @@
 /*
  lock.c - data locking code for lib
  
- Copyright (C) Chris Ison 2001-2011
-
+ Copyright (C) Chris Ison  2001-2011
+ Copyright (C) Bret Curtis 2013-2014
+ 
  This file is part of WildMIDI.
 
  WildMIDI is free software: you can redistribute and/or modify the player
@@ -19,8 +20,6 @@
  You should have received a copy of the GNU General Public License and the
  GNU Lesser General Public License along with WildMIDI.  If not,  see
  <http://www.gnu.org/licenses/>.
-
- Email: wildcode@users.sourceforge.net
  */
 
 #include "config.h"
