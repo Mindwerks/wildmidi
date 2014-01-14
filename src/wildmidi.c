@@ -56,31 +56,19 @@ int msleep(unsigned long millisec);
 #   include <sys/soundcard.h>
 #  elif defined HAVE_LINUX_SOUNDCARD_H
 #   include <linux/soundcard.h>
-#  elif HAVE_MACHINE_SOUNDCARD_H
+#  elif defined HAVE_MACHINE_SOUNDCARD_H
 #   include <machine/soundcard.h>
 #  endif
 # endif
 #endif
 
-#if defined(__GNUC__) && __GNUC__ < 3
+#if defined(__builtin_alloca)
 # define alloca __builtin_alloca
-#else
-# ifdef _MSC_VER
+# elif defined(_MSC_VER)
 #  include <malloc.h>
 #  define alloca _alloca
 # else
-#  ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
-#  else
-#   ifdef _AIX
-#pragma alloca
-#   else
-#    ifndef alloca /* predefined by HP cc +Olibcalls */
-void *alloca(size_t);
-#    endif
-#   endif
-#  endif
-# endif
 #endif
 
 #ifndef FNONBLOCK
@@ -744,7 +732,7 @@ static void do_help(void) {
 static void do_version(void) {
 	printf("\nWildMidi %s Open Source Midi Sequencer\r\n", PACKAGE_VERSION);
 	printf("Copyright (C) Chris Ison  2001-2011\n\r");
-    printf("Copyright (C) Bret Curtis 2013-2014\n\r\n");
+	printf("Copyright (C) Bret Curtis 2013-2014\n\r\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\r\n");
 	printf("This is free software, and you are welcome to redistribute it\r\n");
 	printf(
