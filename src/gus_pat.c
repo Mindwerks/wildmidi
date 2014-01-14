@@ -24,13 +24,12 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
-
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 #include "gus_pat.h"
 #include "common.h"
 #include "wm_error.h"
