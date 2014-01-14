@@ -31,6 +31,10 @@
 #define WM_MO_ROUNDTEMPO      0xA000
 #define WM_GS_VERSION		0x0001
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct _WM_Info {
 	char *copyright;
 	unsigned long int current_sample;
@@ -54,6 +58,10 @@ extern int WildMidi_Close (midi * handle);
 extern int WildMidi_Shutdown ( void );
 extern char *strdup(const char *str);
 
-
 // NOTE: Not Yet Implemented Or Tested Properly
 extern int WildMidi_Live(midi * handle, unsigned long int midi_event);
+
+
+#if defined(__cplusplus)
+}
+#endif
