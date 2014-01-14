@@ -70,6 +70,8 @@ static unsigned short int WM_MixerOptions = 0;
 
 static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
+unsigned short int WM_SampleRate;
+
 struct _patch *patch[128];
 
 float reverb_room_width = 16.875;
@@ -517,10 +519,10 @@ static void WM_FreePatches(void) {
 	WM_Lock(&patch_lock);
 	for (i = 0; i < 128; i++) {
 		if (patch[i] != NULL) {
-			while (patch[i] != NULL ) {
+			while (patch[i] != NULL) {
 				if (patch[i]->filename != NULL) {
 					if (patch[i]->first_sample != NULL) {
-						while (patch[i]->first_sample != NULL ) {
+						while (patch[i]->first_sample != NULL) {
 							tmp_sample = patch[i]->first_sample->next;
 							if (patch[i]->first_sample->data != NULL)
 								free(patch[i]->first_sample->data);
@@ -573,7 +575,7 @@ WM_LC_Tokenize_Line(char * line_data) {
 							((token_count + 1) * sizeof(char *)))) == NULL) {
 						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 								"to parse config", errno);
-						return NULL ;
+						return NULL;
 					}
 
 					token_data[token_count] = &line_data[line_ofs];
@@ -668,7 +670,7 @@ static int WM_LoadConfig(const char *config_file) {
 # else
 						if ((line_tokens[1][0] != '/')
 								&& (line_tokens[1][0] != '~')
-								&& (config_dir != NULL )) {
+								&& (config_dir != NULL)) {
 # endif
 							new_config = malloc(
 									strlen(config_dir) + strlen(line_tokens[1])
@@ -884,14 +886,15 @@ static int WM_LoadConfig(const char *config_file) {
 								tmp_patch->note = 0;
 							} else {
 								if (tmp_patch->next != NULL) {
-									while (tmp_patch->next != NULL ) {
+									while (tmp_patch->next != NULL) {
 										if (tmp_patch->next->patchid == patchid)
 											break;
 										tmp_patch = tmp_patch->next;
 									}
 									if (tmp_patch->next == NULL) {
 										if ((tmp_patch->next = malloc(
-												sizeof(struct _patch))) == NULL) {
+												sizeof(struct _patch)))
+												== NULL) {
 											WM_ERROR(__FUNCTION__, __LINE__,
 													WM_ERR_MEM, NULL, 0);
 											WM_ERROR(__FUNCTION__, __LINE__,
@@ -1010,7 +1013,7 @@ static int WM_LoadConfig(const char *config_file) {
 						tmp_patch->remove = 0;
 
 						token_count = 0;
-						while (line_tokens[token_count] != NULL ) {
+						while (line_tokens[token_count] != NULL) {
 							if (strncasecmp(line_tokens[token_count], "amp=", 4)
 									== 0) {
 								if (!isdigit(line_tokens[token_count][4])) {
@@ -1050,8 +1053,9 @@ static int WM_LoadConfig(const char *config_file) {
 												"(syntax error in patch 	line)",
 												0);
 									} else {
-										tmp_patch->env[env_no].time = (float) atof(
-												&line_tokens[token_count][10]);
+										tmp_patch->env[env_no].time =
+												(float) atof(
+														&line_tokens[token_count][10]);
 										if ((tmp_patch->env[env_no].time
 												> 45000.0f)
 												|| (tmp_patch->env[env_no].time
@@ -1084,8 +1088,9 @@ static int WM_LoadConfig(const char *config_file) {
 												"(syntax error in patch line)",
 												0);
 									} else {
-										tmp_patch->env[env_no].level = (float) atof(
-												&line_tokens[token_count][11]);
+										tmp_patch->env[env_no].level =
+												(float) atof(
+														&line_tokens[token_count][11]);
 										if ((tmp_patch->env[env_no].level > 1.0f)
 												|| (tmp_patch->env[env_no].level
 														< 0.0f)) {
@@ -1169,7 +1174,7 @@ int load_sample(struct _patch *sample_patch) {
 			if (samp_min < tmp_min)
 				tmp_min = samp_min;
 			tmp_sample = tmp_sample->next;
-		} while (tmp_sample != NULL );
+		} while (tmp_sample != NULL);
 		if (auto_amp_with_amp) {
 			if (tmp_max >= -tmp_min) {
 				sample_patch->amp = (sample_patch->amp
@@ -1194,14 +1199,14 @@ int load_sample(struct _patch *sample_patch) {
 			do {
 				guspat->modes &= 0xFB;
 				guspat = guspat->next;
-			} while (guspat != NULL );
+			} while (guspat != NULL);
 		}
 		guspat = sample_patch->first_sample;
 		if (!(sample_patch->keep & SAMPLE_ENVELOPE)) {
 			do {
 				guspat->modes &= 0xBF;
 				guspat = guspat->next;
-			} while (guspat != NULL );
+			} while (guspat != NULL);
 		}
 		guspat = sample_patch->first_sample;
 	}
@@ -1215,7 +1220,7 @@ int load_sample(struct _patch *sample_patch) {
 				}
 			}
 			guspat = guspat->next;
-		} while (guspat != NULL );
+		} while (guspat != NULL);
 		guspat = sample_patch->first_sample;
 	}
 
@@ -1254,7 +1259,7 @@ int load_sample(struct _patch *sample_patch) {
 		}
 
 		guspat = guspat->next;
-	} while (guspat != NULL );
+	} while (guspat != NULL);
 	return 0;
 }
 
@@ -1268,10 +1273,10 @@ get_patch_data(struct _mdi *mdi, unsigned short patchid) {
 
 	if (search_patch == NULL) {
 		WM_Unlock(&patch_lock);
-		return NULL ;
+		return NULL;
 	}
 
-	while (search_patch != NULL ) {
+	while (search_patch != NULL) {
 		if (search_patch->patchid == patchid) {
 			WM_Unlock(&patch_lock);
 			return search_patch;
@@ -1283,7 +1288,7 @@ get_patch_data(struct _mdi *mdi, unsigned short patchid) {
 		return (get_patch_data(mdi, patchid & 0x00FF));
 	}
 	WM_Unlock(&patch_lock);
-	return NULL ;
+	return NULL;
 }
 
 static void load_patch(struct _mdi *mdi, unsigned short patchid) {
@@ -1331,11 +1336,11 @@ get_sample_data(struct _patch *sample_patch, unsigned long int freq) {
 	WM_Lock(&patch_lock);
 	if (sample_patch == NULL) {
 		WM_Unlock(&patch_lock);
-		return NULL ;
+		return NULL;
 	}
 	if (sample_patch->first_sample == NULL) {
 		WM_Unlock(&patch_lock);
-		return NULL ;
+		return NULL;
 	}
 	if (freq == 0) {
 		WM_Unlock(&patch_lock);
@@ -1344,7 +1349,7 @@ get_sample_data(struct _patch *sample_patch, unsigned long int freq) {
 
 	return_sample = sample_patch->first_sample;
 	last_sample = sample_patch->first_sample;
-	while (last_sample != NULL ) {
+	while (last_sample != NULL) {
 		if (freq > last_sample->freq_low) {
 			if (freq < last_sample->freq_high) {
 				WM_Unlock(&patch_lock);
@@ -1540,7 +1545,7 @@ static void do_note_on(struct _mdi *mdi, struct _event_data *data) {
 				do {
 					prev_nte = nte_array;
 					nte_array = nte_array->next;
-				} while (nte_array != NULL );
+				} while (nte_array != NULL);
 				prev_nte->next = nte;
 			}
 			nte->active = 1;
@@ -1647,7 +1652,7 @@ static void do_control_channel_volume(struct _mdi *mdi,
 							note_data->replay);
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 }
 
@@ -1682,7 +1687,7 @@ static void do_control_channel_expression(struct _mdi *mdi,
 							note_data->replay);
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 }
 
@@ -1747,7 +1752,7 @@ static void do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) 
 					note_data->hold = 0x00;
 				}
 				note_data = note_data->next;
-			} while (note_data != NULL );
+			} while (note_data != NULL);
 		}
 	}
 }
@@ -1809,7 +1814,7 @@ static void do_control_channel_sound_off(struct _mdi *mdi,
 				}
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 }
 
@@ -1846,7 +1851,7 @@ static void do_control_channel_controllers_off(struct _mdi *mdi,
 
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 }
 
@@ -1879,7 +1884,7 @@ static void do_control_channel_notes_off(struct _mdi *mdi,
 				}
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 }
 
@@ -1913,7 +1918,7 @@ static void do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
 				}
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 }
 
@@ -1938,7 +1943,7 @@ static void do_pitch(struct _mdi *mdi, struct _event_data *data) {
 				note_data->sample_inc = get_inc(mdi, note_data);
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 }
 
@@ -1958,9 +1963,8 @@ static void do_sysex_roland_drum_track(struct _mdi *mdi,
 }
 
 static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
-    int i;
-	for (i = 0; i < 16; i++) 
-    {
+	int i;
+	for (i = 0; i < 16; i++) {
 		mdi->channel[i].bank = 0;
 		if (i != 9) {
 			mdi->channel[i].patch = get_patch_data(mdi, 0);
@@ -1982,7 +1986,7 @@ static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 		do_pan_adjust(mdi, i);
 	}
 	mdi->channel[9].isdrum = 1;
-    UNUSED(data); // NOOP, to please the compiler gods
+	UNUSED(data); // NOOP, to please the compiler gods
 }
 
 static void WM_ResetToStart(midi * handle) {
@@ -1998,7 +2002,7 @@ static void WM_ResetToStart(midi * handle) {
 static int midi_setup_noteoff(struct _mdi *mdi, unsigned char channel,
 		unsigned char note, unsigned char velocity) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_note_off;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
@@ -2018,7 +2022,7 @@ static int midi_setup_noteoff(struct _mdi *mdi, unsigned char channel,
 static int midi_setup_noteon(struct _mdi *mdi, unsigned char channel,
 		unsigned char note, unsigned char velocity) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_note_on;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
@@ -2041,7 +2045,7 @@ static int midi_setup_noteon(struct _mdi *mdi, unsigned char channel,
 static int midi_setup_aftertouch(struct _mdi *mdi, unsigned char channel,
 		unsigned char note, unsigned char pressure) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_aftertouch;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
@@ -2117,7 +2121,7 @@ static int midi_setup_control(struct _mdi *mdi, unsigned char channel,
 		return 0;
 	}
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = tmp_event;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = setting;
@@ -2136,7 +2140,7 @@ static int midi_setup_control(struct _mdi *mdi, unsigned char channel,
 static int midi_setup_patch(struct _mdi *mdi, unsigned char channel,
 		unsigned char patch) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_patch;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = patch;
@@ -2163,7 +2167,7 @@ static int midi_setup_channel_pressure(struct _mdi *mdi, unsigned char channel,
 		unsigned char pressure) {
 
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_channel_pressure;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pressure;
@@ -2183,7 +2187,7 @@ static int midi_setup_channel_pressure(struct _mdi *mdi, unsigned char channel,
 static int midi_setup_pitch(struct _mdi *mdi, unsigned char channel,
 		unsigned short pitch) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_pitch;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pitch;
@@ -2202,7 +2206,7 @@ static int midi_setup_pitch(struct _mdi *mdi, unsigned char channel,
 static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 		unsigned char channel, unsigned short setting) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event =
 				*do_sysex_roland_drum_track;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
@@ -2228,7 +2232,7 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 
 static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_sysex_roland_reset;
 		mdi->events[mdi->event_count - 1].event_data.channel = 0;
 		mdi->events[mdi->event_count - 1].event_data.data = 0;
@@ -2259,7 +2263,7 @@ static int add_handle(void * handle) {
 	} else {
 		tmp_handle = first_handle;
 		if (tmp_handle->next != NULL) {
-			while (tmp_handle->next != NULL )
+			while (tmp_handle->next != NULL)
 				tmp_handle = tmp_handle->next;
 		}
 		tmp_handle->next = malloc(sizeof(struct _hndl));
@@ -2390,7 +2394,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if (strncmp((char *) midi_data, "MThd", 4) != 0) {
 		printf("Not a midi file\n");
 		free(mdi);
-		return NULL ;
+		return NULL;
 	}
 	midi_data += 4;
 	midi_size -= 4;
@@ -2398,7 +2402,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if (midi_size < 10) {
 		printf("Midi File Too Short\n");
 		free(mdi);
-		return NULL ;
+		return NULL;
 	}
 
 	/*
@@ -2412,7 +2416,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if (tmp_val != 6) {
 		printf("Corrupt Midi Header\n");
 		free(mdi);
-		return NULL ;
+		return NULL;
 	}
 
 	/*
@@ -2424,7 +2428,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if (tmp_val > 1) {
 		printf("Midi Format Not Supported\n");
 		free(mdi);
-		return NULL ;
+		return NULL;
 	}
 
 	/*
@@ -2436,7 +2440,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if (tmp_val < 1) {
 		printf("Midi Contains No Tracks\n");
 		free(mdi);
-		return NULL ;
+		return NULL;
 	}
 	no_tracks = tmp_val;
 
@@ -2449,20 +2453,20 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if (divisions & 0x00008000) {
 		printf("Division Type Not Supported\n");
 		free(mdi);
-		return NULL ;
+		return NULL;
 	}
 
-	if (WM_MixerOptions && WM_MO_WHOLETEMPO) {
-		float bpm_f = (float) ( 60000000 / tempo );
+	if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
+		float bpm_f = (float) (60000000 / tempo);
 		tempo = 60000000 / (unsigned long int) bpm_f;
-	} else if (WM_MixerOptions && WM_MO_ROUNDTEMPO) {
-		float bpm_fr = (float) ( 60000000 / tempo ) + 0.5f;
+	} else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+		float bpm_fr = (float) (60000000 / tempo) + 0.5f;
 		tempo = 60000000 / (unsigned long int) bpm_fr;
 	}
 	{
 		//Slow but needed for accuracy
 		microseconds_per_pulse = (float) tempo / (float) divisions;
-		pulses_per_second = (float) 1000000 / microseconds_per_pulse;
+		pulses_per_second = 1000000.0f / microseconds_per_pulse;
 		samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
 	}
 	tracks = malloc(sizeof(char *) * no_tracks);
@@ -2479,7 +2483,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 			free(track_end);
 			free(running_event);
 			free(mdi);
-			return NULL ;
+			return NULL;
 		}
 
 		if (strncmp((char *) midi_data, "MTrk", 4) != 0) {
@@ -2489,7 +2493,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 			free(track_end);
 			free(running_event);
 			free(mdi);
-			return NULL ;
+			return NULL;
 		}
 		midi_data += 4;
 		midi_size -= 4;
@@ -2506,7 +2510,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 			free(track_end);
 			free(running_event);
 			free(mdi);
-			return NULL ;
+			return NULL;
 		}
 		if ((midi_data[track_size - 3] != 0xFF)
 				|| (midi_data[track_size - 2] != 0x2F)
@@ -2517,7 +2521,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 			free(track_end);
 			free(running_event);
 			free(mdi);
-			return NULL ;
+			return NULL;
 		}
 		tracks[i] = midi_data;
 		midi_data += track_size;
@@ -2564,7 +2568,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						if (mdi->events)
 							free(mdi->events);
 						free(mdi);
-						return NULL ;
+						return NULL;
 					}
 				}
 				current_event_ch = current_event & 0x0F;
@@ -2689,12 +2693,11 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 								tempo = 500000;
 
 							{
-								if (WM_MixerOptions && WM_MO_WHOLETEMPO) {
+								if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
 									float bpm_f = (float) (60000000 / tempo);
 									tempo = 60000000
 											/ (unsigned long int) bpm_f;
-								} else if (WM_MixerOptions
-										&& WM_MO_ROUNDTEMPO) {
+								} else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
 									float bpm_fr = (float) (60000000 / tempo)
 											+ 0.5f;
 									tempo = 60000000
@@ -2799,7 +2802,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						if (mdi->events)
 							free(mdi->events);
 						free(mdi);
-						return NULL ;
+						return NULL;
 					}
 					break;
 				default:
@@ -2811,7 +2814,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 					if (mdi->events)
 						free(mdi->events);
 					free(mdi);
-					return NULL ;
+					return NULL;
 				}
 				while (*tracks[i] > 0x7F) {
 					track_delta[i] = (track_delta[i] << 7)
@@ -2833,7 +2836,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		sample_count = (unsigned long int) sample_count_tmp;
 		sample_remainder = sample_count_tmp - (float) sample_count;
 		if ((mdi->event_count)
-				&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+				&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 			mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
 		} else {
 			mdi->events = realloc(mdi->events,
@@ -2854,7 +2857,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 	}
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL )) {
+			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->info.approx_total_samples -=
 				mdi->events[mdi->event_count - 1].samples_to_next;
 		mdi->event_count--;
@@ -2869,7 +2872,8 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 //    printf("decay_samples = %lu\n",decay_samples);
 
 	if ((mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width,
-			reverb_room_length, reverb_listen_posx, reverb_listen_posy)) == NULL) {
+			reverb_room_length, reverb_listen_posx, reverb_listen_posy))
+			== NULL) {
 		printf("Reverb Init Failed\n");
 		free(tracks);
 		free(track_end);
@@ -2878,7 +2882,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		if (mdi->events)
 			free(mdi->events);
 		free(mdi);
-		return NULL ;
+		return NULL;
 	}
 
 	mdi->info.current_sample = 0;
@@ -2920,7 +2924,7 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 
 	do {
 		if (__builtin_expect((!mdi->samples_to_mix), 0)) {
-			while ((!mdi->samples_to_mix) && (event->do_event != NULL )) {
+			while ((!mdi->samples_to_mix) && (event->do_event != NULL)) {
 				event->do_event(mdi, &event->event_data);
 				event++;
 				mdi->samples_to_mix = event->samples_to_next;
@@ -2955,7 +2959,7 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 			note_data = mdi->note;
 			left_mix = right_mix = 0;
 			if (__builtin_expect((note_data != NULL ), 1)) {
-				while (note_data != NULL ) {
+				while (note_data != NULL) {
 
 					/*
 					 * ===================
@@ -3021,9 +3025,9 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 							((note_data->env_inc < 0)
 									&& (note_data->env_level
 											> note_data->sample->env_target[note_data->env]))
-									|| ((note_data->env_inc > 0)
-											&& (note_data->env_level
-													< note_data->sample->env_target[note_data->env])),
+							|| ((note_data->env_inc > 0)
+									&& (note_data->env_level
+											< note_data->sample->env_target[note_data->env])),
 							1)) {
 						note_data = note_data->next;
 						;
@@ -3104,7 +3108,7 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 										nte_array = nte_array->next;
 										//} while (nte_array != note_data);
 									} while ((nte_array != note_data)
-											&& (nte_array != NULL ));
+											&& (nte_array != NULL));
 								}
 								if (prev_note != NULL) {
 									prev_note->next = note_data->next;
@@ -3222,7 +3226,7 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 
 	do {
 		if (__builtin_expect((!mdi->samples_to_mix), 0)) {
-			while ((!mdi->samples_to_mix) && (event->do_event != NULL )) {
+			while ((!mdi->samples_to_mix) && (event->do_event != NULL)) {
 				event->do_event(mdi, &event->event_data);
 				event++;
 				mdi->samples_to_mix = event->samples_to_next;
@@ -3257,7 +3261,7 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 			note_data = mdi->note;
 			left_mix = right_mix = 0;
 			if (__builtin_expect((note_data != NULL ), 1)) {
-				while (note_data != NULL ) {
+				while (note_data != NULL) {
 
 					/*
 					 * ===================
@@ -3355,9 +3359,9 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 							((note_data->env_inc < 0)
 									&& (note_data->env_level
 											> note_data->sample->env_target[note_data->env]))
-									|| ((note_data->env_inc > 0)
-											&& (note_data->env_level
-													< note_data->sample->env_target[note_data->env])),
+							|| ((note_data->env_inc > 0)
+									&& (note_data->env_level
+											< note_data->sample->env_target[note_data->env])),
 							1)) {
 						note_data = note_data->next;
 						;
@@ -3438,7 +3442,7 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 										nte_array = nte_array->next;
 										//} while (nte_array != note_data);
 									} while ((nte_array != note_data)
-											&& (nte_array != NULL ));
+											&& (nte_array != NULL));
 								}
 								if (prev_note != NULL) {
 									prev_note->next = note_data->next;
@@ -3537,7 +3541,7 @@ WildMidi_GetString(unsigned short int info) {
 	case WM_GS_VERSION:
 		return WM_Version;
 	}
-	return NULL ;
+	return NULL;
 }
 
 int WildMidi_Init(const char * config_file, unsigned short int rate,
@@ -3597,7 +3601,7 @@ int WildMidi_MasterVolume(unsigned char master_volume) {
 	WM_MasterVolume = lin_volume[master_volume];
 
 	if (tmp_handle != NULL) {
-		while (tmp_handle != NULL ) {
+		while (tmp_handle != NULL) {
 			mdi = (struct _mdi *) tmp_handle->handle;
 			for (i = 0; i < 16; i++) {
 				do_pan_adjust(mdi, i);
@@ -3660,7 +3664,7 @@ int WildMidi_Close(midi * handle) {
 			if (mdi->patches[i]->inuse_count == 0) {
 				//free samples here
 				if (mdi->patches[i]->first_sample != NULL) {
-					while (mdi->patches[i]->first_sample != NULL ) {
+					while (mdi->patches[i]->first_sample != NULL) {
 						tmp_sample = mdi->patches[i]->first_sample->next;
 						if (mdi->patches[i]->first_sample->data)
 							free(mdi->patches[i]->first_sample->data);
@@ -3700,16 +3704,16 @@ WildMidi_Open(const char *midifile) {
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
-		return NULL ;
+		return NULL;
 	}
 	if (midifile == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)",
 				0);
-		return NULL ;
+		return NULL;
 	}
 
 	if ((mididata = WM_BufferFile(midifile, &midisize)) == NULL) {
-		return NULL ;
+		return NULL;
 	}
 
 	ret = (void *) WM_ParseNewMidi(mididata, midisize);
@@ -3731,12 +3735,12 @@ WildMidi_OpenBuffer(unsigned char *midibuffer, unsigned long int size) {
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
-		return NULL ;
+		return NULL;
 	}
 	if (midibuffer == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 				"(NULL midi data buffer)", 0);
-		return NULL ;
+		return NULL;
 	}
 	ret = (void *) WM_ParseNewMidi(midibuffer, size);
 
@@ -3803,7 +3807,7 @@ int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 
 	do {
 		if (__builtin_expect((!mdi->samples_to_mix), 0)) {
-			while ((!mdi->samples_to_mix) && (event->do_event != NULL )) {
+			while ((!mdi->samples_to_mix) && (event->do_event != NULL)) {
 				event->do_event(mdi, &event->event_data);
 				event++;
 				mdi->samples_to_mix = event->samples_to_next;
@@ -3843,7 +3847,7 @@ int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 				note_data->replay = NULL;
 			}
 			note_data = note_data->next;
-		} while (note_data != NULL );
+		} while (note_data != NULL);
 	}
 	mdi->note = NULL;
 
@@ -3931,7 +3935,7 @@ int WildMidi_SetOption(midi * handle, unsigned short int options,
 					note_data->replay->vol_lvl = get_volume(mdi,
 							(note_data->noteid >> 8), note_data->replay);
 				note_data = note_data->next;
-			} while (note_data != NULL );
+			} while (note_data != NULL);
 		}
 	} else if (options & WM_MO_REVERB) {
 		reset_reverb(mdi->reverb);
@@ -3946,12 +3950,12 @@ WildMidi_GetInfo(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
-		return NULL ;
+		return NULL;
 	}
 	if (handle == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
 				0);
-		return NULL ;
+		return NULL;
 	}
 	WM_Lock(&mdi->lock);
 	if (mdi->tmp_info == NULL) {
@@ -3959,7 +3963,7 @@ WildMidi_GetInfo(midi * handle) {
 		if (mdi->tmp_info == NULL) {
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set info", 0);
 			WM_Unlock(&mdi->lock);
-			return NULL ;
+			return NULL;
 		}
 		mdi->tmp_info->copyright = NULL;
 	}
@@ -3987,7 +3991,7 @@ int WildMidi_Shutdown(void) {
 		return -1;
 	}
 	if (first_handle != NULL) {
-		while (first_handle != NULL ) {
+		while (first_handle != NULL) {
 			tmp_hdle = first_handle->next;
 			WildMidi_Close((struct _mdi *) first_handle->handle);
 			free(first_handle);

@@ -55,7 +55,7 @@ static float env_time_table[] = {
 };
 
 
-unsigned short int WM_SampleRate;
+extern unsigned short int WM_SampleRate;
 
 struct _sample {
 	unsigned long int data_length;
