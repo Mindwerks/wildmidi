@@ -14,7 +14,7 @@ WildMidi_SetOption \- Set a library option for a specific midi
 Set a library option for a specific midi.
 .PP
 .IP \fIhandle\fP
-The indentifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
 .B \fIoptions\fP
 The option or options you wish to change.
@@ -33,11 +33,11 @@ libWildMidi has an 8 reflection reverb engine. Use this option to give more dept
 .IP setting
 To turn on an option, repeat that option here. To turn off an option, do not put the option here.
 .PP
-.IP Example: To turn on Reverb
+.IP "Example: To turn on Reverb"
 WildMidi_SetOption(handle, WM_MO_REVERB, WM_MO_REVERB);
-.IP Example: To turn off Reverb
+.IP "Example: To turn off Reverb"
 WildMidi_SetOption(handle, WM_MO_REVERB, NULL);
-.IP Example: To turn on Reverb and Enhanced Resampling
+.IP "Example: To turn on Reverb and Enhanced Resampling"
 WildMidi_SetOption(handle, (WM_MO_REVERB | WM_MO_ENHANCED_RESAMPLING), (WM_MO_REVERB | WM_MO_ENHANCED_RESAMPLING));
 .PP
 .SH "RETURN VALUE"

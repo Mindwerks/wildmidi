@@ -9,10 +9,10 @@ WildMidi_GetInfo \- get information on a midi
 .B struct _WM_Info *WildMidi_GetInfo (midi *\fIhandle\fP);
 .PP
 .SH DESCRIPTION
-Obtains information allowing you to determin song position, current options, and any copyright information for
+Obtains information allowing you to determine song position, current options, and any copyright information for
 .PP
 .IP \fIhandle\fP
-The indentifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
 .SH RETURN VALUE
 On error returns NULL with an error message displayed to stderr.
@@ -35,7 +35,7 @@ A pointer to a \\0 terminated string containing any copyright MIDI events found 
 If \fIcopyright\fP is NULL then no copyright MIDI events were found.
 .PP
 .IP \fIcurrent_sample\fP
-This is the number of stereo samples libWildMidi has processed for the MIDI file refered to by \fIhandle\fP. You can use this value to determin the current playing time by dividing this value by the \fIrate\fP given when libWildMidi was initialized by \fBWildMidi_Init\fR(3)\fP.
+This is the number of stereo samples libWildMidi has processed for the MIDI file referred to by \fIhandle\fP. You can use this value to determine the current playing time by dividing this value by the \fIrate\fP given when libWildMidi was initialized by \fBWildMidi_Init\fR(3)\fP.
 .PP
 .IP \fIapprox_total_samples\fP
 This is the total number of stereo samples libWildMidi expects to process. This can be used to obtain the total playing time by dividing this value by the \fIrate\fP given when libWildMidi was initialized by \fBWildMidi_Init\fP\fR(3).\fP Also when you divide \fIcurrent_sample\fP by this value and multiplying by 100, you have the percentage currently processed.

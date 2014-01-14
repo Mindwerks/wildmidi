@@ -13,10 +13,10 @@ WildMidi_GetOutput \- retrieve raw audio data
 .SH DESCRIPTION
 Places \fIsize\fP bytes of audio data from a \fIhandle\fP, previously opened by \fBWildMidi_Open\fP\fR(3)\fP or \fBWildMidi_OpenBuffer\fP\fR(3)\fP, into a buffer pointer to by \fIbuffer\fP.
 .PP
-\fIbuffer\fP must be atleast \fIsize\fP bytes, with \fIsize\fP being a multiple of 4 as the data is stored in 16bit interleaved stereo format.
+\fIbuffer\fP must be at least \fIsize\fP bytes, with \fIsize\fP being a multiple of 4 as the data is stored in 16bit interleaved stereo format.
 .PP
 .IP \fIhandle\fP
-The indentifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
 .IP \fIbuffer\fP
 The location supplied by the calling program where libWildMidi is to store the audio data.
@@ -25,7 +25,7 @@ The location supplied by the calling program where libWildMidi is to store the a
 The size of the buffer in bytes. Since libWildMidi processes the audio in 16bit interleaved stereo format, this value needs to be a multiple of 4.
 .PP
 .SH "RETURN VALUE"
-Returns -1 on error and an error message sent to stderr, 0 when there is no more audio data, otherwise the number of bytes of audio data writen to \fIbuffer\fP.
+Returns -1 on error and an error message sent to stderr, 0 when there is no more audio data, otherwise the number of bytes of audio data written to \fIbuffer\fP.
 .PP
 NOTE: if the return value is less than the size you gave, this does not denote an error, it simply means the lib reached the end of the midi before it could fill the buffer.
 .PP
