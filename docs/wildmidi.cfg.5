@@ -6,7 +6,7 @@ wildmidi.cfg \- Config file for libWildMidi
 .B libWildMidi
 .PP
 .SH DESCRIPTION
-Contains the patch configuration for libWildMidi and location of Gravis Ultrasound compatable patch files.
+Contains the patch configuration for libWildMidi and location of Gravis Ultrasound compatible patch files.
 .PP
 .nf
 dir ~/guspats/
@@ -24,7 +24,7 @@ drumset 0
 .PP
 .SH SYNTAX
 .IP "\fBguspat_editor_author_cant_read_so_fix_release_time_for_me\fP"
-Some patch file editors switch the 4th and 5th envelopes around making the sould play much longer than intended in players that stuck to the Gravis Ultrasound patch standard. Including this option in the config enables a fix that detects this oversight, playing the sound samples as if they were correct.
+Some patch file editors switch the 4th and 5th envelopes around making the sound play much longer than intended in players that stuck to the Gravis Ultrasound patch standard. Including this option in the config enables a fix that detects this oversight, playing the sound samples as if they were correct.
 .IP
 NOTE: This is a global setting. If it is found to affect good patch samples it will be moved to a per patch setting in a future version.
 .PP
@@ -51,11 +51,11 @@ The patches following this setting belong to MIDI drum bank \fIN\fP.
 Example: 0 acpiano.pat amp=110
 .PP
 .RS
-.PI "\fIpatchno\fP"
+.IP "\fIpatchno\fP"
 This is the MIDI patch number the instrument belongs to.
 .PP
-.PI "\fIpatchfile\fP"
-The filename of the Gravis Ulstrasound compatable patch file. If the filename is missing the .pat extention, libWildMidi will add .pat when attempting to load the file.
+.IP "\fIpatchfile\fP"
+The filename of the Gravis Ultrasound compatible patch file. If the filename is missing the .pat extension, libWildMidi will add .pat when attempting to load the file.
 .PP
 .IP "\fBamp=\fP\fIvolume\fP"
 Force the volume of the samples in this patch to \fIvolume\fP% prior to using it.
@@ -83,9 +83,9 @@ Example: set 5th envelope level to 10% - \fBenv_level[0-5]=\fP0.1
 .IP "\fBenv_time\fP[\fI0-5\fP]\fB=\fP\fItime\fP"
 Set the envelope time to \fItime\fP with a resolution of 1/1000th of a second. This setting is the time it should take for the envelope to reach maximum level.
 .IP
-Example: set 1st enevelope time to 1sec - \fBenv_time0=\fP1000
+Example: set 1st envelope time to 1sec - \fBenv_time0=\fP1000
 .IP
-Example: set 3rd enevelope time to 0.5secs- \fBenv_time2=\fP500
+Example: set 3rd envelope time to 0.5secs- \fBenv_time2=\fP500
 .RE
 .PP
 .IP "\fBreverb_room_width\fP \fIfval\fP"
