@@ -1,4 +1,4 @@
-.TH WildMidi_Init 3 "05 June 2010" "" "WildMidi Programmer's Manual"
+.TH WildMidi_Init 3 "14 January 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_Init \- Initialize the library
 .PP
@@ -17,7 +17,7 @@ Intializes libWildMidi in preparation for playback. This function only needs to 
 The file that contans the instrument configuation for the library.
 .PP
 .IP \fIrate\fP
-The sound rate you want the the audio data output at. Rates accepted by libWildMidi are 11000 \- 65000.
+The sound rate you want the the audio data output at. Rates accepted by libWildMidi are 11025 \- 65000.
 .PP
 .IP \fIoptions\fP
 The initial options to set for the library. see below
@@ -55,9 +55,11 @@ Rounds the fractional or decimal part of a tempo setting. Try this option is you
 .PP
 .SH AUTHOR
 Chris Ison <wildcode@users.sourceforge.net>
+Bret Curtis <psi29a@gmail.com>
 .PP
 .SH COPYRIGHT
-Copyright (C) Chris Ison 2001-2010
+Copyright (C) Chris Ison  2001-2010
+Copyright (C) Bret Curtis 2013-2014
 .PP
 This file is part of WildMIDI.
 .PP
