@@ -73,6 +73,10 @@ int msleep(unsigned long millisec);
 #define FNONBLOCK O_NONBLOCK
 #endif
 
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
+
 #include "wildmidi_lib.h"
 
 struct _midi_test {
