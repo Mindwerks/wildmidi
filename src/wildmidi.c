@@ -62,7 +62,7 @@ int msleep(unsigned long millisec);
 # endif
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && __GNUC__ < 3
 # define alloca __builtin_alloca
 #else
 # ifdef _MSC_VER
