@@ -62,9 +62,7 @@ int msleep(unsigned long millisec);
 # endif
 #endif
 
-#if defined(__builtin_alloca)
-# define alloca __builtin_alloca
-# elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 #  include <malloc.h>
 #  define alloca _alloca
 # else
