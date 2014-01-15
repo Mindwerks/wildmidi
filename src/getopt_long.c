@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "getopt.h"
+#include "getopt_long.h"
 
 extern int	  opterr;	/* if error message should be printed */
 extern int	  optind;	/* index into parent argv vector */

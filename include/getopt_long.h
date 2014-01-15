@@ -1,5 +1,5 @@
-#ifndef __GETOPT_H__
-#define __GETOPT_H__
+#ifndef __GETOPT_LONG_H__
+#define __GETOPT_LONG_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,11 +23,11 @@ struct option
 #define required_argument 1
 #define optional_argument 2
 
-//int getopt(int, char**, char*);
+int getopt(int, char**, char*);
 int getopt_long(int, char**, char*, const struct option*, int*);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __GETOPT_H__ */
+#endif /* __GETOPT_LONG_H__ */

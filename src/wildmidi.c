@@ -28,7 +28,6 @@
 #include "config.h"
 #include <errno.h>
 #include <fcntl.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +39,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <getopt.h>
 int msleep(unsigned long millisec);
 #endif
 
@@ -48,6 +48,7 @@ int msleep(unsigned long millisec);
 #include <windows.h>
 #include <mmsystem.h>
 #include <io.h>
+#include "getopt_long.h"
 #else
 # ifdef HAVE_ALSA
 #  include <alsa/asoundlib.h>
