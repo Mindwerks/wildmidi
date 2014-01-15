@@ -53,7 +53,7 @@ IF (APPLE)
 ENDIF (APPLE)
 
 IF (WIN32)
-    TARGET_LINK_LIBRARIES(winmm)
+    LINK_LIBRARIES(winmm)
 ENDIF (WIN32)
 
 #add_definitions( -static  )
