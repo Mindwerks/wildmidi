@@ -20,11 +20,18 @@ before_install:
  - sudo ln -s /usr/src/gtest/build/libgtest_main.so /usr/lib/libgtest_main.so
 before_script:
  - cd -
- - mkdir build
- - cd build
+ - mkdir debug
+ - cd debug
  - cmake ..
+ - cd -
+ - mkdir release
+ - cd release
+ - cmake -D CMAKE_BUILD_TYPE=Release ..
+ - ..
 script:
- - make -j4
+ - make -j2 -C ./debug
+ - make -j2 -C ./release
+
 #after_script:
 # - ./runtests
 notifications:
