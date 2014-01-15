@@ -544,7 +544,7 @@ close_alsa_output ( void ) {
 	snd_pcm_close (pcm);
 }
 
-#else
+#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
 /*
  OSS Output Functions
  --------------------
@@ -868,8 +868,10 @@ int main(int argc, char **argv) {
 #else
 #ifdef HAVE_ALSA
 			if (open_alsa_output() == -1) {
-#else
+#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
 			if (open_oss_output() == -1) {
+#else
+                {
 #endif
 #endif
 				return 0;

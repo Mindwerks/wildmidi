@@ -23,7 +23,7 @@ struct option
 #define required_argument 1
 #define optional_argument 2
 
-int getopt(int, char**, char*);
+//int getopt(int, char**, char*);
 int getopt_long(int, char**, char*, const struct option*, int*);
 
 #ifdef __cplusplus
