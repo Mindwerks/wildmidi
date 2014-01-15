@@ -27,7 +27,7 @@ before_script:
  - mkdir release
  - cd release
  - cmake -D CMAKE_BUILD_TYPE=Release ..
- - ..
+ - cd -
 script:
  - make -j2 -C ./debug
  - make -j2 -C ./release
