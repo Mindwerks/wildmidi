@@ -57,7 +57,7 @@ extern int WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos);
 extern int WildMidi_Close (midi * handle);
 extern int WildMidi_Shutdown ( void );
 #ifdef _WIN32
-char *strdup(const char *str);
+extern char *strdup(const char *str);
 #endif
 
 // NOTE: Not Yet Implemented Or Tested Properly

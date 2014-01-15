@@ -25,7 +25,7 @@
 #define VERSION "0.3.0"
 
 /* Define this to the location of the wildmidi config file */
-#define WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg"
+#define WILDMIDI_CFG "wildmidi.cfg"
 
 /* Set our global defines here */
 #ifndef M_PI

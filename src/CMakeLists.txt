@@ -57,7 +57,7 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
 
 SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1)
 
-IF (CMAKE_BUILD_TYPE MATCHES Release)
+IF (CMAKE_BUILD_TYPE STREQUAL "Release")
     IF(WIN32)
         SET(GETOPT getopt.c getopt_long.c)
         SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\Release\\wildmidi_static.lib")
@@ -66,9 +66,9 @@ IF (CMAKE_BUILD_TYPE MATCHES Release)
     ELSE(WIN32)
         SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
     ENDIF(WIN32)
-ENDIF (CMAKE_BUILD_TYPE MATCHES Release)
+ENDIF (CMAKE_BUILD_TYPE STREQUAL "Release")
 
-IF (CMAKE_BUILD_TYPE MATCHES Debug)
+IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
     IF(WIN32)
         SET(GETOPT getopt.c getopt_long.c)
         SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\Debug\\wildmidi_static.lib")
@@ -77,7 +77,7 @@ IF (CMAKE_BUILD_TYPE MATCHES Debug)
     ELSE(WIN32)
         SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
     ENDIF(WIN32)
-ENDIF (CMAKE_BUILD_TYPE MATCHES Debug)
+ENDIF (CMAKE_BUILD_TYPE STREQUAL "Debug")
 
 # Setup our wildmidi player
 SET(wildmidi_executable_SRCS
