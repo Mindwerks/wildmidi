@@ -40,6 +40,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
 int msleep(unsigned long millisec);
 #endif
 
