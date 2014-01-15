@@ -4004,6 +4004,7 @@ int WildMidi_Shutdown(void) {
 	return 0;
 }
 
+#ifdef _WIN32
 char *strdup(const char *str) {
 	int n = strlen(str) + 1;
 	char *dup = malloc(n * sizeof(char));
@@ -4012,4 +4013,4 @@ char *strdup(const char *str) {
 	}
 	return dup;
 }
-
+#endif

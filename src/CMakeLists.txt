@@ -57,12 +57,27 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
 
 SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1)
 
-IF(WIN32)
-    SET(GETOPT getopt.c getopt_long.c)
-    SET(WINLIB "${CMAKE_BINARY_DIR}\\Release\\wildmidi_static.lib")
-ELSE(WIN32)
-    SET(UNIXLIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
-ENDIF(WIN32)
+IF (CMAKE_BUILD_TYPE MATCHES Release)
+    IF(WIN32)
+        SET(GETOPT getopt.c getopt_long.c)
+        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\Release\\wildmidi_static.lib")
+    ELIF(APPLE)
+        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/Release/libwildmidi.a")
+    ELSE(WIN32)
+        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
+    ENDIF(WIN32)
+ENDIF (CMAKE_BUILD_TYPE MATCHES Release)
+
+IF (CMAKE_BUILD_TYPE MATCHES Debug)
+    IF(WIN32)
+        SET(GETOPT getopt.c getopt_long.c)
+        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\Debug\\wildmidi_static.lib")
+    ELIF(APPLE)
+        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/Debug/libwildmidi.a")
+    ELSE(WIN32)
+        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
+    ENDIF(WIN32)
+ENDIF (CMAKE_BUILD_TYPE MATCHES Debug)
 
 # Setup our wildmidi player
 SET(wildmidi_executable_SRCS
@@ -77,8 +92,7 @@ ADD_EXECUTABLE(wildmidi
 ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
 
 TARGET_LINK_LIBRARIES(wildmidi 
-    ${WINLIB}
-    ${UNIXLIB}
+    ${WILDMIDILIB}
     ${M_LIBRARY}
     ${ALSA_LIBRARY}
     ${COREAUDIO_LIBRARY}
