@@ -33,7 +33,6 @@ TARGET_LINK_LIBRARIES(wildmidi_static
     ${COREFOUNDATION_LIBRARY}
     )
 
-
 IF(WIN32)
     SET(LIBRARY_DYN_NAME "wildmidi_dynamic")
     SET(LIBRARY_STATIC_NAME "wildmidi_static")
@@ -59,7 +58,7 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
 SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1)
 
 IF(WIN32)
-    SET(GETOPT getopt.c getopt_long.c)
+    SET(GETOPT getopt_long.c)
     SET(WINLIB "${CMAKE_BINARY_DIR}\\Release\\wildmidi_static.lib")
 ELSE(WIN32)
     SET(UNIXLIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
@@ -70,7 +69,6 @@ SET(wildmidi_executable_SRCS
     ${GETOPT}
     wildmidi.c
 )
-
 
 ADD_EXECUTABLE(wildmidi 
     ${wildmidi_executable_SRCS}
