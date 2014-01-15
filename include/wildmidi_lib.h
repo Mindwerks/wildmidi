@@ -56,7 +56,9 @@ extern struct _WM_Info * WildMidi_GetInfo ( midi * handle );
 extern int WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos);
 extern int WildMidi_Close (midi * handle);
 extern int WildMidi_Shutdown ( void );
-extern char *strdup(const char *str);
+#ifdef _WIN32
+char *strdup(const char *str);
+#endif
 
 // NOTE: Not Yet Implemented Or Tested Properly
 extern int WildMidi_Live(midi * handle, unsigned long int midi_event);

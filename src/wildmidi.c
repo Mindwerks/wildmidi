@@ -1067,10 +1067,10 @@ int main(int argc, char **argv) {
 						if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 							modes[mode_count++] = 'e';
 						}
-						if (mode_count != 3) {
+						if (mode_count < 3) {
 							do {
 								modes[mode_count++] = ' ';
-							} while (mode_count != 3);
+							} while (mode_count < 3);
 						}
 						modes[3] = '\0';
 					}
@@ -1114,10 +1114,10 @@ int main(int argc, char **argv) {
 					if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 						modes[mode_count++] = 'e';
 					}
-					if (mode_count != 3) {
+					if (mode_count < 3) {
 						do {
 							modes[mode_count++] = ' ';
-						} while (mode_count != 3);
+						} while (mode_count < 3);
 					}
 					modes[3] = '\0';
 				}
