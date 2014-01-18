@@ -61,14 +61,12 @@ SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/libwildmidi.a")
 
-IF(WIN32)
+IF(MSVC)
     SET(GETOPT getopt.c getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\wildmidi_static.lib")
-ELSEIF(APPLE AND CMAKE_GENERATOR STREQUAL "Xcode")
-    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/libwildmidi.a")
-ELSE(WIN32)
-    
-ENDIF(WIN32)
+ELSEIF(CMAKE_GENERATOR STREQUAL "Xcode")
+    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/libwildmidi.a") 
+ENDIF(MSVC)
 
 # Setup our wildmidi player
 SET(wildmidi_executable_SRCS
