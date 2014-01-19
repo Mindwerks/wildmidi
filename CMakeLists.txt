@@ -22,6 +22,9 @@ endif()
 SET(CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
 MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
+# Are we linking against libwildmidi statically?
+option(WILDMIDI_STATIC "Link WildMIDI to the static libwildmidi library" FALSE)
+
 # Compiler specific settings
 if(CMAKE_COMPILER_IS_GNUCC)
     add_definitions( -std=c99 -D_POSIX_C_SOURCE=200809L -pedantic -Wall -Wextra -W )
