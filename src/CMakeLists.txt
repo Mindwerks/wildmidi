@@ -25,8 +25,6 @@ ADD_LIBRARY(wildmidi_static STATIC
     ${wildmidi_library_SRCS}
     )
 
-INSTALL(TARGETS wildmidi_static DESTINATION lib)
-
 TARGET_LINK_LIBRARIES(wildmidi_static 
     ${ALSA_LIBRARY}
     ${OSS_LIBRARY}
@@ -49,9 +47,6 @@ ADD_LIBRARY(wildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
     )
 
-INSTALL(TARGETS wildmidi_dynamic DESTINATION lib)
-INSTALL(FILES ../include/wildmidi_lib.h DESTINATION include)
-
 TARGET_LINK_LIBRARIES(wildmidi_dynamic 
     ${ALSA_LIBRARY}
     ${OSS_LIBRARY}
@@ -60,8 +55,7 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
     ${COREFOUNDATION_LIBRARY}
     )
 
-SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1)
-
+SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME}-${WILDMIDI_VERSION} CLEAN_DIRECT_OUTPUT 1)
 
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
@@ -88,11 +82,18 @@ SET(wildmidi_executable_SRCS
     wildmidi.c
 )
 
+# create our symlinks
+SET(legacy_target "lib${LIBRARY_DYN_NAME}-${WILDMIDI_VERSION}.so")
+SET(legacy_link "lib${LIBRARY_DYN_NAME}.so")
+EXECUTE_PROCESS(COMMAND ln -sf ${legacy_target} ${legacy_link})
+SET(legacy_link "lib${LIBRARY_DYN_NAME}.so.1")
+EXECUTE_PROCESS(COMMAND ln -sf ${legacy_target} ${legacy_link})
+
 ADD_EXECUTABLE(wildmidi 
     ${wildmidi_executable_SRCS}
 )
 
-ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
+ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)  
 
 TARGET_LINK_LIBRARIES(wildmidi 
     ${WILDMIDILIB}
@@ -102,7 +103,14 @@ TARGET_LINK_LIBRARIES(wildmidi
     ${COREFOUNDATION_LIBRARY}
     )
 
+
 # add install target:
+IF (UNIX AND NOT APPLE)
+INSTALL(TARGETS wildmidi_static DESTINATION lib)
+INSTALL(TARGETS wildmidi_dynamic DESTINATION lib)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/libwildmidi.so DESTINATION lib)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/libwildmidi.so.1 DESTINATION lib)      
 INSTALL(TARGETS wildmidi DESTINATION bin)
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
+ENDIF (UNIX AND NOT APPLE)
