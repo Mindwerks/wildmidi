@@ -104,4 +104,5 @@ TARGET_LINK_LIBRARIES(wildmidi
 
 # add install target:
 INSTALL(TARGETS wildmidi DESTINATION bin)
-INSTALL(FILES ../include/wildmidi_lib.h DESTINATION include)
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION man)
