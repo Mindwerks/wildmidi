@@ -75,4 +75,15 @@ ENDIF (WIN32)
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR} include ${ALSA_INCLUDE_DIR})
 
+if (APPLE)
+    set(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
+    set(APP_BUNDLE_DIR "${wildmidi_BINARY_DIR}/${APP_BUNDLE_NAME}")
+endif (APPLE)
+
+if (APPLE)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APP_BUNDLE_DIR}/Contents/MacOS")
+else (APPLE)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${wildmidi_BINARY_DIR}")
+endif (APPLE)
+
 add_subdirectory(src)
