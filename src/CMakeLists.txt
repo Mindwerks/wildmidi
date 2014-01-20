@@ -25,6 +25,8 @@ ADD_LIBRARY(wildmidi_static STATIC
     ${wildmidi_library_SRCS}
     )
 
+INSTALL(TARGETS wildmidi_static DESTINATION lib)
+
 TARGET_LINK_LIBRARIES(wildmidi_static 
     ${ALSA_LIBRARY}
     ${OSS_LIBRARY}
@@ -46,6 +48,9 @@ SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES OUTPUT_NAME ${LIBRARY_STATIC_NA
 ADD_LIBRARY(wildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
     )
+
+INSTALL(TARGETS wildmidi_dynamic DESTINATION lib)
+INSTALL(FILES ../include/wildmidi_lib.h DESTINATION include)
 
 TARGET_LINK_LIBRARIES(wildmidi_dynamic 
     ${ALSA_LIBRARY}
@@ -99,3 +104,4 @@ TARGET_LINK_LIBRARIES(wildmidi
 
 # add install target:
 INSTALL(TARGETS wildmidi DESTINATION bin)
+INSTALL(FILES ../include/wildmidi_lib.h DESTINATION include)
