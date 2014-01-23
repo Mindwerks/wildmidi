@@ -29,6 +29,10 @@ OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) suppor
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
 
+IF(WANT_OSS)
+    SET(WANT_ALSA OFF)
+ENDIF(WANT_OSS)
+
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC)
     ADD_DEFINITIONS( -std=c99 -D_POSIX_C_SOURCE=200809L -pedantic -Wall -Wextra -W )

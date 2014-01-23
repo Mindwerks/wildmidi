@@ -42,7 +42,7 @@
 #endif
 
 /* Define our audio drivers */
-#define HAVE_ALSA_H
-/* #undef HAVE_LINUX_SOUNDCARD_H */
-/* #undef HAVE_SYS_SOUNDCARD_H */
+/* #undef HAVE_ALSA_H */
+#define HAVE_LINUX_SOUNDCARD_H
+#define HAVE_SYS_SOUNDCARD_H
 /* #undef HAVE_MACHINE_SOUNDCARD_H */
