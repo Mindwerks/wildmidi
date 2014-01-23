@@ -13,16 +13,16 @@
 #define PACKAGE_NAME "WildMidi"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "WildMidi @WILDMIDI_VERSION@"
+#define PACKAGE_STRING "WildMidi @VERSION@"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "wildmidi"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "@WILDMIDI_VERSION@"
+#define PACKAGE_VERSION "@VERSION@"
 
 /* Version number of package */
-#define VERSION "@WILDMIDI_VERSION@"
+#define VERSION "@VERSION@"
 
 /* Define this to the location of the wildmidi config file */
 #define WILDMIDI_CFG "@WILDMIDI_CFG@"
@@ -40,3 +40,9 @@
 #ifndef inline
 #define inline __inline
 #endif
+
+/* Define our audio drivers */
+#cmakedefine HAVE_ALSA_H
+#cmakedefine HAVE_LINUX_SOUNDCARD_H
+#cmakedefine HAVE_SYS_SOUNDCARD_H
+#cmakedefine HAVE_MACHINE_SOUNDCARD_H

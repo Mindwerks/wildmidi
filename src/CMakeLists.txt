@@ -1,5 +1,5 @@
 # Setup up our config file
-configure_file ("${CMAKE_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_SOURCE_DIR}/include/config.h")
+CONFIGURE_FILE ("${CMAKE_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_SOURCE_DIR}/include/config.h")
 
 # Setup our wildmidi library that we link to
 SET(wildmidi_library_SRCS
@@ -65,21 +65,21 @@ SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME
 
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
-IF(WILDMIDI_STATIC)
+IF(WANT_STATIC)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
-ENDIF(WILDMIDI_STATIC)
+ENDIF(WANT_STATIC)
 
 IF(MSVC)
     SET(GETOPT getopt.c getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
-    IF(WILDMIDI_STATIC)
+    IF(WANT_STATIC)
         SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_STATIC_NAME}.lib")
-    ENDIF(WILDMIDI_STATIC)
+    ENDIF(WANT_STATIC)
 ELSEIF(CMAKE_GENERATOR STREQUAL "Xcode")
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/libwildmidi.dylib") 
-    IF(WILDMIDI_STATIC)
+    IF(WANT_STATIC)
         SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/libwildmidi.a") 
-    ENDIF(WILDMIDI_STATIC)
+    ENDIF(WANT_STATIC)
 ENDIF(MSVC)
 
 # Setup our wildmidi player
@@ -96,7 +96,6 @@ ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
 
 TARGET_LINK_LIBRARIES(wildmidi 
     ${WILDMIDILIB}
-    ${M_LIBRARY}
     ${ALSA_LIBRARY}
     ${COREAUDIO_LIBRARY}
     ${COREFOUNDATION_LIBRARY}
