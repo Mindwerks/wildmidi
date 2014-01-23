@@ -51,7 +51,7 @@ int msleep(unsigned long millisec);
 #include <io.h>
 #include "getopt_long.h"
 #else
-# ifdef HAVE_ALSA
+# ifdef HAVE_ALSA_H
 #  include <alsa/asoundlib.h>
 # else
 #  ifdef HAVE_SYS_SOUNDCARD_H
@@ -420,7 +420,7 @@ close_mm_output ( void ) {
 }
 
 #else
-#ifdef HAVE_ALSA
+#ifdef HAVE_ALSA_H
 
 void *buffer;
 int bps;
@@ -667,7 +667,7 @@ static int write_oss_output(char * output_data, int output_size) {
 			if ((count.ptr < counter) || (count.ptr >= (counter + 4))) {
 				break;
 			}
-			usleep(500);
+			msleep(5);
 		}
 		if (count.ptr < counter) {
 			free_size = max_buffer - counter;
@@ -694,7 +694,7 @@ static void close_oss_output(void) {
 	audio_fd = -1;
 }
 
-#endif // HAVE_ALSA
+#endif // HAVE_ALSA_H
 #endif
 
 static struct option const long_options[] = { { "version", 0, 0, 'v' }, {
@@ -870,7 +870,7 @@ int main(int argc, char **argv) {
 #if (defined _WIN32) || (defined __CYGWIN__)
 			if (open_mm_output() == -1) {
 #else
-#ifdef HAVE_ALSA
+#ifdef HAVE_ALSA_H
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
 			if (open_oss_output() == -1) {

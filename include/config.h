@@ -13,16 +13,16 @@
 #define PACKAGE_NAME "WildMidi"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "WildMidi 0.3.0"
+#define PACKAGE_STRING "WildMidi 0.4.dev-build"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "wildmidi"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.3.0"
+#define PACKAGE_VERSION "0.4.dev-build"
 
 /* Version number of package */
-#define VERSION "0.3.0"
+#define VERSION "0.4.dev-build"
 
 /* Define this to the location of the wildmidi config file */
 #define WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg"
@@ -40,3 +40,9 @@
 #ifndef inline
 #define inline __inline
 #endif
+
+/* Define our audio drivers */
+#define HAVE_ALSA_H
+/* #undef HAVE_LINUX_SOUNDCARD_H */
+/* #undef HAVE_SYS_SOUNDCARD_H */
+/* #undef HAVE_MACHINE_SOUNDCARD_H */
