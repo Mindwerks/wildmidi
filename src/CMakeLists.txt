@@ -43,7 +43,9 @@ ELSE(WIN32)
     SET(LIBRARY_STATIC_NAME "wildmidi")
 ENDIF(WIN32)
 
-SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1)
+SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES 
+    OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
+    )
 
 ADD_LIBRARY(wildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
@@ -60,7 +62,10 @@ TARGET_LINK_LIBRARIES(wildmidi_dynamic
     ${COREFOUNDATION_LIBRARY}
     )
 
-SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1)
+SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES 
+    SOVERSION ${SOVERSION} 
+    OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1
+    )
 
 
 # Set our default and then look at the possible locations
@@ -102,6 +107,23 @@ TARGET_LINK_LIBRARIES(wildmidi
     )
 
 # add install target:
-INSTALL(TARGETS wildmidi DESTINATION bin)
-INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
+IF (UNIX AND NOT APPLE)
+    # set legacy soversion
+    SET(legacy_target "lib${LIBRARY_DYN_NAME}.so.${SOVERSION}")
+    SET(legacy_link "lib${LIBRARY_DYN_NAME}.so.1")
+    EXECUTE_PROCESS(COMMAND ln -sf ${legacy_target} ${legacy_link})
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/${legacy_link} DESTINATION lib)
+    
+    # install our libraries
+    INSTALL(TARGETS wildmidi_static DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
+    INSTALL(TARGETS wildmidi_dynamic DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
+    
+    # install our player if asked for
+    IF(WANT_PLAYER)
+        INSTALL(TARGETS wildmidi DESTINATION bin)
+    ENDIF(WANT_PLAYER)
+    
+    # install supporting man pages and headers
+    INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
+    INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
+ENDIF (UNIX AND NOT APPLE)
