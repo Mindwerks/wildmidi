@@ -1059,22 +1059,17 @@ int main(int argc, char **argv) {
 					pro_mins = wm_info->current_sample / (rate * 60);
 					pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 					{
-						int mode_count = 0;
+						memset(modes, ' ', sizeof(char) * 4);
 						if (mixer_options & WM_MO_LOG_VOLUME) {
-							modes[mode_count++] = 'l';
+							memset(modes,'l',1);
 						}
 						if (mixer_options & WM_MO_REVERB) {
-							modes[mode_count++] = 'r';
+							memset(modes+1,'r',1);
 						}
 						if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-							modes[mode_count++] = 'e';
+							memset(modes+2,'e',1);
 						}
-						if (mode_count < 3) {
-							do {
-								modes[mode_count++] = ' ';
-							} while (mode_count < 3);
-						}
-						modes[3] = '\0';
+						memset(modes+3,'\0',1);
 					}
 					fprintf(stderr,
 							"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
@@ -1106,22 +1101,17 @@ int main(int argc, char **argv) {
 				pro_mins = wm_info->current_sample / (rate * 60);
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 				{
-					int mode_count = 0;
+					memset(modes, ' ', sizeof(char) * 4);
 					if (mixer_options & WM_MO_LOG_VOLUME) {
-						modes[mode_count++] = 'l';
+						memset(modes,'l',1);
 					}
 					if (mixer_options & WM_MO_REVERB) {
-						modes[mode_count++] = 'r';
+						memset(modes+1,'r',1);
 					}
 					if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-						modes[mode_count++] = 'e';
+						memset(modes+2,'e',1);
 					}
-					if (mode_count < 3) {
-						do {
-							modes[mode_count++] = ' ';
-						} while (mode_count < 3);
-					}
-					modes[3] = '\0';
+					memset(modes+3,'\0',1);
 				}
 				fprintf(stderr,
 						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  \r",
