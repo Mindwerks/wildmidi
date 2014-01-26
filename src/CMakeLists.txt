@@ -100,12 +100,6 @@ TARGET_LINK_LIBRARIES(wildmidi
 
 # add install target:
 IF (UNIX AND NOT APPLE)
-    # set legacy soversion
-#    SET(legacy_target "lib${LIBRARY_DYN_NAME}.so.${SOVERSION}")
-#    SET(legacy_link "lib${LIBRARY_DYN_NAME}.so.1")
-#    EXECUTE_PROCESS(COMMAND ln -sf ${legacy_target} ${legacy_link})
-#    INSTALL(FILES ${CMAKE_BINARY_DIR}/${legacy_link} DESTINATION lib)
-    
     # install our libraries
     INSTALL(TARGETS wildmidi_static DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
     INSTALL(TARGETS wildmidi_dynamic DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
