@@ -29,8 +29,8 @@
 #include <unistd.h>
 #endif
 
-#include "config.h"
 #include "lock.h"
+#include "common.h"
 
 /*
  WL_Lock(wmlock)
