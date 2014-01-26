@@ -1,6 +1,3 @@
-# Setup up our config file
-CONFIGURE_FILE ("${CMAKE_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_SOURCE_DIR}/include/config.h")
-
 # Setup our wildmidi library that we link to
 SET(wildmidi_library_SRCS
     wm_error.c
@@ -28,11 +25,7 @@ ADD_LIBRARY(wildmidi_static STATIC
 INSTALL(TARGETS wildmidi_static DESTINATION lib)
 
 TARGET_LINK_LIBRARIES(wildmidi_static 
-    ${ALSA_LIBRARY}
-    ${OSS_LIBRARY}
     ${M_LIBRARY}
-    ${COREAUDIO_LIBRARY}
-    ${COREFOUNDATION_LIBRARY}
     )
 
 IF(WIN32)
@@ -55,15 +48,12 @@ INSTALL(TARGETS wildmidi_dynamic DESTINATION lib)
 INSTALL(FILES ../include/wildmidi_lib.h DESTINATION include)
 
 TARGET_LINK_LIBRARIES(wildmidi_dynamic 
-    ${ALSA_LIBRARY}
-    ${OSS_LIBRARY}
     ${M_LIBRARY}
-    ${COREAUDIO_LIBRARY}
-    ${COREFOUNDATION_LIBRARY}
     )
 
 SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES 
-    SOVERSION ${SOVERSION} 
+    SOVERSION ${SOVERSION}
+    VERSION ${VERSION}
     OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1
     )
 
@@ -102,18 +92,14 @@ ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
 TARGET_LINK_LIBRARIES(wildmidi 
     ${WILDMIDILIB}
     ${ALSA_LIBRARY}
+    ${OSS_LIBRARY}
+    ${M_LIBRARY}
     ${COREAUDIO_LIBRARY}
     ${COREFOUNDATION_LIBRARY}
     )
 
 # add install target:
 IF (UNIX AND NOT APPLE)
-    # set legacy soversion
-    SET(legacy_target "lib${LIBRARY_DYN_NAME}.so.${SOVERSION}")
-    SET(legacy_link "lib${LIBRARY_DYN_NAME}.so.1")
-    EXECUTE_PROCESS(COMMAND ln -sf ${legacy_target} ${legacy_link})
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/${legacy_link} DESTINATION lib)
-    
     # install our libraries
     INSTALL(TARGETS wildmidi_static DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
     INSTALL(TARGETS wildmidi_dynamic DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")

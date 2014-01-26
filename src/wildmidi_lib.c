@@ -26,8 +26,6 @@
 
 #define UNUSED(x) (void)(x)
 
-#include "config.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -56,6 +54,7 @@
 #include "reverb.h"
 #include "gus_pat.h"
 #include "common.h"
+#include "config.h"
 #include "wildmidi_lib.h"
 
 /*

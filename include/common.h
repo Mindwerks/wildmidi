@@ -95,6 +95,23 @@ struct _patch {
 	struct _patch *next;
 };
 
+/* Set our global defines here */
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
+
+#ifndef M_LN2
+#define M_LN2 0.69314718055994530942
+#endif
+
+/* Define this if the GCC __builtin_expect keyword is available */
+#ifndef __builtin_expect
+#define __builtin_expect(x,c) x
+#endif
+
+#ifndef inline
+#define inline __inline
+#endif
 
 
 #endif // __COMMON_H

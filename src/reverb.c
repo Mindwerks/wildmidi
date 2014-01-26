@@ -24,16 +24,12 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include "common.h"
 
 #include <math.h>
 #include <stdlib.h>
 
 #include "reverb.h"
-
-#ifndef M_LN2
-#define M_LN2 0.69314718055994530942
-#endif
 
 /*
  reverb function

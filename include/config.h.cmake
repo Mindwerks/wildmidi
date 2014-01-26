@@ -13,33 +13,19 @@
 #define PACKAGE_NAME "WildMidi"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "WildMidi @VERSION@"
+#define PACKAGE_STRING "WildMidi @WILDMIDI_VERSION@"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "wildmidi"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "@VERSION@"
+#define PACKAGE_VERSION "@WILDMIDI_VERSION@"
 
 /* Version number of package */
-#define VERSION "@VERSION@"
+#define VERSION "@WILDMIDI_VERSION@"
 
 /* Define this to the location of the wildmidi config file */
 #define WILDMIDI_CFG "@WILDMIDI_CFG@"
-
-/* Set our global defines here */
-#ifndef M_PI
-#define M_PI           3.14159265358979323846
-#endif
-
-/* Define this if the GCC __builtin_expect keyword is available */
-#ifndef __builtin_expect
-#define __builtin_expect(x,c) x
-#endif
-
-#ifndef inline
-#define inline __inline
-#endif
 
 /* Define our audio drivers */
 #cmakedefine HAVE_ALSA_H
