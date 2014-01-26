@@ -24,8 +24,6 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "internal_midi.h"
