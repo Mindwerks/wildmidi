@@ -1,0 +1,26 @@
+# compiled objects #
+*.o
+*.so
+*.dll
+
+# logs and other texts #
+*.log
+
+# OS generated files #
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Eclipse
+.cproject
+.preferences.xml
+.project
+.settings/
+
+# config files
+include/config.h
