@@ -10,27 +10,29 @@
 # See documentation on how to write CMake scripts at
 # http://www.cmake.org/Wiki/CMake:How_To_Find_Libraries
 
-include(LibFindMacros)
+INCLUDE(LibFindMacros)
+INCLUDE(CheckIncludeFiles)
 
-libfind_pkg_check_modules(ALSA_PKGCONF alsa)
+LIBFIND_PKG_CHECK_MODULES(ALSA_PKGCONF alsa)
 
-find_path(ALSA_INCLUDE_DIR
+FIND_PATH(ALSA_INCLUDE_DIR
   NAMES alsa/version.h
   PATHS ${ALSA_PKGCONF_INCLUDE_DIRS}
 )
+CHECK_INCLUDE_FILES(alsa/version.h HAVE_ALSA_H)
 
-find_library(ALSA_LIBRARY
+FIND_LIBRARY(ALSA_LIBRARY
   NAMES asound
   PATHS ${ALSA_PKGCONF_LIBRARY_DIRS}
 )
 
 # Extract the version number
 IF(ALSA_INCLUDE_DIR)
-file(READ "${ALSA_INCLUDE_DIR}/alsa/version.h" _ALSA_VERSION_H_CONTENTS)
-string(REGEX REPLACE ".*#define SND_LIB_VERSION_STR[ \t]*\"([^\n]*)\".*" "\\1" ALSA_VERSION "${_ALSA_VERSION_H_CONTENTS}")
+FILE(READ "${ALSA_INCLUDE_DIR}/alsa/version.h" _ALSA_VERSION_H_CONTENTS)
+STRING(REGEX REPLACE ".*#define SND_LIB_VERSION_STR[ \t]*\"([^\n]*)\".*" "\\1" ALSA_VERSION "${_ALSA_VERSION_H_CONTENTS}")
 ENDIF(ALSA_INCLUDE_DIR)
 
-set(ALSA_PROCESS_INCLUDES ALSA_INCLUDE_DIR)
-set(ALSA_PROCESS_LIBS ALSA_LIBRARY)
-libfind_process(ALSA)
+SET(ALSA_PROCESS_INCLUDES ALSA_INCLUDE_DIR)
+SET(ALSA_PROCESS_LIBS ALSA_LIBRARY)
+LIBFIND_PROCESS(ALSA)
 

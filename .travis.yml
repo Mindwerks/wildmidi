@@ -2,9 +2,13 @@ language: c
 compiler:
  - gcc
  - clang
+env:
+ - BUILD_TYPE=Debug
+ - BUILD_TYPE=Release
 branches:
   only:
     - master
+    - wildmidi-0.3
 before_install:
  - pwd
  - git submodule update --init --recursive
@@ -22,15 +26,9 @@ before_script:
  - cd -
  - mkdir debug
  - cd debug
- - cmake ..
- - cd -
- - mkdir release
- - cd release
- - cmake -D CMAKE_BUILD_TYPE=Release ..
- - cd -
+ - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
 script:
- - make -j2 -C ./debug
- - make -j2 -C ./release
+ - make -j2
 
 #after_script:
 # - ./runtests
