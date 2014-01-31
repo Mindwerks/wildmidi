@@ -330,14 +330,70 @@ static void close_wav_output(void) {
         AudioStreamBasicDescription format;
         uint32_t psize, devnum, devnos;
         DEVPARAMS *dev;
+        char * name;
+        uint32_t obufframes, ibufframes, buffbytes;
+        
+        /* allocate structure */
+        dev = (DEVPARAMS *) malloc(sizeof(DEVPARAMS));
+        if (dev == NULL) {
+            printf(" *** CoreAudio: open: memory allocation failure\n");
+            return -1;
+        }
         
         psize = sizeof(AudioDeviceID);
         AudioHardwareGetProperty(kAudioHardwarePropertyDefaultOutputDevice,
                                  &psize, &dev->dev);
         
-        AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDevices, &psize, sysdevs);
+        AudioHardwareGetPropertyInfo
+            (kAudioHardwarePropertyDevices, &psize, sysdevs);
         
+        devnos = psize / sizeof(AudioDeviceID);
+        sysdevs = (AudioDeviceID *) malloc(psize);
         printf("CoreAudio Modules: found %d devices(s):\n", (int) devnos);
+        
+        
+        for (uint32_t i = 0; i < devnos; i++) {
+            AudioDeviceGetPropertyInfo(sysdevs[i], 1, false, kAudioDevicePropertyDeviceName, &psize, NULL);
+            
+            name = (char *) malloc(psize);
+            
+            AudioDeviceGetProperty(sysdevs[i], 1, false, kAudioDevicePropertyDeviceName, &psize, name);
+            
+            printf("=> CoreAudio device %d: %s %c\n", i, name, name[0]);
+            
+            free(name);
+        }
+        
+        dev->dev = sysdevs[0];
+        
+        AudioDeviceGetPropertyInfo(dev->dev, 1, false,                                   kAudioDevicePropertyDeviceName, &psize, NULL);
+        name = (char *) malloc(psize);
+        AudioDeviceGetProperty(dev->dev, 1, false, kAudioDevicePropertyDeviceName,
+                               &psize, name);
+        printf("CoreAudio module: opening %s \n", name);
+        free(name);
+        
+        dev->srate = (float) rate;
+        dev->nchns = 2;
+        dev->bufframes = 4; //guess?
+        dev->buffnos = 4;
+        
+        
+        psize = 4;
+        /* set the buffer size
+         output */
+        //AudioDeviceSetProperty(dev->dev, NULL, 0, false,                               kAudioDevicePropertyBufferFrameSize,                               psize, &dev->bufframes);
+        
+        /* input */
+        //AudioDeviceSetProperty(dev->dev, NULL, 0, true,                               kAudioDevicePropertyBufferFrameSize,                               psize, &dev->bufframes);
+        
+        /* check that it matches the expected size */
+        //AudioDeviceGetProperty(dev->dev, 0, true,                               kAudioDevicePropertyBufferFrameSize,                               &psize, &ibufframes);
+        
+        //AudioDeviceGetProperty(dev->dev, 0, false,                               kAudioDevicePropertyBufferFrameSize,                               &psize, &obufframes);
+        
+        
+        
         return 1;
     }
 #endif
