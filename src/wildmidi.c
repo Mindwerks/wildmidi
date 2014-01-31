@@ -293,6 +293,56 @@ static void close_wav_output(void) {
 	shutdown_output();
 }
 
+#if defined (__APPLE__)
+#include <CoreAudio/CoreAudio.h>
+
+    typedef struct devparams_ {
+        AudioDeviceID dev;
+        float **inbuffs;
+        float **outbuffs;
+        AudioStreamBasicDescription format;
+        unsigned int bufframes;
+        unsigned int buffnos;
+        unsigned int outcurbuff;
+        unsigned int incurbuff;
+        unsigned int iocurbuff;
+        unsigned int outcount;
+        unsigned int incount;
+        int    *inused;
+        int    *outused;
+        float   srate;
+        int     nchns;
+        int     isNInterleaved;
+#if defined(MAC_OS_X_VERSION_10_5) && \
+(MAC_OS_X_VERSION_MIN_REQUIRED>=MAC_OS_X_VERSION_10_5)
+        AudioDeviceIOProcID     procID;
+#else
+        int procID;
+#endif
+    } DEVPARAMS;
+    
+    static int write_ca_output (char * output_data, int output_size);
+    static void close_ca_output ( void );
+    static int open_ca_output ( void ) {
+        
+        
+        AudioDeviceID *sysdevs;
+        AudioStreamBasicDescription format;
+        uint32_t psize, devnum, devnos;
+        DEVPARAMS *dev;
+        
+        psize = sizeof(AudioDeviceID);
+        AudioHardwareGetProperty(kAudioHardwarePropertyDefaultOutputDevice,
+                                 &psize, &dev->dev);
+        
+        AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDevices, &psize, sysdevs);
+        
+        printf("CoreAudio Modules: found %d devices(s):\n", (int) devnos);
+        return 1;
+    }
+#endif
+    
+    
 #if (defined _WIN32) || (defined __CYGWIN__)
 
 HWAVEOUT hWaveOut;
@@ -874,8 +924,10 @@ int main(int argc, char **argv) {
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
 			if (open_oss_output() == -1) {
+#elfif (defined __APPLE__)
+            if (open_ca_output() == -1) {
 #else
-                {
+            if (open_ca_output() == -1)    {
 #endif
 #endif
 				return 0;
