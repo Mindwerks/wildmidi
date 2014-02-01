@@ -58,13 +58,18 @@ SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
 
+# MS Visual Studio 
 IF(MSVC)
     SET(GETOPT getopt.c getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
-ELSEIF(CMAKE_GENERATOR STREQUAL "Xcode")
-    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib${LIBRARY_DYN_NAME}.dylib") 
 ENDIF(MSVC)
 
+# Apple's Xcode
+IF(CMAKE_GENERATOR STREQUAL "Xcode")
+    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib${LIBRARY_DYN_NAME}.dylib")
+ELSEIF(APPLE) # Apple's CLI default
+    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.dylib")
+ENDIF(CMAKE_GENERATOR STREQUAL "Xcode")
 
 # do we want the wildmidi player?
 IF(WANT_PLAYER)
