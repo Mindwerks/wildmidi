@@ -293,7 +293,7 @@ static void close_wav_output(void) {
 	shutdown_output();
 }
 
-#if defined (__APPLE__)
+#ifdef HAVE_COREAUDIO_H
 #include <CoreAudio/CoreAudio.h>
 
     typedef struct devparams_ {
@@ -975,16 +975,15 @@ int main(int argc, char **argv) {
 		} else {
 #if (defined _WIN32) || (defined __CYGWIN__)
 			if (open_mm_output() == -1) {
-#else
-#ifdef HAVE_ALSA_H
+#elif (defined __APPLE__) && (defined HAVE_COREAUDIO_H)
+                if (open_ca_output() == -1) {
+#elif (defined HAVE_ALSA_H)
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
 			if (open_oss_output() == -1) {
-#elfif (defined __APPLE__)
-            if (open_ca_output() == -1) {
 #else
-            if (open_ca_output() == -1)    {
-#endif
+                printf("No audio subsystem found.\n");
+            {
 #endif
 				return 0;
 			}
