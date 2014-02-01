@@ -295,7 +295,7 @@ static void close_wav_output(void) {
 
 #ifdef HAVE_COREAUDIO_H
 #include <CoreAudio/CoreAudio.h>
-
+    
     typedef struct devparams_ {
         AudioDeviceID dev;
         float **inbuffs;
@@ -329,9 +329,11 @@ static void close_wav_output(void) {
         AudioDeviceID *sysdevs;
         AudioStreamBasicDescription format;
         uint32_t psize, devnum, devnos;
+        int i;
         DEVPARAMS *dev;
         char * name;
         uint32_t obufframes, ibufframes, buffbytes;
+        OSStatus status;
         
         /* allocate structure */
         dev = (DEVPARAMS *) malloc(sizeof(DEVPARAMS));
@@ -349,13 +351,14 @@ static void close_wav_output(void) {
         
         devnos = psize / sizeof(AudioDeviceID);
         sysdevs = (AudioDeviceID *) malloc(psize);
+        AudioHardwareGetProperty(kAudioHardwarePropertyDevices, &psize, sysdevs);
         printf("CoreAudio Modules: found %d devices(s):\n", (int) devnos);
         
-        
-        for (uint32_t i = 0; i < devnos; i++) {
+        for (i = 0; i < devnos; i++) {
             AudioDeviceGetPropertyInfo(sysdevs[i], 1, false, kAudioDevicePropertyDeviceName, &psize, NULL);
             
-            name = (char *) malloc(psize);
+            
+            name = (char *) malloc(64);
             
             AudioDeviceGetProperty(sysdevs[i], 1, false, kAudioDevicePropertyDeviceName, &psize, name);
             
@@ -364,10 +367,10 @@ static void close_wav_output(void) {
             free(name);
         }
         
-        dev->dev = sysdevs[0];
+        dev->dev = sysdevs[2];
         
         AudioDeviceGetPropertyInfo(dev->dev, 1, false,                                   kAudioDevicePropertyDeviceName, &psize, NULL);
-        name = (char *) malloc(psize);
+        name = (char *) malloc(64);
         AudioDeviceGetProperty(dev->dev, 1, false, kAudioDevicePropertyDeviceName,
                                &psize, name);
         printf("CoreAudio module: opening %s \n", name);
