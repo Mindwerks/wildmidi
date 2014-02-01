@@ -321,8 +321,58 @@ static void close_wav_output(void) {
 #endif
     } DEVPARAMS;
     
-    static int write_ca_output (char * output_data, int output_size);
-    static void close_ca_output ( void );
+    static int write_ca_output (char * output_data, int output_size) {
+        
+        DEVPARAMS *dev;
+        int     n, i, chans, cur, ocount, buffitems, buffnos, *outused, usecs;
+        uint32_t psize;
+        float **obuffs;
+        
+        /* MYFLT norm; */
+        //p = (CSOUND *) csound;
+        //dev = (DEVPARAMS *) (csound->rtRecord_userdata);
+        
+        /* allocate structure */
+        dev = (DEVPARAMS *) malloc(sizeof(DEVPARAMS));
+       
+        psize = sizeof(AudioDeviceID);
+        AudioHardwareGetProperty(kAudioHardwarePropertyDefaultOutputDevice,
+                                 &psize, &dev->dev);
+        
+        
+        n = output_size / sizeof(char);
+        //usecs = (int) (1000 * dev->bufframes / p->esr);
+        usecs = 5000;
+        chans = dev->nchns;
+        obuffs = dev->outbuffs;
+        cur = dev->outcurbuff;
+        outused = dev->outused;
+        ocount = dev->outcount;
+        buffnos = dev->buffnos;
+        buffitems = dev->bufframes * chans;
+        /* norm = p->e0dbfs; */
+        
+        for (i = 0; i < n; i++) {
+            obuffs[cur][ocount] = (float) output_data[i];
+            ocount++;
+            if (ocount == buffitems) {
+                outused[cur] = 0;
+                cur++;
+                cur %= buffnos;
+                ocount = 0;
+                while (!outused[cur])
+                    usleep(usecs);
+            }
+        }
+        
+        dev->outcurbuff = cur;
+        dev->outcount = ocount;
+        
+        return;
+    }
+    static void close_ca_output ( void ) {
+        return;
+    }
     static int open_ca_output ( void ) {
         
         
@@ -334,6 +384,7 @@ static void close_wav_output(void) {
         char * name;
         uint32_t obufframes, ibufframes, buffbytes;
         OSStatus status;
+        double sr;
         
         /* allocate structure */
         dev = (DEVPARAMS *) malloc(sizeof(DEVPARAMS));
@@ -378,26 +429,130 @@ static void close_wav_output(void) {
         
         dev->srate = (float) rate;
         dev->nchns = 2;
-        dev->bufframes = 4; //guess?
+        dev->bufframes = 512; //guess?
         dev->buffnos = 4;
         
         
         psize = 4;
         /* set the buffer size
          output */
-        //AudioDeviceSetProperty(dev->dev, NULL, 0, false,                               kAudioDevicePropertyBufferFrameSize,                               psize, &dev->bufframes);
+        //AudioDeviceSetProperty(dev->dev, NULL, 0, false,                               kAudioDevicePropertyBufferFrameSize, psize, &dev->bufframes);
         
         /* input */
-        //AudioDeviceSetProperty(dev->dev, NULL, 0, true,                               kAudioDevicePropertyBufferFrameSize,                               psize, &dev->bufframes);
+        //AudioDeviceSetProperty(dev->dev, NULL, 0, true,                               kAudioDevicePropertyBufferFrameSize, psize, &dev->bufframes);
         
         /* check that it matches the expected size */
-        //AudioDeviceGetProperty(dev->dev, 0, true,                               kAudioDevicePropertyBufferFrameSize,                               &psize, &ibufframes);
+        AudioDeviceGetProperty(dev->dev, 0, true,                               kAudioDevicePropertyBufferFrameSize, &psize, &ibufframes);
         
-        //AudioDeviceGetProperty(dev->dev, 0, false,                               kAudioDevicePropertyBufferFrameSize,                               &psize, &obufframes);
+        AudioDeviceGetProperty(dev->dev, 0, false,                               kAudioDevicePropertyBufferFrameSize, &psize, &obufframes);
         
         
+        printf("default: input buffer: %d  output buffer: %d\n",ibufframes,obufframes);
         
-        return 1;
+        psize = sizeof(double);
+        sr = dev->srate;
+        //AudioDeviceSetProperty(dev->dev, NULL, 0, true, kAudioDevicePropertyNominalSampleRate, psize, &sr);
+        AudioDeviceSetProperty(dev->dev, NULL, 0, false, kAudioDevicePropertyNominalSampleRate, psize, &sr);
+        
+        psize = sizeof(AudioStreamBasicDescription);
+        AudioDeviceGetProperty(dev->dev, 0, false, kAudioDevicePropertyStreamFormat, &psize, &format);
+        
+        dev->isNInterleaved = 0;
+        
+        dev->format.mSampleRate = dev->srate;
+        dev->format.mFormatID = kAudioFormatLinearPCM;
+        dev->format.mFormatFlags = kAudioFormatFlagIsFloat | format.mFormatFlags;
+        dev->format.mBytesPerPacket = sizeof(float) * dev->nchns;
+        dev->format.mFramesPerPacket = 1;
+        dev->format.mBytesPerFrame = format.mBytesPerPacket;
+        dev->format.mChannelsPerFrame = dev->nchns;
+        dev->format.mBitsPerChannel = sizeof(float);
+        
+        psize = sizeof(AudioStreamBasicDescription);
+        
+        //AudioDeviceSetProperty(dev->dev, NULL, 0, true,
+        //                       kAudioDevicePropertyStreamFormat,
+        //                       psize, &dev->format);
+        AudioDeviceSetProperty(dev->dev, NULL, 0, false,
+                               kAudioDevicePropertyStreamFormat,
+                               psize, &dev->format);
+        AudioDeviceGetProperty(dev->dev, 0, false,
+                               kAudioDevicePropertyStreamFormat, &psize, &format);
+        
+        if (format.mChannelsPerFrame != (unsigned int) dev->nchns &&
+            !dev->isNInterleaved) {
+            dev->format.mChannelsPerFrame = format.mChannelsPerFrame;
+        }
+        
+        if (format.mSampleRate != dev->srate) {
+            printf(" *** CoreAudio: open: could not set device parameter sr: %d \n",
+                       (int) dev->srate);
+            printf(" *** CoreAudio: current device sampling rate is:%d \n",
+                       (int) format.mSampleRate);
+            //free(dev);
+            //return -1;
+        }
+        else{
+            printf("CoreAudio module: sr set to %d with %d audio channels \n",
+                       (int) dev->srate, (int) dev->nchns);
+        }
+        
+        
+        dev->outbuffs = (float **) malloc(sizeof(float *) * dev->buffnos);
+        dev->inbuffs = (float **) malloc(sizeof(float *) * dev->buffnos);
+        dev->inused = (int *) malloc(sizeof(int) * dev->buffnos);
+        dev->outused = (int *) malloc(sizeof(int) * dev->buffnos);
+        
+        buffbytes = dev->bufframes * dev->nchns * sizeof(float);
+        
+        for (i = 0; (unsigned int) i < dev->buffnos; i++) {
+            
+            if ((dev->inbuffs[i] = (float *) malloc(buffbytes)) == NULL) {
+                free(dev->outbuffs);
+                free(dev->inbuffs);
+                free(dev->inused);
+                free(dev->outused);
+                free(dev);
+                printf(" *** CoreAudio: open: memory allocation failure\n");
+                return -1;
+            }
+            memset(dev->inbuffs[i], 0, buffbytes);
+            
+            if ((dev->outbuffs[i] = (float *) malloc(buffbytes)) == NULL) {
+                free(dev->outbuffs);
+                free(dev->inbuffs);
+                free(dev->inused);
+                free(dev->outused);
+                free(dev);
+                printf(" *** CoreAudio: open: memory allocation failure\n");
+                return -1;
+            }
+            memset(dev->outbuffs[i], 0, buffbytes);
+            dev->inused[i] = dev->outused[i] = 1;
+        }
+        
+        dev->incurbuff = dev->outcurbuff = dev->iocurbuff = 0;
+        dev->incount = dev->outcount = 0;
+        
+        /*
+        AudioDeviceAddIOProc(dev->dev, Csound_IOProcEntry, dev);
+        AudioDeviceStart(dev->dev, Csound_IOProcEntry);
+         */
+        
+        /*
+        if (isInput)
+            csound->rtPlay_userdata = (void *) dev;
+        else
+            csound->rtRecord_userdata = (void *) dev;
+        */
+         
+        printf("CoreAudio module: device open with %d buffers of %d frames\n"
+                       "==========================================================\n",
+                   dev->buffnos, dev->bufframes);
+        send_output = write_ca_output;
+        close_output = close_ca_output;
+        
+        return 0;
     }
 #endif
     
