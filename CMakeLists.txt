@@ -54,13 +54,15 @@ SET(WILDMIDI_CFG "wildmidi.cfg")
 IF(NOT WIN32 AND NOT APPLE)
 
     # go looking for available sound packages for WildMIDI player
-    IF(WANT_PLAYER AND WANT_ALSA)
-        FIND_PACKAGE(ALSA REQUIRED)
-    ELSEIF(WANT_PLAYER AND WANT_OSS)
-        FIND_PACKAGE(OSS REQUIRED)
-    ELSE(WANT_PLAYER AND WANT_ALSA)
-        MESSAGE(FATAL_ERROR "You must choose either ALSA or OSS.") 
-    ENDIF(WANT_PLAYER AND WANT_ALSA)
+    IF(WANT_PLAYER)
+        IF(WANT_ALSA)
+            FIND_PACKAGE(ALSA REQUIRED)
+        ELSEIF(WANT_OSS)
+            FIND_PACKAGE(OSS REQUIRED)
+        ELSE(WANT_ALSA)
+            MESSAGE(FATAL_ERROR "You must choose either ALSA or OSS.")
+        ENDIF(WANT_ALSA)
+    ENDIF(WANT_PLAYER)
     
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m REQUIRED)
