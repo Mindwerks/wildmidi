@@ -28,7 +28,7 @@ MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # Set our optoins
 OPTION(WANT_PLAYER      "Build WildMIDI player in addition to the libraries" ON)
-OPTION(WANT_STATIC      "Link WildMIDI to the static libwildmidi library" OFF)
+OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OFF)
 OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" ON)
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
