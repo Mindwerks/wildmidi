@@ -15,41 +15,34 @@ SET(wildmidi_executable_HDRS)
 SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 SET(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
-MESSAGE(STATUS "${CMAKE_BINARY_DIR}")
-
-IF(WANT_STATIC)
-# actual target:
-ADD_LIBRARY(wildmidi_static STATIC 
-    ${wildmidi_library_SRCS}
-    )
-
-#INSTALL(TARGETS wildmidi_static DESTINATION lib)
-
-TARGET_LINK_LIBRARIES(wildmidi_static 
-    ${M_LIBRARY}
-    )
-ENDIF(WANT_STATIC)
-
-IF(WIN32)
+# set our library names
+IF(WIN32) # windows uses *.lib for both static and dynamic, workaround
     SET(LIBRARY_DYN_NAME "wildmidi_dynamic")
     SET(LIBRARY_STATIC_NAME "wildmidi_static")
-ELSE(WIN32)
+ELSE(WIN32) # everyone else uses .a and .so
     SET(LIBRARY_DYN_NAME "WildMidi")
     SET(LIBRARY_STATIC_NAME "WildMidi")
 ENDIF(WIN32)
 
+# do we want a static library?
 IF(WANT_STATIC)
-SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES 
-    OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
-    )
+    ADD_LIBRARY(wildmidi_static STATIC 
+        ${wildmidi_library_SRCS}
+        )
+
+    TARGET_LINK_LIBRARIES(wildmidi_static 
+        ${M_LIBRARY}
+        )
+
+    SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES 
+        OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
+        )
 ENDIF(WANT_STATIC)
 
+# always build our dynamic library
 ADD_LIBRARY(wildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
     )
-
-#INSTALL(TARGETS wildmidi_dynamic DESTINATION lib)
-#INSTALL(FILES ../include/wildmidi_lib.h DESTINATION include)
 
 TARGET_LINK_LIBRARIES(wildmidi_dynamic 
     ${M_LIBRARY}
@@ -64,52 +57,44 @@ SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES
 
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
-IF(WANT_STATIC)
-    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
-ENDIF(WANT_STATIC)
 
 IF(MSVC)
     SET(GETOPT getopt.c getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
-    IF(WANT_STATIC)
-        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_STATIC_NAME}.lib")
-    ENDIF(WANT_STATIC)
 ELSEIF(CMAKE_GENERATOR STREQUAL "Xcode")
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib${LIBRARY_DYN_NAME}.dylib") 
-    IF(WANT_STATIC)
-        SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib${LIBRARY_STATIC_NAME}.a") 
-    ENDIF(WANT_STATIC)
 ENDIF(MSVC)
 
+
+# do we want the wildmidi player?
 IF(WANT_PLAYER)
-# Setup our wildmidi player
-SET(wildmidi_executable_SRCS
-    ${GETOPT}
-    wildmidi.c
-)
-
-ADD_EXECUTABLE(wildmidi 
-    ${wildmidi_executable_SRCS}
-)
-
-ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
-
-TARGET_LINK_LIBRARIES(wildmidi 
-    ${WILDMIDILIB}
-    ${ALSA_LIBRARY}
-    ${OSS_LIBRARY}
-    ${M_LIBRARY}
-    ${COREAUDIO_LIBRARY}
-    ${COREFOUNDATION_LIBRARY}
+    SET(wildmidi_executable_SRCS
+        ${GETOPT}
+        wildmidi.c
     )
+    
+    ADD_EXECUTABLE(wildmidi 
+        ${wildmidi_executable_SRCS}
+    )
+    
+    ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
+    
+    TARGET_LINK_LIBRARIES(wildmidi 
+        ${WILDMIDILIB}
+        ${ALSA_LIBRARY}
+        ${OSS_LIBRARY}
+        ${M_LIBRARY}
+        ${COREAUDIO_LIBRARY}
+        ${COREFOUNDATION_LIBRARY}
+        )
 ENDIF(WANT_PLAYER)
 
 # add install target:
 IF (UNIX AND NOT APPLE)
-IF(WANT_STATIC)
     # install our libraries
-    INSTALL(TARGETS wildmidi_static DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
-ENDIF(WANT_STATIC)
+    IF(WANT_STATIC)
+        INSTALL(TARGETS wildmidi_static DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
+    ENDIF(WANT_STATIC)
     INSTALL(TARGETS wildmidi_dynamic DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
     
     # install our player if asked for
