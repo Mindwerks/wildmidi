@@ -29,7 +29,7 @@ MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # Set our optoins
 OPTION(WANT_PLAYER      "Build WildMIDI player in addition to the libraries" ON)
-OPTION(WANT_STATIC      "Link WildMIDI to the static libwildmidi library" OFF)
+OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OFF)
 OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" ON)
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
@@ -55,13 +55,15 @@ SET(WILDMIDI_CFG "wildmidi.cfg")
 IF(NOT WIN32 AND NOT APPLE)
 
     # go looking for available sound packages for WildMIDI player
-    IF(WANT_PLAYER AND WANT_ALSA)
-        FIND_PACKAGE(ALSA REQUIRED)
-    ELSEIF(WANT_PLAYER AND WANT_OSS)
-        FIND_PACKAGE(OSS REQUIRED)
-    ELSE(WANT_PLAYER AND WANT_ALSA)
-        MESSAGE(FATAL_ERROR "You must choose either ALSA or OSS.") 
-    ENDIF(WANT_PLAYER AND WANT_ALSA)
+    IF(WANT_PLAYER)
+        IF(WANT_ALSA)
+            FIND_PACKAGE(ALSA REQUIRED)
+        ELSEIF(WANT_OSS)
+            FIND_PACKAGE(OSS REQUIRED)
+        ELSE(WANT_ALSA)
+            MESSAGE(FATAL_ERROR "You must choose either ALSA or OSS.")
+        ENDIF(WANT_ALSA)
+    ENDIF(WANT_PLAYER)
     
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m REQUIRED)
