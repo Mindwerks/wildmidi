@@ -35,28 +35,19 @@
 
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef BUILDING_DLL
     #ifdef __GNUC__
-      #define SYMBOL __attribute__ ((dllexport))
+        #define SYMBOL __attribute__ ((dllexport))
     #else
-      #define SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+        #define SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
     #endif
-  #else
-    #ifdef __GNUC__
-      #define SYMBOL __attribute__ ((dllimport))
-    #else
-      #define SYMBOL __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
-    #endif
-  #endif
-  #define SYMBOL
 #else
   #if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
-      #define SYMBOL __attribute__ ((visibility ("default")))
+        #define SYMBOL __attribute__ ((visibility ("default")))
   #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
-      #define SYMBOL __hidden
+        #define SYMBOL __hidden
   #elif __GNUC__ >= 4
-    #define SYMBOL __attribute__ ((visibility ("default")))
+        #define SYMBOL __attribute__ ((visibility ("default")))
   #else
-    #define SYMBOL
+        #define SYMBOL
   #endif
-#endif
+#endif  
