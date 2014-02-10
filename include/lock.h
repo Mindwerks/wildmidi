@@ -27,7 +27,7 @@
 
 #include "config.h"
 
-WildMidi_INTERNAL extern void WM_Lock (int * wmlock);
-WildMidi_INTERNAL extern void WM_Unlock (int *wmlock);
+ extern void WM_Lock (int * wmlock);
+ extern void WM_Unlock (int *wmlock);
 
 #endif // __LOCK_H
