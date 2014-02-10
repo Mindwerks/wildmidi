@@ -27,6 +27,8 @@
 #ifndef __REVERB_H
 #define __REVERB_H
 
+#include "config.h"
+
 struct _rvb {
 	/* filter data */
 	signed long int l_buf_flt_in[8][6][2];
@@ -49,9 +51,9 @@ struct _rvb {
     unsigned long int max_reverb_time;
 };
 
-extern void reset_reverb (struct _rvb *rvb);
-extern struct _rvb *init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y);
-extern void free_reverb (struct _rvb *rvb);
-extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
+WildMidi_INTERNAL extern void reset_reverb (struct _rvb *rvb);
+WildMidi_INTERNAL extern struct _rvb *init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y);
+WildMidi_INTERNAL extern void free_reverb (struct _rvb *rvb);
+WildMidi_INTERNAL extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
 
 #endif // __REVERB_H

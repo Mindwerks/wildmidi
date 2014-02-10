@@ -32,3 +32,16 @@
 #cmakedefine HAVE_LINUX_SOUNDCARD_H
 #cmakedefine HAVE_SYS_SOUNDCARD_H
 #cmakedefine HAVE_MACHINE_SOUNDCARD_H
+
+/* set our symbol export visiblity */
+#ifndef WildMidi_INTERNAL
+    #if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+        #define WildMidi_INTERNAL __attribute__((visibility("hidden")))
+    #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+        #define WildMidi_INTERNAL __hidden
+    #elif defined (__GNUC__)
+        #define WildMidi_INTERNAL __attribute__((visibility("hidden")))
+    #else
+        #define WildMidi_INTERNAL
+    #endif
+#endif
