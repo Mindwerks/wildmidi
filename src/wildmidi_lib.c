@@ -71,17 +71,17 @@ static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
 unsigned short int WM_SampleRate;
 
-WildMidi_INTERNAL struct _patch *patch[128];
+ struct _patch *patch[128];
 
-WildMidi_INTERNAL float reverb_room_width = 16.875;
-WildMidi_INTERNAL float reverb_room_length = 22.5;
+ float reverb_room_width = 16.875;
+ float reverb_room_length = 22.5;
 
-WildMidi_INTERNAL float reverb_listen_posx = 8.4375;
-WildMidi_INTERNAL float reverb_listen_posy = 16.875;
+ float reverb_listen_posx = 8.4375;
+ float reverb_listen_posy = 16.875;
 
-WildMidi_INTERNAL int fix_release = 0;
-WildMidi_INTERNAL int auto_amp = 0;
-WildMidi_INTERNAL int auto_amp_with_amp = 0;
+ int fix_release = 0;
+ int auto_amp = 0;
+ int auto_amp_with_amp = 0;
 
 static int patch_lock;
 
@@ -247,7 +247,7 @@ struct _hndl {
 	struct _hndl *prev;
 };
 
-WildMidi_INTERNAL struct _hndl * first_handle = NULL;
+ struct _hndl * first_handle = NULL;
 
 //f: ( VOLUME / 127.0 ) * 1024.0
 static signed short int lin_volume[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 72,
@@ -1139,7 +1139,7 @@ static int WM_LoadConfig(const char *config_file) {
 
 /* sample loading */
 
-WildMidi_INTERNAL int load_sample(struct _patch *sample_patch) {
+ int load_sample(struct _patch *sample_patch) {
 	struct _sample *guspat = NULL;
 	struct _sample *tmp_sample = NULL;
 	unsigned int i = 0;
@@ -2308,7 +2308,7 @@ Init_MDI(void) {
 	return mdi;
 }
 
-WildMidi_INTERNAL unsigned long int get_decay_samples(struct _patch *patch, unsigned char note) {
+ unsigned long int get_decay_samples(struct _patch *patch, unsigned char note) {
 
 	struct _sample *sample = NULL;
 	unsigned long int freq = 0;

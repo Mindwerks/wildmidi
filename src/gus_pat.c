@@ -57,7 +57,7 @@
  */
 
 /* 8bit signed */
-WildMidi_INTERNAL int convert_8s(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8s(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -80,7 +80,7 @@ WildMidi_INTERNAL int convert_8s(unsigned char *data, struct _sample *gus_sample
 }
 
 /* 8bit signed ping pong */
-WildMidi_INTERNAL int convert_8sp(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8sp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -132,7 +132,7 @@ WildMidi_INTERNAL int convert_8sp(unsigned char *data, struct _sample *gus_sampl
 }
 
 /* 8bit signed reverse */
-WildMidi_INTERNAL int convert_8sr(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8sr(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -159,7 +159,7 @@ WildMidi_INTERNAL int convert_8sr(unsigned char *data, struct _sample *gus_sampl
 }
 
 /* 8bit signed reverse ping pong */
-WildMidi_INTERNAL int convert_8srp(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8srp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -210,7 +210,7 @@ WildMidi_INTERNAL int convert_8srp(unsigned char *data, struct _sample *gus_samp
 }
 
 /* 8bit unsigned */
-WildMidi_INTERNAL int convert_8u(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8u(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -231,7 +231,7 @@ WildMidi_INTERNAL int convert_8u(unsigned char *data, struct _sample *gus_sample
 }
 
 /* 8bit unsigned ping pong */
-WildMidi_INTERNAL int convert_8up(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8up(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -283,7 +283,7 @@ WildMidi_INTERNAL int convert_8up(unsigned char *data, struct _sample *gus_sampl
 }
 
 /* 8bit unsigned reverse */
-WildMidi_INTERNAL int convert_8ur(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8ur(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -310,7 +310,7 @@ WildMidi_INTERNAL int convert_8ur(unsigned char *data, struct _sample *gus_sampl
 }
 
 /* 8bit unsigned reverse ping pong */
-WildMidi_INTERNAL int convert_8urp(unsigned char *data, struct _sample *gus_sample) {
+ int convert_8urp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -360,7 +360,7 @@ WildMidi_INTERNAL int convert_8urp(unsigned char *data, struct _sample *gus_samp
 }
 
 /* 16bit signed */
-WildMidi_INTERNAL int convert_16s(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16s(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -385,7 +385,7 @@ WildMidi_INTERNAL int convert_16s(unsigned char *data, struct _sample *gus_sampl
 }
 
 /* 16bit signed ping pong */
-WildMidi_INTERNAL int convert_16sp(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16sp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -446,7 +446,7 @@ WildMidi_INTERNAL int convert_16sp(unsigned char *data, struct _sample *gus_samp
 }
 
 /* 16bit signed reverse */
-WildMidi_INTERNAL int convert_16sr(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16sr(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -477,7 +477,7 @@ WildMidi_INTERNAL int convert_16sr(unsigned char *data, struct _sample *gus_samp
 }
 
 /* 16bit signed reverse ping pong */
-WildMidi_INTERNAL int convert_16srp(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16srp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -534,7 +534,7 @@ WildMidi_INTERNAL int convert_16srp(unsigned char *data, struct _sample *gus_sam
 }
 
 /* 16bit unsigned */
-WildMidi_INTERNAL int convert_16u(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16u(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -559,7 +559,7 @@ WildMidi_INTERNAL int convert_16u(unsigned char *data, struct _sample *gus_sampl
 }
 
 /* 16bit unsigned ping pong */
-WildMidi_INTERNAL int convert_16up(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16up(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -620,7 +620,7 @@ WildMidi_INTERNAL int convert_16up(unsigned char *data, struct _sample *gus_samp
 }
 
 /* 16bit unsigned reverse */
-WildMidi_INTERNAL int convert_16ur(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16ur(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -651,7 +651,7 @@ WildMidi_INTERNAL int convert_16ur(unsigned char *data, struct _sample *gus_samp
 }
 
 /* 16bit unsigned reverse ping pong */
-WildMidi_INTERNAL int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
+ int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;

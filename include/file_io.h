@@ -30,6 +30,6 @@
 
 #include "config.h"
 
-WildMidi_INTERNAL extern unsigned char * WM_BufferFile (const char *filename, unsigned long int *size);
+ extern unsigned char * WM_BufferFile (const char *filename, unsigned long int *size);
 
 #endif // __FILE_IO_H

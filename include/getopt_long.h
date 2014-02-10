@@ -25,8 +25,8 @@ struct option
 #define required_argument 1
 #define optional_argument 2
 
-WildMidi_INTERNAL int getopt(int, char**, char*);
-WildMidi_INTERNAL int getopt_long(int, char**, char*, const struct option*, int*);
+ int getopt(int, char**, char*);
+ int getopt_long(int, char**, char*, const struct option*, int*);
 
 #ifdef __cplusplus
 }
