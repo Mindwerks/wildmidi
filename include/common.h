@@ -23,6 +23,7 @@
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
 */
+#include "config.h"
 
 #ifndef __COMMON_H
 #define __COMMON_H
@@ -42,7 +43,7 @@
 #define SAMPLE_CONVERT_DEBUG(dx)
 #endif
 
-extern unsigned short int WM_SampleRate;
+ extern unsigned short int WM_SampleRate;
 
 struct _sample {
 	unsigned long int data_length;
@@ -99,6 +100,5 @@ struct _patch {
 #ifndef inline
 #define inline __inline
 #endif
-
 
 #endif // __COMMON_H

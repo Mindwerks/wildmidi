@@ -28,6 +28,8 @@
 #ifndef __FILE_IO_H
 #define __FILE_IO_H
 
-extern unsigned char * WM_BufferFile (const char *filename, unsigned long int *size);
+#include "config.h"
+
+ extern unsigned char * WM_BufferFile (const char *filename, unsigned long int *size);
 
 #endif // __FILE_IO_H
