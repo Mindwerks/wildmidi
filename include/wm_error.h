@@ -24,6 +24,8 @@
  <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #ifndef __WM_ERROR_H
 #define __WM_ERROR_H
 
@@ -38,12 +40,12 @@
 #define WM_ERR_INVALID_ARG	8
 #define WM_ERR_ALR_INIT     9
 
-extern void WM_ERROR_NEW(const char * wmfmt, ...)
+ extern void WM_ERROR_NEW(const char * wmfmt, ...)
 #ifdef __GNUC__
 		__attribute__((format(printf, 1, 2))) // for tracking down formatting issues
 #endif
 		;
-extern void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
+ extern void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
 		const char * wmfor, int error);
 
 #endif //__WM_ERROR_H

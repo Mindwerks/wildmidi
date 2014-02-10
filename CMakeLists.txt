@@ -40,11 +40,18 @@ ENDIF(WANT_OSS OR WANT_OPENAL)
 
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC)
-    ADD_DEFINITIONS( -std=c99 -D_POSIX_C_SOURCE=200809L -pedantic -Wall -Wextra -W )
+    ADD_DEFINITIONS( 
+        -std=c99 
+        -D_POSIX_C_SOURCE=200809L 
+        -pedantic
+        -fvisibility=hidden
+        -Wall -Wextra -W
+        )
+    
     IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        ADD_DEFINITIONS( -ggdb3 -O0)
+        ADD_DEFINITIONS( -ggdb3 -O0 )
     ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Release")
-        ADD_DEFINITIONS( -O3)
+        ADD_DEFINITIONS( -O3 )
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
