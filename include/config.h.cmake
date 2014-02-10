@@ -33,6 +33,9 @@
 #cmakedefine HAVE_SYS_SOUNDCARD_H
 #cmakedefine HAVE_MACHINE_SOUNDCARD_H
 
+/* set some windows magic */
+#define WIN32_LEAN_AND_MEAN
+
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
     #ifdef __GNUC__
