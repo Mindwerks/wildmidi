@@ -1,6 +1,8 @@
 #ifndef __GETOPT_LONG_H__
 #define __GETOPT_LONG_H__
 
+#include "config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,8 +25,8 @@ struct option
 #define required_argument 1
 #define optional_argument 2
 
-int getopt(int, char**, char*);
-int getopt_long(int, char**, char*, const struct option*, int*);
+WildMidi_INTERNAL int getopt(int, char**, char*);
+WildMidi_INTERNAL int getopt_long(int, char**, char*, const struct option*, int*);
 
 #ifdef __cplusplus
 }
