@@ -63,18 +63,26 @@ IF(NOT WIN32 AND NOT APPLE)
             FIND_PACKAGE(ALSA REQUIRED)
         ELSEIF(WANT_OSS)
             FIND_PACKAGE(OSS REQUIRED)
+        ELSEIF(WANT_OPENAL)
+            FIND_PACKAGE(OpenAL REQUIRED)
         ELSE(WANT_ALSA) # Try to auto-detect
             FIND_PACKAGE(ALSA)
             IF (NOT ALSA_FOUND)
                 FIND_PACKAGE(OSS)
             ENDIF(NOT ALSA_FOUND)
+            IF (NOT OSS_FOUND)
+                FIND_PACKAGE(OpenAL)
+            ENDIF(NOT OSS_FOUND)
+            IF (NOT OpenAL_FOUND)
+                MESSAGE(WARNING "Could not detect a sound device, building without.")
+            ENDIF(NOT OpenAL_FOUND)
         ENDIF(WANT_ALSA)
     ENDIF(WANT_PLAYER)
     
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m REQUIRED)
     
-    # set our default linux config
+    # set our default linux/*bsd config
     SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg")
     
     ## Debian and non debian Linux building
@@ -101,8 +109,8 @@ ENDIF (WIN32)
 # OpenAL support (multi-platform
 IF (WANT_PLAYER AND OPENAL_FOUND)
     SET(HAVE_OPENAL_H 1)
+    INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 ENDIF (WANT_PLAYER AND OPENAL_FOUND)
-
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR} include ${ALSA_INCLUDE_DIR})
