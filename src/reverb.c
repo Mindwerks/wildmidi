@@ -112,9 +112,9 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
     */
 
 	//distance
-	double SPL_DST[8];
-	double SPR_DST[8];
-	double RFN_DST[8];
+	double SPL_DST[8] = {0.0};
+	double SPR_DST[8] = {0.0};
+	double RFN_DST[8] = {0.0};
 
 	double MAXL_DST = 0.0;
 	double MAXR_DST = 0.0;
