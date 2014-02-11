@@ -695,6 +695,24 @@ static void close_oss_output(void) {
 	audio_fd = -1;
 }
 
+#elif defined HAVE_OPENAL_H
+
+static int write_openal_output(char * output_data, int output_size);
+static void close_openal_output(void);
+
+static int open_openal_output(void) {
+	send_output = write_openal_output;
+	close_output = close_openal_output;
+	return 0;
+}
+
+static int write_openal_output(char * output_data, int output_size) {
+	return 0;
+}
+
+static void close_openal_output(void) {
+
+}
 #endif // HAVE_ALSA_H
 #endif
 
@@ -874,7 +892,9 @@ int main(int argc, char **argv) {
 #ifdef HAVE_ALSA_H
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
-				if (open_oss_output() == -1) {
+			if (open_oss_output() == -1) {
+#elif (defined HAVE_OPENAL_H)
+			if (open_openal_output() == -1) {
 #else
 			{
 #endif
