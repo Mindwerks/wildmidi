@@ -46,6 +46,7 @@
 #include <tchar.h>
 #define strcasecmp _stricmp
 #define strncasecmp _tcsnicmp
+#define strdup _strdup
 #endif
 
 #include "wm_error.h"
@@ -4002,14 +4003,3 @@ int WildMidi_Shutdown(void) {
 	WM_Initialized = 0;
 	return 0;
 }
-
-#ifdef _WIN32
-char *strdup(const char *str) {
-	int n = strlen(str) + 1;
-	char *dup = malloc(n * sizeof(char));
-	if (dup) {
-		strcpy(dup, str);
-	}
-	return dup;
-}
-#endif
