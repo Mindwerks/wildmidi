@@ -53,14 +53,15 @@ int msleep(unsigned long millisec);
 #else
 # ifdef HAVE_ALSA_H
 #  include <alsa/asoundlib.h>
-# else
-#  ifdef HAVE_SYS_SOUNDCARD_H
+# elif defined HAVE_SYS_SOUNDCARD_H
 #   include <sys/soundcard.h>
-#  elif defined HAVE_LINUX_SOUNDCARD_H
+# elif defined HAVE_LINUX_SOUNDCARD_H
 #   include <linux/soundcard.h>
-#  elif defined HAVE_MACHINE_SOUNDCARD_H
+# elif defined HAVE_MACHINE_SOUNDCARD_H
 #   include <machine/soundcard.h>
-#  endif
+# elif defined HAVE_OPENAL_H
+#   include <al.h>
+#   include <alc.h>
 # endif
 #endif
 
@@ -675,13 +676,13 @@ static int write_oss_output(char * output_data, int output_size) {
 			free_size = count.ptr - counter;
 		}
 		if (free_size > output_size)
-			free_size = output_size;
+		free_size = output_size;
 
 		memcpy(&buffer[counter], &output_data[data_read], free_size);
 		data_read += free_size;
 		counter += free_size;
 		if (counter >= max_buffer)
-			counter = 0;
+		counter = 0;
 		output_size -= free_size;
 	}
 	return 0;
@@ -690,7 +691,7 @@ static int write_oss_output(char * output_data, int output_size) {
 static void close_oss_output(void) {
 	shutdown_output();
 	if (buffer != NULL)
-		munmap(buffer, info.fragstotal * info.fragsize);
+	munmap(buffer, info.fragstotal * info.fragsize);
 	audio_fd = -1;
 }
 
@@ -873,9 +874,9 @@ int main(int argc, char **argv) {
 #ifdef HAVE_ALSA_H
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
-			if (open_oss_output() == -1) {
+				if (open_oss_output() == -1) {
 #else
-                {
+			{
 #endif
 #endif
 				return 0;
@@ -1061,15 +1062,15 @@ int main(int argc, char **argv) {
 					{
 						memset(modes, ' ', sizeof(char) * 4);
 						if (mixer_options & WM_MO_LOG_VOLUME) {
-							memset(modes,'l',1);
+							memset(modes, 'l', 1);
 						}
 						if (mixer_options & WM_MO_REVERB) {
-							memset(modes+1,'r',1);
+							memset(modes + 1, 'r', 1);
 						}
 						if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-							memset(modes+2,'e',1);
+							memset(modes + 2, 'e', 1);
 						}
-						memset(modes+3,'\0',1);
+						memset(modes + 3, '\0', 1);
 					}
 					fprintf(stderr,
 							"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
@@ -1103,15 +1104,15 @@ int main(int argc, char **argv) {
 				{
 					memset(modes, ' ', sizeof(char) * 4);
 					if (mixer_options & WM_MO_LOG_VOLUME) {
-						memset(modes,'l',1);
+						memset(modes, 'l', 1);
 					}
 					if (mixer_options & WM_MO_REVERB) {
-						memset(modes+1,'r',1);
+						memset(modes + 1, 'r', 1);
 					}
 					if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-						memset(modes+2,'e',1);
+						memset(modes + 2, 'e', 1);
 					}
-					memset(modes+3,'\0',1);
+					memset(modes + 3, '\0', 1);
 				}
 				fprintf(stderr,
 						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  \r",
