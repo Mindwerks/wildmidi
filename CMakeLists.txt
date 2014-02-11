@@ -29,13 +29,9 @@ MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 # Set our optoins
 OPTION(WANT_PLAYER      "Build WildMIDI player in addition to the libraries" ON)
 OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OFF)
-OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" ON)
+OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
-
-IF(WANT_OSS)
-    SET(WANT_ALSA OFF)
-ENDIF(WANT_OSS)
 
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC)
@@ -60,14 +56,17 @@ SET(WILDMIDI_CFG "wildmidi.cfg")
 # UNIX-like environments
 IF(NOT WIN32 AND NOT APPLE)
 
-    # go looking for available sound packages for WildMIDI player
-    IF(WANT_PLAYER)
+    # Go looking for available sound packages for WildMIDI player
+    IF(WANT_PLAYER) # Set our preferred output
         IF(WANT_ALSA)
             FIND_PACKAGE(ALSA REQUIRED)
         ELSEIF(WANT_OSS)
             FIND_PACKAGE(OSS REQUIRED)
-        ELSE(WANT_ALSA)
-            MESSAGE(FATAL_ERROR "You must choose either ALSA or OSS.")
+        ELSE(WANT_ALSA) # Try to auto-detect
+            FIND_PACKAGE(ALSA)
+            IF (NOT ALSA_FOUND)
+                FIND_PACKAGE(OSS)
+            ENDIF(NOT ALSA_FOUND)
         ENDIF(WANT_ALSA)
     ENDIF(WANT_PLAYER)
     
