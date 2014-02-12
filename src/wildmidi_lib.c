@@ -61,19 +61,19 @@
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
     #ifdef __GNUC__
-        #define SYMBOL __attribute__ ((dllexport))
+        #define WM_SYMBOL __attribute__ ((dllexport))
     #else
-        #define SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+        #define WM_SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
     #endif
 #else
   #if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
-        #define SYMBOL __attribute__ ((visibility ("default")))
+        #define WM_SYMBOL __attribute__ ((visibility ("default")))
   #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
-        #define SYMBOL __hidden
+        #define WM_SYMBOL __hidden
   #elif __GNUC__ >= 4
-        #define SYMBOL __attribute__ ((visibility ("default")))
+        #define WM_SYMBOL __attribute__ ((visibility ("default")))
   #else
-        #define SYMBOL
+        #define WM_SYMBOL
   #endif
 #endif
 
@@ -3554,7 +3554,7 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
  * =========================
  */
 
-SYMBOL const char *
+WM_SYMBOL const char *
 WildMidi_GetString(unsigned short int info) {
 	switch (info) {
 	case WM_GS_VERSION:
@@ -3563,7 +3563,7 @@ WildMidi_GetString(unsigned short int info) {
 	return NULL;
 }
 
-SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,
+WM_SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,
 		unsigned short int options) {
 	if (WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_ALR_INIT, NULL, 0);
@@ -3602,7 +3602,7 @@ SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,
 	return 0;
 }
 
-SYMBOL int WildMidi_MasterVolume(unsigned char master_volume) {
+WM_SYMBOL int WildMidi_MasterVolume(unsigned char master_volume) {
 	struct _mdi *mdi = NULL;
 	struct _hndl * tmp_handle = first_handle;
 	int i = 0;
@@ -3632,7 +3632,7 @@ SYMBOL int WildMidi_MasterVolume(unsigned char master_volume) {
 	return 0;
 }
 
-SYMBOL int WildMidi_Close(midi * handle) {
+WM_SYMBOL int WildMidi_Close(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 	struct _hndl * tmp_handle;
 	struct _sample *tmp_sample;
@@ -3715,7 +3715,7 @@ SYMBOL int WildMidi_Close(midi * handle) {
 	return 0;
 }
 
-SYMBOL midi *
+WM_SYMBOL midi *
 WildMidi_Open(const char *midifile) {
 	unsigned char *mididata = NULL;
 	unsigned long int midisize = 0;
@@ -3748,7 +3748,7 @@ WildMidi_Open(const char *midifile) {
 	return ret;
 }
 
-SYMBOL midi *
+WM_SYMBOL midi *
 WildMidi_OpenBuffer(unsigned char *midibuffer, unsigned long int size) {
 	midi * ret = NULL;
 
@@ -3773,7 +3773,7 @@ WildMidi_OpenBuffer(unsigned char *midibuffer, unsigned long int size) {
 	return ret;
 }
 
-SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
+WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 	unsigned long int real_samples_to_mix = 0;
 	unsigned long int count;
@@ -3874,7 +3874,7 @@ SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	return 0;
 }
 
-SYMBOL int WildMidi_GetOutput(midi * handle, char * buffer, unsigned long int size) {
+WM_SYMBOL int WildMidi_GetOutput(midi * handle, char * buffer, unsigned long int size) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 
 	if (__builtin_expect((!WM_Initialized), 0)) {
@@ -3908,7 +3908,7 @@ SYMBOL int WildMidi_GetOutput(midi * handle, char * buffer, unsigned long int si
 	}
 }
 
-SYMBOL int WildMidi_SetOption(midi * handle, unsigned short int options,
+WM_SYMBOL int WildMidi_SetOption(midi * handle, unsigned short int options,
 		unsigned short int setting) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 	struct _note *note_data = mdi->note;
@@ -3964,7 +3964,7 @@ SYMBOL int WildMidi_SetOption(midi * handle, unsigned short int options,
 	return 0;
 }
 
-SYMBOL struct _WM_Info *
+WM_SYMBOL struct _WM_Info *
 WildMidi_GetInfo(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 	if (!WM_Initialized) {
@@ -4002,7 +4002,7 @@ WildMidi_GetInfo(midi * handle) {
 	return mdi->tmp_info;
 }
 
-SYMBOL int WildMidi_Shutdown(void) {
+WM_SYMBOL int WildMidi_Shutdown(void) {
 	struct _hndl * tmp_hdle;
 
 	if (!WM_Initialized) {
