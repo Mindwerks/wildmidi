@@ -86,11 +86,8 @@ IF(WANT_PLAYER)
     
     TARGET_LINK_LIBRARIES(wildmidi 
         ${WILDMIDILIB}
-        ${ALSA_LIBRARY}
-        ${OSS_LIBRARY}
         ${M_LIBRARY}
-        ${COREAUDIO_LIBRARY}
-        ${COREFOUNDATION_LIBRARY}
+        ${AUDIO_LIBRARY}
         )
 ENDIF(WANT_PLAYER)
 
