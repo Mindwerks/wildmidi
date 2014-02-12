@@ -24,6 +24,25 @@
     <http://www.gnu.org/licenses/>.
 */
 
+/* set our symbol export visiblity */
+#if defined _WIN32 || defined __CYGWIN__
+    #ifdef __GNUC__
+        #define SYMBOL __attribute__ ((dllexport))
+    #else
+        #define SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+#else
+  #if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+        #define SYMBOL __attribute__ ((visibility ("default")))
+  #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+        #define SYMBOL __hidden
+  #elif __GNUC__ >= 4
+        #define SYMBOL __attribute__ ((visibility ("default")))
+  #else
+        #define SYMBOL
+  #endif
+#endif
+
 #define WM_MO_LOG_VOLUME	0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
