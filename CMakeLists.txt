@@ -30,13 +30,9 @@ MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 # Set our optoins
 OPTION(WANT_PLAYER      "Build WildMIDI player in addition to the libraries" ON)
 OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OFF)
-OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" ON)
+OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
-
-IF(WANT_OSS)
-    SET(WANT_ALSA OFF)
-ENDIF(WANT_OSS)
 
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC)
@@ -61,14 +57,26 @@ SET(WILDMIDI_CFG "wildmidi.cfg")
 # UNIX-like environments
 IF(NOT WIN32 AND NOT APPLE)
 
-    # go looking for available sound packages for WildMIDI player
-    IF(WANT_PLAYER)
+    SET(AUDIO_LIBRARY "")
+    # Go looking for available sound packages for WildMIDI player
+    IF(WANT_PLAYER) # Set our preferred output
         IF(WANT_ALSA)
             FIND_PACKAGE(ALSA REQUIRED)
+            SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
         ELSEIF(WANT_OSS)
             FIND_PACKAGE(OSS REQUIRED)
-        ELSE(WANT_ALSA)
-            MESSAGE(FATAL_ERROR "You must choose either ALSA or OSS.")
+        ELSE(WANT_ALSA) # Try to auto-detect
+            FIND_PACKAGE(ALSA)
+            IF (ALSA_FOUND)
+                SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
+            ELSE(ALSA_FOUND)
+                FIND_PACKAGE(OSS)
+                IF (OSS_FOUND)
+                    SET(AUDIO_LIBRARY ${OSS_LIBRARY})
+                ELSE(OSS_FOUND)
+                    MESSAGE(WARNING "Could not find an audio sub-system!")
+                ENDIF(OSS_FOUND)
+            ENDIF(ALSA_FOUND)
         ENDIF(WANT_ALSA)
     ENDIF(WANT_PLAYER)
     
@@ -90,7 +98,8 @@ IF (APPLE)
    IF (WANT_PLAYER AND WANT_COREAUDIO)
         FIND_LIBRARY(COREAUDIO_LIBRARY CoreAudio REQUIRED)
         FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
-	CHECK_INCLUDE_FILES(CoreAudio/CoreAudio.h HAVE_COREAUDIO_H)
+        CHECK_INCLUDE_FILES(CoreAudio/CoreAudio.h HAVE_COREAUDIO_H)
+        SET(AUDIO_LIBRARY "${COREAUDIO_LIBRARY} ${COREFOUNDATION_LIBRARY}"})
    ENDIF(WANT_PLAYER AND WANT_COREAUDIO)
 ENDIF (APPLE)
 
@@ -99,7 +108,7 @@ IF (WIN32)
 ENDIF (WIN32)
 
 # ######### General setup ##########
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR} include ${ALSA_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(include) # TODO: temp until we move to another layout
 
 IF (APPLE)
     SET(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
