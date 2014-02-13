@@ -35,6 +35,9 @@
 #include <sys/types.h>
 
 #ifndef _WIN32
+# if (defined __gnu_hurd__)
+# define __USE_XOPEN 1
+# endif
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
