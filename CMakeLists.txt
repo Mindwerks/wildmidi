@@ -68,6 +68,7 @@ IF(NOT WIN32 AND NOT APPLE)
             SET(AUDIO_LIBRARY ${OSS_LIBRARY})
         ELSEIF(WANT_OPENAL)
             FIND_PACKAGE(OpenAL REQUIRED)
+            SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
         ELSE(WANT_ALSA) # Try to auto-detect
             FIND_PACKAGE(ALSA)
             IF (ALSA_FOUND)
