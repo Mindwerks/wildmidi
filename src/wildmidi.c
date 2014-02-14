@@ -224,14 +224,14 @@ static int open_wav_output(void) {
 			0x00, 0x00, 0x00 };
 
 	if (wav_file[0] == '\0')
-		return -1;
+		return (-1);
 #ifdef _WIN32
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY))) < 0) {
 #else
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
 			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
 #endif
-		return -1;
+		return (-1);
 	} else {
 		unsigned long int bytes_per_sec;
 
@@ -248,24 +248,24 @@ static int open_wav_output(void) {
 	if (write(audio_fd, &wav_hdr, 44) < 0) {
 		printf("ERROR: Writing Header %s\r\n", strerror(errno));
 		shutdown_output();
-		return -1;
+		return (-1);
 	}
 
 	wav_size = 0;
 	send_output = write_wav_output;
 	close_output = close_wav_output;
-	return 0;
+	return (0);
 }
 
 static int write_wav_output(char * output_data, int output_size) {
 	if (write(audio_fd, output_data, output_size) < 0) {
 		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
-		return -1;
+		return (-1);
 	}
 
 	wav_size += output_size;
-	return 0;
+	return (0);
 }
 
 static void close_wav_output(void) {
@@ -368,7 +368,7 @@ open_mm_output ( void ) {
 
 	send_output = write_mm_output;
 	close_output = close_mm_output;
-	return 0;
+	return (0);
 }
 
 static int
@@ -391,7 +391,7 @@ write_mm_output (char * output_data, int output_size) {
 		data_read += free_size;
 
 		if (current->dwUser < MM_BLOCK_SIZE) {
-			return 0;
+			return (0);
 		}
 
 		current->dwBufferLength = MM_BLOCK_SIZE;
@@ -407,7 +407,7 @@ write_mm_output (char * output_data, int output_size) {
 		current = &mm_blocks[mm_current_block];
 		current->dwUser = 0;
 	}
-	return 0;
+	return (0);
 }
 
 static void
@@ -517,7 +517,7 @@ open_alsa_output(void) {
 	if (pcmname != NULL) {
 		free (pcmname);
 	}
-	return 0;
+	return (0);
 }
 
 static int
@@ -544,7 +544,7 @@ write_alsa_output (char * output_data, int output_size) {
 			snd_pcm_start(pcm);
 		}
 	}
-	return 0;
+	return (0);
 }
 
 static void
@@ -653,7 +653,7 @@ static int open_oss_output(void) {
 	buffer_delay = 1000000 / (rate / 4);
 	send_output = write_oss_output;
 	close_output = close_oss_output;
-	return 0;
+	return (0);
 }
 
 static int write_oss_output(char * output_data, int output_size) {
@@ -688,7 +688,7 @@ static int write_oss_output(char * output_data, int output_size) {
 		counter = 0;
 		output_size -= free_size;
 	}
-	return 0;
+	return (0);
 }
 
 static void close_oss_output(void) {
@@ -700,22 +700,70 @@ static void close_oss_output(void) {
 
 #elif defined HAVE_OPENAL_H
 
+struct position{
+	ALfloat x;
+	ALfloat y;
+	ALfloat z;
+};
+
+ALCdevice *device;
+ALCcontext *context;
+ALuint sourceId;
+ALuint bufferId;
+
 static int write_openal_output(char * output_data, int output_size);
-static void close_openal_output(void);
+
+static void close_openal_output(void) {
+	alSourceStop(sourceId);				// stop playing
+	alSourcei(sourceId, AL_BUFFER, 0); 	// unload buffer from source
+	alDeleteBuffers(1, &bufferId);
+	alDeleteSources(1, &sourceId);
+
+	alcDestroyContext(context);
+	alcCloseDevice(device);
+}
 
 static int open_openal_output(void) {
+    const ALCchar *devnames;
+    ALCchar *devname;
+
+    if(alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
+        devnames = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+    else
+        devnames = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+    while(devnames && *devnames){
+    	printf("Device: %s\n", devnames);
+        devnames += strlen(devnames)+1;
+        devname = devnames; // TODO: allocate and do a strcpy
+    }
+
+    // setup our audio devices and contexts
+	device = alcOpenDevice(devname);
+	if (!device) {
+		printf("OpenAL: Unable to open default device.\n");
+		return (-1);
+	}
+
+	context = alcCreateContext(device, NULL);
+	if (!alcMakeContextCurrent(context)) {
+		printf("OpenAL: Failed to create the default context.\n");
+		return (-1);
+	}
+
+	unsigned char * buffers;
+
+	// setup our sources
+	alGenSources(1, &sourceId);
+
 	send_output = write_openal_output;
 	close_output = close_openal_output;
-	return 0;
+	return (0);
 }
 
 static int write_openal_output(char * output_data, int output_size) {
-	return 0;
+	return (0);
 }
 
-static void close_openal_output(void) {
-
-}
 #endif // HAVE_ALSA_H
 #endif
 
@@ -824,11 +872,11 @@ int main(int argc, char **argv) {
 			break;
 		switch (i) {
 		case 'v': // Version
-			return 0;
+			return (0);
 		case 'h': // help
 			do_syntax();
 			do_help();
-			return 0;
+			return (0);
 		case 'r': // SoundCard Rate
 			rate = atoi(optarg);
 			break;
@@ -872,7 +920,7 @@ int main(int argc, char **argv) {
 			break;
 		default:
 			printf("Unknown Option -%o ??\r\n", i);
-			return 0;
+			return (0);
 		}
 	}
 
@@ -886,7 +934,7 @@ int main(int argc, char **argv) {
 
 		if (wav_file[0] != '\0') {
 			if (open_wav_output() == -1) {
-				return 0;
+				return (0);
 			}
 		} else {
 #if (defined _WIN32) || (defined __CYGWIN__)
@@ -902,7 +950,7 @@ int main(int argc, char **argv) {
 			{
 #endif
 #endif
-				return 0;
+				return (0);
 			}
 		}
 		printf("Initializing %s\n\r\n", WildMidi_GetString(WM_GS_VERSION));
@@ -913,7 +961,7 @@ int main(int argc, char **argv) {
 		printf("                     p  Pause On/Off\n\r\n");
 
 		if (WildMidi_Init(config_file, rate, mixer_options) == -1) {
-			return 0;
+			return (0);
 		}
 		WildMidi_MasterVolume(master_volume);
 
@@ -922,7 +970,7 @@ int main(int argc, char **argv) {
 		if (output_buffer == NULL) {
 			printf("Not enough ram, exiting\r\n");
 			WildMidi_Shutdown();
-			return 0;
+			return (0);
 		}
 #ifndef _WIN32
 		my_tty = fileno(stdin);
@@ -1172,13 +1220,13 @@ int main(int argc, char **argv) {
 	} else {
 		printf("ERROR: No midi file given\r\n");
 		do_syntax();
-		return 0;
+		return (0);
 	}
 
 	if (output_buffer != NULL)
 		free(output_buffer);
 	printf("\r");
-	return 0;
+	return (0);
 }
 
 #ifndef _WIN32
@@ -1190,6 +1238,6 @@ int msleep(unsigned long milisec) {
 	req.tv_nsec = milisec * 1000000L;
 	while (nanosleep(&req, &req) == -1)
 		continue;
-	return 1;
+	return (1);
 }
 #endif
