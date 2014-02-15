@@ -700,7 +700,7 @@ static void close_oss_output(void) {
 
 #elif defined HAVE_OPENAL_H
 
-struct position{
+struct position {
 	ALfloat x;
 	ALfloat y;
 	ALfloat z;
@@ -711,7 +711,32 @@ ALCcontext *context;
 ALuint sourceId;
 ALuint bufferId;
 
-static int write_openal_output(char * output_data, int output_size);
+static int write_openal_output(char * output_data, int output_size) {
+	ALenum state = 0;
+
+	alGenBuffers(1, &bufferId);
+	alBufferData(bufferId, AL_FORMAT_STEREO16, &output_data, output_size, rate);
+	alSourcei(sourceId, AL_BUFFER, bufferId);
+	alSourcePlay(sourceId);
+	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+
+	//printf("DEBUG: %lu - %d\n", sizeof(output_data), output_size);
+
+	while (state == AL_PLAYING) {
+		//printf("Sleeping for 5ms...\n");
+		msleep(1);
+		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	}
+
+	//printf("Done sleeping!\n");
+	alSourceStop(sourceId);			// stop playing
+	alSourcei(sourceId, AL_BUFFER, 0); // unload buffer from source
+	alDeleteBuffers(1, &bufferId);		// delete buffer
+	bufferId = 0;				// reset bufferId
+	//std::cout << "Error: " << alGetError() << std::endl;
+
+	return (0);
+}
 
 static void close_openal_output(void) {
 	alSourceStop(sourceId);				// stop playing
@@ -724,20 +749,20 @@ static void close_openal_output(void) {
 }
 
 static int open_openal_output(void) {
-    const ALCchar *devnames;
-    ALCchar *devname;
+	const ALCchar *devnames;
+	ALCchar *devname;
 
-    if(alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
-        devnames = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-    else
-        devnames = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-    while(devnames && *devnames){
-    	printf("Device: %s\n", devnames);
-        devnames += strlen(devnames)+1;
-        devname = devnames; // TODO: allocate and do a strcpy
-    }
+	if (alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
+		devnames = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+	else
+		devnames = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+	while (devnames && *devnames) {
+		printf("Device: %s\n", devnames);
+		devnames += strlen(devnames) + 1;
+		devname = devnames; // TODO: allocate and do a strcpy
+	}
 
-    // setup our audio devices and contexts
+	// setup our audio devices and contexts
 	device = alcOpenDevice(devname);
 	if (!device) {
 		printf("OpenAL: Unable to open default device.\n");
@@ -750,17 +775,11 @@ static int open_openal_output(void) {
 		return (-1);
 	}
 
-	unsigned char * buffers;
-
 	// setup our sources
 	alGenSources(1, &sourceId);
 
 	send_output = write_openal_output;
 	close_output = close_openal_output;
-	return (0);
-}
-
-static int write_openal_output(char * output_data, int output_size) {
 	return (0);
 }
 
@@ -943,11 +962,11 @@ int main(int argc, char **argv) {
 #ifdef HAVE_ALSA_H
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
-			if (open_oss_output() == -1) {
+				if (open_oss_output() == -1) {
 #elif (defined HAVE_OPENAL_H)
 			if (open_openal_output() == -1) {
 #else
-			{
+				{
 #endif
 #endif
 				return (0);
