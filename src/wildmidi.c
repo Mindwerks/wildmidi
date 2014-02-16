@@ -685,7 +685,7 @@ static int write_oss_output(char * output_data, int output_size) {
 		data_read += free_size;
 		counter += free_size;
 		if (counter >= max_buffer)
-		counter = 0;
+			counter = 0;
 		output_size -= free_size;
 	}
 	return (0);
@@ -708,31 +708,38 @@ struct position {
 
 ALCdevice *device;
 ALCcontext *context;
-ALuint sourceId;
-ALuint bufferId;
+ALuint sourceId = 0;
+ALuint bufferId = 0;
 
 static int write_openal_output(char * output_data, int output_size) {
 	ALenum state = 0;
 
-	alGenBuffers(1, &bufferId);
-	alBufferData(bufferId, AL_FORMAT_STEREO16, &output_data, output_size, rate);
+	alBufferData(bufferId, AL_FORMAT_STEREO16, output_data, output_size, rate);
 	alSourcei(sourceId, AL_BUFFER, bufferId);
 	alSourcePlay(sourceId);
-	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	//alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
 
-	//printf("DEBUG: %lu - %d\n", sizeof(output_data), output_size);
+	//printf("DEBUG: %d - %lu - %d - %d - %d\n", alGetError(), sizeof(output_data), output_size/sizeof(output_data), output_size, rate);
 
+	/*
 	while (state == AL_PLAYING) {
-		//printf("Sleeping for 5ms...\n");
+		//printf("Sleeping for 5ms...");
 		msleep(1);
 		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+		//printf("Error: %d ", );
 	}
+	*/
+	//msleep(35);
+	do {
+		msleep(1);
+		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	} while (state == AL_PLAYING);
 
 	//printf("Done sleeping!\n");
-	alSourceStop(sourceId);			// stop playing
+	//alSourceStop(sourceId);			// stop playing
 	alSourcei(sourceId, AL_BUFFER, 0); // unload buffer from source
-	alDeleteBuffers(1, &bufferId);		// delete buffer
-	bufferId = 0;				// reset bufferId
+	//alDeleteBuffers(1, &bufferId);		// delete buffer
+	//bufferId = 0;				// reset bufferId
 	//std::cout << "Error: " << alGetError() << std::endl;
 
 	return (0);
@@ -775,8 +782,9 @@ static int open_openal_output(void) {
 		return (-1);
 	}
 
-	// setup our sources
+	// setup our sources and buffers
 	alGenSources(1, &sourceId);
+	alGenBuffers(1, &bufferId);
 
 	send_output = write_openal_output;
 	close_output = close_openal_output;
