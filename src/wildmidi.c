@@ -700,6 +700,9 @@ static void close_oss_output(void) {
 
 #elif defined HAVE_OPENAL_H
 
+#define NUM_BUFFERS 1024
+#define PRIME 128
+
 struct position {
 	ALfloat x;
 	ALfloat y;
@@ -709,13 +712,38 @@ struct position {
 ALCdevice *device;
 ALCcontext *context;
 ALuint sourceId = 0;
-ALuint bufferId = 0;
+ALuint buffers[NUM_BUFFERS];
+ALuint frames = 0;
 
 static int write_openal_output(char * output_data, int output_size) {
 	ALint processed, state;
 
-	/* Get relevant source info */
 	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	if(alGetError() != AL_NO_ERROR)
+		fprintf(stderr, "derp\n");
+
+	//fprintf(stderr, "Frame: %i \n",frames);
+
+	if (frames <= PRIME) { // prime the pump
+		alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data,
+				output_size, rate);
+		if (alGetError() != AL_NO_ERROR)
+			fprintf(stderr, "Error buffering for playback\n");
+
+		/* Now queue and start playback! */
+		if (frames == PRIME) {
+			alSourceQueueBuffers(sourceId, frames, buffers);
+			alSourcePlay(sourceId);
+			if (alGetError() != AL_NO_ERROR)
+				fprintf(stderr, "Error starting playback1\n");
+		}
+		frames++; // running tally of frames processed
+		return 0;
+	}
+
+	frames++; // running tally of frames processed
+
+	/* Get relevant source info */
 	alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
 	if (alGetError() != AL_NO_ERROR) {
 		fprintf(stderr, "Error checking source state\n");
@@ -742,14 +770,6 @@ static int write_openal_output(char * output_data, int output_size) {
 
 	}
 
-//	if(state != AL_PLAYING)
-//		alSourcePlay(sourceId);
-//
-//	if(alGetError() != AL_NO_ERROR) {
-//		fprintf(stderr, "Error starting playback\n");
-//	    return 0;
-//	}
-
 	/* Make sure the source hasn't underrun */
 	if (state != AL_PLAYING && state != AL_PAUSED) {
 		ALint queued;
@@ -759,7 +779,7 @@ static int write_openal_output(char * output_data, int output_size) {
 		//if(queued == 0)
 		//	return (-1);
 
-		printf("STATE: %d - %d\n", state, queued);
+		//printf("STATE: %#08x - %d\n", state, queued);
 
 		alSourcePlay(sourceId);
 		if (alGetError() != AL_NO_ERROR) {
@@ -768,7 +788,7 @@ static int write_openal_output(char * output_data, int output_size) {
 		}
 	}
 
-	msleep(35);
+	msleep(30);
 
 	return (0);
 }
@@ -776,7 +796,7 @@ static int write_openal_output(char * output_data, int output_size) {
 static void close_openal_output(void) {
 	alSourceStop(sourceId);				// stop playing
 	alSourcei(sourceId, AL_BUFFER, 0); 	// unload buffer from source
-	alDeleteBuffers(1, &bufferId);
+	alDeleteBuffers(NUM_BUFFERS, buffers);
 	alDeleteSources(1, &sourceId);
 
 	alcDestroyContext(context);
@@ -802,7 +822,7 @@ static int open_openal_output(void) {
 
 	// setup our sources and buffers
 	alGenSources(1, &sourceId);
-	alGenBuffers(1, &bufferId);
+	alGenBuffers(NUM_BUFFERS, buffers);
 
 	send_output = write_openal_output;
 	close_output = close_openal_output;
