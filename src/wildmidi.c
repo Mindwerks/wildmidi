@@ -431,11 +431,10 @@ int bps;
 int alsa_first_time = 1;
 static snd_pcm_t *pcm;
 
-static int write_alsa_output (char * output_data, int output_size);
-static void close_alsa_output ( void );
+static int write_alsa_output(char * output_data, int output_size);
+static void close_alsa_output(void);
 
-static int
-open_alsa_output(void) {
+static int open_alsa_output(void) {
 	snd_pcm_hw_params_t *hw;
 	snd_pcm_sw_params_t *sw;
 	int err;
@@ -443,42 +442,45 @@ open_alsa_output(void) {
 	unsigned int alsa_period_time;
 
 	if (!pcmname) {
-		pcmname = malloc (8);
-		strcpy(pcmname,"default\0");
+		pcmname = malloc(8);
+		strcpy(pcmname, "default\0");
 	}
 
-	if ((err = snd_pcm_open (&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-		printf("Error: audio open error: %s\r\n", snd_strerror (-err));
+	if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+		printf("Error: audio open error: %s\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	snd_pcm_hw_params_alloca (&hw);
+	snd_pcm_hw_params_alloca(&hw);
 
 	if ((err = snd_pcm_hw_params_any(pcm, hw)) < 0) {
-		printf("ERROR: No configuration available for playback: %s\r\n", snd_strerror(-err));
+		printf("ERROR: No configuration available for playback: %s\r\n",
+				snd_strerror(-err));
 
 		return -1;
 	}
 
-	if ((err = snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
+	if ((err = snd_pcm_hw_params_set_access(pcm, hw,
+			SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
 		printf("Cannot set mmap'ed mode: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	if (snd_pcm_hw_params_set_format (pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
-		printf("ALSA does not support 16bit signed audio for your soundcard\r\n");
+	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
+		printf(
+				"ALSA does not support 16bit signed audio for your soundcard\r\n");
 		close_alsa_output();
 		return -1;
 	}
 
-	if (snd_pcm_hw_params_set_channels (pcm, hw, 2) < 0) {
+	if (snd_pcm_hw_params_set_channels(pcm, hw, 2) < 0) {
 		printf("ALSA does not support stereo for your soundcard\r\n");
 		close_alsa_output();
 		return -1;
 	}
 
 	if (snd_pcm_hw_params_set_rate_near(pcm, hw, &rate, 0) < 0) {
-		printf("ALSA does not support %iHz for your soundcard\r\n",rate);
+		printf("ALSA does not support %iHz for your soundcard\r\n", rate);
 		close_alsa_output();
 		return -1;
 	}
@@ -486,28 +488,26 @@ open_alsa_output(void) {
 	alsa_buffer_time = 500000;
 	alsa_period_time = 50000;
 
-	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw, &alsa_buffer_time, 0)) < 0)
-	{
+	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw,
+			&alsa_buffer_time, 0)) < 0) {
 		printf("Set buffer time failed: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	if ((err = snd_pcm_hw_params_set_period_time_near(pcm, hw, &alsa_period_time, 0)) < 0)
-	{
+	if ((err = snd_pcm_hw_params_set_period_time_near(pcm, hw,
+			&alsa_period_time, 0)) < 0) {
 		printf("Set period time failed: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	if (snd_pcm_hw_params(pcm, hw) < 0)
-	{
+	if (snd_pcm_hw_params(pcm, hw) < 0) {
 		printf("Unable to install hw params\r\n");
 		return -1;
 	}
 
 	snd_pcm_sw_params_alloca(&sw);
 	snd_pcm_sw_params_current(pcm, sw);
-	if (snd_pcm_sw_params(pcm, sw) < 0)
-	{
+	if (snd_pcm_sw_params(pcm, sw) < 0) {
 		printf("Unable to install sw params\r\n");
 		return -1;
 	}
@@ -515,13 +515,12 @@ open_alsa_output(void) {
 	send_output = write_alsa_output;
 	close_output = close_alsa_output;
 	if (pcmname != NULL) {
-		free (pcmname);
+		free(pcmname);
 	}
 	return (0);
 }
 
-static int
-write_alsa_output (char * output_data, int output_size) {
+static int write_alsa_output(char * output_data, int output_size) {
 	int err;
 	snd_pcm_uframes_t frames;
 
@@ -530,7 +529,7 @@ write_alsa_output (char * output_data, int output_size) {
 		if ((err = snd_pcm_writei(pcm, output_data, frames)) < 0) {
 			if (snd_pcm_state(pcm) == SND_PCM_STATE_XRUN) {
 				if ((err = snd_pcm_prepare(pcm)) < 0)
-				printf("snd_pcm_prepare() failed.\r\n");
+					printf("snd_pcm_prepare() failed.\r\n");
 				alsa_first_time = 1;
 				continue;
 			}
@@ -547,9 +546,8 @@ write_alsa_output (char * output_data, int output_size) {
 	return (0);
 }
 
-static void
-close_alsa_output ( void ) {
-	snd_pcm_close (pcm);
+static void close_alsa_output(void) {
+	snd_pcm_close(pcm);
 }
 
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
@@ -755,7 +753,6 @@ static int write_openal_output(char * output_data, int output_size) {
 
 	}
 
-
 	/* Make sure the source hasn't underrun */
 	if (state != AL_PLAYING) {
 		ALint queued;
@@ -763,7 +760,7 @@ static int write_openal_output(char * output_data, int output_size) {
 		/* If no buffers are queued, playback is finished */
 		alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
 		if(queued == 0)
-			return (-1);
+		return (-1);
 
 		//printf("STATE: %#08x - %d\n", state, queued);
 
@@ -786,7 +783,7 @@ static int write_openal_output(char * output_data, int output_size) {
 
 static void close_openal_output(void) {
 	alSourceStop(sourceId);				// stop playing
-	alSourcei(sourceId, AL_BUFFER, 0); 	// unload buffer from source
+	alSourcei(sourceId, AL_BUFFER, 0);// unload buffer from source
 	alDeleteBuffers(NUM_BUFFERS, buffers);
 	alDeleteSources(1, &sourceId);
 
@@ -805,7 +802,7 @@ static int open_openal_output(void) {
 	context = alcCreateContext(device, NULL);
 	if (context == NULL || alcMakeContextCurrent(context) == ALC_FALSE) {
 		if (context != NULL)
-			alcDestroyContext(context);
+		alcDestroyContext(context);
 		alcCloseDevice(device);
 		printf("OpenAL: Failed to create the default context.\n");
 		return (-1);
@@ -999,11 +996,11 @@ int main(int argc, char **argv) {
 #ifdef HAVE_ALSA_H
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
-				if (open_oss_output() == -1) {
+			if (open_oss_output() == -1) {
 #elif (defined HAVE_OPENAL_H)
 			if (open_openal_output() == -1) {
 #else
-				{
+			{
 #endif
 #endif
 				return (0);
@@ -1209,8 +1206,14 @@ int main(int argc, char **argv) {
 #else
 					msleep(5);
 #endif
-#ifdef HAVE_OPENAL_H
+#ifdef HAVE_ALSA_H
+					;
+#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+					;
+#elif (defined HAVE_OPENAL_H)
 					alSourcePause(sourceId);
+#else
+					;
 #endif
 					continue;
 				}

@@ -56,10 +56,11 @@ SET(WILDMIDI_CFG "wildmidi.cfg")
 
 # UNIX-like environments
 IF(NOT WIN32 AND NOT APPLE)
-
+    SET(AUDIO_FOUND FALSE)
     SET(AUDIO_LIBRARY "")
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
+    
         IF(WANT_ALSA)
             FIND_PACKAGE(ALSA REQUIRED)
             SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
@@ -69,23 +70,31 @@ IF(NOT WIN32 AND NOT APPLE)
         ELSEIF(WANT_OPENAL)
             FIND_PACKAGE(OpenAL REQUIRED)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+            
         ELSE(WANT_ALSA) # Try to auto-detect
+        
             FIND_PACKAGE(ALSA)
-            IF (ALSA_FOUND)
+            IF(ALSA_FOUND AND NOT AUDIO_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-            ELSE(ALSA_FOUND)
-                FIND_PACKAGE(OSS)
-                IF (OSS_FOUND)
-                    SET(AUDIO_LIBRARY ${OSS_LIBRARY})
-                ELSE(OSS_FOUND)
-                    FIND_PACKAGE(OpenAL)
-                    IF (OpenAL_FOUND)
-                        SET(AUDIO_LIBRARY ${OpenAL_LIBRARY})
-                    ELSE(OpenAL_FOUND)
-                        MESSAGE(WARNING "Could not find an audio sub-system!")
-                    ENDIF(OpenAL_FOUND)
-                ENDIF(OSS_FOUND)
-            ENDIF(ALSA_FOUND)
+                SET(AUDIO_FOUND TRUE)
+            ENDIF(ALSA_FOUND AND NOT AUDIO_FOUND)
+            
+            FIND_PACKAGE(OSS)
+            IF(OSS_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIO_LIBRARY ${OSS_LIBRARY})
+                SET(AUDIO_FOUND TRUE)
+            ENDIF(OSS_FOUND AND NOT AUDIO_FOUND)
+            
+            FIND_PACKAGE(OpenAL)
+            IF(OPENAL_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+                SET(AUDIO_FOUND TRUE)
+            ENDIF(OPENAL_FOUND AND NOT AUDIO_FOUND)
+            
+            IF(NOT AUDIO_FOUND)
+                MESSAGE(WARNING "Could not find an audio sub-system!")
+            ENDIF(NOT AUDIO_FOUND)
+            
         ENDIF(WANT_ALSA)
     ENDIF(WANT_PLAYER)
     
@@ -118,7 +127,7 @@ IF (WIN32)
     LINK_LIBRARIES(winmm)
 ENDIF (WIN32)
 
-# OpenAL support (multi-platform
+# OpenAL support (multi-platform)
 IF (WANT_PLAYER AND OPENAL_FOUND)
     SET(HAVE_OPENAL_H 1)
     INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
