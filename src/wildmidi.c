@@ -714,24 +714,54 @@ ALuint bufferId = 0;
 
 ALsizei FramesToBytes(ALsizei size, ALenum channels, ALenum type) {
 	switch (channels) {
-	case AL_MONO_SOFT:		size *= 1;	break;
-	case AL_STEREO_SOFT:	size *= 2;	break;
-	case AL_REAR_SOFT:		size *= 2;	break;
-	case AL_QUAD_SOFT:		size *= 4;	break;
-	case AL_5POINT1_SOFT:	size *= 6;	break;
-	case AL_6POINT1_SOFT:	size *= 7;	break;
-	case AL_7POINT1_SOFT:	size *= 8;	break;
+	case AL_MONO_SOFT:
+		size *= 1;
+		break;
+	case AL_STEREO_SOFT:
+		size *= 2;
+		break;
+	case AL_REAR_SOFT:
+		size *= 2;
+		break;
+	case AL_QUAD_SOFT:
+		size *= 4;
+		break;
+	case AL_5POINT1_SOFT:
+		size *= 6;
+		break;
+	case AL_6POINT1_SOFT:
+		size *= 7;
+		break;
+	case AL_7POINT1_SOFT:
+		size *= 8;
+		break;
 	}
 
 	switch (type) {
-	case AL_BYTE_SOFT:			size *= sizeof(ALbyte);		break;
-	case AL_UNSIGNED_BYTE_SOFT:	size *= sizeof(ALubyte);	break;
-	case AL_SHORT_SOFT:			size *= sizeof(ALshort);	break;
-	case AL_UNSIGNED_SHORT_SOFT:size *= sizeof(ALushort);	break;
-	case AL_INT_SOFT:			size *= sizeof(ALint);		break;
-	case AL_UNSIGNED_INT_SOFT:	size *= sizeof(ALuint);		break;
-	case AL_FLOAT_SOFT:			size *= sizeof(ALfloat);	break;
-	case AL_DOUBLE_SOFT:		size *= sizeof(ALdouble);	break;
+	case AL_BYTE_SOFT:
+		size *= sizeof(ALbyte);
+		break;
+	case AL_UNSIGNED_BYTE_SOFT:
+		size *= sizeof(ALubyte);
+		break;
+	case AL_SHORT_SOFT:
+		size *= sizeof(ALshort);
+		break;
+	case AL_UNSIGNED_SHORT_SOFT:
+		size *= sizeof(ALushort);
+		break;
+	case AL_INT_SOFT:
+		size *= sizeof(ALint);
+		break;
+	case AL_UNSIGNED_INT_SOFT:
+		size *= sizeof(ALuint);
+		break;
+	case AL_FLOAT_SOFT:
+		size *= sizeof(ALfloat);
+		break;
+	case AL_DOUBLE_SOFT:
+		size *= sizeof(ALdouble);
+		break;
 	}
 
 	return size;
@@ -783,25 +813,25 @@ static int write_openal_output(char * output_data, int output_size) {
 //	    return 0;
 //	}
 
-    /* Make sure the source hasn't underrun */
-    if(state != AL_PLAYING && state != AL_PAUSED) {
-    	ALint queued;
+	/* Make sure the source hasn't underrun */
+	if (state != AL_PLAYING && state != AL_PAUSED) {
+		ALint queued;
 
-    	/* If no buffers are queued, playback is finished */
-    	alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
- 	    //if(queued == 0)
- 	    //	return (-1);
+		/* If no buffers are queued, playback is finished */
+		alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
+		//if(queued == 0)
+		//	return (-1);
 
-    	printf("STATE: %d - %d\n", state, queued);
+		printf("STATE: %d - %d\n", state, queued);
 
- 	    alSourcePlay(sourceId);
- 	    if(alGetError() != AL_NO_ERROR) {
- 	    	fprintf(stderr, "Error restarting playback\n");
- 	    	return (-1);
- 	    }
-    }
+		alSourcePlay(sourceId);
+		if (alGetError() != AL_NO_ERROR) {
+			fprintf(stderr, "Error restarting playback\n");
+			return (-1);
+		}
+	}
 
-    msleep(35);
+	msleep(35);
 
 	return (0);
 }
