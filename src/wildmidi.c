@@ -65,7 +65,6 @@ int msleep(unsigned long millisec);
 # elif defined HAVE_OPENAL_H
 #   include <al.h>
 #   include <alc.h>
-#	include <alext.h>
 # endif
 #endif
 
@@ -712,65 +711,6 @@ ALCcontext *context;
 ALuint sourceId = 0;
 ALuint bufferId = 0;
 
-ALsizei FramesToBytes(ALsizei size, ALenum channels, ALenum type) {
-	switch (channels) {
-	case AL_MONO_SOFT:
-		size *= 1;
-		break;
-	case AL_STEREO_SOFT:
-		size *= 2;
-		break;
-	case AL_REAR_SOFT:
-		size *= 2;
-		break;
-	case AL_QUAD_SOFT:
-		size *= 4;
-		break;
-	case AL_5POINT1_SOFT:
-		size *= 6;
-		break;
-	case AL_6POINT1_SOFT:
-		size *= 7;
-		break;
-	case AL_7POINT1_SOFT:
-		size *= 8;
-		break;
-	}
-
-	switch (type) {
-	case AL_BYTE_SOFT:
-		size *= sizeof(ALbyte);
-		break;
-	case AL_UNSIGNED_BYTE_SOFT:
-		size *= sizeof(ALubyte);
-		break;
-	case AL_SHORT_SOFT:
-		size *= sizeof(ALshort);
-		break;
-	case AL_UNSIGNED_SHORT_SOFT:
-		size *= sizeof(ALushort);
-		break;
-	case AL_INT_SOFT:
-		size *= sizeof(ALint);
-		break;
-	case AL_UNSIGNED_INT_SOFT:
-		size *= sizeof(ALuint);
-		break;
-	case AL_FLOAT_SOFT:
-		size *= sizeof(ALfloat);
-		break;
-	case AL_DOUBLE_SOFT:
-		size *= sizeof(ALdouble);
-		break;
-	}
-
-	return size;
-}
-
-ALsizei BytesToFrames(ALsizei size, ALenum channels, ALenum type) {
-	return size / FramesToBytes(1, channels, type);
-}
-
 static int write_openal_output(char * output_data, int output_size) {
 	ALint processed, state;
 
@@ -792,10 +732,7 @@ static int write_openal_output(char * output_data, int output_size) {
 		 * back on the source */
 
 		if (output_data != NULL) {
-			alBufferSamplesSOFT(bufid, rate, AL_FORMAT_STEREO16,
-					BytesToFrames(sizeof(output_data), 2,
-							AL_UNSIGNED_SHORT_SOFT), 2, AL_UNSIGNED_SHORT_SOFT,
-					output_data);
+			alBufferData(bufid, AL_FORMAT_STEREO16, output_data, output_size, rate);
 			alSourceQueueBuffers(sourceId, 1, &bufid);
 		}
 		if (alGetError() != AL_NO_ERROR) {
