@@ -700,8 +700,8 @@ static void close_oss_output(void) {
 
 #elif defined HAVE_OPENAL_H
 
-#define NUM_BUFFERS 1024
-#define PRIME 128
+#define NUM_BUFFERS 16
+#define PRIME 8
 
 struct position {
 	ALfloat x;
@@ -718,37 +718,22 @@ ALuint frames = 0;
 static int write_openal_output(char * output_data, int output_size) {
 	ALint processed, state;
 
-	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-	if(alGetError() != AL_NO_ERROR)
-		fprintf(stderr, "derp\n");
-
-	//fprintf(stderr, "Frame: %i \n",frames);
-
 	if (frames <= PRIME) { // prime the pump
 		alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data,
 				output_size, rate);
-		if (alGetError() != AL_NO_ERROR)
-			fprintf(stderr, "Error buffering for playback\n");
 
 		/* Now queue and start playback! */
 		if (frames == PRIME) {
 			alSourceQueueBuffers(sourceId, frames, buffers);
 			alSourcePlay(sourceId);
-			if (alGetError() != AL_NO_ERROR)
-				fprintf(stderr, "Error starting playback1\n");
 		}
-		frames++; // running tally of frames processed
+		frames++;
 		return 0;
 	}
 
-	frames++; // running tally of frames processed
-
 	/* Get relevant source info */
+	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
 	alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
-	if (alGetError() != AL_NO_ERROR) {
-		fprintf(stderr, "Error checking source state\n");
-		return (-1);
-	}
 
 	/* Unqueue and handle each processed buffer */
 	while (processed > 0) {
@@ -770,14 +755,15 @@ static int write_openal_output(char * output_data, int output_size) {
 
 	}
 
+
 	/* Make sure the source hasn't underrun */
-	if (state != AL_PLAYING && state != AL_PAUSED) {
+	if (state != AL_PLAYING) {
 		ALint queued;
 
 		/* If no buffers are queued, playback is finished */
 		alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
-		//if(queued == 0)
-		//	return (-1);
+		if(queued == 0)
+			return (-1);
 
 		//printf("STATE: %#08x - %d\n", state, queued);
 
@@ -788,7 +774,12 @@ static int write_openal_output(char * output_data, int output_size) {
 		}
 	}
 
-	msleep(30);
+	/* block while playing back samples */
+	do {
+		msleep(1);
+		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+		alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
+	} while (state == AL_PLAYING && processed == 0);
 
 	return (0);
 }
@@ -1217,6 +1208,9 @@ int main(int argc, char **argv) {
 					Sleep(5);
 #else
 					msleep(5);
+#endif
+#ifdef HAVE_OPENAL_H
+					alSourcePause(sourceId);
 #endif
 					continue;
 				}
