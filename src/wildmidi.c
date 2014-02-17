@@ -65,6 +65,7 @@ int msleep(unsigned long millisec);
 # elif defined HAVE_OPENAL_H
 #   include <al.h>
 #   include <alc.h>
+#	include <alext.h>
 # endif
 #endif
 
@@ -685,7 +686,7 @@ static int write_oss_output(char * output_data, int output_size) {
 		data_read += free_size;
 		counter += free_size;
 		if (counter >= max_buffer)
-			counter = 0;
+		counter = 0;
 		output_size -= free_size;
 	}
 	return (0);
@@ -711,36 +712,96 @@ ALCcontext *context;
 ALuint sourceId = 0;
 ALuint bufferId = 0;
 
-static int write_openal_output(char * output_data, int output_size) {
-	ALenum state = 0;
-
-	alBufferData(bufferId, AL_FORMAT_STEREO16, output_data, output_size, rate);
-	alSourcei(sourceId, AL_BUFFER, bufferId);
-	alSourcePlay(sourceId);
-	//alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-
-	//printf("DEBUG: %d - %lu - %d - %d - %d\n", alGetError(), sizeof(output_data), output_size/sizeof(output_data), output_size, rate);
-
-	/*
-	while (state == AL_PLAYING) {
-		//printf("Sleeping for 5ms...");
-		msleep(1);
-		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-		//printf("Error: %d ", );
+ALsizei FramesToBytes(ALsizei size, ALenum channels, ALenum type) {
+	switch (channels) {
+	case AL_MONO_SOFT:		size *= 1;	break;
+	case AL_STEREO_SOFT:	size *= 2;	break;
+	case AL_REAR_SOFT:		size *= 2;	break;
+	case AL_QUAD_SOFT:		size *= 4;	break;
+	case AL_5POINT1_SOFT:	size *= 6;	break;
+	case AL_6POINT1_SOFT:	size *= 7;	break;
+	case AL_7POINT1_SOFT:	size *= 8;	break;
 	}
-	*/
-	//msleep(35);
-	do {
-		msleep(1);
-		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-	} while (state == AL_PLAYING);
 
-	//printf("Done sleeping!\n");
-	//alSourceStop(sourceId);			// stop playing
-	alSourcei(sourceId, AL_BUFFER, 0); // unload buffer from source
-	//alDeleteBuffers(1, &bufferId);		// delete buffer
-	//bufferId = 0;				// reset bufferId
-	//std::cout << "Error: " << alGetError() << std::endl;
+	switch (type) {
+	case AL_BYTE_SOFT:			size *= sizeof(ALbyte);		break;
+	case AL_UNSIGNED_BYTE_SOFT:	size *= sizeof(ALubyte);	break;
+	case AL_SHORT_SOFT:			size *= sizeof(ALshort);	break;
+	case AL_UNSIGNED_SHORT_SOFT:size *= sizeof(ALushort);	break;
+	case AL_INT_SOFT:			size *= sizeof(ALint);		break;
+	case AL_UNSIGNED_INT_SOFT:	size *= sizeof(ALuint);		break;
+	case AL_FLOAT_SOFT:			size *= sizeof(ALfloat);	break;
+	case AL_DOUBLE_SOFT:		size *= sizeof(ALdouble);	break;
+	}
+
+	return size;
+}
+
+ALsizei BytesToFrames(ALsizei size, ALenum channels, ALenum type) {
+	return size / FramesToBytes(1, channels, type);
+}
+
+static int write_openal_output(char * output_data, int output_size) {
+	ALint processed, state;
+
+	/* Get relevant source info */
+	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
+	if (alGetError() != AL_NO_ERROR) {
+		fprintf(stderr, "Error checking source state\n");
+		return (-1);
+	}
+
+	/* Unqueue and handle each processed buffer */
+	while (processed > 0) {
+		ALuint bufid;
+
+		alSourceUnqueueBuffers(sourceId, 1, &bufid);
+		processed--;
+		/* Read the next chunk of data, refill the buffer, and queue it
+		 * back on the source */
+
+		if (output_data != NULL) {
+			alBufferSamplesSOFT(bufid, rate, AL_FORMAT_STEREO16,
+					BytesToFrames(sizeof(output_data), 2,
+							AL_UNSIGNED_SHORT_SOFT), 2, AL_UNSIGNED_SHORT_SOFT,
+					output_data);
+			alSourceQueueBuffers(sourceId, 1, &bufid);
+		}
+		if (alGetError() != AL_NO_ERROR) {
+			fprintf(stderr, "Error buffering data\n");
+			return 0;
+		}
+
+	}
+
+//	if(state != AL_PLAYING)
+//		alSourcePlay(sourceId);
+//
+//	if(alGetError() != AL_NO_ERROR) {
+//		fprintf(stderr, "Error starting playback\n");
+//	    return 0;
+//	}
+
+    /* Make sure the source hasn't underrun */
+    if(state != AL_PLAYING && state != AL_PAUSED) {
+    	ALint queued;
+
+    	/* If no buffers are queued, playback is finished */
+    	alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
+ 	    //if(queued == 0)
+ 	    //	return (-1);
+
+    	printf("STATE: %d - %d\n", state, queued);
+
+ 	    alSourcePlay(sourceId);
+ 	    if(alGetError() != AL_NO_ERROR) {
+ 	    	fprintf(stderr, "Error restarting playback\n");
+ 	    	return (-1);
+ 	    }
+    }
+
+    msleep(35);
 
 	return (0);
 }
@@ -756,28 +817,18 @@ static void close_openal_output(void) {
 }
 
 static int open_openal_output(void) {
-	const ALCchar *devnames;
-	ALCchar *devname;
-
-	if (alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
-		devnames = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-	else
-		devnames = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-	while (devnames && *devnames) {
-		printf("Device: %s\n", devnames);
-		devnames += strlen(devnames) + 1;
-		devname = devnames; // TODO: allocate and do a strcpy
-	}
-
 	// setup our audio devices and contexts
-	device = alcOpenDevice(devname);
+	device = alcOpenDevice(NULL);
 	if (!device) {
 		printf("OpenAL: Unable to open default device.\n");
 		return (-1);
 	}
 
 	context = alcCreateContext(device, NULL);
-	if (!alcMakeContextCurrent(context)) {
+	if (context == NULL || alcMakeContextCurrent(context) == ALC_FALSE) {
+		if (context != NULL)
+			alcDestroyContext(context);
+		alcCloseDevice(device);
 		printf("OpenAL: Failed to create the default context.\n");
 		return (-1);
 	}
