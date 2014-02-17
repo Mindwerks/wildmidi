@@ -775,11 +775,11 @@ static int write_openal_output(char * output_data, int output_size) {
 	}
 
 	/* block while playing back samples */
-	do {
+	while (state == AL_PLAYING && processed == 0) {
 		msleep(1);
 		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
 		alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
-	} while (state == AL_PLAYING && processed == 0);
+	}
 
 	return (0);
 }
