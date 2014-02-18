@@ -47,6 +47,9 @@
 #define strcasecmp _stricmp
 #define strncasecmp _tcsnicmp
 #define strdup _strdup
+#define DIR_SEPARATOR '\\'
+#else
+#define DIR_SEPARATOR '/'
 #endif
 
 #include "wm_error.h"
@@ -57,25 +60,6 @@
 #include "common.h"
 #include "config.h"
 #include "wildmidi_lib.h"
-
-/* set our symbol export visiblity */
-#if defined _WIN32 || defined __CYGWIN__
-    #ifdef __GNUC__
-        #define WM_SYMBOL __attribute__ ((dllexport))
-    #else
-        #define WM_SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-    #endif
-#else
-  #if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
-        #define WM_SYMBOL __attribute__ ((visibility ("default")))
-  #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
-        #define WM_SYMBOL __hidden
-  #elif __GNUC__ >= 4
-        #define WM_SYMBOL __attribute__ ((visibility ("default")))
-  #else
-        #define WM_SYMBOL
-  #endif
-#endif
 
 /*
  * =========================
@@ -969,7 +953,7 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							}
 						}
-						if (config_dir != NULL) {
+						if (config_dir != NULL && line_tokens[1][0] != DIR_SEPARATOR) {
 							tmp_patch->filename = malloc(
 									strlen(config_dir) + strlen(line_tokens[1])
 											+ 1);
