@@ -47,6 +47,9 @@
 #define strcasecmp _stricmp
 #define strncasecmp _tcsnicmp
 #define strdup _strdup
+#define DIR_SEPARATOR '\\'
+#else
+#define DIR_SEPARATOR '/'
 #endif
 
 #include "wm_error.h"
@@ -969,7 +972,7 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							}
 						}
-						if (config_dir != NULL) {
+						if (config_dir != NULL && line_tokens[1][0] != DIR_SEPARATOR) {
 							tmp_patch->filename = malloc(
 									strlen(config_dir) + strlen(line_tokens[1])
 											+ 1);
