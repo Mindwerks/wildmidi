@@ -47,9 +47,6 @@
 #define strcasecmp _stricmp
 #define strncasecmp _tcsnicmp
 #define strdup _strdup
-#define DIR_SEPARATOR '\\'
-#else
-#define DIR_SEPARATOR '/'
 #endif
 
 #include "wm_error.h"
@@ -60,6 +57,7 @@
 #include "common.h"
 #include "config.h"
 #include "wildmidi_lib.h"
+#include "filenames.h"
 
 /*
  * =========================
@@ -605,7 +603,7 @@ WM_LC_Tokenize_Line(char * line_data) {
 static int WM_LoadConfig(const char *config_file) {
 	unsigned long int config_size = 0;
 	char *config_buffer = NULL;
-	char * dir_end = NULL;
+	const char *dir_end = NULL;
 	char * config_dir = NULL;
 	unsigned long int config_ptr = 0;
 	unsigned long int line_start_ptr = 0;
@@ -621,7 +619,7 @@ static int WM_LoadConfig(const char *config_file) {
 		return -1;
 	}
 
-	dir_end = strrchr(config_file, '/');
+	dir_end = FIND_LAST_DIRSEP(config_file);
 	if (dir_end != NULL) {
 		config_dir = malloc((dir_end - config_file + 2));
 		if (config_dir == NULL) {
@@ -661,20 +659,14 @@ static int WM_LoadConfig(const char *config_file) {
 							free(config_buffer);
 							return -1;
 						}
-						if (config_dir[strlen(config_dir) - 1] != '/') {
+						if (!IS_DIR_SEPARATOR(config_dir[strlen(config_dir) - 1])) {
 							config_dir = realloc(config_dir,
 									(strlen(config_dir) + 2));
 							config_dir[strlen(config_dir) + 1] = '\0';
-							config_dir[strlen(config_dir)] = '/';
+							config_dir[strlen(config_dir)] = DIR_SEPARATOR_CHAR;
 						}
 					} else if (strcasecmp(line_tokens[0], "source") == 0) {
-# if (defined _WIN32) && !(defined __CYGWIN__)
-						if (!((isalpha(line_tokens[1][0])) && (strncmp(&line_tokens[1][1],":\\",2) == 0)) && (config_dir != NULL)) {
-# else
-						if ((line_tokens[1][0] != '/')
-								&& (line_tokens[1][0] != '~')
-								&& (config_dir != NULL)) {
-# endif
+						if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir != NULL) {
 							new_config = malloc(
 									strlen(config_dir) + strlen(line_tokens[1])
 											+ 1);
@@ -953,7 +945,7 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							}
 						}
-						if (config_dir != NULL && line_tokens[1][0] != DIR_SEPARATOR) {
+						if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir != NULL) {
 							tmp_patch->filename = malloc(
 									strlen(config_dir) + strlen(line_tokens[1])
 											+ 1);

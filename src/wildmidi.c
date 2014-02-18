@@ -86,6 +86,7 @@ extern void *alloca(size_t);
 #endif
 
 #include "wildmidi_lib.h"
+#include "filenames.h"
 
 struct _midi_test {
 	unsigned char *data;
@@ -1036,10 +1037,7 @@ int main(int argc, char **argv) {
 
 		while ((optind < argc) || (test_midi)) {
 			if (!test_midi) {
-				char * real_file = strrchr(argv[optind], '/');
-				if (real_file == NULL) {
-					real_file = strrchr(argv[optind], '\\');
-				}
+				const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
 
 				printf("Playing ");
 				if (real_file != NULL) {
