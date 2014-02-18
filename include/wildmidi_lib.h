@@ -31,6 +31,25 @@
 #define WM_MO_ROUNDTEMPO      0xA000
 #define WM_GS_VERSION		0x0001
 
+/* set our symbol export visiblity */
+#if defined _WIN32 || defined __CYGWIN__
+    #ifdef __GNUC__
+        #define WM_SYMBOL __attribute__ ((dllexport))
+    #else
+        #define WM_SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+#else
+  #if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+        #define WM_SYMBOL __attribute__ ((visibility ("default")))
+  #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+        #define WM_SYMBOL __hidden
+  #elif __GNUC__ >= 4
+        #define WM_SYMBOL __attribute__ ((visibility ("default")))
+  #else
+        #define WM_SYMBOL
+  #endif
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -45,20 +64,20 @@ struct _WM_Info {
 
 typedef void midi;
 
-extern const char * WildMidi_GetString (unsigned short int info);
-extern int WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short int options);
-extern int WildMidi_MasterVolume (unsigned char master_volume);
-extern midi * WildMidi_Open (const char *midifile);
-extern midi * WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size);
-extern int WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size);
-extern int WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short int setting);
-extern struct _WM_Info * WildMidi_GetInfo ( midi * handle );
-extern int WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos);
-extern int WildMidi_Close (midi * handle);
-extern int WildMidi_Shutdown ( void );
+WM_SYMBOL const char * WildMidi_GetString (unsigned short int info);
+WM_SYMBOL int WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short int options);
+WM_SYMBOL int WildMidi_MasterVolume (unsigned char master_volume);
+WM_SYMBOL midi * WildMidi_Open (const char *midifile);
+WM_SYMBOL midi * WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size);
+WM_SYMBOL int WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size);
+WM_SYMBOL int WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short int setting);
+WM_SYMBOL struct _WM_Info * WildMidi_GetInfo ( midi * handle );
+WM_SYMBOL int WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos);
+WM_SYMBOL int WildMidi_Close (midi * handle);
+WM_SYMBOL int WildMidi_Shutdown ( void );
 
 // NOTE: Not Yet Implemented Or Tested Properly
-extern int WildMidi_Live(midi * handle, unsigned long int midi_event);
+int WildMidi_Live(midi * handle, unsigned long int midi_event);
 
 
 #if defined(__cplusplus)

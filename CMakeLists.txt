@@ -103,7 +103,9 @@ IF (APPLE)
 ENDIF (APPLE)
 
 IF (WIN32)
-    LINK_LIBRARIES(winmm)
+    IF (WANT_PLAYER)
+		LINK_LIBRARIES(winmm)
+    ENDIF(WANT_PLAYER)
 ENDIF (WIN32)
 
 # ######### General setup ##########
