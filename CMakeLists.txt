@@ -38,6 +38,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     ADD_DEFINITIONS( 
         -std=c99 
         -D_POSIX_C_SOURCE=200809L 
+        -D_BSD_SOURCE=1
         -pedantic
         -fvisibility=hidden
         -Wall -Wextra -W
