@@ -8,14 +8,14 @@ env:
 branches:
   only:
     - master
-    - wildmidi-0.3
+    - /wildmidi-.*$/
 before_install:
  - pwd
  - git submodule update --init --recursive
  - echo "yes" | sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu `lsb_release -sc` main universe restricted multiverse"
  - sudo apt-get update -qq
  - sudo apt-get install -qq libgtest-dev google-mock 
- - sudo apt-get install -qq libasound2-dev
+ - sudo apt-get install -qq libasound2-dev libopenal-dev osspd
  - sudo mkdir /usr/src/gtest/build
  - cd /usr/src/gtest/build
  - sudo cmake .. -DBUILD_SHARED_LIBS=1
@@ -38,3 +38,8 @@ notifications:
   email:
     on_success: change
     on_failure: always
+  irc:    
+    channels:
+      - "chat.freenode.net#wildmidi"
+    on_success: always
+    on_failure: always    
