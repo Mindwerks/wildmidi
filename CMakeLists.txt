@@ -39,6 +39,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     ADD_DEFINITIONS( 
         -std=c99 
         -D_POSIX_C_SOURCE=200809L 
+        -D_BSD_SOURCE=1
         -pedantic
         -fvisibility=hidden
         -Wall -Wextra -W
@@ -123,7 +124,9 @@ IF (APPLE AND WANT_PLAYER)
 ENDIF (APPLE AND WANT_PLAYER)
 
 IF (WIN32)
-    LINK_LIBRARIES(winmm)
+    IF (WANT_PLAYER)
+		LINK_LIBRARIES(winmm)
+    ENDIF(WANT_PLAYER)
 ENDIF (WIN32)
 
 # OpenAL support (multi-platform)
