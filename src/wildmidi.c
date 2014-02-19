@@ -71,10 +71,12 @@ int msleep(unsigned long millisec);
 #if defined(_MSC_VER)
 #  include <malloc.h>
 #  define alloca _alloca
-# elif defined(__FreeBSD__) || defined(__NetBSD__)
-extern void *alloca(size_t);
-# else
+# elif defined(__MINGW32__)
+#   include <malloc.h>
+# elif defined(HAVE_ALLOCA_H)
 #   include <alloca.h>
+# else
+extern void *alloca(size_t);
 #endif
 
 #ifndef FNONBLOCK
