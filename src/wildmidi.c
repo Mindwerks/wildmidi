@@ -315,7 +315,11 @@ WAVEHDR *mm_blocks;
 unsigned long int mm_free_blocks = MM_BLOCK_COUNT;
 unsigned long int mm_current_block = 0;
 
-static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2 ) {
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+typedef DWORD DWORD_PTR;
+#endif
+
+static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	int* freeBlockCounter = (int*)dwInstance;
 	HWAVEOUT tmp_hWaveOut = hWaveOut;
 	DWORD tmp_dwParam1 = dwParam1;
