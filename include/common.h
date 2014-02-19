@@ -93,12 +93,14 @@ struct _patch {
 #endif
 
 /* Define this if the GCC __builtin_expect keyword is available */
-#ifndef __builtin_expect
+#ifndef HAVE___BUILTIN_EXPECT
 #define __builtin_expect(x,c) x
 #endif
 
-#ifndef inline
+#ifndef __cplusplus
+#ifndef HAVE_C_INLINE
 #define inline __inline
 #endif
+#endif
 
-#endif // __COMMON_H
+#endif /* __COMMON_H */

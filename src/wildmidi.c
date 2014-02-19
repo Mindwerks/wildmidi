@@ -71,10 +71,12 @@ int msleep(unsigned long millisec);
 #if defined(_MSC_VER)
 #  include <malloc.h>
 #  define alloca _alloca
-# elif defined(__FreeBSD__) || defined(__NetBSD__)
-extern void *alloca(size_t);
-# else
+# elif defined(__MINGW32__)
+#   include <malloc.h>
+# elif defined(HAVE_ALLOCA_H)
 #   include <alloca.h>
+# else
+extern void *alloca(size_t);
 #endif
 
 #ifndef FNONBLOCK
@@ -315,7 +317,11 @@ WAVEHDR *mm_blocks;
 unsigned long int mm_free_blocks = MM_BLOCK_COUNT;
 unsigned long int mm_current_block = 0;
 
-static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2 ) {
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+typedef DWORD DWORD_PTR;
+#endif
+
+static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	int* freeBlockCounter = (int*)dwInstance;
 	HWAVEOUT tmp_hWaveOut = hWaveOut;
 	DWORD tmp_dwParam1 = dwParam1;

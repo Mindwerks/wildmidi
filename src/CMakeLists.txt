@@ -16,13 +16,13 @@ SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 SET(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 # set our library names
-IF(WIN32) # windows uses *.lib for both static and dynamic, workaround
+IF(WIN32 AND NOT CMAKE_COMPILER_IS_GNUCC) # windows uses *.lib for both static and dynamic, workaround
     SET(LIBRARY_DYN_NAME "wildmidi_dynamic")
     SET(LIBRARY_STATIC_NAME "wildmidi_static")
-ELSE(WIN32) # everyone else uses .a and .so
+ELSE() # everyone else uses .a and .so
     SET(LIBRARY_DYN_NAME "WildMidi")
     SET(LIBRARY_STATIC_NAME "WildMidi")
-ENDIF(WIN32)
+ENDIF()
 
 # do we want a static library?
 IF(WANT_STATIC)
@@ -63,6 +63,11 @@ IF(MSVC)
     SET(GETOPT getopt.c getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
 ENDIF(MSVC)
+
+# MinGW or MinGW-w64
+IF(CMAKE_COMPILER_IS_MINGW)
+    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\lib${LIBRARY_DYN_NAME}.dll.a")
+ENDIF(CMAKE_COMPILER_IS_MINGW)
 
 # Apple's Xcode
 IF(CMAKE_GENERATOR STREQUAL "Xcode")

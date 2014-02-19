@@ -1,5 +1,5 @@
 # ########## Project setup ##########
-PROJECT(wildmidi)
+PROJECT(wildmidi C)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # WildMIDI Version
@@ -14,6 +14,10 @@ SET(VERSION 1.0.2)
 
 # Find Macros
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+INCLUDE(CheckCCompilerFlag)
+INCLUDE(CheckCSourceCompiles)
+INCLUDE(CheckIncludeFile)
 
 # Set a default build type if none was specified
 IF(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
@@ -37,20 +41,49 @@ OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC)
     ADD_DEFINITIONS( 
-        -std=c99 
         -D_POSIX_C_SOURCE=200809L 
         -D_BSD_SOURCE=1
         -pedantic
-        -fvisibility=hidden
-        -Wall -Wextra -W
+        -Wall -W
         )
     
+    CHECK_C_COMPILER_FLAG("-std=c99" HAVE_STD_C99)
+    IF(HAVE_STD_C99)
+        ADD_DEFINITIONS(-std=c99)
+    ENDIF()
+
+    IF(CMAKE_COMPILER_IS_MINGW)
+    # some mingw.org headers are overzealous with __STRICT_ANSI__
+    # and -std=c99 (not gnu99) defines it
+        ADD_DEFINITIONS(-U__STRICT_ANSI__)
+    ENDIF()
+
+    IF(NOT WIN32 AND NOT CYGWIN)
+        SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Werror")
+        CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
+                                 int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
+        IF(HAVE_VISIBILITY_DEFAULT)
+            CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN)
+            IF(HAVE_VISIBILITY_HIDDEN)
+                ADD_DEFINITIONS(-fvisibility=hidden)
+            ENDIF()
+        ENDIF()
+        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
+    ENDIF()
+
     IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
         ADD_DEFINITIONS( -ggdb3 -O0 )
     ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Release")
         ADD_DEFINITIONS( -O3 )
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+CHECK_INCLUDE_FILE(alloca.h HAVE_ALLOCA_H)
+CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
+CHECK_C_SOURCE_COMPILES("int main(void) {return 0;}" HAVE___BUILTIN_EXPECT)
+CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
+                         int main(void) {return 0;}" HAVE_C_INLINE)
 
 # default config locaiton
 SET(WILDMIDI_CFG "wildmidi.cfg")
