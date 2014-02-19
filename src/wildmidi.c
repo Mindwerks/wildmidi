@@ -56,24 +56,27 @@ int msleep(unsigned long millisec);
 #else
 # ifdef HAVE_ALSA_H
 #  include <alsa/asoundlib.h>
-# else
-#  ifdef HAVE_SYS_SOUNDCARD_H
+# elif defined HAVE_SYS_SOUNDCARD_H
 #   include <sys/soundcard.h>
-#  elif defined HAVE_LINUX_SOUNDCARD_H
+# elif defined HAVE_LINUX_SOUNDCARD_H
 #   include <linux/soundcard.h>
-#  elif defined HAVE_MACHINE_SOUNDCARD_H
+# elif defined HAVE_MACHINE_SOUNDCARD_H
 #   include <machine/soundcard.h>
-#  endif
+# elif defined HAVE_OPENAL_H
+#   include <al.h>
+#   include <alc.h>
 # endif
 #endif
 
 #if defined(_MSC_VER)
 #  include <malloc.h>
 #  define alloca _alloca
-# elif defined(__FreeBSD__) || defined(__NetBSD__)
-extern void *alloca(size_t);
-# else
+# elif defined(__MINGW32__)
+#   include <malloc.h>
+# elif defined(HAVE_ALLOCA_H)
 #   include <alloca.h>
+# else
+extern void *alloca(size_t);
 #endif
 
 #ifndef FNONBLOCK
@@ -224,14 +227,14 @@ static int open_wav_output(void) {
 			0x00, 0x00, 0x00 };
 
 	if (wav_file[0] == '\0')
-		return -1;
+		return (-1);
 #ifdef _WIN32
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY))) < 0) {
 #else
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
 			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
 #endif
-		return -1;
+		return (-1);
 	} else {
 		unsigned long int bytes_per_sec;
 
@@ -248,24 +251,24 @@ static int open_wav_output(void) {
 	if (write(audio_fd, &wav_hdr, 44) < 0) {
 		printf("ERROR: Writing Header %s\r\n", strerror(errno));
 		shutdown_output();
-		return -1;
+		return (-1);
 	}
 
 	wav_size = 0;
 	send_output = write_wav_output;
 	close_output = close_wav_output;
-	return 0;
+	return (0);
 }
 
 static int write_wav_output(char * output_data, int output_size) {
 	if (write(audio_fd, output_data, output_size) < 0) {
 		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
-		return -1;
+		return (-1);
 	}
 
 	wav_size += output_size;
-	return 0;
+	return (0);
 }
 
 static void close_wav_output(void) {
@@ -314,7 +317,11 @@ WAVEHDR *mm_blocks;
 unsigned long int mm_free_blocks = MM_BLOCK_COUNT;
 unsigned long int mm_current_block = 0;
 
-static void CALLBACK mmOutProc( HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2 ) {
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+typedef DWORD DWORD_PTR;
+#endif
+
+static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	int* freeBlockCounter = (int*)dwInstance;
 	HWAVEOUT tmp_hWaveOut = hWaveOut;
 	DWORD tmp_dwParam1 = dwParam1;
@@ -368,7 +375,7 @@ open_mm_output ( void ) {
 
 	send_output = write_mm_output;
 	close_output = close_mm_output;
-	return 0;
+	return (0);
 }
 
 static int
@@ -391,7 +398,7 @@ write_mm_output (char * output_data, int output_size) {
 		data_read += free_size;
 
 		if (current->dwUser < MM_BLOCK_SIZE) {
-			return 0;
+			return (0);
 		}
 
 		current->dwBufferLength = MM_BLOCK_SIZE;
@@ -407,7 +414,7 @@ write_mm_output (char * output_data, int output_size) {
 		current = &mm_blocks[mm_current_block];
 		current->dwUser = 0;
 	}
-	return 0;
+	return (0);
 }
 
 static void
@@ -431,11 +438,10 @@ int bps;
 int alsa_first_time = 1;
 static snd_pcm_t *pcm;
 
-static int write_alsa_output (char * output_data, int output_size);
-static void close_alsa_output ( void );
+static int write_alsa_output(char * output_data, int output_size);
+static void close_alsa_output(void);
 
-static int
-open_alsa_output(void) {
+static int open_alsa_output(void) {
 	snd_pcm_hw_params_t *hw;
 	snd_pcm_sw_params_t *sw;
 	int err;
@@ -443,42 +449,45 @@ open_alsa_output(void) {
 	unsigned int alsa_period_time;
 
 	if (!pcmname) {
-		pcmname = malloc (8);
-		strcpy(pcmname,"default\0");
+		pcmname = malloc(8);
+		strcpy(pcmname, "default\0");
 	}
 
-	if ((err = snd_pcm_open (&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-		printf("Error: audio open error: %s\r\n", snd_strerror (-err));
+	if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+		printf("Error: audio open error: %s\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	snd_pcm_hw_params_alloca (&hw);
+	snd_pcm_hw_params_alloca(&hw);
 
 	if ((err = snd_pcm_hw_params_any(pcm, hw)) < 0) {
-		printf("ERROR: No configuration available for playback: %s\r\n", snd_strerror(-err));
+		printf("ERROR: No configuration available for playback: %s\r\n",
+				snd_strerror(-err));
 
 		return -1;
 	}
 
-	if ((err = snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
+	if ((err = snd_pcm_hw_params_set_access(pcm, hw,
+			SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
 		printf("Cannot set mmap'ed mode: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	if (snd_pcm_hw_params_set_format (pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
-		printf("ALSA does not support 16bit signed audio for your soundcard\r\n");
+	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
+		printf(
+				"ALSA does not support 16bit signed audio for your soundcard\r\n");
 		close_alsa_output();
 		return -1;
 	}
 
-	if (snd_pcm_hw_params_set_channels (pcm, hw, 2) < 0) {
+	if (snd_pcm_hw_params_set_channels(pcm, hw, 2) < 0) {
 		printf("ALSA does not support stereo for your soundcard\r\n");
 		close_alsa_output();
 		return -1;
 	}
 
 	if (snd_pcm_hw_params_set_rate_near(pcm, hw, &rate, 0) < 0) {
-		printf("ALSA does not support %iHz for your soundcard\r\n",rate);
+		printf("ALSA does not support %iHz for your soundcard\r\n", rate);
 		close_alsa_output();
 		return -1;
 	}
@@ -486,28 +495,26 @@ open_alsa_output(void) {
 	alsa_buffer_time = 500000;
 	alsa_period_time = 50000;
 
-	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw, &alsa_buffer_time, 0)) < 0)
-	{
+	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw,
+			&alsa_buffer_time, 0)) < 0) {
 		printf("Set buffer time failed: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	if ((err = snd_pcm_hw_params_set_period_time_near(pcm, hw, &alsa_period_time, 0)) < 0)
-	{
+	if ((err = snd_pcm_hw_params_set_period_time_near(pcm, hw,
+			&alsa_period_time, 0)) < 0) {
 		printf("Set period time failed: %s.\r\n", snd_strerror(-err));
 		return -1;
 	}
 
-	if (snd_pcm_hw_params(pcm, hw) < 0)
-	{
+	if (snd_pcm_hw_params(pcm, hw) < 0) {
 		printf("Unable to install hw params\r\n");
 		return -1;
 	}
 
 	snd_pcm_sw_params_alloca(&sw);
 	snd_pcm_sw_params_current(pcm, sw);
-	if (snd_pcm_sw_params(pcm, sw) < 0)
-	{
+	if (snd_pcm_sw_params(pcm, sw) < 0) {
 		printf("Unable to install sw params\r\n");
 		return -1;
 	}
@@ -515,13 +522,12 @@ open_alsa_output(void) {
 	send_output = write_alsa_output;
 	close_output = close_alsa_output;
 	if (pcmname != NULL) {
-		free (pcmname);
+		free(pcmname);
 	}
-	return 0;
+	return (0);
 }
 
-static int
-write_alsa_output (char * output_data, int output_size) {
+static int write_alsa_output(char * output_data, int output_size) {
 	int err;
 	snd_pcm_uframes_t frames;
 
@@ -530,7 +536,7 @@ write_alsa_output (char * output_data, int output_size) {
 		if ((err = snd_pcm_writei(pcm, output_data, frames)) < 0) {
 			if (snd_pcm_state(pcm) == SND_PCM_STATE_XRUN) {
 				if ((err = snd_pcm_prepare(pcm)) < 0)
-				printf("snd_pcm_prepare() failed.\r\n");
+					printf("snd_pcm_prepare() failed.\r\n");
 				alsa_first_time = 1;
 				continue;
 			}
@@ -544,12 +550,11 @@ write_alsa_output (char * output_data, int output_size) {
 			snd_pcm_start(pcm);
 		}
 	}
-	return 0;
+	return (0);
 }
 
-static void
-close_alsa_output ( void ) {
-	snd_pcm_close (pcm);
+static void close_alsa_output(void) {
+	snd_pcm_close(pcm);
 }
 
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
@@ -653,7 +658,7 @@ static int open_oss_output(void) {
 	buffer_delay = 1000000 / (rate / 4);
 	send_output = write_oss_output;
 	close_output = close_oss_output;
-	return 0;
+	return (0);
 }
 
 static int write_oss_output(char * output_data, int output_size) {
@@ -679,23 +684,144 @@ static int write_oss_output(char * output_data, int output_size) {
 			free_size = count.ptr - counter;
 		}
 		if (free_size > output_size)
-			free_size = output_size;
+		free_size = output_size;
 
 		memcpy(&buffer[counter], &output_data[data_read], free_size);
 		data_read += free_size;
 		counter += free_size;
 		if (counter >= max_buffer)
-			counter = 0;
+		counter = 0;
 		output_size -= free_size;
 	}
-	return 0;
+	return (0);
 }
 
 static void close_oss_output(void) {
 	shutdown_output();
 	if (buffer != NULL)
-		munmap(buffer, info.fragstotal * info.fragsize);
+	munmap(buffer, info.fragstotal * info.fragsize);
 	audio_fd = -1;
+}
+
+#elif defined HAVE_OPENAL_H
+
+#define NUM_BUFFERS 16
+#define PRIME 8
+
+struct position {
+	ALfloat x;
+	ALfloat y;
+	ALfloat z;
+};
+
+ALCdevice *device;
+ALCcontext *context;
+ALuint sourceId = 0;
+ALuint buffers[NUM_BUFFERS];
+ALuint frames = 0;
+
+static int write_openal_output(char * output_data, int output_size) {
+	ALint processed, state;
+
+	if (frames <= PRIME) { // prime the pump
+		alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data,
+				output_size, rate);
+
+		/* Now queue and start playback! */
+		if (frames == PRIME) {
+			alSourceQueueBuffers(sourceId, frames, buffers);
+			alSourcePlay(sourceId);
+		}
+		frames++;
+		return 0;
+	}
+
+	/* Get relevant source info */
+	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
+
+	/* Unqueue and handle each processed buffer */
+	while (processed > 0) {
+		ALuint bufid;
+
+		alSourceUnqueueBuffers(sourceId, 1, &bufid);
+		processed--;
+		/* Read the next chunk of data, refill the buffer, and queue it
+		 * back on the source */
+
+		if (output_data != NULL) {
+			alBufferData(bufid, AL_FORMAT_STEREO16, output_data, output_size, rate);
+			alSourceQueueBuffers(sourceId, 1, &bufid);
+		}
+		if (alGetError() != AL_NO_ERROR) {
+			fprintf(stderr, "Error buffering data\n");
+			return 0;
+		}
+
+	}
+
+	/* Make sure the source hasn't underrun */
+	if (state != AL_PLAYING) {
+		ALint queued;
+
+		/* If no buffers are queued, playback is finished */
+		alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
+		if(queued == 0)
+		return (-1);
+
+		//printf("STATE: %#08x - %d\n", state, queued);
+
+		alSourcePlay(sourceId);
+		if (alGetError() != AL_NO_ERROR) {
+			fprintf(stderr, "Error restarting playback\n");
+			return (-1);
+		}
+	}
+
+	/* block while playing back samples */
+	while (state == AL_PLAYING && processed == 0) {
+		msleep(1);
+		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+		alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
+	}
+
+	return (0);
+}
+
+static void close_openal_output(void) {
+	alSourceStop(sourceId);				// stop playing
+	alSourcei(sourceId, AL_BUFFER, 0);// unload buffer from source
+	alDeleteBuffers(NUM_BUFFERS, buffers);
+	alDeleteSources(1, &sourceId);
+
+	alcDestroyContext(context);
+	alcCloseDevice(device);
+}
+
+static int open_openal_output(void) {
+	// setup our audio devices and contexts
+	device = alcOpenDevice(NULL);
+	if (!device) {
+		printf("OpenAL: Unable to open default device.\n");
+		return (-1);
+	}
+
+	context = alcCreateContext(device, NULL);
+	if (context == NULL || alcMakeContextCurrent(context) == ALC_FALSE) {
+		if (context != NULL)
+		alcDestroyContext(context);
+		alcCloseDevice(device);
+		printf("OpenAL: Failed to create the default context.\n");
+		return (-1);
+	}
+
+	// setup our sources and buffers
+	alGenSources(1, &sourceId);
+	alGenBuffers(NUM_BUFFERS, buffers);
+
+	send_output = write_openal_output;
+	close_output = close_openal_output;
+	return (0);
 }
 
 #endif // HAVE_ALSA_H
@@ -806,11 +932,11 @@ int main(int argc, char **argv) {
 			break;
 		switch (i) {
 		case 'v': // Version
-			return 0;
+			return (0);
 		case 'h': // help
 			do_syntax();
 			do_help();
-			return 0;
+			return (0);
 		case 'r': // SoundCard Rate
 			rate = atoi(optarg);
 			break;
@@ -854,7 +980,7 @@ int main(int argc, char **argv) {
 			break;
 		default:
 			printf("Unknown Option -%o ??\r\n", i);
-			return 0;
+			return (0);
 		}
 	}
 
@@ -868,7 +994,7 @@ int main(int argc, char **argv) {
 
 		if (wav_file[0] != '\0') {
 			if (open_wav_output() == -1) {
-				return 0;
+				return (0);
 			}
 		} else {
 #if (defined _WIN32) || (defined __CYGWIN__)
@@ -878,11 +1004,13 @@ int main(int argc, char **argv) {
 			if (open_alsa_output() == -1) {
 #elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
 			if (open_oss_output() == -1) {
+#elif (defined HAVE_OPENAL_H)
+			if (open_openal_output() == -1) {
 #else
-                {
+			{
 #endif
 #endif
-				return 0;
+				return (0);
 			}
 		}
 		printf("Initializing %s\n\r\n", WildMidi_GetString(WM_GS_VERSION));
@@ -893,7 +1021,7 @@ int main(int argc, char **argv) {
 		printf("                     p  Pause On/Off\n\r\n");
 
 		if (WildMidi_Init(config_file, rate, mixer_options) == -1) {
-			return 0;
+			return (0);
 		}
 		WildMidi_MasterVolume(master_volume);
 
@@ -902,7 +1030,7 @@ int main(int argc, char **argv) {
 		if (output_buffer == NULL) {
 			printf("Not enough ram, exiting\r\n");
 			WildMidi_Shutdown();
-			return 0;
+			return (0);
 		}
 #ifndef _WIN32
 		my_tty = fileno(stdin);
@@ -1062,15 +1190,15 @@ int main(int argc, char **argv) {
 					{
 						memset(modes, ' ', sizeof(char) * 4);
 						if (mixer_options & WM_MO_LOG_VOLUME) {
-							memset(modes,'l',1);
+							memset(modes, 'l', 1);
 						}
 						if (mixer_options & WM_MO_REVERB) {
-							memset(modes+1,'r',1);
+							memset(modes + 1, 'r', 1);
 						}
 						if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-							memset(modes+2,'e',1);
+							memset(modes + 2, 'e', 1);
 						}
-						memset(modes+3,'\0',1);
+						memset(modes + 3, '\0', 1);
 					}
 					fprintf(stderr,
 							"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
@@ -1081,6 +1209,15 @@ int main(int argc, char **argv) {
 					Sleep(5);
 #else
 					msleep(5);
+#endif
+#ifdef HAVE_ALSA_H
+					;
+#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+					;
+#elif (defined HAVE_OPENAL_H)
+					alSourcePause(sourceId);
+#else
+					;
 #endif
 					continue;
 				}
@@ -1104,15 +1241,15 @@ int main(int argc, char **argv) {
 				{
 					memset(modes, ' ', sizeof(char) * 4);
 					if (mixer_options & WM_MO_LOG_VOLUME) {
-						memset(modes,'l',1);
+						memset(modes, 'l', 1);
 					}
 					if (mixer_options & WM_MO_REVERB) {
-						memset(modes+1,'r',1);
+						memset(modes + 1, 'r', 1);
 					}
 					if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-						memset(modes+2,'e',1);
+						memset(modes + 2, 'e', 1);
 					}
-					memset(modes+3,'\0',1);
+					memset(modes + 3, '\0', 1);
 				}
 				fprintf(stderr,
 						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  \r",
@@ -1149,13 +1286,13 @@ int main(int argc, char **argv) {
 	} else {
 		printf("ERROR: No midi file given\r\n");
 		do_syntax();
-		return 0;
+		return (0);
 	}
 
 	if (output_buffer != NULL)
 		free(output_buffer);
 	printf("\r");
-	return 0;
+	return (0);
 }
 
 #ifndef _WIN32
@@ -1167,6 +1304,6 @@ int msleep(unsigned long milisec) {
 	req.tv_nsec = milisec * 1000000L;
 	while (nanosleep(&req, &req) == -1)
 		continue;
-	return 1;
+	return (1);
 }
 #endif

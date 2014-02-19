@@ -13,6 +13,7 @@
 INCLUDE(LibFindMacros)
 INCLUDE(CheckIncludeFiles)
 
+MESSAGE(STATUS "Looking for ALSA...")
 FIND_PATH(ALSA_INCLUDE_DIR
   NAMES alsa/version.h
   PATHS ${ALSA_PKGCONF_INCLUDE_DIRS}

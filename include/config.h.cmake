@@ -27,11 +27,21 @@
 /* Define this to the location of the wildmidi config file */
 #define WILDMIDI_CFG "@WILDMIDI_CFG@"
 
+/* Define if you have the <alloca.h> header file. */
+#cmakedefine HAVE_ALLOCA_H
+
+/* Define if the C compiler supports the `inline' keyword. */
+#cmakedefine HAVE_C_INLINE
+
+/* Define if the compiler has the `__builtin_expect' built-in function */
+#cmakedefine HAVE___BUILTIN_EXPECT
+
 /* Define our audio drivers */
 #cmakedefine HAVE_ALSA_H
 #cmakedefine HAVE_LINUX_SOUNDCARD_H
 #cmakedefine HAVE_SYS_SOUNDCARD_H
 #cmakedefine HAVE_MACHINE_SOUNDCARD_H
+#cmakedefine HAVE_OPENAL_H
 
 /* set some windows magic */
 #define WIN32_LEAN_AND_MEAN

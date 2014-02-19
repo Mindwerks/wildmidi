@@ -1,11 +1,11 @@
 # ########## Project setup ##########
-PROJECT(wildmidi)
+PROJECT(wildmidi C)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # WildMIDI Version
 SET(VERSION_MAJOR 0)
-SET(VERSION_MINOR 3)
-SET(VERSION_RELEASE 3)
+SET(VERSION_MINOR 4)
+SET(VERSION_RELEASE dev)
 SET(WILDMIDI_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE}")
 
 # Lib Versions
@@ -14,6 +14,10 @@ SET(VERSION 1.0.2)
 
 # Find Macros
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+INCLUDE(CheckCCompilerFlag)
+INCLUDE(CheckCSourceCompiles)
+INCLUDE(CheckIncludeFile)
 
 # Set a default build type if none was specified
 IF(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
@@ -32,18 +36,42 @@ OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OF
 OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
+OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
 
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC)
     ADD_DEFINITIONS( 
-        -std=c99 
         -D_POSIX_C_SOURCE=200809L 
         -D_BSD_SOURCE=1
         -pedantic
-        -fvisibility=hidden
-        -Wall -Wextra -W
+        -Wall -W
         )
     
+    CHECK_C_COMPILER_FLAG("-std=c99" HAVE_STD_C99)
+    IF(HAVE_STD_C99)
+        ADD_DEFINITIONS(-std=c99)
+    ENDIF()
+
+    IF(CMAKE_COMPILER_IS_MINGW)
+    # some mingw.org headers are overzealous with __STRICT_ANSI__
+    # and -std=c99 (not gnu99) defines it
+        ADD_DEFINITIONS(-U__STRICT_ANSI__)
+    ENDIF()
+
+    IF(NOT WIN32 AND NOT CYGWIN)
+        SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Werror")
+        CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
+                                 int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
+        IF(HAVE_VISIBILITY_DEFAULT)
+            CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN)
+            IF(HAVE_VISIBILITY_HIDDEN)
+                ADD_DEFINITIONS(-fvisibility=hidden)
+            ENDIF()
+        ENDIF()
+        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
+    ENDIF()
+
     IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
         ADD_DEFINITIONS( -ggdb3 -O0 )
     ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -51,39 +79,63 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
+CHECK_INCLUDE_FILE(alloca.h HAVE_ALLOCA_H)
+CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
+CHECK_C_SOURCE_COMPILES("int main(void) {return 0;}" HAVE___BUILTIN_EXPECT)
+CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
+                         int main(void) {return 0;}" HAVE_C_INLINE)
+
 # default config locaiton
 SET(WILDMIDI_CFG "wildmidi.cfg")
 
 # UNIX-like environments
 IF(NOT WIN32 AND NOT APPLE)
-
+    SET(AUDIO_FOUND FALSE)
     SET(AUDIO_LIBRARY "")
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
+    
         IF(WANT_ALSA)
             FIND_PACKAGE(ALSA REQUIRED)
             SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
         ELSEIF(WANT_OSS)
             FIND_PACKAGE(OSS REQUIRED)
+            SET(AUDIO_LIBRARY ${OSS_LIBRARY})
+        ELSEIF(WANT_OPENAL)
+            FIND_PACKAGE(OpenAL REQUIRED)
+            SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+            
         ELSE(WANT_ALSA) # Try to auto-detect
+        
             FIND_PACKAGE(ALSA)
-            IF (ALSA_FOUND)
+            IF(ALSA_FOUND AND NOT AUDIO_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-            ELSE(ALSA_FOUND)
-                FIND_PACKAGE(OSS)
-                IF (OSS_FOUND)
-                    SET(AUDIO_LIBRARY ${OSS_LIBRARY})
-                ELSE(OSS_FOUND)
-                    MESSAGE(WARNING "Could not find an audio sub-system!")
-                ENDIF(OSS_FOUND)
-            ENDIF(ALSA_FOUND)
+                SET(AUDIO_FOUND TRUE)
+            ENDIF(ALSA_FOUND AND NOT AUDIO_FOUND)
+            
+            FIND_PACKAGE(OSS)
+            IF(OSS_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIO_LIBRARY ${OSS_LIBRARY})
+                SET(AUDIO_FOUND TRUE)
+            ENDIF(OSS_FOUND AND NOT AUDIO_FOUND)
+            
+            FIND_PACKAGE(OpenAL)
+            IF(OPENAL_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+                SET(AUDIO_FOUND TRUE)
+            ENDIF(OPENAL_FOUND AND NOT AUDIO_FOUND)
+            
+            IF(NOT AUDIO_FOUND)
+                MESSAGE(WARNING "Could not find an audio sub-system!")
+            ENDIF(NOT AUDIO_FOUND)
+            
         ENDIF(WANT_ALSA)
     ENDIF(WANT_PLAYER)
     
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m REQUIRED)
     
-    # set our default linux config
+    # set our default linux/*bsd config
     SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg")
     
     ## Debian and non debian Linux building
@@ -94,19 +146,27 @@ IF(NOT WIN32 AND NOT APPLE)
     ENDIF (DPKG_PROGRAM)
 ENDIF(NOT WIN32 AND NOT APPLE)
 
-IF (APPLE)
-   IF (WANT_PLAYER AND WANT_COREAUDIO)
-        FIND_LIBRARY(COREAUDIO_LIBRARY CoreAudio REQUIRED)
-        FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
-        SET(AUDIO_LIBRARY "${COREAUDIO_LIBRARY} ${COREFOUNDATION_LIBRARY}")
-   ENDIF(WANT_PLAYER AND WANT_COREAUDIO)
-ENDIF (APPLE)
+IF (APPLE AND WANT_PLAYER)
+    IF(WANT_OPENAL)
+        FIND_PACKAGE(OpenAL REQUIRED)
+        SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+    ELSE(WANT_OPENAL)
+        FIND_PACKAGE(OpenAL)
+        SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})    
+    ENDIF(WANT_OPENAL)
+ENDIF (APPLE AND WANT_PLAYER)
 
 IF (WIN32)
     IF (WANT_PLAYER)
 		LINK_LIBRARIES(winmm)
     ENDIF(WANT_PLAYER)
 ENDIF (WIN32)
+
+# OpenAL support (multi-platform)
+IF (WANT_PLAYER AND OPENAL_FOUND)
+    SET(HAVE_OPENAL_H 1)
+    INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
+ENDIF (WANT_PLAYER AND OPENAL_FOUND)
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(include) # TODO: temp until we move to another layout
