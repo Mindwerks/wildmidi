@@ -39,16 +39,19 @@ OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X"
 OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
 
 # Compiler specific settings
-IF(CMAKE_COMPILER_IS_GNUCC)
+IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
     ADD_DEFINITIONS( 
         -D_POSIX_C_SOURCE=200809L 
         -D_BSD_SOURCE=1
         -pedantic
         -Wall -W
         )
-    
+
+    CHECK_C_COMPILER_FLAG("-std=gnu99" HAVE_STD_GNU99)
     CHECK_C_COMPILER_FLAG("-std=c99" HAVE_STD_C99)
-    IF(HAVE_STD_C99)
+    IF(HAVE_STD_GNU99)
+        ADD_DEFINITIONS(-std=gnu99)
+    ELSEIF(HAVE_STD_C99)
         ADD_DEFINITIONS(-std=c99)
     ENDIF()
 
@@ -67,6 +70,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
             CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN)
             IF(HAVE_VISIBILITY_HIDDEN)
                 ADD_DEFINITIONS(-fvisibility=hidden)
+                ADD_DEFINITIONS("-DSYM_VISIBILITY")
             ENDIF()
         ENDIF()
         SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
@@ -77,9 +81,8 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Release")
         ADD_DEFINITIONS( -O3 )
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
-ENDIF(CMAKE_COMPILER_IS_GNUCC)
+ENDIF()
 
-CHECK_INCLUDE_FILE(alloca.h HAVE_ALLOCA_H)
 CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
 CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
                          int main(void) {return 0;}" HAVE_C_INLINE)
@@ -168,7 +171,9 @@ IF (WANT_PLAYER AND OPENAL_FOUND)
 ENDIF (WANT_PLAYER AND OPENAL_FOUND)
 
 # ######### General setup ##########
-INCLUDE_DIRECTORIES(include) # TODO: temp until we move to another layout
+INCLUDE_DIRECTORIES(BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+FILE (MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
+INCLUDE_DIRECTORIES(BEFORE "${CMAKE_CURRENT_BINARY_DIR}/include")
 
 IF (APPLE)
     SET(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
@@ -182,6 +187,6 @@ ELSE (APPLE)
 ENDIF (APPLE)
 
 # Setup up our config file
-CONFIGURE_FILE ("${CMAKE_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_SOURCE_DIR}/include/config.h")
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
 
 ADD_SUBDIRECTORY(src)

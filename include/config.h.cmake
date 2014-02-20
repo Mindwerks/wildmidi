@@ -27,9 +27,6 @@
 /* Define this to the location of the wildmidi config file */
 #define WILDMIDI_CFG "@WILDMIDI_CFG@"
 
-/* Define if you have the <alloca.h> header file. */
-#cmakedefine HAVE_ALLOCA_H
-
 /* Define if the C compiler supports the `inline' keyword. */
 #cmakedefine HAVE_C_INLINE
 

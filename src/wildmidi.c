@@ -68,17 +68,6 @@ int msleep(unsigned long millisec);
 # endif
 #endif
 
-#if defined(_MSC_VER)
-#  include <malloc.h>
-#  define alloca _alloca
-# elif defined(__MINGW32__)
-#   include <malloc.h>
-# elif defined(HAVE_ALLOCA_H)
-#   include <alloca.h>
-# else
-extern void *alloca(size_t);
-#endif
-
 #ifndef FNONBLOCK
 #define FNONBLOCK O_NONBLOCK
 #endif
