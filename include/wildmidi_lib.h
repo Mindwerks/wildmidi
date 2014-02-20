@@ -43,7 +43,7 @@
         #define WM_SYMBOL __attribute__ ((visibility ("default")))
   #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
         #define WM_SYMBOL __hidden
-  #elif __GNUC__ >= 4
+  #elif defined(__GNUC__) && defined(SYM_VISIBILITY)
         #define WM_SYMBOL __attribute__ ((visibility ("default")))
   #else
         #define WM_SYMBOL

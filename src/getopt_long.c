@@ -164,7 +164,7 @@ getopt_long(nargc, nargv, options, long_options, index)
 	int nargc;
 	char ** nargv;
 	char * options;
-	struct option * long_options;
+	const struct option * long_options;
 	int * index;
 {
 	int retval;
