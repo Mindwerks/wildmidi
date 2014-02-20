@@ -83,7 +83,6 @@ IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 ENDIF()
 
-CHECK_INCLUDE_FILE(alloca.h HAVE_ALLOCA_H)
 CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
 CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
                          int main(void) {return 0;}" HAVE_C_INLINE)
