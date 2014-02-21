@@ -603,12 +603,6 @@ static int open_oss_output(void) {
 		shutdown_output();
 		return -1;
 	}
-	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
-		printf("Um, can't do GETOSPACE?\r\n");
-		shutdown_output();
-		return -1;
-	}
-	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
 
 	rc = AFMT_S16_NE;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
@@ -631,8 +625,13 @@ static int open_oss_output(void) {
 		return -1;
 	}
 
-	buffer = (unsigned char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd,
-			0);
+	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
+		printf("Um, can't do GETOSPACE?\r\n");
+		shutdown_output();
+		return -1;
+	}
+	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
+	buffer = (char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
 	if (buffer == MAP_FAILED) {
 		printf("couldn't mmap %s\r\n", strerror(errno));
 		shutdown_output();
