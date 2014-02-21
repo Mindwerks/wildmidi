@@ -130,17 +130,14 @@ IF(NOT WIN32 AND NOT APPLE)
 
             IF(ALSA_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-                SET(AUDIO_FOUND TRUE)
                 SET(AUDIODRV_ALSA 1)
 
             ELSEIF(OSS_FOUND)
                 SET(AUDIO_LIBRARY ${OSS_LIBRARY})
-                SET(AUDIO_FOUND TRUE)
                 SET(AUDIODRV_OSS 1)
 
             ELSEIF(OPENAL_FOUND)
                 SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-                SET(AUDIO_FOUND TRUE)
                 SET(AUDIODRV_OPENAL 1)
 
             ELSE()
