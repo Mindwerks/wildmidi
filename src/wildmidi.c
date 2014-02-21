@@ -462,7 +462,7 @@ static int open_alsa_output(void) {
 		return -1;
 	}
 
-	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
+	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16) < 0) {
 		printf(
 				"ALSA does not support 16bit signed audio for your soundcard\r\n");
 		close_alsa_output();
@@ -553,6 +553,14 @@ static void close_alsa_output(void) {
  uses mmap'd audio
  */
 
+#if !defined(AFMT_S16_NE)
+#ifdef WORDS_BIGENDIAN
+#define AFMT_S16_NE AFMT_S16_BE
+#else
+#define AFMT_S16_NE AFMT_S16_LE
+#endif
+#endif
+
 char *buffer = NULL;
 unsigned long int max_buffer;
 unsigned long int buffer_delay;
@@ -600,7 +608,7 @@ static int open_oss_output(void) {
 	}
 	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
 
-	rc = AFMT_S16_LE;
+	rc = AFMT_S16_NE;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
 		printf("Can't set 16bit\r\n");
 		shutdown_output();
