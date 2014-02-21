@@ -578,8 +578,8 @@ static int open_oss_output(void) {
 	unsigned long int sz = sysconf(_SC_PAGESIZE);
 
 	if (!pcmname) {
-		pcmname = malloc(8);
-		strcpy(pcmname, "default\0");
+		pcmname = malloc(9);
+		strcpy(pcmname, "/dev/dsp");
 	}
 
 	if ((audio_fd = open(pcmname, omode)) < 0) {
