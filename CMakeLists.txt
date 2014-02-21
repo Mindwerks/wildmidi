@@ -92,46 +92,60 @@ SET(WILDMIDI_CFG "wildmidi.cfg")
 
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
+SET(AUDIODRV_ALSA)
+SET(AUDIODRV_OSS)
+SET(AUDIODRV_OPENAL)
+
 # UNIX-like environments
 IF(NOT WIN32 AND NOT APPLE)
-    SET(AUDIO_FOUND FALSE)
     SET(AUDIO_LIBRARY "")
+
+    FIND_PACKAGE(ALSA)
+    FIND_PACKAGE(OSS)
+    FIND_PACKAGE(OpenAL)
+
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
 
         IF(WANT_ALSA)
-            FIND_PACKAGE(ALSA REQUIRED)
+            IF(NOT ALSA_FOUND)
+                MESSAGE(FATAL_ERROR "ALSA required but not found.")
+            ENDIF()
+            SET(AUDIODRV_ALSA 1)
             SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
         ELSEIF(WANT_OSS)
-            FIND_PACKAGE(OSS REQUIRED)
+            IF(NOT OSS_FOUND)
+                MESSAGE(FATAL_ERROR "OSS required but not found.")
+            ENDIF()
+            SET(AUDIODRV_OSS 1)
             SET(AUDIO_LIBRARY ${OSS_LIBRARY})
         ELSEIF(WANT_OPENAL)
-            FIND_PACKAGE(OpenAL REQUIRED)
+            IF(NOT OPENAL_FOUND)
+                MESSAGE(FATAL_ERROR "OpenAL required but not found.")
+            ENDIF()
+            SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
 
         ELSE(WANT_ALSA) # Try to auto-detect
 
-            FIND_PACKAGE(ALSA)
-            IF(ALSA_FOUND AND NOT AUDIO_FOUND)
+            IF(ALSA_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
                 SET(AUDIO_FOUND TRUE)
-            ENDIF(ALSA_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIODRV_ALSA 1)
 
-            FIND_PACKAGE(OSS)
-            IF(OSS_FOUND AND NOT AUDIO_FOUND)
+            ELSEIF(OSS_FOUND)
                 SET(AUDIO_LIBRARY ${OSS_LIBRARY})
                 SET(AUDIO_FOUND TRUE)
-            ENDIF(OSS_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIODRV_OSS 1)
 
-            FIND_PACKAGE(OpenAL)
-            IF(OPENAL_FOUND AND NOT AUDIO_FOUND)
+            ELSEIF(OPENAL_FOUND)
                 SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
                 SET(AUDIO_FOUND TRUE)
-            ENDIF(OPENAL_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIODRV_OPENAL 1)
 
-            IF(NOT AUDIO_FOUND)
+            ELSE()
                 MESSAGE(WARNING "Could not find an audio sub-system!")
-            ENDIF(NOT AUDIO_FOUND)
+            ENDIF()
 
         ENDIF(WANT_ALSA)
     ENDIF(WANT_PLAYER)
@@ -151,12 +165,22 @@ IF(NOT WIN32 AND NOT APPLE)
 ENDIF(NOT WIN32 AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
+    FIND_PACKAGE(OpenAL REQUIRED)
+
     IF(WANT_OPENAL)
-        FIND_PACKAGE(OpenAL REQUIRED)
+        IF(NOT OPENAL_FOUND)
+            MESSAGE(FATAL_ERROR "OpenAL required but not found.")
+        ENDIF()
         SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
     ELSE(WANT_OPENAL)
-        FIND_PACKAGE(OpenAL)
-        SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+        IF(OPENAL_FOUND)
+            SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+            SET(AUDIODRV_OPENAL 1)
+
+        ELSE()
+            MESSAGE(WARNING "Could not find an audio sub-system!")
+        ENDIF()
+
     ENDIF(WANT_OPENAL)
 ENDIF (APPLE AND WANT_PLAYER)
 

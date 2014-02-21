@@ -43,5 +43,9 @@
 #cmakedefine HAVE_MACHINE_SOUNDCARD_H
 #cmakedefine HAVE_OPENAL_H
 
+#cmakedefine AUDIODRV_ALSA
+#cmakedefine AUDIODRV_OSS
+#cmakedefine AUDIODRV_OPENAL
+
 /* set some windows magic */
 #define WIN32_LEAN_AND_MEAN

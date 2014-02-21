@@ -54,15 +54,17 @@ int msleep(unsigned long millisec);
 #include <io.h>
 #include "getopt_long.h"
 #else
-# ifdef HAVE_ALSA_H
+# ifdef AUDIODRV_ALSA
 #  include <alsa/asoundlib.h>
-# elif defined HAVE_SYS_SOUNDCARD_H
+# elif defined AUDIODRV_OSS
+#   if defined HAVE_SYS_SOUNDCARD_H
 #   include <sys/soundcard.h>
-# elif defined HAVE_LINUX_SOUNDCARD_H
+#   elif defined HAVE_LINUX_SOUNDCARD_H
 #   include <linux/soundcard.h>
-# elif defined HAVE_MACHINE_SOUNDCARD_H
+#   elif defined HAVE_MACHINE_SOUNDCARD_H
 #   include <machine/soundcard.h>
-# elif defined HAVE_OPENAL_H
+#   endif
+# elif defined AUDIODRV_OPENAL
 #   include <al.h>
 #   include <alc.h>
 # endif
@@ -420,7 +422,7 @@ close_mm_output ( void ) {
 }
 
 #else
-#ifdef HAVE_ALSA_H
+#ifdef AUDIODRV_ALSA
 
 void *buffer;
 int bps;
@@ -546,7 +548,7 @@ static void close_alsa_output(void) {
 	snd_pcm_close(pcm);
 }
 
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 /*
  OSS Output Functions
  --------------------
@@ -700,7 +702,7 @@ static void close_oss_output(void) {
 	audio_fd = -1;
 }
 
-#elif defined HAVE_OPENAL_H
+#elif defined AUDIODRV_OPENAL
 
 #define NUM_BUFFERS 16
 #define PRIME 8
@@ -996,16 +998,14 @@ int main(int argc, char **argv) {
 		} else {
 #if (defined _WIN32) || (defined __CYGWIN__)
 			if (open_mm_output() == -1) {
-#else
-#ifdef HAVE_ALSA_H
+#elif defined AUDIODRV_ALSA
 			if (open_alsa_output() == -1) {
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 			if (open_oss_output() == -1) {
-#elif (defined HAVE_OPENAL_H)
+#elif defined AUDIODRV_OPENAL
 			if (open_openal_output() == -1) {
-#else
+#else /* no audio output driver compiled in */
 			{
-#endif
 #endif
 				return (0);
 			}
