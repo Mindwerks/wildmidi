@@ -823,8 +823,8 @@ static int open_openal_output(void) {
 	return (0);
 }
 
-#endif // HAVE_ALSA_H
-#endif
+#endif /* AUDIODRV_ALSA */
+#endif /* _WIN32 || __CYGWIN__ */
 
 static struct option const long_options[] = { { "version", 0, 0, 'v' }, {
 		"help", 0, 0, 'h' }, { "rate", 1, 0, 'r' },
@@ -1207,11 +1207,11 @@ int main(int argc, char **argv) {
 #else
 					msleep(5);
 #endif
-#ifdef HAVE_ALSA_H
+#ifdef AUDIODRV_ALSA
 					;
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 					;
-#elif (defined HAVE_OPENAL_H)
+#elif defined AUDIODRV_OPENAL
 					alSourcePause(sourceId);
 #else
 					;
