@@ -33,12 +33,17 @@
 /* Define if the compiler has the `__builtin_expect' built-in function */
 #cmakedefine HAVE___BUILTIN_EXPECT
 
+/* define this if you are running a bigendian system (motorola, sparc, etc) */
+#cmakedefine WORDS_BIGENDIAN 1
+
 /* Define our audio drivers */
-#cmakedefine HAVE_ALSA_H
 #cmakedefine HAVE_LINUX_SOUNDCARD_H
 #cmakedefine HAVE_SYS_SOUNDCARD_H
 #cmakedefine HAVE_MACHINE_SOUNDCARD_H
-#cmakedefine HAVE_OPENAL_H
+#cmakedefine AUDIODRV_ALSA
+#cmakedefine AUDIODRV_OSS
+#cmakedefine AUDIODRV_OPENAL
 
 /* set some windows magic */
 #define WIN32_LEAN_AND_MEAN
+

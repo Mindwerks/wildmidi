@@ -54,15 +54,17 @@ int msleep(unsigned long millisec);
 #include <io.h>
 #include "getopt_long.h"
 #else
-# ifdef HAVE_ALSA_H
+# ifdef AUDIODRV_ALSA
 #  include <alsa/asoundlib.h>
-# elif defined HAVE_SYS_SOUNDCARD_H
+# elif defined AUDIODRV_OSS
+#   if defined HAVE_SYS_SOUNDCARD_H
 #   include <sys/soundcard.h>
-# elif defined HAVE_LINUX_SOUNDCARD_H
+#   elif defined HAVE_LINUX_SOUNDCARD_H
 #   include <linux/soundcard.h>
-# elif defined HAVE_MACHINE_SOUNDCARD_H
+#   elif defined HAVE_MACHINE_SOUNDCARD_H
 #   include <machine/soundcard.h>
-# elif defined HAVE_OPENAL_H
+#   endif
+# elif defined AUDIODRV_OPENAL
 #   include <al.h>
 #   include <alc.h>
 # endif
@@ -420,7 +422,7 @@ close_mm_output ( void ) {
 }
 
 #else
-#ifdef HAVE_ALSA_H
+#ifdef AUDIODRV_ALSA
 
 void *buffer;
 int bps;
@@ -462,7 +464,7 @@ static int open_alsa_output(void) {
 		return -1;
 	}
 
-	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
+	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16) < 0) {
 		printf(
 				"ALSA does not support 16bit signed audio for your soundcard\r\n");
 		close_alsa_output();
@@ -546,12 +548,20 @@ static void close_alsa_output(void) {
 	snd_pcm_close(pcm);
 }
 
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 /*
  OSS Output Functions
  --------------------
  uses mmap'd audio
  */
+
+#if !defined(AFMT_S16_NE)
+#ifdef WORDS_BIGENDIAN
+#define AFMT_S16_NE AFMT_S16_BE
+#else
+#define AFMT_S16_NE AFMT_S16_LE
+#endif
+#endif
 
 char *buffer = NULL;
 unsigned long int max_buffer;
@@ -570,8 +580,8 @@ static int open_oss_output(void) {
 	unsigned long int sz = sysconf(_SC_PAGESIZE);
 
 	if (!pcmname) {
-		pcmname = malloc(8);
-		strcpy(pcmname, "default\0");
+		pcmname = malloc(9);
+		strcpy(pcmname, "/dev/dsp");
 	}
 
 	if ((audio_fd = open(pcmname, omode)) < 0) {
@@ -593,14 +603,8 @@ static int open_oss_output(void) {
 		shutdown_output();
 		return -1;
 	}
-	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
-		printf("Um, can't do GETOSPACE?\r\n");
-		shutdown_output();
-		return -1;
-	}
-	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
 
-	rc = AFMT_S16_LE;
+	rc = AFMT_S16_NE;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
 		printf("Can't set 16bit\r\n");
 		shutdown_output();
@@ -621,10 +625,17 @@ static int open_oss_output(void) {
 		return -1;
 	}
 
-	buffer = (unsigned char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd,
-			0);
+	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
+		printf("Um, can't do GETOSPACE?\r\n");
+		shutdown_output();
+		return -1;
+	}
+	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
+
+	buffer = (char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
 	if (buffer == MAP_FAILED) {
 		printf("couldn't mmap %s\r\n", strerror(errno));
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -632,7 +643,8 @@ static int open_oss_output(void) {
 	tmp = 0;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
 		printf("Couldn't toggle\r\n");
-		munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -640,7 +652,8 @@ static int open_oss_output(void) {
 	tmp = PCM_ENABLE_OUTPUT;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
 		printf("Couldn't toggle\r\n");
-		munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -658,7 +671,8 @@ static int write_oss_output(char * output_data, int output_size) {
 		while (1) {
 			if (ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &count) == -1) {
 				printf("Dead Sound\r\n");
-				munmap(buffer, info.fragstotal * info.fragsize);
+				munmap(buffer, max_buffer);
+				buffer = NULL;
 				shutdown_output();
 				return -1;
 			}
@@ -679,20 +693,22 @@ static int write_oss_output(char * output_data, int output_size) {
 		data_read += free_size;
 		counter += free_size;
 		if (counter >= max_buffer)
-		counter = 0;
+			counter = 0;
 		output_size -= free_size;
 	}
 	return (0);
 }
 
 static void close_oss_output(void) {
-	shutdown_output();
+	/* unmap before closing audio_fd */
 	if (buffer != NULL)
-	munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+	shutdown_output();
+	buffer = NULL;
 	audio_fd = -1;
 }
 
-#elif defined HAVE_OPENAL_H
+#elif defined AUDIODRV_OPENAL
 
 #define NUM_BUFFERS 16
 #define PRIME 8
@@ -813,8 +829,8 @@ static int open_openal_output(void) {
 	return (0);
 }
 
-#endif // HAVE_ALSA_H
-#endif
+#endif /* AUDIODRV_ALSA */
+#endif /* _WIN32 || __CYGWIN__ */
 
 static struct option const long_options[] = { { "version", 0, 0, 'v' }, {
 		"help", 0, 0, 'h' }, { "rate", 1, 0, 'r' },
@@ -988,16 +1004,14 @@ int main(int argc, char **argv) {
 		} else {
 #if (defined _WIN32) || (defined __CYGWIN__)
 			if (open_mm_output() == -1) {
-#else
-#ifdef HAVE_ALSA_H
+#elif defined AUDIODRV_ALSA
 			if (open_alsa_output() == -1) {
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 			if (open_oss_output() == -1) {
-#elif (defined HAVE_OPENAL_H)
+#elif defined AUDIODRV_OPENAL
 			if (open_openal_output() == -1) {
-#else
+#else /* no audio output driver compiled in */
 			{
-#endif
 #endif
 				return (0);
 			}
@@ -1199,11 +1213,11 @@ int main(int argc, char **argv) {
 #else
 					msleep(5);
 #endif
-#ifdef HAVE_ALSA_H
+#ifdef AUDIODRV_ALSA
 					;
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 					;
-#elif (defined HAVE_OPENAL_H)
+#elif defined AUDIODRV_OPENAL
 					alSourcePause(sourceId);
 #else
 					;

@@ -18,14 +18,14 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CheckCSourceCompiles)
 INCLUDE(CheckIncludeFile)
+INCLUDE(TestBigEndian)
 
 # Set a default build type if none was specified
 IF(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
   MESSAGE(STATUS "Setting build type to 'Debug' as none was specified.")
   SET(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
-  SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-    "MinSizeRel" "RelWithDebInfo")
+  SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 ENDIF()
 SET(CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
 MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
@@ -90,56 +90,69 @@ CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
 # default config locaiton
 SET(WILDMIDI_CFG "wildmidi.cfg")
 
+TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
+
+SET(AUDIODRV_ALSA)
+SET(AUDIODRV_OSS)
+SET(AUDIODRV_OPENAL)
+
 # UNIX-like environments
 IF(NOT WIN32 AND NOT APPLE)
-    SET(AUDIO_FOUND FALSE)
     SET(AUDIO_LIBRARY "")
+
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
-    
+
+        FIND_PACKAGE(ALSA)
+        FIND_PACKAGE(OSS)
+        FIND_PACKAGE(OpenAL)
+
         IF(WANT_ALSA)
-            FIND_PACKAGE(ALSA REQUIRED)
+            IF(NOT ALSA_FOUND)
+                MESSAGE(FATAL_ERROR "ALSA required but not found.")
+            ENDIF()
+            SET(AUDIODRV_ALSA 1)
             SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
         ELSEIF(WANT_OSS)
-            FIND_PACKAGE(OSS REQUIRED)
+            IF(NOT OSS_FOUND)
+                MESSAGE(FATAL_ERROR "OSS required but not found.")
+            ENDIF()
+            SET(AUDIODRV_OSS 1)
             SET(AUDIO_LIBRARY ${OSS_LIBRARY})
         ELSEIF(WANT_OPENAL)
-            FIND_PACKAGE(OpenAL REQUIRED)
+            IF(NOT OPENAL_FOUND)
+                MESSAGE(FATAL_ERROR "OpenAL required but not found.")
+            ENDIF()
+            SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-            
+
         ELSE(WANT_ALSA) # Try to auto-detect
-        
-            FIND_PACKAGE(ALSA)
-            IF(ALSA_FOUND AND NOT AUDIO_FOUND)
+
+            IF(ALSA_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-                SET(AUDIO_FOUND TRUE)
-            ENDIF(ALSA_FOUND AND NOT AUDIO_FOUND)
-            
-            FIND_PACKAGE(OSS)
-            IF(OSS_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIODRV_ALSA 1)
+
+            ELSEIF(OSS_FOUND)
                 SET(AUDIO_LIBRARY ${OSS_LIBRARY})
-                SET(AUDIO_FOUND TRUE)
-            ENDIF(OSS_FOUND AND NOT AUDIO_FOUND)
-            
-            FIND_PACKAGE(OpenAL)
-            IF(OPENAL_FOUND AND NOT AUDIO_FOUND)
+                SET(AUDIODRV_OSS 1)
+
+            ELSEIF(OPENAL_FOUND)
                 SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-                SET(AUDIO_FOUND TRUE)
-            ENDIF(OPENAL_FOUND AND NOT AUDIO_FOUND)
-            
-            IF(NOT AUDIO_FOUND)
+                SET(AUDIODRV_OPENAL 1)
+
+            ELSE()
                 MESSAGE(WARNING "Could not find an audio sub-system!")
-            ENDIF(NOT AUDIO_FOUND)
-            
+            ENDIF()
+
         ENDIF(WANT_ALSA)
     ENDIF(WANT_PLAYER)
-    
+
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m REQUIRED)
-    
+
     # set our default linux/*bsd config
     SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg")
-    
+
     ## Debian and non debian Linux building
     IF (DPKG_PROGRAM)
         ## Debian specific
@@ -149,18 +162,28 @@ IF(NOT WIN32 AND NOT APPLE)
 ENDIF(NOT WIN32 AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
+    FIND_PACKAGE(OpenAL REQUIRED)
+
     IF(WANT_OPENAL)
-        FIND_PACKAGE(OpenAL REQUIRED)
+        IF(NOT OPENAL_FOUND)
+            MESSAGE(FATAL_ERROR "OpenAL required but not found.")
+        ENDIF()
         SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
     ELSE(WANT_OPENAL)
-        FIND_PACKAGE(OpenAL)
-        SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})    
+        IF(OPENAL_FOUND)
+            SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
+            SET(AUDIODRV_OPENAL 1)
+
+        ELSE()
+            MESSAGE(WARNING "Could not find an audio sub-system!")
+        ENDIF()
+
     ENDIF(WANT_OPENAL)
 ENDIF (APPLE AND WANT_PLAYER)
 
 IF (WIN32)
     IF (WANT_PLAYER)
-		LINK_LIBRARIES(winmm)
+        LINK_LIBRARIES(winmm)
     ENDIF(WANT_PLAYER)
 ENDIF (WIN32)
 
