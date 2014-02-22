@@ -631,9 +631,11 @@ static int open_oss_output(void) {
 		return -1;
 	}
 	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
+
 	buffer = (char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
 	if (buffer == MAP_FAILED) {
 		printf("couldn't mmap %s\r\n", strerror(errno));
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -641,7 +643,8 @@ static int open_oss_output(void) {
 	tmp = 0;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
 		printf("Couldn't toggle\r\n");
-		munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -649,7 +652,8 @@ static int open_oss_output(void) {
 	tmp = PCM_ENABLE_OUTPUT;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
 		printf("Couldn't toggle\r\n");
-		munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -667,7 +671,8 @@ static int write_oss_output(char * output_data, int output_size) {
 		while (1) {
 			if (ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &count) == -1) {
 				printf("Dead Sound\r\n");
-				munmap(buffer, info.fragstotal * info.fragsize);
+				munmap(buffer, max_buffer);
+				buffer = NULL;
 				shutdown_output();
 				return -1;
 			}
@@ -688,16 +693,18 @@ static int write_oss_output(char * output_data, int output_size) {
 		data_read += free_size;
 		counter += free_size;
 		if (counter >= max_buffer)
-		counter = 0;
+			counter = 0;
 		output_size -= free_size;
 	}
 	return (0);
 }
 
 static void close_oss_output(void) {
-	shutdown_output();
+	/* unmap before closing audio_fd */
 	if (buffer != NULL)
-	munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+	shutdown_output();
+	buffer = NULL;
 	audio_fd = -1;
 }
 
