@@ -100,12 +100,12 @@ SET(AUDIODRV_OPENAL)
 IF(NOT WIN32 AND NOT APPLE)
     SET(AUDIO_LIBRARY "")
 
-    FIND_PACKAGE(ALSA)
-    FIND_PACKAGE(OSS)
-    FIND_PACKAGE(OpenAL)
-
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
+
+        FIND_PACKAGE(ALSA)
+        FIND_PACKAGE(OSS)
+        FIND_PACKAGE(OpenAL)
 
         IF(WANT_ALSA)
             IF(NOT ALSA_FOUND)
