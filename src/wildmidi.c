@@ -254,7 +254,7 @@ static int open_wav_output(void) {
 static int write_wav_output(char * output_data, int output_size) {
 #ifdef WORDS_BIGENDIAN
 	unsigned short *swp = (unsigned short *)output_data;
-	int i = output_size / 2;
+	int i = (output_size / 2) - 1;
 	for (; i >= 0; --i) {
 		swp[i] = (swp[i] << 8) | (swp[i] >> 8);
 	}
