@@ -252,6 +252,13 @@ static int open_wav_output(void) {
 }
 
 static int write_wav_output(char * output_data, int output_size) {
+#ifdef WORDS_BIGENDIAN
+	unsigned short *swp = (unsigned short *)output_data;
+	int i = (output_size / 2) - 1;
+	for (; i >= 0; --i) {
+		swp[i] = (swp[i] << 8) | (swp[i] >> 8);
+	}
+#endif
 	if (write(audio_fd, output_data, output_size) < 0) {
 		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
