@@ -24,8 +24,6 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
-
 #ifndef __WM_ERROR_H
 #define __WM_ERROR_H
 
@@ -48,4 +46,4 @@
  extern void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
 		const char * wmfor, int error);
 
-#endif //__WM_ERROR_H
+#endif /* __WM_ERROR_H */

@@ -1,4 +1,3 @@
-
 /*
 	file_io.c
 
@@ -28,8 +27,6 @@
 #ifndef __FILE_IO_H
 #define __FILE_IO_H
 
-#include "config.h"
-
  extern unsigned char * WM_BufferFile (const char *filename, unsigned long int *size);
 
-#endif // __FILE_IO_H
+#endif /* __FILE_IO_H */

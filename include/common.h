@@ -23,7 +23,6 @@
     GNU Lesser General Public License along with WildMIDI.  If not,  see
     <http://www.gnu.org/licenses/>.
 */
-#include "config.h"
 
 #ifndef __COMMON_H
 #define __COMMON_H

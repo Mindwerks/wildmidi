@@ -27,8 +27,6 @@
 #ifndef __GUS_PAT_H
 #define __GUS_PAT_H
 
-#include "config.h"
-
 // Guspat Envelope Rate Timings
 // Row 1 = (4095.0/(x*(1.0/(1.6*14.0)))) / 1000000.0
 // Row 2 = (4095.0/(x*((1.0/(1.6*14.0))/8.0)))) / 1000000.0
@@ -43,4 +41,4 @@ static float env_time_table[] = {
 
  extern struct _sample * load_gus_pat (char * filename, int fix_release);
 
-#endif // __GUS_PAT_H
+#endif /* __GUS_PAT_H */

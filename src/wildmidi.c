@@ -26,6 +26,7 @@
  */
 
 #include "config.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -330,7 +331,7 @@ static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstan
 	tmp_dwParam2 = dwParam1;
 
 	if(uMsg != WOM_DONE)
-	return;
+		return;
 	EnterCriticalSection(&waveCriticalSection);
 	(*freeBlockCounter)++;
 	LeaveCriticalSection(&waveCriticalSection);
@@ -388,7 +389,7 @@ write_mm_output (char * output_data, int output_size) {
 		waveOutUnprepareHeader(hWaveOut, current, sizeof(WAVEHDR));
 		free_size = MM_BLOCK_SIZE - current->dwUser;
 		if (free_size > output_size)
-		free_size = output_size;
+			free_size = output_size;
 
 		memcpy(current->lpData + current->dwUser, &output_data[data_read], free_size);
 		current->dwUser += free_size;
@@ -406,7 +407,7 @@ write_mm_output (char * output_data, int output_size) {
 		mm_free_blocks--;
 		LeaveCriticalSection(&waveCriticalSection);
 		while(!mm_free_blocks)
-		Sleep(10);
+			Sleep(10);
 		mm_current_block++;
 		mm_current_block %= MM_BLOCK_COUNT;
 		current = &mm_blocks[mm_current_block];
@@ -617,7 +618,6 @@ static int open_oss_output(void) {
 	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
 		printf("Can't set 16bit\r\n");
 		shutdown_output();
-		;
 		return -1;
 	}
 

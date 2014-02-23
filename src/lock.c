@@ -22,6 +22,8 @@
  <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #else
