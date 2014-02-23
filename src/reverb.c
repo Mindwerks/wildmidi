@@ -24,6 +24,7 @@
  <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "common.h"
 
 #include <math.h>
@@ -75,41 +76,36 @@ struct _rvb *
 init_reverb(int rate, float room_x, float room_y, float listen_x,
 		float listen_y) {
 
-	/*
-		filters set at 125Hz, 250Hz, 500Hz, 1000Hz, 2000Hz, 4000Hz
-	*/
+	/* filters set at 125Hz, 250Hz, 500Hz, 1000Hz, 2000Hz, 4000Hz */
 	double Freq[] = {125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0};
 
-	// numbers calculated from
-	// 101.325 kPa, 20 deg C, 50% relative humidity
+	/* numbers calculated from
+	 * 101.325 kPa, 20 deg C, 50% relative humidity */
 	double dbAirAbs[] = {-0.00044, -0.00131, -0.002728, -0.004665, -0.009887, -0.029665};
 
+	/* modify these to adjust the absorption qualities of the surface.
+	 * Remember that lower frequencies are less effected by surfaces
+	 * Note: I am currently playing with the values and finding the ideal surfaces
+	 * for nice default reverb.
+	 */
+	double dbAttn[8][6] = {
+		{-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
+		{-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+		{-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+		{-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
+		{-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
+		{-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+		{-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
+		{-1.839, -6.205, -8.891, -12.059, -15.935, -20.942}
+	};
 	/*
-		modify these to adjust the absorption qualities of the surface.
-		Remember that lower frequencies are less effected by surfaces
-
-		Note: I am currently playing with the values and finding the ideal surfaces
-		for nice default reverb.
+	double dbAttn[6] = {
+	// concrete covered in carpet
+	//	-0.175, -0.537, -1.412, -4.437, -7.959, -7.959
+	// pleated drapes
+		-0.630, -3.223, -5.849, -12.041, -10.458, -7.959
+	};
 	*/
-    double dbAttn[8][6] = {
-        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
-        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
-        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
-        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
-        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942},
-        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
-        {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
-        {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942}
-    };
-    /*
-
-    double dbAttn[6] = {
-    // concrete covered in carpet
-//        -0.175, -0.537, -1.412, -4.437, -7.959, -7.959
-    // pleated drapes
-        -0.630, -3.223, -5.849, -12.041, -10.458, -7.959
-    };
-    */
 
 	//distance
 	double SPL_DST[8] = {0.0};
@@ -133,8 +129,8 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 	int i = 0;
 
 	struct _coord {
-       double x;
-       double y;
+		double x;
+		double y;
 	};
 
 #if 0
@@ -185,7 +181,8 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 	SPL_LSN_YOFS = SPL.y - listen_y;
 	SPL_LSN_DST = sqrtf((SPL_LSN_XOFS * SPL_LSN_XOFS) + (SPL_LSN_YOFS * SPL_LSN_YOFS));
 
-    if (SPL_LSN_DST > MAXL_DST) MAXL_DST = SPL_LSN_DST;
+	if (SPL_LSN_DST > MAXL_DST)
+		MAXL_DST = SPL_LSN_DST;
 
 	SPR_LSN_XOFS = SPR.x - listen_x;
 	SPR_LSN_YOFS = SPR.y - listen_y;
@@ -194,7 +191,7 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 	if (SPR_LSN_DST > MAXR_DST) MAXR_DST = SPR_LSN_DST;
 
 	if (rtn_rvb == NULL) {
-		return NULL ;
+		return NULL;
 	}
 
 	for (j = 0; j < 8; j++) {
@@ -263,7 +260,7 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 			double alpha = sn * sinh(M_LN2 / 2 * bandwidth * omega / sn);
 			double A = pow(10.0,
 					((dbAttn[j][i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
-//            double A = pow(10.0, ((dbAttn[i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
+		//	double A = pow(10.0, ((dbAttn[i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
 			/*
 			 Peaking band EQ filter
 			 */

@@ -27,8 +27,6 @@
 #ifndef __REVERB_H
 #define __REVERB_H
 
-#include "config.h"
-
 struct _rvb {
 	/* filter data */
 	signed long int l_buf_flt_in[8][6][2];
@@ -56,4 +54,4 @@ struct _rvb {
  extern void free_reverb (struct _rvb *rvb);
  extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
 
-#endif // __REVERB_H
+#endif /* __REVERB_H */

@@ -24,6 +24,8 @@
  <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #define UNUSED(x) (void)(x)
 
 #include <ctype.h>
@@ -59,7 +61,6 @@
 #include "reverb.h"
 #include "gus_pat.h"
 #include "common.h"
-#include "config.h"
 #include "wildmidi_lib.h"
 #include "filenames.h"
 
