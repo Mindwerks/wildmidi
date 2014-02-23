@@ -7,7 +7,7 @@
 #define PACKAGE_URL "http://www.mindwerks.net/projects/wildmidi/"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "https://github.com/psi29a/wildmidi/issues"
+#define PACKAGE_BUGREPORT "https://github.com/Mindwerks/wildmidi/issues"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "WildMidi"

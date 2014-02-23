@@ -194,7 +194,7 @@ void (*close_output)(void);
 int audio_fd;
 
 static void shutdown_output(void) {
-	printf("Shutting Down Sound System\r\n");
+	printf("Shutting Down Sound System.\r\n");
 	if (audio_fd != -1)
 		close(audio_fd);
 }
@@ -426,6 +426,7 @@ close_mm_output ( void ) {
 
 	waveOutClose (hWaveOut);
 	HeapFree(GetProcessHeap(), 0, mm_blocks);
+	shutdown_output();
 }
 
 #else
@@ -553,6 +554,7 @@ static int write_alsa_output(char * output_data, int output_size) {
 
 static void close_alsa_output(void) {
 	snd_pcm_close(pcm);
+	shutdown_output();
 }
 
 #elif defined AUDIODRV_OSS
@@ -805,9 +807,9 @@ static void close_openal_output(void) {
 	alSourcei(sourceId, AL_BUFFER, 0);// unload buffer from source
 	alDeleteBuffers(NUM_BUFFERS, buffers);
 	alDeleteSources(1, &sourceId);
-
 	alcDestroyContext(context);
 	alcCloseDevice(device);
+	shutdown_output();
 }
 
 static int open_openal_output(void) {
@@ -879,8 +881,7 @@ static void do_help(void) {
 
 static void do_version(void) {
 	printf("\nWildMidi %s Open Source Midi Sequencer\r\n", PACKAGE_VERSION);
-	printf("Copyright (C) Chris Ison  2001-2011\n\r");
-	printf("Copyright (C) Bret Curtis 2013-2014\n\r\n");
+	printf("Copyright (C) WildMIDI Developers 2001-2014\r\n\r\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\r\n");
 	printf("This is free software, and you are welcome to redistribute it\r\n");
 	printf(
@@ -1148,7 +1149,6 @@ int main(int argc, char **argv) {
 						printf("\r\n");
 						WildMidi_Close(midi_ptr);
 						WildMidi_Shutdown();
-						printf("Shutting down Sound System\r\n");
 						close_output();
 #ifndef _WIN32
 						if (isatty(my_tty))
@@ -1285,9 +1285,7 @@ int main(int argc, char **argv) {
 		msleep(5);
 #endif
 		if (WildMidi_Shutdown() == -1)
-
 			printf("oops\r\n");
-		printf("Shutting down Sound System\r\n");
 		close_output();
 #ifndef _WIN32
 		if (isatty(my_tty))
