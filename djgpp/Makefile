@@ -1,8 +1,6 @@
 #------------------------------------------------------------------------------#
 # This is a Makefile for building libWildMidi using GNU Make and GNU C compiler
-# You will need the following tools to do it painlessly:
-# - GCC/DJGPP package
-# - GNU make, grep and sed
+# You will need a GCC/DJGPP package and GNU make to do it painlessly.
 #------------------------------------------------------------------------------#
 # Targets:
 # - all (default): make libWildMidi.a library and wildmidi.exe
