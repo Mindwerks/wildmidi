@@ -35,7 +35,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 # if (defined __gnu_hurd__)
 # define __USE_XOPEN 1
 # endif
@@ -46,6 +46,16 @@
 #include <getopt.h>
 #include <time.h>
 int msleep(unsigned long millisec);
+#endif
+
+#if defined(__DJGPP__)
+#include "getopt_long.h"
+#include <conio.h>
+#define getopt dj_getopt /* hack */
+#include <unistd.h>
+#undef getopt
+#define msleep(s) usleep((s)*1000)
+#include <io.h>
 #endif
 
 #if (defined _WIN32) || (defined __CYGWIN__)
@@ -220,8 +230,8 @@ static int open_wav_output(void) {
 
 	if (wav_file[0] == '\0')
 		return (-1);
-#ifdef _WIN32
-	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY))) < 0) {
+#if defined(_WIN32) || defined(__DJGPP__)
+	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0666)) < 0) {
 #else
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
 			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
@@ -923,7 +933,7 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample = 0;
 	int inpause = 0;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 	int my_tty;
 	struct termios _tty;
 	tcflag_t _res_oflg = _tty.c_oflag;
@@ -1043,7 +1053,7 @@ int main(int argc, char **argv) {
 			WildMidi_Shutdown();
 			return (0);
 		}
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 		my_tty = fileno(stdin);
 		if (isatty(my_tty)) {
 			savetty();
@@ -1110,6 +1120,11 @@ int main(int argc, char **argv) {
 					ch = _getch();
 					putch(ch);
 				}
+#elif defined(__DJGPP__)
+				if (kbhit()) {
+					ch = getch();
+					putch(ch);
+				}
 #else
 				if (read(my_tty, &ch, 1) != 1)
 					ch = 0;
@@ -1150,7 +1165,7 @@ int main(int argc, char **argv) {
 						WildMidi_Close(midi_ptr);
 						WildMidi_Shutdown();
 						close_output();
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 						if (isatty(my_tty))
 							resetty();
 #endif
@@ -1287,7 +1302,7 @@ int main(int argc, char **argv) {
 		if (WildMidi_Shutdown() == -1)
 			printf("oops\r\n");
 		close_output();
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 		if (isatty(my_tty))
 			resetty();
 #endif
@@ -1303,7 +1318,7 @@ int main(int argc, char **argv) {
 	return (0);
 }
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 int msleep(unsigned long milisec) {
 	struct timespec req = { 0, 0 };
 	time_t sec = (int) (milisec / 1000);
