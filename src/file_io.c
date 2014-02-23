@@ -33,14 +33,24 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <io.h>
+#elif defined(__DJGPP__)
+#include <io.h>
+#include <dir.h>
+#include <unistd.h>
+#else
 #include <pwd.h>
 #include <strings.h>
 #include <unistd.h>
 #endif
 
-#ifdef _WIN32
-#include <io.h>
+#if !defined(O_BINARY)
+# if defined(_O_BINARY)
+#  define O_BINARY _O_BINARY
+# else
+#  define O_BINARY  0
+# endif
 #endif
 
 #include "wm_error.h"
@@ -50,8 +60,12 @@ unsigned char *
 WM_BufferFile(const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	unsigned char *data;
+#ifdef __DJGPP__
+	struct ffblk f;
+#else
 	struct stat buffer_stat;
-#ifndef _WIN32
+#endif
+#if !defined(_WIN32) && !defined(__DJGPP__)
 	char *home = NULL;
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
@@ -66,7 +80,7 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 	}
 
 	strcpy(buffer_file, filename);
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 	if (strncmp(buffer_file, "~/", 2) == 0) {
 		if ((pwd_ent = getpwuid(getuid()))) {
 			home = pwd_ent->pw_dir;
@@ -105,12 +119,21 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 		strncpy(buffer_file, buffer_dir, strlen(buffer_dir));
 	}
 #endif
+#ifdef __DJGPP__
+	if (findfirst(buffer_file, &f, FA_ARCH | FA_RDONLY) != 0) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
+		free(buffer_file);
+		return NULL ;
+	}
+	*size = f.ff_fsize;
+#else
 	if (stat(buffer_file, &buffer_stat)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
 		free(buffer_file);
 		return NULL ;
 	}
 	*size = buffer_stat.st_size;
+#endif
 	data = malloc(*size);
 	if (data == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
@@ -118,17 +141,13 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 		free(buffer_file);
 		return NULL ;
 	}
-#ifdef _WIN32
 	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
-#else
-	if ((buffer_fd = open(buffer_file, O_RDONLY)) == -1) {
-#endif
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, errno);
 		free(buffer_file);
 		free(data);
 		return NULL ;
 	}
-	if (read(buffer_fd, data, *size) != buffer_stat.st_size) {
+	if (read(buffer_fd, data, *size) != (long) *size) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, errno);
 		free(buffer_file);
 		free(data);
