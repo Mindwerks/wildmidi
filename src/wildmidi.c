@@ -26,6 +26,7 @@
  */
 
 #include "config.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -34,7 +35,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 # if (defined __gnu_hurd__)
 # define __USE_XOPEN 1
 # endif
@@ -47,6 +48,16 @@
 int msleep(unsigned long millisec);
 #endif
 
+#if defined(__DJGPP__)
+#include "getopt_long.h"
+#include <conio.h>
+#define getopt dj_getopt /* hack */
+#include <unistd.h>
+#undef getopt
+#define msleep(s) usleep((s)*1000)
+#include <io.h>
+#endif
+
 #if (defined _WIN32) || (defined __CYGWIN__)
 #include <conio.h>
 #include <windows.h>
@@ -54,15 +65,17 @@ int msleep(unsigned long millisec);
 #include <io.h>
 #include "getopt_long.h"
 #else
-# ifdef HAVE_ALSA_H
+# ifdef AUDIODRV_ALSA
 #  include <alsa/asoundlib.h>
-# elif defined HAVE_SYS_SOUNDCARD_H
+# elif defined AUDIODRV_OSS
+#   if defined HAVE_SYS_SOUNDCARD_H
 #   include <sys/soundcard.h>
-# elif defined HAVE_LINUX_SOUNDCARD_H
+#   elif defined HAVE_LINUX_SOUNDCARD_H
 #   include <linux/soundcard.h>
-# elif defined HAVE_MACHINE_SOUNDCARD_H
+#   elif defined HAVE_MACHINE_SOUNDCARD_H
 #   include <machine/soundcard.h>
-# elif defined HAVE_OPENAL_H
+#   endif
+# elif defined AUDIODRV_OPENAL
 #   include <al.h>
 #   include <alc.h>
 # endif
@@ -192,7 +205,7 @@ void (*close_output)(void);
 int audio_fd;
 
 static void shutdown_output(void) {
-	printf("Shutting Down Sound System\r\n");
+	printf("Shutting Down Sound System.\r\n");
 	if (audio_fd != -1)
 		close(audio_fd);
 }
@@ -217,8 +230,8 @@ static int open_wav_output(void) {
 
 	if (wav_file[0] == '\0')
 		return (-1);
-#ifdef _WIN32
-	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY))) < 0) {
+#if defined(_WIN32) || defined(__DJGPP__)
+	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0666)) < 0) {
 #else
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
 			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
@@ -250,6 +263,7 @@ static int open_wav_output(void) {
 }
 
 static int write_wav_output(char * output_data, int output_size) {
+/* the library specifically outputs LE data - no need swapping. */
 	if (write(audio_fd, output_data, output_size) < 0) {
 		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
@@ -321,7 +335,7 @@ static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstan
 	tmp_dwParam2 = dwParam1;
 
 	if(uMsg != WOM_DONE)
-	return;
+		return;
 	EnterCriticalSection(&waveCriticalSection);
 	(*freeBlockCounter)++;
 	LeaveCriticalSection(&waveCriticalSection);
@@ -379,7 +393,7 @@ write_mm_output (char * output_data, int output_size) {
 		waveOutUnprepareHeader(hWaveOut, current, sizeof(WAVEHDR));
 		free_size = MM_BLOCK_SIZE - current->dwUser;
 		if (free_size > output_size)
-		free_size = output_size;
+			free_size = output_size;
 
 		memcpy(current->lpData + current->dwUser, &output_data[data_read], free_size);
 		current->dwUser += free_size;
@@ -397,7 +411,7 @@ write_mm_output (char * output_data, int output_size) {
 		mm_free_blocks--;
 		LeaveCriticalSection(&waveCriticalSection);
 		while(!mm_free_blocks)
-		Sleep(10);
+			Sleep(10);
 		mm_current_block++;
 		mm_current_block %= MM_BLOCK_COUNT;
 		current = &mm_blocks[mm_current_block];
@@ -417,10 +431,11 @@ close_mm_output ( void ) {
 
 	waveOutClose (hWaveOut);
 	HeapFree(GetProcessHeap(), 0, mm_blocks);
+	shutdown_output();
 }
 
 #else
-#ifdef HAVE_ALSA_H
+#ifdef AUDIODRV_ALSA
 
 void *buffer;
 int bps;
@@ -462,6 +477,7 @@ static int open_alsa_output(void) {
 		return -1;
 	}
 
+	/* the library specifically outputs LE data. */
 	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
 		printf(
 				"ALSA does not support 16bit signed audio for your soundcard\r\n");
@@ -544,14 +560,23 @@ static int write_alsa_output(char * output_data, int output_size) {
 
 static void close_alsa_output(void) {
 	snd_pcm_close(pcm);
+	shutdown_output();
 }
 
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 /*
  OSS Output Functions
  --------------------
  uses mmap'd audio
  */
+
+#if !defined(AFMT_S16_NE)
+#ifdef WORDS_BIGENDIAN
+#define AFMT_S16_NE AFMT_S16_BE
+#else
+#define AFMT_S16_NE AFMT_S16_LE
+#endif
+#endif
 
 char *buffer = NULL;
 unsigned long int max_buffer;
@@ -570,8 +595,8 @@ static int open_oss_output(void) {
 	unsigned long int sz = sysconf(_SC_PAGESIZE);
 
 	if (!pcmname) {
-		pcmname = malloc(8);
-		strcpy(pcmname, "default\0");
+		pcmname = malloc(9);
+		strcpy(pcmname, "/dev/dsp");
 	}
 
 	if ((audio_fd = open(pcmname, omode)) < 0) {
@@ -593,18 +618,12 @@ static int open_oss_output(void) {
 		shutdown_output();
 		return -1;
 	}
-	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
-		printf("Um, can't do GETOSPACE?\r\n");
-		shutdown_output();
-		return -1;
-	}
-	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
 
+	/* the library specifically outputs LE data. */
 	rc = AFMT_S16_LE;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
 		printf("Can't set 16bit\r\n");
 		shutdown_output();
-		;
 		return -1;
 	}
 
@@ -621,10 +640,17 @@ static int open_oss_output(void) {
 		return -1;
 	}
 
-	buffer = (unsigned char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd,
-			0);
+	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
+		printf("Um, can't do GETOSPACE?\r\n");
+		shutdown_output();
+		return -1;
+	}
+	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
+
+	buffer = (char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
 	if (buffer == MAP_FAILED) {
 		printf("couldn't mmap %s\r\n", strerror(errno));
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -632,7 +658,8 @@ static int open_oss_output(void) {
 	tmp = 0;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
 		printf("Couldn't toggle\r\n");
-		munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -640,7 +667,8 @@ static int open_oss_output(void) {
 	tmp = PCM_ENABLE_OUTPUT;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
 		printf("Couldn't toggle\r\n");
-		munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+		buffer = NULL;
 		shutdown_output();
 		return -1;
 	}
@@ -658,7 +686,8 @@ static int write_oss_output(char * output_data, int output_size) {
 		while (1) {
 			if (ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &count) == -1) {
 				printf("Dead Sound\r\n");
-				munmap(buffer, info.fragstotal * info.fragsize);
+				munmap(buffer, max_buffer);
+				buffer = NULL;
 				shutdown_output();
 				return -1;
 			}
@@ -679,20 +708,22 @@ static int write_oss_output(char * output_data, int output_size) {
 		data_read += free_size;
 		counter += free_size;
 		if (counter >= max_buffer)
-		counter = 0;
+			counter = 0;
 		output_size -= free_size;
 	}
 	return (0);
 }
 
 static void close_oss_output(void) {
-	shutdown_output();
+	/* unmap before closing audio_fd */
 	if (buffer != NULL)
-	munmap(buffer, info.fragstotal * info.fragsize);
+		munmap(buffer, max_buffer);
+	shutdown_output();
+	buffer = NULL;
 	audio_fd = -1;
 }
 
-#elif defined HAVE_OPENAL_H
+#elif defined AUDIODRV_OPENAL
 
 #define NUM_BUFFERS 16
 #define PRIME 8
@@ -782,9 +813,9 @@ static void close_openal_output(void) {
 	alSourcei(sourceId, AL_BUFFER, 0);// unload buffer from source
 	alDeleteBuffers(NUM_BUFFERS, buffers);
 	alDeleteSources(1, &sourceId);
-
 	alcDestroyContext(context);
 	alcCloseDevice(device);
+	shutdown_output();
 }
 
 static int open_openal_output(void) {
@@ -813,8 +844,8 @@ static int open_openal_output(void) {
 	return (0);
 }
 
-#endif // HAVE_ALSA_H
-#endif
+#endif /* AUDIODRV_ALSA */
+#endif /* _WIN32 || __CYGWIN__ */
 
 static struct option const long_options[] = { { "version", 0, 0, 'v' }, {
 		"help", 0, 0, 'h' }, { "rate", 1, 0, 'r' },
@@ -856,8 +887,7 @@ static void do_help(void) {
 
 static void do_version(void) {
 	printf("\nWildMidi %s Open Source Midi Sequencer\r\n", PACKAGE_VERSION);
-	printf("Copyright (C) Chris Ison  2001-2011\n\r");
-	printf("Copyright (C) Bret Curtis 2013-2014\n\r\n");
+	printf("Copyright (C) WildMIDI Developers 2001-2014\r\n\r\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\r\n");
 	printf("This is free software, and you are welcome to redistribute it\r\n");
 	printf(
@@ -899,7 +929,7 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample = 0;
 	int inpause = 0;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 	int my_tty;
 	struct termios _tty;
 	tcflag_t _res_oflg = _tty.c_oflag;
@@ -988,16 +1018,14 @@ int main(int argc, char **argv) {
 		} else {
 #if (defined _WIN32) || (defined __CYGWIN__)
 			if (open_mm_output() == -1) {
-#else
-#ifdef HAVE_ALSA_H
+#elif defined AUDIODRV_ALSA
 			if (open_alsa_output() == -1) {
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 			if (open_oss_output() == -1) {
-#elif (defined HAVE_OPENAL_H)
+#elif defined AUDIODRV_OPENAL
 			if (open_openal_output() == -1) {
-#else
+#else /* no audio output driver compiled in */
 			{
-#endif
 #endif
 				return (0);
 			}
@@ -1021,7 +1049,7 @@ int main(int argc, char **argv) {
 			WildMidi_Shutdown();
 			return (0);
 		}
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 		my_tty = fileno(stdin);
 		if (isatty(my_tty)) {
 			savetty();
@@ -1088,6 +1116,11 @@ int main(int argc, char **argv) {
 					ch = _getch();
 					putch(ch);
 				}
+#elif defined(__DJGPP__)
+				if (kbhit()) {
+					ch = getch();
+					putch(ch);
+				}
 #else
 				if (read(my_tty, &ch, 1) != 1)
 					ch = 0;
@@ -1127,9 +1160,8 @@ int main(int argc, char **argv) {
 						printf("\r\n");
 						WildMidi_Close(midi_ptr);
 						WildMidi_Shutdown();
-						printf("Shutting down Sound System\r\n");
 						close_output();
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 						if (isatty(my_tty))
 							resetty();
 #endif
@@ -1199,11 +1231,11 @@ int main(int argc, char **argv) {
 #else
 					msleep(5);
 #endif
-#ifdef HAVE_ALSA_H
+#ifdef AUDIODRV_ALSA
 					;
-#elif (defined HAVE_SYS_SOUNDCARD_H) || (defined HAVE_LINUX_SOUNDCARD_H) || (defined HAVE_MACHINE_SOUNDCARD_H)
+#elif defined AUDIODRV_OSS
 					;
-#elif (defined HAVE_OPENAL_H)
+#elif defined AUDIODRV_OPENAL
 					alSourcePause(sourceId);
 #else
 					;
@@ -1264,11 +1296,9 @@ int main(int argc, char **argv) {
 		msleep(5);
 #endif
 		if (WildMidi_Shutdown() == -1)
-
 			printf("oops\r\n");
-		printf("Shutting down Sound System\r\n");
 		close_output();
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 		if (isatty(my_tty))
 			resetty();
 #endif
@@ -1284,7 +1314,7 @@ int main(int argc, char **argv) {
 	return (0);
 }
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__DJGPP__)
 int msleep(unsigned long milisec) {
 	struct timespec req = { 0, 0 };
 	time_t sec = (int) (milisec / 1000);

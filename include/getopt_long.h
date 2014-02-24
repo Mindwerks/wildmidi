@@ -1,8 +1,6 @@
 #ifndef __GETOPT_LONG_H__
 #define __GETOPT_LONG_H__
 
-#include "config.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

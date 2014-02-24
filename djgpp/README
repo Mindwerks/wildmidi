@@ -1,0 +1,22 @@
+This directory contains the Makefile and config.h needed to compile
+libWilMidi library and wildmidi player for DOS using DJGPP.
+
+
+To compile, you need DJGPP library and its associated compiler suite.
+Both djgpp-v2.03 and v2.04 should work.  DJGPP is available from its
+official site at <http://www.delorie.com/djgpp/>
+Cd in to the djgpp directory and run 'make', i.e.:
+
+  cd djgpp
+  make
+
+.. which will generate libWildMidi.a and wildmidi.exe.
+
+
+The library part (libWildMidi.a) is fully functional.  The player
+part (wildmidi.exe) only outputs a wav file.  Run like:
+
+  wildmidi -o output.wav mymidi.mid
+
+An actual sound output functionality might be added later.
+

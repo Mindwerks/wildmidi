@@ -22,6 +22,10 @@
  <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
+#ifndef __DJGPP__
+
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -90,3 +94,5 @@ void WM_Unlock(int *wmlock) {
 		(*wmlock)--;
 	}
 }
+
+#endif /* __DJGPP__ */
