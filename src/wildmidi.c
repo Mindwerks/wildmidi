@@ -816,6 +816,8 @@ static void close_openal_output(void) {
 	alcDestroyContext(context);
 	alcCloseDevice(device);
 	shutdown_output();
+	context = NULL;
+	device = NULL;
 }
 
 static int open_openal_output(void) {
@@ -831,6 +833,8 @@ static int open_openal_output(void) {
 		if (context != NULL)
 		alcDestroyContext(context);
 		alcCloseDevice(device);
+		context = NULL;
+		device = NULL;
 		printf("OpenAL: Failed to create the default context.\n");
 		return (-1);
 	}
@@ -1277,8 +1281,20 @@ int main(int argc, char **argv) {
 						apr_mins, apr_secs, modes, master_volume, pro_mins,
 						pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
-				if (output_result > 0)
+				if (output_result > 0) {
+#if defined(AUDIODRV_OPENAL) && defined(WORDS_BIGENDIAN)
+					if (context != NULL) {
+					/* the library specifically outputs LE data
+					 * but OpenAL expects host-endian: do swap. */
+						unsigned short *swp =
+							(unsigned short *) output_buffer;
+						for (i = 0; i < output_result / 2; ++i) {
+							swp[i] = (swp[i] << 8) | (swp[i] >> 8);
+						}
+					}
+#endif
 					send_output(output_buffer, output_result);
+				}
 			}
 			NEXTMIDI: fprintf(stderr, "\r\n");
 			if (WildMidi_Close(midi_ptr) == -1) {
