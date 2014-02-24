@@ -19,7 +19,7 @@ Places \fIsize\fP bytes of audio data from a \fIhandle\fP, previously opened by 
 The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
 .IP \fIbuffer\fP
-The location supplied by the calling program where libWildMidi is to store the audio data.
+The location supplied by the calling program where libWildMidi is to store the audio data. The audio data will be stored as signed 16bit interleaved stereo in little endian byte order.
 .PP
 .IP \fIsize\fP
 The size of the buffer in bytes. Since libWildMidi processes the audio in 16bit interleaved stereo format, this value needs to be a multiple of 4.
