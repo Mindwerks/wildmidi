@@ -263,13 +263,7 @@ static int open_wav_output(void) {
 }
 
 static int write_wav_output(char * output_data, int output_size) {
-#ifdef WORDS_BIGENDIAN
-	unsigned short *swp = (unsigned short *)output_data;
-	int i = (output_size / 2) - 1;
-	for (; i >= 0; --i) {
-		swp[i] = (swp[i] << 8) | (swp[i] >> 8);
-	}
-#endif
+/* the library specifically outputs LE data - no need swapping. */
 	if (write(audio_fd, output_data, output_size) < 0) {
 		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
 		shutdown_output();
@@ -483,7 +477,8 @@ static int open_alsa_output(void) {
 		return -1;
 	}
 
-	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16) < 0) {
+	/* the library specifically outputs LE data. */
+	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
 		printf(
 				"ALSA does not support 16bit signed audio for your soundcard\r\n");
 		close_alsa_output();
@@ -624,7 +619,8 @@ static int open_oss_output(void) {
 		return -1;
 	}
 
-	rc = AFMT_S16_NE;
+	/* the library specifically outputs LE data. */
+	rc = AFMT_S16_LE;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
 		printf("Can't set 16bit\r\n");
 		shutdown_output();
