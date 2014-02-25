@@ -7,12 +7,14 @@ Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi  
 
 PLATFORMS:
+
 * Hurd: Debian
 * kFreeBSD: Debian, FreeBSD
 * Linux: Arch, Debian, Fedora, Ubuntu
 * Windows: x32 and x64
 
-BUILD FROM SOURCE
+BUILD FROM SOURCE:
+
 Requirements:
 * git
 * cmake
