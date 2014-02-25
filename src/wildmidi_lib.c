@@ -3185,10 +3185,17 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 		 * Write to the buffer
 		 * ===================
 		 */
+#ifdef WORDS_BIGENDIAN
+		(*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
+		(*buffer++) = left_mix & 0xff;
+		(*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+		(*buffer++) = right_mix & 0xff;
+#else
 		(*buffer++) = left_mix & 0xff;
 		(*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
 		(*buffer++) = right_mix & 0xff;
 		(*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+#endif
 	}
 
 	free(out_buffer);
@@ -3519,10 +3526,17 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 		 * Write to the buffer
 		 * ===================
 		 */
+#ifdef WORDS_BIGENDIAN
+		(*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
+		(*buffer++) = left_mix & 0xff;
+		(*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+		(*buffer++) = right_mix & 0xff;
+#else
 		(*buffer++) = left_mix & 0xff;
 		(*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
 		(*buffer++) = right_mix & 0xff;
 		(*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+#endif
 	}
 	free(out_buffer);
 	WM_Unlock(&mdi->lock);
