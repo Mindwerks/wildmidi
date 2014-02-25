@@ -37,6 +37,11 @@ IF(WANT_STATIC)
     SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES 
         OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
         )
+    IF(WIN32)
+        SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES 
+            COMPILE_DEFINITIONS WILDMIDI_BUILD
+        )
+    ENDIF()
 ENDIF(WANT_STATIC)
 
 # always build our dynamic library
@@ -54,6 +59,12 @@ SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES
     OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1
     )
 
+IF(WIN32)
+    SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES 
+        DEFINE_SYMBOL DLL_EXPORT
+        COMPILE_DEFINITIONS WILDMIDI_BUILD
+    )
+ENDIF()
 
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")

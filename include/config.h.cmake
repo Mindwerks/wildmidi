@@ -29,6 +29,19 @@
 
 /* Define if the C compiler supports the `inline' keyword. */
 #cmakedefine HAVE_C_INLINE
+/* Define if the C compiler supports the `__inline__' keyword. */
+#cmakedefine HAVE_C___INLINE__
+/* Define if the C compiler supports the `__inline' keyword. */
+#cmakedefine HAVE_C___INLINE
+#if !defined(HAVE_C_INLINE) && !defined(__cplusplus)
+# ifdef HAVE_C___INLINE__
+#  define inline __inline__
+# elif defined(HAVE_C___INLINE)
+#  define inline __inline
+# else
+#  define inline
+# endif
+#endif
 
 /* Define if the compiler has the `__builtin_expect' built-in function */
 #cmakedefine HAVE___BUILTIN_EXPECT

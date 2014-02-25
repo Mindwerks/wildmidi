@@ -1,7 +1,7 @@
 /*
 	wildmidi_lib.h
 
- 	Midi Wavetable Processing library
+	Midi Wavetable Processing library
 
     Copyright (C) Chris Ison 2001-2011
     Copyright (C) Bret Curtis 2013-2014
@@ -27,27 +27,34 @@
 #define WM_MO_LOG_VOLUME	0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
-#define WM_MO_WHOLETEMPO      0x8000
-#define WM_MO_ROUNDTEMPO      0xA000
+#define WM_MO_WHOLETEMPO	0x8000
+#define WM_MO_ROUNDTEMPO	0xA000
 #define WM_GS_VERSION		0x0001
 
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
-    #ifdef __GNUC__
-        #define WM_SYMBOL __attribute__ ((dllexport))
-    #else
-        #define WM_SYMBOL __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-    #endif
+  /* ========== NOTE TO WINDOWS DEVELOPERS:
+   * If you are compiling for Windows and will link to the static library
+   * (libWildMidi.a with MinGW, or wildmidi_static.lib with MSVC, etc),
+   * you must define WILDMIDI_STATIC in your project. Otherwise dllimport
+   * will be assumed. */
+# if defined(WILDMIDI_BUILD) && defined(DLL_EXPORT)		/* building libWildMidi as a dll for windows */
+#  define WM_SYMBOL __declspec(dllexport)
+# elif defined(WILDMIDI_BUILD) || defined(WILDMIDI_STATIC)	/* building or using static libWildMidi for windows */
+#  define WM_SYMBOL
+# else									/* using libWildMidi dll for windows */
+#  define WM_SYMBOL __declspec(dllimport)
+# endif
 #else
-  #if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
-        #define WM_SYMBOL __attribute__ ((visibility ("default")))
-  #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
-        #define WM_SYMBOL __hidden
-  #elif defined(__GNUC__) && defined(SYM_VISIBILITY)
-        #define WM_SYMBOL __attribute__ ((visibility ("default")))
-  #else
-        #define WM_SYMBOL
-  #endif
+# if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+#  define WM_SYMBOL __attribute__ ((visibility ("default")))
+# elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+#  define WM_SYMBOL __hidden
+# elif defined(__GNUC__) && defined(SYM_VISIBILITY)
+#  define WM_SYMBOL __attribute__ ((visibility ("default")))
+# else
+#  define WM_SYMBOL
+# endif
 #endif
 
 #if defined(__cplusplus)
@@ -76,9 +83,8 @@ WM_SYMBOL int WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown ( void );
 
-// NOTE: Not Yet Implemented Or Tested Properly
+/* NOTE: Not Yet Implemented Or Tested Properly */
 int WildMidi_Live(midi * handle, unsigned long int midi_event);
-
 
 #if defined(__cplusplus)
 }

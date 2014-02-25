@@ -83,8 +83,13 @@ IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
 ENDIF()
 
 CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
+
 CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
                          int main(void) {return 0;}" HAVE_C_INLINE)
+CHECK_C_SOURCE_COMPILES("static __inline__ int static_foo() {return 0;}
+                         int main(void) {return 0;}" HAVE_C___INLINE__)
+CHECK_C_SOURCE_COMPILES("static __inline int static_foo() {return 0;}
+                         int main(void) {return 0;}" HAVE_C___INLINE)
 
 # default config locaiton
 SET(WILDMIDI_CFG "wildmidi.cfg")

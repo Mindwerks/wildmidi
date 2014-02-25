@@ -96,10 +96,4 @@ struct _patch {
 #define __builtin_expect(x,c) x
 #endif
 
-#ifndef __cplusplus
-#ifndef HAVE_C_INLINE
-#define inline __inline
-#endif
-#endif
-
 #endif /* __COMMON_H */
