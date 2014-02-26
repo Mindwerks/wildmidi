@@ -1,7 +1,7 @@
 /*
 	file_io.c
 
- 	file handling
+	file handling
 
     Copyright (C) Chris Ison 2001-2011
     Copyright (C) Bret Curtis 2013-2014

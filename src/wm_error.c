@@ -63,6 +63,4 @@ void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
 					errors[wmerno]);
 		}
 	}
-
 }
-

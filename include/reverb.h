@@ -1,7 +1,7 @@
 /*
 	reverb.h
 
- 	Midi Wavetable Processing library
+	Midi Wavetable Processing library
 
     Copyright (C) Chris Ison 2001-2011
     Copyright (C) Bret Curtis 2013-2014
@@ -46,7 +46,7 @@ struct _rvb {
 	int l_in[4];
 	int r_in[4];
 	int gain;
-    unsigned long int max_reverb_time;
+	unsigned long int max_reverb_time;
 };
 
  extern void reset_reverb (struct _rvb *rvb);

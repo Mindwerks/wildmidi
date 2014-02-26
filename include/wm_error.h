@@ -36,7 +36,7 @@
 #define WM_ERR_CORUPT		6
 #define WM_ERR_NOT_INIT		7
 #define WM_ERR_INVALID_ARG	8
-#define WM_ERR_ALR_INIT     9
+#define WM_ERR_ALR_INIT		9
 
  extern void WM_ERROR_NEW(const char * wmfmt, ...)
 #ifdef __GNUC__
