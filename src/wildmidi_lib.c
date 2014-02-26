@@ -3549,6 +3549,10 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
  * =========================
  */
 
+WM_SYMBOL long WildMidi_GetVersion (void) {
+	return LIBWILDMIDI_VERSION;
+}
+
 WM_SYMBOL const char *
 WildMidi_GetString(unsigned short int info) {
 	switch (info) {

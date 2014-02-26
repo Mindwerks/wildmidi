@@ -24,6 +24,16 @@
     <http://www.gnu.org/licenses/>.
 */
 
+/* library version: should match the version in CMakeLists.txt */
+#define LIBWILDMIDI_VER_MAJOR 0L
+#define LIBWILDMIDI_VER_MINOR 4L
+#define LIBWILDMIDI_VER_MICRO 0L
+#define LIBWILDMIDI_VERSION	\
+      ((LIBWILDMIDI_VER_MAJOR << 16) | \
+       (LIBWILDMIDI_VER_MINOR <<  8) | \
+       (LIBWILDMIDI_VER_MICRO      ))
+
+/* public constants */
 #define WM_MO_LOG_VOLUME	0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
@@ -71,6 +81,7 @@ struct _WM_Info {
 
 typedef void midi;
 
+WM_SYMBOL long WildMidi_GetVersion (void);
 WM_SYMBOL const char * WildMidi_GetString (unsigned short int info);
 WM_SYMBOL int WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short int options);
 WM_SYMBOL int WildMidi_MasterVolume (unsigned char master_volume);
