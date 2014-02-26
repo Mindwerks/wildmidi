@@ -1146,7 +1146,6 @@ int load_sample(struct _patch *sample_patch) {
 	unsigned int i = 0;
 
 	// we only want to try loading the guspat once.
-
 	sample_patch->loaded = 1;
 
 	if ((guspat = load_gus_pat(sample_patch->filename, fix_release)) == NULL) {
@@ -1225,7 +1224,6 @@ int load_sample(struct _patch *sample_patch) {
 	}
 
 	do {
-
 		if ((sample_patch->remove & SAMPLE_SUSTAIN)
 				&& (guspat->modes & SAMPLE_SUSTAIN)) {
 			guspat->modes ^= SAMPLE_SUSTAIN;
@@ -1558,7 +1556,6 @@ static void do_note_on(struct _mdi *mdi, struct _event_data *data) {
 	nte->sample_pos = 0;
 	nte->sample_inc = get_inc(mdi, nte);
 	nte->velocity = velocity;
-	;
 	nte->env = 0;
 	nte->env_inc = nte->sample->env_rate[0];
 	nte->env_level = 0;
@@ -2341,15 +2338,15 @@ unsigned long int get_decay_samples(struct _patch *patch, unsigned char note) {
 		float sratedata = ((float) sample->rate / (float) WM_SampleRate)
 				* (float) (sample->data_length >> 10);
 		decay_samples = (unsigned long int) sratedata;
-//        printf("Drums (%i / %i) * %lu = %f\n", sample->rate, WM_SampleRate, (sample->data_length >> 10), sratedata);
+	//	printf("Drums (%i / %i) * %lu = %f\n", sample->rate, WM_SampleRate, (sample->data_length >> 10), sratedata);
 	} else if (sample->modes & SAMPLE_CLAMPED) {
 		decay_samples = (4194303 / sample->env_rate[5]);
-//        printf("clamped 4194303 / %lu = %lu\n", sample->env_rate[5], decay_samples);
+	//	printf("clamped 4194303 / %lu = %lu\n", sample->env_rate[5], decay_samples);
 	} else {
 		decay_samples =
 				((4194303 - sample->env_target[4]) / sample->env_rate[4])
 						+ (sample->env_target[4] / sample->env_rate[5]);
-//        printf("NOT clamped ((4194303 - %lu) / %lu) + (%lu / %lu)) = %lu\n", sample->env_target[4], sample->env_rate[4], sample->env_target[4], sample->env_rate[5], decay_samples);
+	//	printf("NOT clamped ((4194303 - %lu) / %lu) + (%lu / %lu)) = %lu\n", sample->env_target[4], sample->env_rate[4], sample->env_target[4], sample->env_rate[5], decay_samples);
 	}
 	return decay_samples;
 }
@@ -2585,10 +2582,12 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 							tmp_patch = get_patch_data(mdi,
 									((mdi->channel[current_event_ch].bank << 8)
 											| tracks[i][0] | 0x80));
-//                                if (tmp_patch == NULL) printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);
+						//	if (tmp_patch == NULL)
+						//		printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);
 						} else {
 							tmp_patch = mdi->channel[current_event_ch].patch;
-//                                if (tmp_patch == NULL) printf("Channel %i patch not loaded\n", current_event_ch);
+						//	if (tmp_patch == NULL)
+						//		printf("Channel %i patch not loaded\n", current_event_ch);
 						}
 						tmp_decay_samples = get_decay_samples(tmp_patch,
 								tracks[i][0]);
@@ -2848,13 +2847,12 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 			mdi->event_count++;
 		}
 		mdi->info.approx_total_samples += sample_count;
-//        printf("Decay Samples = %lu\n",decay_samples);
+		//printf("Decay Samples = %lu\n",decay_samples);
 		if (decay_samples > sample_count) {
 			decay_samples -= sample_count;
 		} else {
 			decay_samples = 0;
 		}
-
 	}
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
@@ -2869,7 +2867,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 	// Add additional samples needed for decay
 	mdi->info.approx_total_samples += decay_samples;
-//    printf("decay_samples = %lu\n",decay_samples);
+	//printf("decay_samples = %lu\n",decay_samples);
 
 	if ((mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width,
 			reverb_room_length, reverb_listen_posx, reverb_listen_posy))
@@ -3106,7 +3104,6 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 									do {
 										prev_note = nte_array;
 										nte_array = nte_array->next;
-										//} while (nte_array != note_data);
 									} while ((nte_array != note_data)
 											&& (nte_array != NULL));
 								}
@@ -3137,19 +3134,18 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 					note_data = note_data->next;
 					continue;
 				}
+
 				/*
 				 * =========================
 				 * mix the channels together
 				 * =========================
 				 */
-
 				left_mix /= 1024;
 				right_mix /= 1024;
 			}
 
 			*tmp_buffer++ = left_mix;
 			*tmp_buffer++ = right_mix;
-
 		} while (--count);
 
 		buffer_used += real_samples_to_mix * 4;
@@ -3447,7 +3443,6 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 									do {
 										prev_note = nte_array;
 										nte_array = nte_array->next;
-										//} while (nte_array != note_data);
 									} while ((nte_array != note_data)
 											&& (nte_array != NULL));
 								}
@@ -3478,19 +3473,18 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 					note_data = note_data->next;
 					continue;
 				}
+
 				/*
 				 * =========================
 				 * mix the channels together
 				 * =========================
 				 */
-
 				left_mix /= 1024;
 				right_mix /= 1024;
 			}
 
 			*tmp_buffer++ = left_mix;
 			*tmp_buffer++ = right_mix;
-
 		} while (--count);
 
 		buffer_used += real_samples_to_mix * 4;

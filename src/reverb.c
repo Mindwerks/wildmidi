@@ -25,11 +25,11 @@
  */
 
 #include "config.h"
-#include "common.h"
 
 #include <math.h>
 #include <stdlib.h>
 
+#include "common.h"
 #include "reverb.h"
 
 /*

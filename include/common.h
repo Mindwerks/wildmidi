@@ -1,7 +1,7 @@
 /*
 	common.h
 
- 	Midi Wavetable Processing library
+	Midi Wavetable Processing library
 
     Copyright (C) Chris Ison 2001-2011
     Copyright (C) Bret Curtis 2013-2014
@@ -84,7 +84,7 @@ struct _patch {
 
 /* Set our global defines here */
 #ifndef M_PI
-#define M_PI           3.14159265358979323846
+#define M_PI  3.14159265358979323846
 #endif
 
 #ifndef M_LN2
