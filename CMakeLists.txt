@@ -36,11 +36,16 @@ OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OF
 OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
+IF(UNIX AND NOT APPLE)
+SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
+ELSE()
+SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
+ENDIF()
 
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
-    ADD_DEFINITIONS( 
-        -D_POSIX_C_SOURCE=200809L 
+    ADD_DEFINITIONS(
+        -D_POSIX_C_SOURCE=200809L
         -D_BSD_SOURCE=1
         -pedantic
         -Wall -W
@@ -91,9 +96,6 @@ CHECK_C_SOURCE_COMPILES("static __inline__ int static_foo() {return 0;}
 CHECK_C_SOURCE_COMPILES("static __inline int static_foo() {return 0;}
                          int main(void) {return 0;}" HAVE_C___INLINE)
 
-# default config locaiton
-SET(WILDMIDI_CFG "wildmidi.cfg")
-
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
 SET(AUDIODRV_ALSA)
@@ -101,7 +103,7 @@ SET(AUDIODRV_OSS)
 SET(AUDIODRV_OPENAL)
 
 # UNIX-like environments
-IF(NOT WIN32 AND NOT APPLE)
+IF(UNIX AND NOT APPLE)
     SET(AUDIO_LIBRARY "")
 
     # Go looking for available sound packages for WildMIDI player
@@ -154,16 +156,13 @@ IF(NOT WIN32 AND NOT APPLE)
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m REQUIRED)
 
-    # set our default linux/*bsd config
-    SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg")
-
     ## Debian and non debian Linux building
     IF (DPKG_PROGRAM)
         ## Debian specific
     ELSE ()
         ## Non debian specific
     ENDIF (DPKG_PROGRAM)
-ENDIF(NOT WIN32 AND NOT APPLE)
+ENDIF(UNIX AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
     FIND_PACKAGE(OpenAL REQUIRED)
@@ -185,33 +184,27 @@ IF (APPLE AND WANT_PLAYER)
     ENDIF(WANT_OPENAL)
 ENDIF (APPLE AND WANT_PLAYER)
 
-IF (WIN32)
+IF(WIN32)
     IF (WANT_PLAYER)
         LINK_LIBRARIES(winmm)
     ENDIF(WANT_PLAYER)
-ENDIF (WIN32)
-
-# OpenAL support (multi-platform)
-IF (WANT_PLAYER AND OPENAL_FOUND)
-    SET(HAVE_OPENAL_H 1)
-    INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
-ENDIF (WANT_PLAYER AND OPENAL_FOUND)
+ENDIF(WIN32)
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 FILE (MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
 INCLUDE_DIRECTORIES(BEFORE "${CMAKE_CURRENT_BINARY_DIR}/include")
 
-IF (APPLE)
+IF(APPLE)
     SET(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
     SET(APP_BUNDLE_DIR "${wildmidi_BINARY_DIR}/${APP_BUNDLE_NAME}")
-ENDIF (APPLE)
+ENDIF(APPLE)
 
-IF (APPLE)
+IF(APPLE)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APP_BUNDLE_DIR}/Contents/MacOS")
-ELSE (APPLE)
+ELSE(APPLE)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${wildmidi_BINARY_DIR}")
-ENDIF (APPLE)
+ENDIF(APPLE)
 
 # Setup up our config file
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
