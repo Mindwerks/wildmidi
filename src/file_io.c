@@ -71,54 +71,51 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 	char buffer_dir[1024];
 #endif
 
-	char *buffer_file = malloc(strlen(filename) + 1);
+	char *buffer_file = NULL;
 
-	if (buffer_file == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-		return NULL ;
-	}
-
-	strcpy(buffer_file, filename);
 #if !defined(_WIN32) && !defined(__DJGPP__)
-	if (strncmp(buffer_file, "~/", 2) == 0) {
+	if (strncmp(filename, "~/", 2) == 0) {
 		if ((pwd_ent = getpwuid(getuid()))) {
 			home = pwd_ent->pw_dir;
 		} else {
 			home = getenv("HOME");
 		}
 		if (home) {
-			buffer_file = realloc(buffer_file,
-					(strlen(buffer_file) + strlen(home) + 1));
+			buffer_file = malloc(strlen(filename) + strlen(home) + 1);
 			if (buffer_file == NULL) {
 				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-				free(buffer_file);
-				return NULL ;
+				return NULL;
 			}
-			memmove((buffer_file + strlen(home)), (buffer_file + 1),
-					(strlen(buffer_file)));
-			strncpy(buffer_file, home, strlen(home));
+			strcpy(buffer_file, home);
+			strcat(buffer_file, filename + 1);
 		}
-	} else if (buffer_file[0] != '/') {
+	} else if (filename[0] != '/') {
 		char* cwdresult = getcwd(buffer_dir, 1024);
-		if (buffer_dir[strlen(buffer_dir) - 1] != '/') {
-			buffer_dir[strlen(buffer_dir) + 1] = '\0';
-			buffer_dir[strlen(buffer_dir)] = '/';
-		}
-		buffer_file = realloc(buffer_file,
-				(strlen(buffer_file) + strlen(buffer_dir) + 1));
+		if (cwdresult != NULL)
+			buffer_file = malloc(strlen(filename) + strlen(buffer_dir) + 2);
 		if (buffer_file == NULL || cwdresult == NULL) {
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-			free(buffer_file);
-			return NULL ;
+			return NULL;
 		}
-		memmove((buffer_file + strlen(buffer_dir)), buffer_file,
-				strlen(buffer_file) + 1);
-		strncpy(buffer_file, buffer_dir, strlen(buffer_dir));
+		strcpy(buffer_file, buffer_dir);
+		if (buffer_dir[strlen(buffer_dir) - 1] != '/')
+			strcat(buffer_file, "/");
+		strcat(buffer_file, filename);
 	}
 #endif
+
+	if (buffer_file == NULL) {
+		buffer_file = malloc(strlen(filename) + 1);
+		if (buffer_file == NULL) {
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
+			return NULL ;
+		}
+		strcpy(buffer_file, filename);
+	}
+
 #ifdef __DJGPP__
 	if (findfirst(buffer_file, &f, FA_ARCH | FA_RDONLY) != 0) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
@@ -134,6 +131,7 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 	}
 	*size = buffer_stat.st_size;
 #endif
+
 	data = malloc(*size);
 	if (data == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
@@ -141,19 +139,21 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 		free(buffer_file);
 		return NULL ;
 	}
+
 	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, errno);
 		free(buffer_file);
 		free(data);
-		return NULL ;
+		return NULL;
 	}
 	if (read(buffer_fd, data, *size) != (long) *size) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, errno);
 		free(buffer_file);
 		free(data);
 		close(buffer_fd);
-		return NULL ;
+		return NULL;
 	}
+
 	close(buffer_fd);
 	free(buffer_file);
 	return data;
