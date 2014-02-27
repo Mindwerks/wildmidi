@@ -43,7 +43,7 @@ SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
 ENDIF()
 
 # Compiler specific settings
-IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(
         -D_POSIX_C_SOURCE=200809L
         -D_BSD_SOURCE=1
@@ -72,10 +72,6 @@ IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
                                  int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
         IF(HAVE_VISIBILITY_DEFAULT)
             CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN)
-            IF(HAVE_VISIBILITY_HIDDEN)
-                ADD_DEFINITIONS(-fvisibility=hidden)
-                ADD_DEFINITIONS("-DSYM_VISIBILITY")
-            ENDIF()
         ENDIF()
         SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
     ENDIF()
@@ -85,6 +81,21 @@ IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
     ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Release")
         ADD_DEFINITIONS( -O3 )
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+ENDIF()
+
+IF("${CMAKE_C_COMPILER_ID}" MATCHES "SunPro")
+    SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -xldscope=hidden")
+# __SUNPRO_C >= 0x590
+#   CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
+#                            int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
+# __SUNPRO_C >= 0x550
+    CHECK_C_SOURCE_COMPILES("__global int foo(void);
+                             int main(void) {return 0;}" HAVE_LDSCOPE_GLOBAL)
+    IF(HAVE_LDSCOPE_GLOBAL)# OR HAVE_VISIBILITY_DEFAULT
+        SET(HAVE_LDSCOPE_HIDDEN 1)
+    ENDIF()
+    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
 ENDIF()
 
 CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
