@@ -3639,16 +3639,16 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 		while (tmp_handle->handle != handle) {
 			tmp_handle = tmp_handle->next;
 			if (tmp_handle == NULL) {
-				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-						"(handle does not exist)", 0);
-				return -1;
+				break;
 			}
 		}
-		tmp_handle->prev->next = tmp_handle->next;
-		if (tmp_handle->next != NULL) {
-			tmp_handle->next->prev = tmp_handle->prev;
+		if (tmp_handle) {
+			tmp_handle->prev->next = tmp_handle->next;
+			if (tmp_handle->next != NULL) {
+				tmp_handle->next->prev = tmp_handle->prev;
+			}
+			free(tmp_handle);
 		}
-		free(tmp_handle);
 	}
 
 	if (mdi->patch_count != 0) {
@@ -3714,10 +3714,10 @@ WildMidi_Open(const char *midifile) {
 	free(mididata);
 
 	if (ret != NULL) {
-		int hdlret = 0;
-		hdlret = add_handle(ret);
-		if (hdlret != 0)
-			exit(hdlret);
+		if (add_handle(ret) != 0) {
+			WildMidi_Close(ret);
+			ret = NULL;
+		}
 	}
 
 	return ret;
@@ -3739,10 +3739,10 @@ WildMidi_OpenBuffer(unsigned char *midibuffer, unsigned long int size) {
 	ret = (void *) WM_ParseNewMidi(midibuffer, size);
 
 	if (ret != NULL) {
-		int hdlret = 0;
-		hdlret = add_handle(ret);
-		if (hdlret != 0)
-			exit(hdlret);
+		if (add_handle(ret) != 0) {
+			WildMidi_Close(ret);
+			ret = NULL;
+		}
 	}
 
 	return ret;
