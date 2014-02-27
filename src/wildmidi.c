@@ -934,8 +934,8 @@ int main(int argc, char **argv) {
 #if !defined(_WIN32) && !defined(__DJGPP__)
 	int my_tty;
 	struct termios _tty;
-	tcflag_t _res_oflg = _tty.c_oflag;
-	tcflag_t _res_lflg = _tty.c_lflag;
+	tcflag_t _res_oflg = 0;
+	tcflag_t _res_lflg = 0;
 
 #define raw() (_tty.c_lflag &= ~(ICANON | ICRNL | ISIG), \
 		_tty.c_oflag &= ~ONLCR, tcsetattr(my_tty, TCSANOW, &_tty))
@@ -1043,14 +1043,13 @@ int main(int argc, char **argv) {
 		printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\r\n");
 		printf("                     p  Pause On/Off\n\r\n");
 
-		WildMidi_MasterVolume(master_volume);
-
 		output_buffer = malloc(16384);
 		if (output_buffer == NULL) {
 			printf("Not enough ram, exiting\r\n");
 			WildMidi_Shutdown();
 			return (0);
 		}
+
 #if !defined(_WIN32) && !defined(__DJGPP__)
 		my_tty = fileno(stdin);
 		if (isatty(my_tty)) {
@@ -1059,6 +1058,8 @@ int main(int argc, char **argv) {
 			fcntl(0, F_SETFL, FNONBLOCK);
 		}
 #endif
+
+		WildMidi_MasterVolume(master_volume);
 
 		while ((optind < argc) || (test_midi)) {
 			if (!test_midi) {
