@@ -36,12 +36,8 @@ IF(WANT_STATIC)
 
     SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES 
         OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
+        COMPILE_DEFINITIONS WILDMIDI_BUILD
         )
-    IF(WIN32)
-        SET_TARGET_PROPERTIES(wildmidi_static PROPERTIES 
-            COMPILE_DEFINITIONS WILDMIDI_BUILD
-        )
-    ENDIF()
 ENDIF(WANT_STATIC)
 
 # always build our dynamic library
@@ -57,12 +53,12 @@ SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES
     SOVERSION ${SOVERSION}
     VERSION ${VERSION}
     OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1
+    COMPILE_DEFINITIONS WILDMIDI_BUILD
     )
 
 IF(WIN32)
     SET_TARGET_PROPERTIES(wildmidi_dynamic PROPERTIES 
         DEFINE_SYMBOL DLL_EXPORT
-        COMPILE_DEFINITIONS WILDMIDI_BUILD
     )
 ENDIF()
 
@@ -93,14 +89,19 @@ IF(WANT_PLAYER)
         ${GETOPT}
         wildmidi.c
     )
-    
-    ADD_EXECUTABLE(wildmidi 
+
+    ADD_EXECUTABLE(wildmidi
         ${wildmidi_executable_SRCS}
     )
-    
+
     ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
-    
-    TARGET_LINK_LIBRARIES(wildmidi 
+
+    IF(AUDIODRV_OPENAL)
+        TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
+            ${OPENAL_INCLUDE_DIR}
+            )
+    ENDIF()
+    TARGET_LINK_LIBRARIES(wildmidi
         ${WILDMIDILIB}
         ${M_LIBRARY}
         ${AUDIO_LIBRARY}
@@ -108,19 +109,19 @@ IF(WANT_PLAYER)
 ENDIF(WANT_PLAYER)
 
 # add install target:
-IF (UNIX AND NOT APPLE)
+IF(UNIX AND NOT APPLE)
     # install our libraries
     IF(WANT_STATIC)
         INSTALL(TARGETS wildmidi_static DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
     ENDIF(WANT_STATIC)
     INSTALL(TARGETS wildmidi_dynamic DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
-    
+
     # install our player if asked for
     IF(WANT_PLAYER)
         INSTALL(TARGETS wildmidi DESTINATION bin)
     ENDIF(WANT_PLAYER)
-    
+
     # install supporting man pages and headers
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
-ENDIF (UNIX AND NOT APPLE)
+ENDIF(UNIX AND NOT APPLE)
