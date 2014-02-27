@@ -59,7 +59,7 @@
  */
 
 /* 8bit signed */
- int convert_8s(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8s(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -82,7 +82,7 @@
 }
 
 /* 8bit signed ping pong */
- int convert_8sp(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8sp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -134,7 +134,7 @@
 }
 
 /* 8bit signed reverse */
- int convert_8sr(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8sr(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -161,7 +161,7 @@
 }
 
 /* 8bit signed reverse ping pong */
- int convert_8srp(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8srp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -212,7 +212,7 @@
 }
 
 /* 8bit unsigned */
- int convert_8u(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8u(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -233,7 +233,7 @@
 }
 
 /* 8bit unsigned ping pong */
- int convert_8up(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8up(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -285,7 +285,7 @@
 }
 
 /* 8bit unsigned reverse */
- int convert_8ur(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8ur(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -312,7 +312,7 @@
 }
 
 /* 8bit unsigned reverse ping pong */
- int convert_8urp(unsigned char *data, struct _sample *gus_sample) {
+static int convert_8urp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -362,7 +362,7 @@
 }
 
 /* 16bit signed */
- int convert_16s(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16s(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -387,7 +387,7 @@
 }
 
 /* 16bit signed ping pong */
- int convert_16sp(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16sp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -448,7 +448,7 @@
 }
 
 /* 16bit signed reverse */
- int convert_16sr(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16sr(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -479,7 +479,7 @@
 }
 
 /* 16bit signed reverse ping pong */
- int convert_16srp(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16srp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -536,7 +536,7 @@
 }
 
 /* 16bit unsigned */
- int convert_16u(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16u(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -561,7 +561,7 @@
 }
 
 /* 16bit unsigned ping pong */
- int convert_16up(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16up(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -622,7 +622,7 @@
 }
 
 /* 16bit unsigned reverse */
- int convert_16ur(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16ur(unsigned char *data, struct _sample *gus_sample) {
 	unsigned char *read_data = data;
 	unsigned char *read_end = data + gus_sample->data_length;
 	signed short int *write_data = NULL;
@@ -653,7 +653,7 @@
 }
 
 /* 16bit unsigned reverse ping pong */
- int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
+static int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
 	unsigned long int loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
 	unsigned long int dloop_length = loop_length * 2;
@@ -711,7 +711,6 @@
 /* sample loading */
 
 struct _sample * load_gus_pat(char * filename, int fix_release) {
-
 	unsigned char *gus_patch;
 	unsigned long int gus_size;
 	unsigned long int gus_ptr;
