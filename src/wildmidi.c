@@ -432,7 +432,8 @@ close_mm_output (void) {
 	current = &mm_blocks[mm_current_block];
 	i = MM_BLOCK_SIZE - current->dwUser;
 
-	for (j = i; i; i--) write_mm_output (0, 0);
+	for (j = i; i; i--)
+		write_mm_output (0, 0);
 
 	waveOutClose (hWaveOut);
 	HeapFree(GetProcessHeap(), 0, mm_blocks);
@@ -457,7 +458,7 @@ static int open_alsa_output(void) {
 
 	if (!pcmname) {
 		pcmname = malloc(8);
-		strcpy(pcmname, "default\0");
+		strcpy(pcmname, "default");
 	}
 
 	if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
