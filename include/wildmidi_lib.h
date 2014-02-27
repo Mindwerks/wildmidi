@@ -39,7 +39,6 @@
 #define WM_MO_REVERB		0x0004
 #define WM_MO_WHOLETEMPO	0x8000
 #define WM_MO_ROUNDTEMPO	0xA000
-#define WM_GS_VERSION		0x0001
 
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
@@ -86,20 +85,19 @@ struct _WM_Info {
 typedef void midi;
 
 WM_SYMBOL long WildMidi_GetVersion (void);
-WM_SYMBOL const char * WildMidi_GetString (unsigned short int info);
 WM_SYMBOL int WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short int options);
 WM_SYMBOL int WildMidi_MasterVolume (unsigned char master_volume);
 WM_SYMBOL midi * WildMidi_Open (const char *midifile);
 WM_SYMBOL midi * WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size);
 WM_SYMBOL int WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size);
 WM_SYMBOL int WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short int setting);
-WM_SYMBOL struct _WM_Info * WildMidi_GetInfo ( midi * handle );
-WM_SYMBOL int WildMidi_FastSeek ( midi * handle, unsigned long int *sample_pos);
+WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
+WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
-WM_SYMBOL int WildMidi_Shutdown ( void );
+WM_SYMBOL int WildMidi_Shutdown (void);
 
 /* NOTE: Not Yet Implemented Or Tested Properly */
-int WildMidi_Live(midi * handle, unsigned long int midi_event);
+/*int WildMidi_Live (midi * handle, unsigned long int midi_event);*/
 
 #if defined(__cplusplus)
 }

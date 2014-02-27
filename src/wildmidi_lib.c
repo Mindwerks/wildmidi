@@ -74,8 +74,6 @@ static int WM_Initialized = 0;
 static signed short int WM_MasterVolume = 948;
 static unsigned short int WM_MixerOptions = 0;
 
-static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
-
 unsigned short int WM_SampleRate;
 
 static struct _patch *patch[128];
@@ -3545,15 +3543,6 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 
 WM_SYMBOL long WildMidi_GetVersion (void) {
 	return LIBWILDMIDI_VERSION;
-}
-
-WM_SYMBOL const char *
-WildMidi_GetString(unsigned short int info) {
-	switch (info) {
-	case WM_GS_VERSION:
-		return WM_Version;
-	}
-	return NULL;
 }
 
 WM_SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,

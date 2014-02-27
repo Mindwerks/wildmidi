@@ -32,7 +32,10 @@ CHANGELOG
 * API change: WildMidi_GetVersion() added to the api, along with new
   numeric version macros in the wildmidi_lib.h header. the dso version
   is changed from 1 to 2.
-* Windows: Build fixes using MSVC.
+* API change: WildMidi_GetString(), and its associated WM_GS_VERSION
+  constant are removed.
+* OpenAL support: Fixed audio output on big-endian systems.
+* Build fixes for MSVC. Revised visibility attributes usage.
 
 0.3.4
 * OpenAL support: This gains us OSX and other platforms that OpenAL
@@ -55,3 +58,4 @@ CHANGELOG
 * better FreeBSD support
 * Supported platforms are Debian, FreeBSD, Windows and OSX (but only
   for WAV output)
+
