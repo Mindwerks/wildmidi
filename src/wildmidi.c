@@ -474,7 +474,6 @@ static int open_alsa_output(void) {
 	if ((err = snd_pcm_hw_params_any(pcm, hw)) < 0) {
 		printf("ERROR: No configuration available for playback: %s\r\n",
 				snd_strerror(-err));
-
 		return -1;
 	}
 
@@ -771,9 +770,9 @@ static int write_openal_output(char * output_data, int output_size) {
 
 		alSourceUnqueueBuffers(sourceId, 1, &bufid);
 		processed--;
+
 		/* Read the next chunk of data, refill the buffer, and queue it
 		 * back on the source */
-
 		if (output_data != NULL) {
 			alBufferData(bufid, AL_FORMAT_STEREO16, output_data, output_size, rate);
 			alSourceQueueBuffers(sourceId, 1, &bufid);
@@ -782,7 +781,6 @@ static int write_openal_output(char * output_data, int output_size) {
 			fprintf(stderr, "Error buffering data\n");
 			return 0;
 		}
-
 	}
 
 	/* Make sure the source hasn't underrun */
@@ -792,7 +790,7 @@ static int write_openal_output(char * output_data, int output_size) {
 		/* If no buffers are queued, playback is finished */
 		alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
 		if(queued == 0)
-		return (-1);
+			return (-1);
 
 		//printf("STATE: %#08x - %d\n", state, queued);
 
@@ -856,40 +854,44 @@ static int open_openal_output(void) {
 #endif /* AUDIODRV_ALSA */
 #endif /* _WIN32 || __CYGWIN__ */
 
-static struct option const long_options[] = { { "version", 0, 0, 'v' }, {
-		"help", 0, 0, 'h' }, { "rate", 1, 0, 'r' },
-		{ "master_volume", 1, 0, 'm' }, { "config_file", 1, 0, 'c' }, {
-				"wavout", 1, 0, 'o' }, { "log_vol", 0, 0, 'l' }, { "reverb", 0,
-				0, 'b' }, { "test_midi", 0, 0, 't' },
-		{ "test_bank", 1, 0, 'k' }, { "test_patch", 1, 0, 'p' }, {
-				"enhanced_resample", 0, 0, 'e' }, { "auddev", 1, 0, 'd' }, {
-				"wholetempo", 0, 0, 'w' }, { "roundtempo", 0, 0, 'n' }, { NULL,
-				0, NULL, 0 } };
+static struct option const long_options[] = {
+	{ "version", 0, 0, 'v' },
+	{ "help", 0, 0, 'h' },
+	{ "rate", 1, 0, 'r' },
+	{ "master_volume", 1, 0, 'm' },
+	{ "config_file", 1, 0, 'c' },
+	{ "wavout", 1, 0, 'o' },
+	{ "log_vol", 0, 0, 'l' },
+	{ "reverb", 0, 0, 'b' },
+	{ "test_midi", 0, 0, 't' },
+	{ "test_bank", 1, 0, 'k' },
+	{ "test_patch", 1, 0, 'p' },
+	{ "enhanced_resample", 0, 0, 'e' },
+	{ "auddev", 1, 0, 'd' },
+	{ "wholetempo", 0, 0, 'w' },
+	{ "roundtempo", 0, 0, 'n' },
+	{ NULL, 0, NULL, 0 }
+};
 
 static void do_help(void) {
 	printf("  -v    --version        Display version\r\n");
 	printf("  -h    --help           This help.\r\n");
 #ifndef _WIN32
-	printf(
-			"  -d D  --device=D       Use device D for audio output instead\r\n");
+	printf("  -d D  --device=D       Use device D for audio output instead\r\n");
 	printf("                         of the default\r\n");
 #endif
 	printf("MIDI Options\r\n");
 	printf("  -w    --wholetempo       round down tempo to whole number\r\n");
-	printf(
-			"  -n    --roundtempo       round tempo to nearest whole number\r\n");
+	printf("  -n    --roundtempo       round tempo to nearest whole number\r\n");
 	printf("Software Wavetable Options\r\n");
 	printf("  -o W  --wavout=W       Saves the output to W in wav format\r\n");
 	printf("                         at 44100Hz 16 bit stereo\r\n");
 	printf("  -l    --log_vol        Use log volume adjustments\r\n");
 	printf("  -r N  --rate=N         output at N samples per second\r\n");
-	printf(
-			"  -c P  --config_file=P  P is the path and filename to your wildmidi.cfg\r\n");
+	printf("  -c P  --config_file=P  P is the path and filename to your wildmidi.cfg\r\n");
 	printf("                         Defaults to %s\n\r\n", WILDMIDI_CFG);
-	printf(
-			" -m V  --master_volume=V Sets the master volumes, default is 100\r\n");
-	printf(
-			"                         range is 0-127 with 127 being the loudest\r\n");
+	printf(" -m V  --master_volume=V Sets the master volumes, default is 100\r\n");
+	printf("                         range is 0-127 with 127 being the loudest\r\n");
 	printf(" -b    --reverb          Enable final output reverb engine\r\n");
 
 }
@@ -899,8 +901,7 @@ static void do_version(void) {
 	printf("Copyright (C) WildMIDI Developers 2001-2014\r\n\r\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\r\n");
 	printf("This is free software, and you are welcome to redistribute it\r\n");
-	printf(
-			"under the terms and conditions of the GNU General Public License version 3.\r\n");
+	printf("under the terms and conditions of the GNU General Public License version 3.\r\n");
 	printf("For more information see COPYING\n\r\n");
 	printf("Report bugs to %s\r\n", PACKAGE_BUGREPORT);
 	printf("WildMIDI homepage at %s\n\r\n", PACKAGE_URL);
@@ -937,6 +938,7 @@ int main(int argc, char **argv) {
 	static int spinpoint = 0;
 	unsigned long int seek_to_sample = 0;
 	int inpause = 0;
+	long libraryver;
 
 #if !defined(_WIN32) && !defined(__DJGPP__)
 	int my_tty;
@@ -1039,20 +1041,24 @@ int main(int argc, char **argv) {
 				return (0);
 			}
 		}
-		printf("Initializing %s\n\r\n", WildMidi_GetString(WM_GS_VERSION));
-		printf(" +  Volume up        e  Better resampling    n  Next Midi\r\n");
-		printf(" -  Volume down      l  Log volume           q  Quit\r\n");
-		printf(
-				" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\r\n");
-		printf("                     p  Pause On/Off\n\r\n");
 
+		libraryver = WildMidi_GetVersion();
+		printf("Initializing libWildMidi %ld.%ld.%ld\n\n",
+							(libraryver>>16) & 255,
+							(libraryver>> 8) & 255,
+							(libraryver    ) & 255);
 		if (WildMidi_Init(config_file, rate, mixer_options) == -1) {
 			return (0);
 		}
+
+		printf(" +  Volume up        e  Better resampling    n  Next Midi\r\n");
+		printf(" -  Volume down      l  Log volume           q  Quit\r\n");
+		printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\r\n");
+		printf("                     p  Pause On/Off\n\r\n");
+
 		WildMidi_MasterVolume(master_volume);
 
 		output_buffer = malloc(16384);
-
 		if (output_buffer == NULL) {
 			printf("Not enough ram, exiting\r\n");
 			WildMidi_Shutdown();
@@ -1231,9 +1237,9 @@ int main(int argc, char **argv) {
 						memset(modes + 3, '\0', 1);
 					}
 					fprintf(stderr,
-							"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
-							apr_mins, apr_secs, modes, master_volume, pro_mins,
-							pro_secs, perc_play);
+						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
+						apr_mins, apr_secs, modes, master_volume, pro_mins,
+						pro_secs, perc_play);
 
 #ifdef _WIN32
 					Sleep(5);
