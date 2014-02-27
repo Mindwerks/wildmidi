@@ -55,7 +55,7 @@
 # else									/* using libWildMidi dll for windows */
 #  define WM_SYMBOL __declspec(dllimport)
 # endif
-#else
+#elif defined(WILDMIDI_BUILD)
 # if defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
 #  define WM_SYMBOL __attribute__ ((visibility ("default")))
 # elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
@@ -65,6 +65,8 @@
 # else
 #  define WM_SYMBOL
 # endif
+#else
+#  define WM_SYMBOL
 #endif
 
 #if defined(__cplusplus)
