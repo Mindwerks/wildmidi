@@ -78,17 +78,17 @@ static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
 
 unsigned short int WM_SampleRate;
 
-struct _patch *patch[128];
+static struct _patch *patch[128];
 
-float reverb_room_width = 16.875;
-float reverb_room_length = 22.5;
+static float reverb_room_width = 16.875;
+static float reverb_room_length = 22.5;
 
-float reverb_listen_posx = 8.4375;
-float reverb_listen_posy = 16.875;
+static float reverb_listen_posx = 8.4375;
+static float reverb_listen_posy = 16.875;
 
-int fix_release = 0;
-int auto_amp = 0;
-int auto_amp_with_amp = 0;
+static int fix_release = 0;
+static int auto_amp = 0;
+static int auto_amp_with_amp = 0;
 
 static int patch_lock;
 
@@ -1140,7 +1140,7 @@ static int WM_LoadConfig(const char *config_file) {
 
 /* sample loading */
 
-int load_sample(struct _patch *sample_patch) {
+static int load_sample(struct _patch *sample_patch) {
 	struct _sample *guspat = NULL;
 	struct _sample *tmp_sample = NULL;
 	unsigned int i = 0;
@@ -2306,7 +2306,7 @@ Init_MDI(void) {
 	return mdi;
 }
 
-unsigned long int get_decay_samples(struct _patch *patch, unsigned char note) {
+static unsigned long int get_decay_samples(struct _patch *patch, unsigned char note) {
 
 	struct _sample *sample = NULL;
 	unsigned long int freq = 0;
