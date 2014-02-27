@@ -28,7 +28,7 @@ CHANGELOG
 
 0.3.5
 * OpenAL support: Fixed audio output on big-endian systems.
-* Windows: Build fixes using MSVC.
+* Build fixes for MSVC. Revised visibility attributes usage.
 
 0.3.4
 * OpenAL support: This gains us OSX and other platforms that OpenAL
@@ -51,3 +51,4 @@ CHANGELOG
 * better FreeBSD support
 * Supported platforms are Debian, FreeBSD, Windows and OSX (but only
   for WAV output)
+

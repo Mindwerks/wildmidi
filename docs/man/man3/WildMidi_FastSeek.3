@@ -1,4 +1,4 @@
-.TH WildMidi_FastSeek 3 "05 June 2010" "" "WildMidi Programmer's Manual"
+.TH WildMidi_FastSeek 3 "27 February 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_FastSeek \- Move to a position in a midi file
 .PP
@@ -16,13 +16,13 @@ Resets all note specific midi states and active notes before scanning to \fIsamp
 .IP \fIhandle\fP
 The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
-.IP \fIsample_pos\fI
+.IP \fIsample_pos\fP
 The number of samples from the beginning you want libWildMidi to seek to.
 .PP
 NOTE: significant delay can occur when using this function. You can expect even more delay if you select a position that's already been passed forcing the library to start from the beginning.
 .PP
 .SH SEE ALSO
-.BR WildMidi_GetString (3) ,
+.BR WildMidi_GetVersion (3) ,
 .BR WildMidi_Init (3) ,
 .BR WildMidi_MasterVolume (3) ,
 .BR WildMidi_Open (3) ,
@@ -32,11 +32,10 @@ NOTE: significant delay can occur when using this function. You can expect even 
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_Close (3) ,
 .BR WildMidi_Shutdown (3) ,
-.BR wildmidi (1) ,
 .BR wildmidi.cfg (5)
 .PP
 .SH AUTHOR
-Chris Ison <wildcode@users.sourceforge.net>
+Chris Ison <wildcode@users.sf.net>
 Bret Curtis <psi29a@gmail.com>
 .PP
 .SH COPYRIGHT
@@ -50,7 +49,6 @@ WildMIDI is free software: you can redistribute and/or modify the player under t
 WildMIDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and the GNU Lesser General Public License for more details.
 .PP
 You should have received a copy of the GNU General Public License and the GNU Lesser General Public License along with WildMIDI. If not, see <http://www.gnu.org/licenses/>.
-.PP
 .PP
 This manpage is licensed under the Creative Commons Attribution\-Share Alike 3.0 Unported License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
 .PP
