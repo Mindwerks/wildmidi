@@ -174,19 +174,18 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 	RFN[6].y = room_y / 3.0;
 	RFN[7].x = room_x / 3.0 * 2.0;
 	RFN[7].y = 0.0;
-
 #endif
 
 	SPL_LSN_XOFS = SPL.x - listen_x;
 	SPL_LSN_YOFS = SPL.y - listen_y;
-	SPL_LSN_DST = sqrtf((SPL_LSN_XOFS * SPL_LSN_XOFS) + (SPL_LSN_YOFS * SPL_LSN_YOFS));
+	SPL_LSN_DST = sqrt((SPL_LSN_XOFS * SPL_LSN_XOFS) + (SPL_LSN_YOFS * SPL_LSN_YOFS));
 
 	if (SPL_LSN_DST > MAXL_DST)
 		MAXL_DST = SPL_LSN_DST;
 
 	SPR_LSN_XOFS = SPR.x - listen_x;
 	SPR_LSN_YOFS = SPR.y - listen_y;
-	SPR_LSN_DST = sqrtf((SPR_LSN_XOFS * SPR_LSN_XOFS) + (SPR_LSN_YOFS * SPR_LSN_YOFS));
+	SPR_LSN_DST = sqrt((SPR_LSN_XOFS * SPR_LSN_XOFS) + (SPR_LSN_YOFS * SPR_LSN_YOFS));
 
 	if (SPR_LSN_DST > MAXR_DST) MAXR_DST = SPR_LSN_DST;
 
@@ -201,15 +200,15 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 		double SPR_RFL_YOFS = 0;
 		double RFN_XOFS = listen_x - RFN[j].x;
 		double RFN_YOFS = listen_y - RFN[j].y;
-		RFN_DST[j] = sqrtf((RFN_XOFS * RFN_XOFS) + (RFN_YOFS * RFN_YOFS));
+		RFN_DST[j] = sqrt((RFN_XOFS * RFN_XOFS) + (RFN_YOFS * RFN_YOFS));
 
 		SPL_RFL_XOFS = SPL.x - RFN[i].x;
 		SPL_RFL_YOFS = SPL.y - RFN[i].y;
 		SPR_RFL_XOFS = SPR.x - RFN[i].x;
 		SPR_RFL_YOFS = SPR.y - RFN[i].y;
-		SPL_DST[i] = sqrtf(
+		SPL_DST[i] = sqrt(
 				(SPL_RFL_XOFS * SPL_RFL_XOFS) + (SPL_RFL_YOFS * SPL_RFL_YOFS));
-		SPR_DST[i] = sqrtf(
+		SPR_DST[i] = sqrt(
 				(SPR_RFL_XOFS * SPR_RFL_XOFS) + (SPR_RFL_YOFS * SPR_RFL_YOFS));
 		/*
 		 add the 2 distances together and remove the speaker to listener distance
