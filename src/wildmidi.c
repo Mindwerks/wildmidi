@@ -45,7 +45,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <time.h>
-int msleep(unsigned long millisec);
+static int msleep(unsigned long millisec);
 #endif
 
 #if defined(__DJGPP__)
@@ -103,7 +103,7 @@ struct _midi_test {
  * offset 25 (0x1A) = bank number
  * offset 28 (0x1D) = patch number
  */
-unsigned char midi_test_c_scale[] = { 0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00,
+static unsigned char midi_test_c_scale[] = { 0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00,
 		0x06, // 0x00
 		0x00, 0x00, 0x00, 0x01, 0x00, 0x06, 0x4d, 0x54, // 0x08
 		0x72, 0x6b, 0x00, 0x00, 0x02, 0x63, 0x00, 0xb0, // 0x10
@@ -186,9 +186,9 @@ unsigned char midi_test_c_scale[] = { 0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00,
 		0x00 // 0x278
 		};
 
-struct _midi_test midi_test[] = { { midi_test_c_scale, 663 }, { NULL, 0 } };
+static struct _midi_test midi_test[] = { { midi_test_c_scale, 663 }, { NULL, 0 } };
 
-int midi_test_max = 1;
+static int midi_test_max = 1;
 
 /*
  ==============================
@@ -197,12 +197,12 @@ int midi_test_max = 1;
  ==============================
  */
 
-unsigned int rate = 32072;
-char *pcmname = NULL;
+static unsigned int rate = 32072;
+static char *pcmname = NULL;
 
-int (*send_output)(char * output_data, int output_size);
-void (*close_output)(void);
-int audio_fd;
+static int (*send_output)(char * output_data, int output_size);
+static void (*close_output)(void);
+static int audio_fd;
 
 static void shutdown_output(void) {
 	printf("Shutting Down Sound System.\r\n");
@@ -215,7 +215,7 @@ static void shutdown_output(void) {
  */
 
 static char wav_file[1024] = "\0";
-unsigned long int wav_size;
+static unsigned long int wav_size;
 
 static int write_wav_output(char * output_data, int output_size);
 static void close_wav_output(void);
@@ -305,20 +305,18 @@ static void close_wav_output(void) {
 
 #if (defined _WIN32) || (defined __CYGWIN__)
 
-HWAVEOUT hWaveOut;
-WAVEHDR header;
-unsigned long int mm_buffer_count;
+static HWAVEOUT hWaveOut;
 static CRITICAL_SECTION waveCriticalSection;
 
 static int write_mm_output (char * output_data, int output_size);
-static void close_mm_output ( void );
+static void close_mm_output (void);
 
-WAVEHDR *mm_blocks;
+static WAVEHDR *mm_blocks;
 #define MM_BLOCK_SIZE 16384
 #define MM_BLOCK_COUNT 3
 
-unsigned long int mm_free_blocks = MM_BLOCK_COUNT;
-unsigned long int mm_current_block = 0;
+static unsigned long int mm_free_blocks = MM_BLOCK_COUNT;
+static unsigned long int mm_current_block = 0;
 
 #if defined(_MSC_VER) && (_MSC_VER < 1300)
 typedef DWORD DWORD_PTR;
@@ -342,14 +340,14 @@ static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstan
 }
 
 static int
-open_mm_output ( void ) {
+open_mm_output (void) {
 	WAVEFORMATEX wfx;
 	char *mm_buffer;
 	int i;
 
 	InitializeCriticalSection(&waveCriticalSection);
 
-	if((mm_buffer = HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, ((MM_BLOCK_SIZE + sizeof(WAVEHDR)) * MM_BLOCK_COUNT))) == NULL) {
+	if((mm_buffer = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((MM_BLOCK_SIZE + sizeof(WAVEHDR)) * MM_BLOCK_COUNT))) == NULL) {
 		printf("Memory allocation error\r\n");
 		return -1;
 	}
@@ -371,7 +369,7 @@ open_mm_output ( void ) {
 	wfx.nBlockAlign = (wfx.wBitsPerSample >> 3) * wfx.nChannels;
 	wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
 
-	if(waveOutOpen( &hWaveOut, WAVE_MAPPER, &wfx, (DWORD_PTR)mmOutProc, (DWORD_PTR)&mm_free_blocks, CALLBACK_FUNCTION ) != MMSYSERR_NOERROR) {
+	if(waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, (DWORD_PTR)mmOutProc, (DWORD_PTR)&mm_free_blocks, CALLBACK_FUNCTION ) != MMSYSERR_NOERROR) {
 		printf("unable to open WAVE_MAPPER device\r\n");
 		return -1;
 	}
@@ -421,7 +419,7 @@ write_mm_output (char * output_data, int output_size) {
 }
 
 static void
-close_mm_output ( void ) {
+close_mm_output (void) {
 	WAVEHDR* current;
 	int i, j;
 	current = &mm_blocks[mm_current_block];
@@ -437,9 +435,7 @@ close_mm_output ( void ) {
 #else
 #ifdef AUDIODRV_ALSA
 
-void *buffer;
-int bps;
-int alsa_first_time = 1;
+static int alsa_first_time = 1;
 static snd_pcm_t *pcm;
 
 static int write_alsa_output(char * output_data, int output_size);
@@ -577,11 +573,11 @@ static void close_alsa_output(void) {
 #endif
 #endif
 
-char *buffer = NULL;
-unsigned long int max_buffer;
-unsigned long int buffer_delay;
-unsigned long int counter;
-struct audio_buf_info info;
+static char *buffer = NULL;
+static unsigned long int max_buffer;
+static unsigned long int buffer_delay;
+static unsigned long int counter;
+static struct audio_buf_info info;
 
 static int write_oss_output(char * output_data, int output_size);
 static void close_oss_output(void);
@@ -733,11 +729,11 @@ struct position {
 	ALfloat z;
 };
 
-ALCdevice *device;
-ALCcontext *context;
-ALuint sourceId = 0;
-ALuint buffers[NUM_BUFFERS];
-ALuint frames = 0;
+static ALCdevice *device;
+static ALCcontext *context;
+static ALuint sourceId = 0;
+static ALuint buffers[NUM_BUFFERS];
+static ALuint frames = 0;
 
 static int write_openal_output(char * output_data, int output_size) {
 	ALint processed, state;
@@ -1332,7 +1328,7 @@ int main(int argc, char **argv) {
 }
 
 #if !defined(_WIN32) && !defined(__DJGPP__)
-int msleep(unsigned long milisec) {
+static int msleep(unsigned long milisec) {
 	struct timespec req = { 0, 0 };
 	time_t sec = (int) (milisec / 1000);
 	milisec = milisec - (sec * 1000);
