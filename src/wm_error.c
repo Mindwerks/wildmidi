@@ -1,6 +1,5 @@
 /*
  wm_error.c
-
  error reporting
 
  Copyright (C) Chris Ison  2001-2011
@@ -42,10 +41,19 @@ void WM_ERROR_NEW(const char * wmfmt, ...) {
 
 void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
 		const char * wmfor, int error) {
-	static const char * errors[] = { "Unable to obtain memory\0", "Unable to stat\0",
-			"Unable to load\0", "Unable to open\0", "Unable to read\0",
-			"Invalid or Unsuported file format\0", "File corrupt\0",
-			"Library not Initialized\0", "Invalid argument\0" };
+
+	static const char *errors[] = {
+		"Unable to obtain memory",
+		"Unable to stat",
+		"Unable to load",
+		"Unable to open",
+		"Unable to read",
+		"Invalid or Unsuported file format",
+		"File corrupt",
+		"Library not Initialized",
+		"Invalid argument"
+	};
+
 	if (wmfor != NULL) {
 		if (error != 0) {
 			fprintf(stderr, "\rlibWildMidi(%s:%lu): ERROR %s %s (%s)\n", func,
