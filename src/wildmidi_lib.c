@@ -1019,7 +1019,7 @@ static int WM_LoadConfig(const char *config_file) {
 								if (!isdigit(line_tokens[token_count][4])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
-											"(syntax error in patch 	line)", 0);
+											"(syntax error in patch line)", 0);
 								} else {
 									tmp_patch->amp = (atoi(
 											&line_tokens[token_count][4]) << 10)
@@ -1030,7 +1030,7 @@ static int WM_LoadConfig(const char *config_file) {
 								if (!isdigit(line_tokens[token_count][5])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
-											"(syntax error in patch 	line)", 0);
+											"(syntax error in patch line)", 0);
 								} else {
 									tmp_patch->note = atoi(
 											&line_tokens[token_count][5]);
@@ -1043,14 +1043,14 @@ static int WM_LoadConfig(const char *config_file) {
 										|| (line_tokens[token_count][9] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
-											"(syntax error in patch 	line)", 0);
+											"(syntax error in patch line)", 0);
 								} else {
 									unsigned int env_no = atoi(
 											&line_tokens[token_count][8]);
 									if (env_no > 5) {
 										WM_ERROR(__FUNCTION__, __LINE__,
 												WM_ERR_INVALID,
-												"(syntax error in patch 	line)",
+												"(syntax error in patch line)",
 												0);
 									} else {
 										tmp_patch->env[env_no].time =
@@ -1078,7 +1078,7 @@ static int WM_LoadConfig(const char *config_file) {
 										|| (line_tokens[token_count][10] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
-											"(syntax error in patch 	line)", 0);
+											"(syntax error in patch line)", 0);
 								} else {
 									unsigned int env_no = atoi(
 											&line_tokens[token_count][9]);
@@ -1606,9 +1606,9 @@ static void do_pan_adjust(struct _mdi *mdi, unsigned char ch) {
 	left = (pan_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
 	right = (pan_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
 //	} else {
-//      left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
-//		right= (lin_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
-// 	}
+//	left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
+//	right= (lin_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
+//	}
 
 	mdi->channel[ch].left_adjust = left;
 	mdi->channel[ch].right_adjust = right;
@@ -1628,8 +1628,8 @@ static void do_control_data_entry_course(struct _mdi *mdi,
 			&& (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
 		data_tmp = mdi->channel[ch].pitch_range % 100;
 		mdi->channel[ch].pitch_range = data->data * 100 + data_tmp;
-		//	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);
-		//	printf("Data Entry Course: data %li\n\r",data->data);
+	//	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);
+	//	printf("Data Entry Course: data %li\n\r",data->data);
 	}
 }
 
@@ -1845,7 +1845,6 @@ static void do_control_channel_controllers_off(struct _mdi *mdi,
 					note_data->replay->vol_lvl = get_volume(mdi, ch,
 							note_data->replay);
 				}
-
 			}
 			note_data = note_data->next;
 		} while (note_data != NULL);
@@ -2330,7 +2329,6 @@ static unsigned long int get_decay_samples(struct _patch *patch, unsigned char n
 
 	// get the sample
 	sample = get_sample_data(patch, (freq / 100));
-
 	if (sample == NULL)
 		return 0;
 
@@ -2460,12 +2458,11 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		float bpm_fr = (float) (60000000 / tempo) + 0.5f;
 		tempo = 60000000 / (unsigned long int) bpm_fr;
 	}
-	{
-		//Slow but needed for accuracy
-		microseconds_per_pulse = (float) tempo / (float) divisions;
-		pulses_per_second = 1000000.0f / microseconds_per_pulse;
-		samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
-	}
+	//Slow but needed for accuracy
+	microseconds_per_pulse = (float) tempo / (float) divisions;
+	pulses_per_second = 1000000.0f / microseconds_per_pulse;
+	samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
+
 	tracks = malloc(sizeof(char *) * no_tracks);
 	track_delta = malloc(sizeof(unsigned long int) * no_tracks);
 	track_end = malloc(sizeof(unsigned char) * no_tracks);
@@ -2641,9 +2638,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 					break;
 				case 0xF: // Meta Event
 					if (current_event == 0xFF) {
-						if (tracks[i][0] == 0x02) {
-							// Copyright Event
-
+						if (tracks[i][0] == 0x02) { // Copyright Event
 							// Get Length
 							tmp_length = 0;
 							tracks[i]++;
@@ -2666,8 +2661,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 										(char *) tracks[i], tmp_length);
 								mdi->info.copyright[strlen(mdi->info.copyright)
 										+ 1 + tmp_length] = '\0';
-								mdi->info.copyright[strlen(mdi->info.copyright)] =
-										'\n';
+								mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
 
 							} else {
 								mdi->info.copyright = malloc(tmp_length + 1);
@@ -2691,27 +2685,23 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 							if (!tempo)
 								tempo = 500000;
 
-							{
-								if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
-									float bpm_f = (float) (60000000 / tempo);
-									tempo = 60000000
-											/ (unsigned long int) bpm_f;
-								} else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-									float bpm_fr = (float) (60000000 / tempo)
-											+ 0.5f;
-									tempo = 60000000
-											/ (unsigned long int) bpm_fr;
-								}
-								{
-									//Slow but needed for accuracy
-									microseconds_per_pulse = (float) tempo
-											/ (float) divisions;
-									pulses_per_second = 1000000.0f
-											/ microseconds_per_pulse;
-									samples_per_delta_f = (float) WM_SampleRate
-											/ pulses_per_second;
-								}
+							if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
+								float bpm_f = (float) (60000000 / tempo);
+								tempo = 60000000
+										/ (unsigned long int) bpm_f;
+							} else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+								float bpm_fr = (float) (60000000 / tempo)
+										+ 0.5f;
+								tempo = 60000000
+										/ (unsigned long int) bpm_fr;
 							}
+							//Slow but needed for accuracy
+							microseconds_per_pulse = (float) tempo
+									/ (float) divisions;
+							pulses_per_second = 1000000.0f
+									/ microseconds_per_pulse;
+							samples_per_delta_f = (float) WM_SampleRate
+									/ pulses_per_second;
 
 						} else {
 							tmp_length = 0;
@@ -2958,7 +2948,6 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 			left_mix = right_mix = 0;
 			if (__builtin_expect((note_data != NULL ), 1)) {
 				while (note_data != NULL) {
-
 					/*
 					 * ===================
 					 * resample the sample
@@ -3010,7 +2999,6 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 
 					if (__builtin_expect((note_data->env_inc == 0), 0)) {
 						note_data = note_data->next;
-						;
 						continue;
 					}
 
@@ -3028,7 +3016,6 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 											< note_data->sample->env_target[note_data->env])),
 							1)) {
 						note_data = note_data->next;
-						;
 						continue;
 					}
 
@@ -3258,7 +3245,6 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 			left_mix = right_mix = 0;
 			if (__builtin_expect((note_data != NULL ), 1)) {
 				while (note_data != NULL) {
-
 					/*
 					 * ===================
 					 * resample the sample
@@ -3342,7 +3328,6 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 
 					if (__builtin_expect((note_data->env_inc == 0), 0)) {
 						note_data = note_data->next;
-						;
 						continue;
 					}
 
@@ -3360,7 +3345,6 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 											< note_data->sample->env_target[note_data->env])),
 							1)) {
 						note_data = note_data->next;
-						;
 						continue;
 					}
 
