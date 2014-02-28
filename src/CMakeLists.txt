@@ -115,11 +115,6 @@ IF(WANT_PLAYER)
 
     ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
 
-    IF(AUDIODRV_OPENAL)
-        TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
-            ${OPENAL_INCLUDE_DIR}
-            )
-    ENDIF()
     TARGET_LINK_LIBRARIES(wildmidi
         ${WILDMIDILIB}
         ${M_LIBRARY}
