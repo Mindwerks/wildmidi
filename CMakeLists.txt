@@ -121,11 +121,13 @@ IF(UNIX AND NOT APPLE)
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
 
-        FIND_PACKAGE(ALSA)
+        IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+            FIND_PACKAGE(ALSA)
+        ENDIF()
         FIND_PACKAGE(OSS)
         FIND_PACKAGE(OpenAL)
 
-        IF(WANT_ALSA)
+        IF(WANT_ALSA AND CMAKE_SYSTEM_NAME MATCHES "Linux")
             IF(NOT ALSA_FOUND)
                 MESSAGE(FATAL_ERROR "ALSA required but not found.")
             ENDIF()
