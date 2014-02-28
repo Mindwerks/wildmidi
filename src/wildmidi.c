@@ -918,7 +918,7 @@ int main(int argc, char **argv) {
 	unsigned long int pro_secs = 0;
 	unsigned long int apr_mins = 0;
 	unsigned long int apr_secs = 0;
-	unsigned char modes[4] = { 0 };
+	unsigned char modes[4];
 	unsigned long int count_diff;
 	unsigned char ch;
 	unsigned char test_midi = 0;
@@ -1010,7 +1010,7 @@ int main(int argc, char **argv) {
 		strncpy(config_file, WILDMIDI_CFG, sizeof(WILDMIDI_CFG));
 		config_file[sizeof(WILDMIDI_CFG)] = '\0';
 	}
-	if ((optind < argc) || (test_midi)) {
+	if (optind < argc || test_midi) {
 		printf("Initializing Sound System\r\n");
 
 		if (wav_file[0] != '\0') {
@@ -1211,19 +1211,10 @@ int main(int argc, char **argv) {
 							/ wm_info->approx_total_samples;
 					pro_mins = wm_info->current_sample / (rate * 60);
 					pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
-					{
-						memset(modes, ' ', sizeof(char) * 4);
-						if (mixer_options & WM_MO_LOG_VOLUME) {
-							memset(modes, 'l', 1);
-						}
-						if (mixer_options & WM_MO_REVERB) {
-							memset(modes + 1, 'r', 1);
-						}
-						if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-							memset(modes + 2, 'e', 1);
-						}
-						memset(modes + 3, '\0', 1);
-					}
+					modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
+					modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
+					modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
+					modes[3] = '\0';
 					fprintf(stderr,
 						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
 						apr_mins, apr_secs, modes, master_volume, pro_mins,
@@ -1262,19 +1253,10 @@ int main(int argc, char **argv) {
 						/ wm_info->approx_total_samples;
 				pro_mins = wm_info->current_sample / (rate * 60);
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
-				{
-					memset(modes, ' ', sizeof(char) * 4);
-					if (mixer_options & WM_MO_LOG_VOLUME) {
-						memset(modes, 'l', 1);
-					}
-					if (mixer_options & WM_MO_REVERB) {
-						memset(modes + 1, 'r', 1);
-					}
-					if (mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-						memset(modes + 2, 'e', 1);
-					}
-					memset(modes + 3, '\0', 1);
-				}
+				modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
+				modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
+				modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
+				modes[3] = '\0';
 				fprintf(stderr,
 						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  \r",
 						apr_mins, apr_secs, modes, master_volume, pro_mins,
