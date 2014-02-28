@@ -552,52 +552,53 @@ WM_LC_Tokenize_Line(char * line_data) {
 	int token_start = 0;
 	char **token_data = NULL;
 	int token_count = 0;
-	if (line_length != 0) {
-		do {
-			/*
-			 ignore everything after #
-			 */
-			if (line_data[line_ofs] == '#') {
-				break;
-			}
 
-			if ((line_data[line_ofs] == ' ') || (line_data[line_ofs] == '\t')) {
-				/*
-				 whitespace means we aren't in a token
-				 */
-				if (token_start) {
-					token_start = 0;
-					line_data[line_ofs] = '\0';
-				}
-			} else {
-				if (!token_start) {
-					/*
-					 the start of a token in the line
-					 */
-					token_start = 1;
-					if ((token_data = realloc(token_data,
-							((token_count + 1) * sizeof(char *)))) == NULL) {
-						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
-								"to parse config", errno);
-						return NULL;
-					}
+	if (line_length == 0)
+		return token_data;
 
-					token_data[token_count] = &line_data[line_ofs];
-					token_count++;
-				}
-			}
-			line_ofs++;
-		} while (line_ofs != line_length);
-
+	do {
 		/*
-		 if we have found some tokens then add a null token to the end
+		 ignore everything after #
 		 */
-		if (token_count) {
-			token_data = realloc(token_data,
-					((token_count + 1) * sizeof(char *)));
-			token_data[token_count] = NULL;
+		if (line_data[line_ofs] == '#') {
+			break;
 		}
 
+		if ((line_data[line_ofs] == ' ') || (line_data[line_ofs] == '\t')) {
+			/*
+			 whitespace means we aren't in a token
+			 */
+			if (token_start) {
+				token_start = 0;
+				line_data[line_ofs] = '\0';
+			}
+		} else {
+			if (!token_start) {
+				/*
+				 the start of a token in the line
+				 */
+				token_start = 1;
+				if ((token_data = realloc(token_data,
+						((token_count + 1) * sizeof(char *)))) == NULL) {
+					WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
+							"to parse config", errno);
+					return NULL;
+				}
+
+				token_data[token_count] = &line_data[line_ofs];
+				token_count++;
+			}
+		}
+		line_ofs++;
+	} while (line_ofs != line_length);
+
+	/*
+	 if we have found some tokens then add a null token to the end
+	 */
+	if (token_count) {
+		token_data = realloc(token_data,
+				((token_count + 1) * sizeof(char *)));
+		token_data[token_count] = NULL;
 	}
 
 	return token_data;
