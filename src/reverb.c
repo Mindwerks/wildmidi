@@ -187,7 +187,8 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 	SPR_LSN_YOFS = SPR.y - listen_y;
 	SPR_LSN_DST = sqrt((SPR_LSN_XOFS * SPR_LSN_XOFS) + (SPR_LSN_YOFS * SPR_LSN_YOFS));
 
-	if (SPR_LSN_DST > MAXR_DST) MAXR_DST = SPR_LSN_DST;
+	if (SPR_LSN_DST > MAXR_DST)
+		MAXR_DST = SPR_LSN_DST;
 
 	if (rtn_rvb == NULL) {
 		return NULL;
@@ -396,6 +397,5 @@ void do_reverb(struct _rvb *rvb, signed long int *buffer, int size) {
 			rvb->r_in[j] = (rvb->r_in[j] + 1) % rvb->r_buf_size;
 		}
 	}
-	return;
 }
 
