@@ -2465,7 +2465,6 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	track_delta = malloc(sizeof(unsigned long int) * no_tracks);
 	track_end = malloc(sizeof(unsigned char) * no_tracks);
 	running_event = malloc(sizeof(unsigned char) * no_tracks);
-	smallest_delta = 0;
 
 	for (i = 0; i < no_tracks; i++) {
 		if (midi_size < 8) {
