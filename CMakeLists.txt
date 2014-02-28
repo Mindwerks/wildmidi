@@ -2,7 +2,7 @@
 PROJECT(wildmidi C)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-# WildMIDI Version - matches wildmidi_lib.h
+# WildMIDI Version
 SET(VERSION_MAJOR 0)
 SET(VERSION_MINOR 4)
 SET(VERSION_RELEASE 0)
@@ -144,7 +144,7 @@ IF(UNIX AND NOT APPLE)
             SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
 
-        ELSE(WANT_ALSA) # Try to auto-detect
+        ELSE() # Try to auto-detect
 
             IF(ALSA_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
@@ -162,7 +162,7 @@ IF(UNIX AND NOT APPLE)
                 MESSAGE(WARNING "Could not find an audio sub-system!")
             ENDIF()
 
-        ENDIF(WANT_ALSA)
+        ENDIF()
     ENDIF(WANT_PLAYER)
 
     # find our math lib
@@ -177,14 +177,15 @@ IF(UNIX AND NOT APPLE)
 ENDIF(UNIX AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
-    FIND_PACKAGE(OpenAL REQUIRED)
+    FIND_PACKAGE(OpenAL)
 
     IF(WANT_OPENAL)
         IF(NOT OPENAL_FOUND)
             MESSAGE(FATAL_ERROR "OpenAL required but not found.")
         ENDIF()
         SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-    ELSE(WANT_OPENAL)
+
+    ELSE()
         IF(OPENAL_FOUND)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
             SET(AUDIODRV_OPENAL 1)
@@ -193,8 +194,8 @@ IF (APPLE AND WANT_PLAYER)
             MESSAGE(WARNING "Could not find an audio sub-system!")
         ENDIF()
 
-    ENDIF(WANT_OPENAL)
-ENDIF (APPLE AND WANT_PLAYER)
+    ENDIF()
+ENDIF(APPLE AND WANT_PLAYER)
 
 IF(WIN32)
     IF (WANT_PLAYER)
@@ -203,9 +204,9 @@ IF(WIN32)
 ENDIF(WIN32)
 
 # ######### General setup ##########
-INCLUDE_DIRECTORIES(BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/include")
-FILE (MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
-INCLUDE_DIRECTORIES(BEFORE "${CMAKE_CURRENT_BINARY_DIR}/include")
+INCLUDE_DIRECTORIES(BEFORE "${CMAKE_SOURCE_DIR}/include")
+FILE (MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
+INCLUDE_DIRECTORIES(BEFORE "${CMAKE_BINARY_DIR}/include")
 
 IF(APPLE)
     SET(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
@@ -219,6 +220,6 @@ ELSE(APPLE)
 ENDIF(APPLE)
 
 # Setup up our config file
-CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
+CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_BINARY_DIR}/include/config.h")
 
 ADD_SUBDIRECTORY(src)

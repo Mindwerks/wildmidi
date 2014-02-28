@@ -24,7 +24,7 @@
     <http://www.gnu.org/licenses/>.
 */
 
-/* library version: should match the version in CMakeLists.txt */
+/* library version number */
 #define LIBWILDMIDI_VER_MAJOR 0L
 #define LIBWILDMIDI_VER_MINOR 4L
 #define LIBWILDMIDI_VER_MICRO 0L
