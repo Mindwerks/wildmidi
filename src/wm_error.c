@@ -51,7 +51,8 @@ void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
 		"Invalid or Unsuported file format",
 		"File corrupt",
 		"Library not Initialized",
-		"Invalid argument"
+		"Invalid argument",
+		"Library Already Initialized"
 	};
 
 	if (wmfor != NULL) {
