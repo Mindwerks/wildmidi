@@ -548,6 +548,7 @@ static void WM_FreePatches(void) {
 static char **
 WM_LC_Tokenize_Line(char * line_data) {
 	int line_length = strlen(line_data);
+	int token_data_length = 0;
 	int line_ofs = 0;
 	int token_start = 0;
 	char **token_data = NULL;
@@ -578,11 +579,13 @@ WM_LC_Tokenize_Line(char * line_data) {
 				 the start of a token in the line
 				 */
 				token_start = 1;
-				if ((token_data = realloc(token_data,
-						((token_count + 1) * sizeof(char *)))) == NULL) {
-					WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
-							"to parse config", errno);
-					return NULL;
+				if (token_count >= token_data_length) {
+					token_data_length += line_length; // allocate a buffer big enough
+					token_data = realloc(token_data,( token_data_length * sizeof(char *)));
+					if (token_data == NULL){
+						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,"to parse config", errno);
+						return NULL;
+					}
 				}
 
 				token_data[token_count] = &line_data[line_ofs];
