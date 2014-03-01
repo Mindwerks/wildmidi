@@ -63,6 +63,8 @@ static int msleep(unsigned long millisec);
 #include <windows.h>
 #include <mmsystem.h>
 #define msleep(s) Sleep((s))
+#undef strdup
+#define strdup _strdup
 #include <io.h>
 #include "getopt_long.h"
 #else
@@ -107,103 +109,110 @@ struct _midi_test {
 	unsigned long int size;
 };
 
-// scale test from 0 to 127
-/* test a
+/* scale test from 0 to 127
+ * test a
  * offset 18-21 (0x12-0x15) - track size
  * offset 25 (0x1A) = bank number
  * offset 28 (0x1D) = patch number
  */
-static unsigned char midi_test_c_scale[] = { 0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00,
-		0x06, // 0x00
-		0x00, 0x00, 0x00, 0x01, 0x00, 0x06, 0x4d, 0x54, // 0x08
-		0x72, 0x6b, 0x00, 0x00, 0x02, 0x63, 0x00, 0xb0, // 0x10
-		0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x90, 0x00,	// 0x18  C
-		0x64, 0x08, 0x80, 0x00, 0x00, 0x08, 0x90, 0x02,	// 0x20  D
-		0x64, 0x08, 0x80, 0x02, 0x00, 0x08, 0x90, 0x04,	// 0x28  E
-		0x64, 0x08, 0x80, 0x04, 0x00, 0x08, 0x90, 0x05,	// 0x30  F
-		0x64, 0x08, 0x80, 0x05, 0x00, 0x08, 0x90, 0x07,	// 0x38  G
-		0x64, 0x08, 0x80, 0x07, 0x00, 0x08, 0x90, 0x09,	// 0x40  A
-		0x64, 0x08, 0x80, 0x09, 0x00, 0x08, 0x90, 0x0b,	// 0x48  B
-		0x64, 0x08, 0x80, 0x0b, 0x00, 0x08, 0x90, 0x0c,	// 0x50  C
-		0x64, 0x08, 0x80, 0x0c, 0x00, 0x08, 0x90, 0x0e,	// 0x58  D
-		0x64, 0x08, 0x80, 0x0e, 0x00, 0x08, 0x90, 0x10,	// 0x60  E
-		0x64, 0x08, 0x80, 0x10, 0x00, 0x08, 0x90, 0x11,	// 0x68  F
-		0x64, 0x08, 0x80, 0x11, 0x00, 0x08, 0x90, 0x13,	// 0x70  G
-		0x64, 0x08, 0x80, 0x13, 0x00, 0x08, 0x90, 0x15,	// 0x78  A
-		0x64, 0x08, 0x80, 0x15, 0x00, 0x08, 0x90, 0x17,	// 0x80  B
-		0x64, 0x08, 0x80, 0x17, 0x00, 0x08, 0x90, 0x18,	// 0x88  C
-		0x64, 0x08, 0x80, 0x18, 0x00, 0x08, 0x90, 0x1a,	// 0x90  D
-		0x64, 0x08, 0x80, 0x1a, 0x00, 0x08, 0x90, 0x1c,	// 0x98  E
-		0x64, 0x08, 0x80, 0x1c, 0x00, 0x08, 0x90, 0x1d,	// 0xA0  F
-		0x64, 0x08, 0x80, 0x1d, 0x00, 0x08, 0x90, 0x1f,	// 0xA8  G
-		0x64, 0x08, 0x80, 0x1f, 0x00, 0x08, 0x90, 0x21,	// 0xB0  A
-		0x64, 0x08, 0x80, 0x21, 0x00, 0x08, 0x90, 0x23,	// 0xB8  B
-		0x64, 0x08, 0x80, 0x23, 0x00, 0x08, 0x90, 0x24,	// 0xC0  C
-		0x64, 0x08, 0x80, 0x24, 0x00, 0x08, 0x90, 0x26,	// 0xC8  D
-		0x64, 0x08, 0x80, 0x26, 0x00, 0x08, 0x90, 0x28,	// 0xD0  E
-		0x64, 0x08, 0x80, 0x28, 0x00, 0x08, 0x90, 0x29,	// 0xD8  F
-		0x64, 0x08, 0x80, 0x29, 0x00, 0x08, 0x90, 0x2b,	// 0xE0  G
-		0x64, 0x08, 0x80, 0x2b, 0x00, 0x08, 0x90, 0x2d,	// 0xE8  A
-		0x64, 0x08, 0x80, 0x2d, 0x00, 0x08, 0x90, 0x2f,	// 0xF0  B
-		0x64, 0x08, 0x80, 0x2f, 0x00, 0x08, 0x90, 0x30,	// 0xF8  C
-		0x64, 0x08, 0x80, 0x30, 0x00, 0x08, 0x90, 0x32,	// 0x100  D
-		0x64, 0x08, 0x80, 0x32, 0x00, 0x08, 0x90, 0x34,	// 0x108  E
-		0x64, 0x08, 0x80, 0x34, 0x00, 0x08, 0x90, 0x35,	// 0x110  F
-		0x64, 0x08, 0x80, 0x35, 0x00, 0x08, 0x90, 0x37,	// 0x118  G
-		0x64, 0x08, 0x80, 0x37, 0x00, 0x08, 0x90, 0x39,	// 0x120  A
-		0x64, 0x08, 0x80, 0x39, 0x00, 0x08, 0x90, 0x3b,	// 0X128  B
-		0x64, 0x08, 0x80, 0x3b, 0x00, 0x08, 0x90, 0x3c,	// 0x130  C
-		0x64, 0x08, 0x80, 0x3c, 0x00, 0x08, 0x90, 0x3e,	// 0x138  D
-		0x64, 0x08, 0x80, 0x3e, 0x00, 0x08, 0x90, 0x40,	// 0X140  E
-		0x64, 0x08, 0x80, 0x40, 0x00, 0x08, 0x90, 0x41,	// 0x148  F
-		0x64, 0x08, 0x80, 0x41, 0x00, 0x08, 0x90, 0x43,	// 0x150  G
-		0x64, 0x08, 0x80, 0x43, 0x00, 0x08, 0x90, 0x45,	// 0x158  A
-		0x64, 0x08, 0x80, 0x45, 0x00, 0x08, 0x90, 0x47,	// 0x160  B
-		0x64, 0x08, 0x80, 0x47, 0x00, 0x08, 0x90, 0x48,	// 0x168  C
-		0x64, 0x08, 0x80, 0x48, 0x00, 0x08, 0x90, 0x4a,	// 0x170  D
-		0x64, 0x08, 0x80, 0x4a, 0x00, 0x08, 0x90, 0x4c,	// 0x178  E
-		0x64, 0x08, 0x80, 0x4c, 0x00, 0x08, 0x90, 0x4d,	// 0x180  F
-		0x64, 0x08, 0x80, 0x4d, 0x00, 0x08, 0x90, 0x4f,	// 0x188  G
-		0x64, 0x08, 0x80, 0x4f, 0x00, 0x08, 0x90, 0x51,	// 0x190  A
-		0x64, 0x08, 0x80, 0x51, 0x00, 0x08, 0x90, 0x53,	// 0x198  B
-		0x64, 0x08, 0x80, 0x53, 0x00, 0x08, 0x90, 0x54,	// 0x1A0  C
-		0x64, 0x08, 0x80, 0x54, 0x00, 0x08, 0x90, 0x56,	// 0x1A8  D
-		0x64, 0x08, 0x80, 0x56, 0x00, 0x08, 0x90, 0x58,	// 0x1B0  E
-		0x64, 0x08, 0x80, 0x58, 0x00, 0x08, 0x90, 0x59,	// 0x1B8  F
-		0x64, 0x08, 0x80, 0x59, 0x00, 0x08, 0x90, 0x5b,	// 0x1C0  G
-		0x64, 0x08, 0x80, 0x5b, 0x00, 0x08, 0x90, 0x5d,	// 0x1C8  A
-		0x64, 0x08, 0x80, 0x5d, 0x00, 0x08, 0x90, 0x5f,	// 0x1D0  B
-		0x64, 0x08, 0x80, 0x5f, 0x00, 0x08, 0x90, 0x60,	// 0x1D8  C
-		0x64, 0x08, 0x80, 0x60, 0x00, 0x08, 0x90, 0x62,	// 0x1E0  D
-		0x64, 0x08, 0x80, 0x62, 0x00, 0x08, 0x90, 0x64,	// 0x1E8  E
-		0x64, 0x08, 0x80, 0x64, 0x00, 0x08, 0x90, 0x65,	// 0x1F0  F
-		0x64, 0x08, 0x80, 0x65, 0x00, 0x08, 0x90, 0x67,	// 0x1F8  G
-		0x64, 0x08, 0x80, 0x67, 0x00, 0x08, 0x90, 0x69,	// 0x200  A
-		0x64, 0x08, 0x80, 0x69, 0x00, 0x08, 0x90, 0x6b,	// 0x208  B
-		0x64, 0x08, 0x80, 0x6b, 0x00, 0x08, 0x90, 0x6c,	// 0x210  C
-		0x64, 0x08, 0x80, 0x6c, 0x00, 0x08, 0x90, 0x6e,	// 0x218  D
-		0x64, 0x08, 0x80, 0x6e, 0x00, 0x08, 0x90, 0x70,	// 0x220  E
-		0x64, 0x08, 0x80, 0x70, 0x00, 0x08, 0x90, 0x71,	// 0x228  F
-		0x64, 0x08, 0x80, 0x71, 0x00, 0x08, 0x90, 0x73,	// 0x230  G
-		0x64, 0x08, 0x80, 0x73, 0x00, 0x08, 0x90, 0x75,	// 0x238  A
-		0x64, 0x08, 0x80, 0x75, 0x00, 0x08, 0x90, 0x77,	// 0x240  B
-		0x64, 0x08, 0x80, 0x77, 0x00, 0x08, 0x90, 0x78,	// 0x248  C
-		0x64, 0x08, 0x80, 0x78, 0x00, 0x08, 0x90, 0x7a,	// 0x250  D
-		0x64, 0x08, 0x80, 0x7a, 0x00, 0x08, 0x90, 0x7c,	// 0x258  E
-		0x64, 0x08, 0x80, 0x7c, 0x00, 0x08, 0x90, 0x7d,	// 0x260  F
-		0x64, 0x08, 0x80, 0x7d, 0x00, 0x08, 0x90, 0x7f,	// 0x268  G
-		0x64, 0x08, 0x80, 0x7f, 0x00, 0x08, 0xff, 0x2f, // 0x270
-		0x00 // 0x278
-		};
+static unsigned char midi_test_c_scale[] = {
+	0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, /* 0x00    */
+	0x00, 0x00, 0x00, 0x01, 0x00, 0x06, 0x4d, 0x54, /* 0x08    */
+	0x72, 0x6b, 0x00, 0x00, 0x02, 0x63, 0x00, 0xb0, /* 0x10    */
+	0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x90, 0x00,	/* 0x18  C */
+	0x64, 0x08, 0x80, 0x00, 0x00, 0x08, 0x90, 0x02,	/* 0x20  D */
+	0x64, 0x08, 0x80, 0x02, 0x00, 0x08, 0x90, 0x04,	/* 0x28  E */
+	0x64, 0x08, 0x80, 0x04, 0x00, 0x08, 0x90, 0x05,	/* 0x30  F */
+	0x64, 0x08, 0x80, 0x05, 0x00, 0x08, 0x90, 0x07,	/* 0x38  G */
+	0x64, 0x08, 0x80, 0x07, 0x00, 0x08, 0x90, 0x09,	/* 0x40  A */
+	0x64, 0x08, 0x80, 0x09, 0x00, 0x08, 0x90, 0x0b,	/* 0x48  B */
+	0x64, 0x08, 0x80, 0x0b, 0x00, 0x08, 0x90, 0x0c,	/* 0x50  C */
+	0x64, 0x08, 0x80, 0x0c, 0x00, 0x08, 0x90, 0x0e,	/* 0x58  D */
+	0x64, 0x08, 0x80, 0x0e, 0x00, 0x08, 0x90, 0x10,	/* 0x60  E */
+	0x64, 0x08, 0x80, 0x10, 0x00, 0x08, 0x90, 0x11,	/* 0x68  F */
+	0x64, 0x08, 0x80, 0x11, 0x00, 0x08, 0x90, 0x13,	/* 0x70  G */
+	0x64, 0x08, 0x80, 0x13, 0x00, 0x08, 0x90, 0x15,	/* 0x78  A */
+	0x64, 0x08, 0x80, 0x15, 0x00, 0x08, 0x90, 0x17,	/* 0x80  B */
+	0x64, 0x08, 0x80, 0x17, 0x00, 0x08, 0x90, 0x18,	/* 0x88  C */
+	0x64, 0x08, 0x80, 0x18, 0x00, 0x08, 0x90, 0x1a,	/* 0x90  D */
+	0x64, 0x08, 0x80, 0x1a, 0x00, 0x08, 0x90, 0x1c,	/* 0x98  E */
+	0x64, 0x08, 0x80, 0x1c, 0x00, 0x08, 0x90, 0x1d,	/* 0xA0  F */
+	0x64, 0x08, 0x80, 0x1d, 0x00, 0x08, 0x90, 0x1f,	/* 0xA8  G */
+	0x64, 0x08, 0x80, 0x1f, 0x00, 0x08, 0x90, 0x21,	/* 0xB0  A */
+	0x64, 0x08, 0x80, 0x21, 0x00, 0x08, 0x90, 0x23,	/* 0xB8  B */
+	0x64, 0x08, 0x80, 0x23, 0x00, 0x08, 0x90, 0x24,	/* 0xC0  C */
+	0x64, 0x08, 0x80, 0x24, 0x00, 0x08, 0x90, 0x26,	/* 0xC8  D */
+	0x64, 0x08, 0x80, 0x26, 0x00, 0x08, 0x90, 0x28,	/* 0xD0  E */
+	0x64, 0x08, 0x80, 0x28, 0x00, 0x08, 0x90, 0x29,	/* 0xD8  F */
+	0x64, 0x08, 0x80, 0x29, 0x00, 0x08, 0x90, 0x2b,	/* 0xE0  G */
+	0x64, 0x08, 0x80, 0x2b, 0x00, 0x08, 0x90, 0x2d,	/* 0xE8  A */
+	0x64, 0x08, 0x80, 0x2d, 0x00, 0x08, 0x90, 0x2f,	/* 0xF0  B */
+	0x64, 0x08, 0x80, 0x2f, 0x00, 0x08, 0x90, 0x30,	/* 0xF8  C */
+	0x64, 0x08, 0x80, 0x30, 0x00, 0x08, 0x90, 0x32,	/* 0x100 D */
+	0x64, 0x08, 0x80, 0x32, 0x00, 0x08, 0x90, 0x34,	/* 0x108 E */
+	0x64, 0x08, 0x80, 0x34, 0x00, 0x08, 0x90, 0x35,	/* 0x110 F */
+	0x64, 0x08, 0x80, 0x35, 0x00, 0x08, 0x90, 0x37,	/* 0x118 G */
+	0x64, 0x08, 0x80, 0x37, 0x00, 0x08, 0x90, 0x39,	/* 0x120 A */
+	0x64, 0x08, 0x80, 0x39, 0x00, 0x08, 0x90, 0x3b,	/* 0X128 B */
+	0x64, 0x08, 0x80, 0x3b, 0x00, 0x08, 0x90, 0x3c,	/* 0x130 C */
+	0x64, 0x08, 0x80, 0x3c, 0x00, 0x08, 0x90, 0x3e,	/* 0x138 D */
+	0x64, 0x08, 0x80, 0x3e, 0x00, 0x08, 0x90, 0x40,	/* 0X140 E */
+	0x64, 0x08, 0x80, 0x40, 0x00, 0x08, 0x90, 0x41,	/* 0x148 F */
+	0x64, 0x08, 0x80, 0x41, 0x00, 0x08, 0x90, 0x43,	/* 0x150 G */
+	0x64, 0x08, 0x80, 0x43, 0x00, 0x08, 0x90, 0x45,	/* 0x158 A */
+	0x64, 0x08, 0x80, 0x45, 0x00, 0x08, 0x90, 0x47,	/* 0x160 B */
+	0x64, 0x08, 0x80, 0x47, 0x00, 0x08, 0x90, 0x48,	/* 0x168 C */
+	0x64, 0x08, 0x80, 0x48, 0x00, 0x08, 0x90, 0x4a,	/* 0x170 D */
+	0x64, 0x08, 0x80, 0x4a, 0x00, 0x08, 0x90, 0x4c,	/* 0x178 E */
+	0x64, 0x08, 0x80, 0x4c, 0x00, 0x08, 0x90, 0x4d,	/* 0x180 F */
+	0x64, 0x08, 0x80, 0x4d, 0x00, 0x08, 0x90, 0x4f,	/* 0x188 G */
+	0x64, 0x08, 0x80, 0x4f, 0x00, 0x08, 0x90, 0x51,	/* 0x190 A */
+	0x64, 0x08, 0x80, 0x51, 0x00, 0x08, 0x90, 0x53,	/* 0x198 B */
+	0x64, 0x08, 0x80, 0x53, 0x00, 0x08, 0x90, 0x54,	/* 0x1A0 C */
+	0x64, 0x08, 0x80, 0x54, 0x00, 0x08, 0x90, 0x56,	/* 0x1A8 D */
+	0x64, 0x08, 0x80, 0x56, 0x00, 0x08, 0x90, 0x58,	/* 0x1B0 E */
+	0x64, 0x08, 0x80, 0x58, 0x00, 0x08, 0x90, 0x59,	/* 0x1B8 F */
+	0x64, 0x08, 0x80, 0x59, 0x00, 0x08, 0x90, 0x5b,	/* 0x1C0 G */
+	0x64, 0x08, 0x80, 0x5b, 0x00, 0x08, 0x90, 0x5d,	/* 0x1C8 A */
+	0x64, 0x08, 0x80, 0x5d, 0x00, 0x08, 0x90, 0x5f,	/* 0x1D0 B */
+	0x64, 0x08, 0x80, 0x5f, 0x00, 0x08, 0x90, 0x60,	/* 0x1D8 C */
+	0x64, 0x08, 0x80, 0x60, 0x00, 0x08, 0x90, 0x62,	/* 0x1E0 D */
+	0x64, 0x08, 0x80, 0x62, 0x00, 0x08, 0x90, 0x64,	/* 0x1E8 E */
+	0x64, 0x08, 0x80, 0x64, 0x00, 0x08, 0x90, 0x65,	/* 0x1F0 F */
+	0x64, 0x08, 0x80, 0x65, 0x00, 0x08, 0x90, 0x67,	/* 0x1F8 G */
+	0x64, 0x08, 0x80, 0x67, 0x00, 0x08, 0x90, 0x69,	/* 0x200 A */
+	0x64, 0x08, 0x80, 0x69, 0x00, 0x08, 0x90, 0x6b,	/* 0x208 B */
+	0x64, 0x08, 0x80, 0x6b, 0x00, 0x08, 0x90, 0x6c,	/* 0x210 C */
+	0x64, 0x08, 0x80, 0x6c, 0x00, 0x08, 0x90, 0x6e,	/* 0x218 D */
+	0x64, 0x08, 0x80, 0x6e, 0x00, 0x08, 0x90, 0x70,	/* 0x220 E */
+	0x64, 0x08, 0x80, 0x70, 0x00, 0x08, 0x90, 0x71,	/* 0x228 F */
+	0x64, 0x08, 0x80, 0x71, 0x00, 0x08, 0x90, 0x73,	/* 0x230 G */
+	0x64, 0x08, 0x80, 0x73, 0x00, 0x08, 0x90, 0x75,	/* 0x238 A */
+	0x64, 0x08, 0x80, 0x75, 0x00, 0x08, 0x90, 0x77,	/* 0x240 B */
+	0x64, 0x08, 0x80, 0x77, 0x00, 0x08, 0x90, 0x78,	/* 0x248 C */
+	0x64, 0x08, 0x80, 0x78, 0x00, 0x08, 0x90, 0x7a,	/* 0x250 D */
+	0x64, 0x08, 0x80, 0x7a, 0x00, 0x08, 0x90, 0x7c,	/* 0x258 E */
+	0x64, 0x08, 0x80, 0x7c, 0x00, 0x08, 0x90, 0x7d,	/* 0x260 F */
+	0x64, 0x08, 0x80, 0x7d, 0x00, 0x08, 0x90, 0x7f,	/* 0x268 G */
+	0x64, 0x08, 0x80, 0x7f, 0x00, 0x08, 0xff, 0x2f, /* 0x270   */
+	0x00 /* 0x278   */
+};
 
-static struct _midi_test midi_test[] = { { midi_test_c_scale, 663 }, { NULL, 0 } };
+static struct _midi_test midi_test[] = {
+	{ midi_test_c_scale, 663 },
+	{ NULL, 0 }
+};
 
 static int midi_test_max = 1;
 
 /*
  ==============================
  Audio Output Functions
- ------------------------------
+
+ We have two 'drivers': first is the wav file writer which is
+ always available. the second, if it is really compiled in,
+ is the system audio output driver. only _one of the two_ can
+ be active, not both.
  ==============================
  */
 
@@ -213,15 +222,9 @@ static char *pcmname = NULL;
 static int (*send_output)(char * output_data, int output_size);
 static void (*close_output)(void);
 static void (*pause_output)(void);
-static int audio_fd;
+static int audio_fd = -1;
 
 static void pause_output_nop(void) {
-}
-
-static void shutdown_output(void) {
-	printf("Shutting Down Sound System.\r\n");
-	if (audio_fd != -1)
-		close(audio_fd);
 }
 
 /*
@@ -250,6 +253,7 @@ static int open_wav_output(void) {
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
 			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
 #endif
+		fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
 		return (-1);
 	} else {
 		unsigned long int bytes_per_sec;
@@ -265,8 +269,9 @@ static int open_wav_output(void) {
 	}
 
 	if (write(audio_fd, &wav_hdr, 44) < 0) {
-		printf("ERROR: Writing Header %s\r\n", strerror(errno));
-		shutdown_output();
+		fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(errno));
+		close(audio_fd);
+		audio_fd = -1;
 		return (-1);
 	}
 
@@ -280,8 +285,9 @@ static int open_wav_output(void) {
 static int write_wav_output(char * output_data, int output_size) {
 /* the library specifically outputs LE data - no need swapping. */
 	if (write(audio_fd, output_data, output_size) < 0) {
-		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
-		shutdown_output();
+		fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+		close(audio_fd);
+		audio_fd = -1;
 		return (-1);
 	}
 
@@ -291,17 +297,18 @@ static int write_wav_output(char * output_data, int output_size) {
 
 static void close_wav_output(void) {
 	char wav_count[4];
-	if (audio_fd == -1)
+	if (audio_fd < 0)
 		return;
 
+	printf("Finishing and closing wav output\r");
 	wav_count[0] = (wav_size) & 0xFF;
 	wav_count[1] = (wav_size >> 8) & 0xFF;
 	wav_count[2] = (wav_size >> 16) & 0xFF;
 	wav_count[3] = (wav_size >> 24) & 0xFF;
 	lseek(audio_fd, 40, SEEK_SET);
 	if (write(audio_fd, &wav_count, 4) < 0) {
-		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
-		shutdown_output();
+		fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+		goto end;
 	}
 
 	wav_size += 36;
@@ -311,23 +318,26 @@ static void close_wav_output(void) {
 	wav_count[3] = (wav_size >> 24) & 0xFF;
 	lseek(audio_fd, 4, SEEK_SET);
 	if (write(audio_fd, &wav_count, 4) < 0) {
-		printf("ERROR: Writing Wav %s\r\n", strerror(errno));
-		shutdown_output();
+		fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+		goto end;
 	}
 
-	shutdown_output();
+end:	printf("\n");
+	if (audio_fd >= 0)
+		close(audio_fd);
+	audio_fd = -1;
 }
 
 #if (defined _WIN32) || (defined __CYGWIN__)
 
-static HWAVEOUT hWaveOut;
+static HWAVEOUT hWaveOut = NULL;
 static CRITICAL_SECTION waveCriticalSection;
 
 #define open_audio_output open_mm_output
 static int write_mm_output (char * output_data, int output_size);
 static void close_mm_output (void);
 
-static WAVEHDR *mm_blocks;
+static WAVEHDR *mm_blocks = NULL;
 #define MM_BLOCK_SIZE 16384
 #define MM_BLOCK_COUNT 3
 
@@ -364,7 +374,7 @@ open_mm_output (void) {
 	InitializeCriticalSection(&waveCriticalSection);
 
 	if((mm_buffer = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((MM_BLOCK_SIZE + sizeof(WAVEHDR)) * MM_BLOCK_COUNT))) == NULL) {
-		printf("Memory allocation error\r\n");
+		fprintf(stderr, "Memory allocation error\r\n");
 		return -1;
 	}
 
@@ -386,7 +396,10 @@ open_mm_output (void) {
 	wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
 
 	if(waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, (DWORD_PTR)mmOutProc, (DWORD_PTR)&mm_free_blocks, CALLBACK_FUNCTION ) != MMSYSERR_NOERROR) {
-		printf("unable to open WAVE_MAPPER device\r\n");
+		fprintf(stderr, "unable to open WAVE_MAPPER device\r\n");
+		HeapFree(GetProcessHeap(), 0, mm_blocks);
+		hWaveOut = NULL;
+		mm_blocks = NULL;
 		return -1;
 	}
 
@@ -439,6 +452,11 @@ static void
 close_mm_output (void) {
 	WAVEHDR* current;
 	int i, j;
+
+	if (!hWaveOut) return;
+
+	printf("Shutting down sound output\r\n");
+
 	current = &mm_blocks[mm_current_block];
 	i = MM_BLOCK_SIZE - current->dwUser;
 
@@ -447,14 +465,15 @@ close_mm_output (void) {
 
 	waveOutClose (hWaveOut);
 	HeapFree(GetProcessHeap(), 0, mm_blocks);
-	shutdown_output();
+	hWaveOut = NULL;
+	mm_blocks = NULL;
 }
 
 #else
 #ifdef AUDIODRV_ALSA
 
 static int alsa_first_time = 1;
-static snd_pcm_t *pcm;
+static snd_pcm_t *pcm = NULL;
 
 #define open_audio_output open_alsa_output
 static int write_alsa_output(char * output_data, int output_size);
@@ -468,47 +487,42 @@ static int open_alsa_output(void) {
 	unsigned int alsa_period_time;
 
 	if (!pcmname) {
-		pcmname = malloc(8);
-		strcpy(pcmname, "default");
+		pcmname = strdup("default");
 	}
 
 	if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-		printf("Error: audio open error: %s\r\n", snd_strerror(-err));
+		fprintf(stderr, "Error: audio open error: %s\r\n", snd_strerror(err));
 		return -1;
 	}
 
 	snd_pcm_hw_params_alloca(&hw);
 
 	if ((err = snd_pcm_hw_params_any(pcm, hw)) < 0) {
-		printf("ERROR: No configuration available for playback: %s\r\n",
-				snd_strerror(-err));
-		return -1;
+		fprintf(stderr, "ERROR: No configuration available for playback: %s\r\n",
+				snd_strerror(err));
+		goto fail;
 	}
 
 	if ((err = snd_pcm_hw_params_set_access(pcm, hw,
 			SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-		printf("Cannot set mmap'ed mode: %s.\r\n", snd_strerror(-err));
-		return -1;
+		fprintf(stderr, "Cannot set access mode: %s.\r\n", snd_strerror(err));
+		goto fail;
 	}
 
 	/* the library specifically outputs LE data. */
 	if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16_LE) < 0) {
-		printf(
-				"ALSA does not support 16bit signed audio for your soundcard\r\n");
-		close_alsa_output();
-		return -1;
+		fprintf(stderr, "ALSA does not support 16bit signed audio for your soundcard\r\n");
+		goto fail;
 	}
 
 	if (snd_pcm_hw_params_set_channels(pcm, hw, 2) < 0) {
-		printf("ALSA does not support stereo for your soundcard\r\n");
-		close_alsa_output();
-		return -1;
+		fprintf(stderr, "ALSA does not support stereo for your soundcard\r\n");
+		goto fail;
 	}
 
 	if (snd_pcm_hw_params_set_rate_near(pcm, hw, &rate, 0) < 0) {
-		printf("ALSA does not support %iHz for your soundcard\r\n", rate);
-		close_alsa_output();
-		return -1;
+		fprintf(stderr, "ALSA does not support %iHz for your soundcard\r\n", rate);
+		goto fail;
 	}
 
 	alsa_buffer_time = 500000;
@@ -516,26 +530,26 @@ static int open_alsa_output(void) {
 
 	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw,
 			&alsa_buffer_time, 0)) < 0) {
-		printf("Set buffer time failed: %s.\r\n", snd_strerror(-err));
-		return -1;
+		fprintf(stderr, "Set buffer time failed: %s.\r\n", snd_strerror(err));
+		goto fail;
 	}
 
 	if ((err = snd_pcm_hw_params_set_period_time_near(pcm, hw,
 			&alsa_period_time, 0)) < 0) {
-		printf("Set period time failed: %s.\r\n", snd_strerror(-err));
-		return -1;
+		fprintf(stderr, "Set period time failed: %s.\r\n", snd_strerror(err));
+		goto fail;
 	}
 
 	if (snd_pcm_hw_params(pcm, hw) < 0) {
-		printf("Unable to install hw params\r\n");
-		return -1;
+		fprintf(stderr, "Unable to install hw params\r\n");
+		goto fail;
 	}
 
 	snd_pcm_sw_params_alloca(&sw);
 	snd_pcm_sw_params_current(pcm, sw);
 	if (snd_pcm_sw_params(pcm, sw) < 0) {
-		printf("Unable to install sw params\r\n");
-		return -1;
+		fprintf(stderr, "Unable to install sw params\r\n");
+		goto fail;
 	}
 
 	send_output = write_alsa_output;
@@ -545,6 +559,9 @@ static int open_alsa_output(void) {
 		free(pcmname);
 	}
 	return (0);
+
+fail:	close_alsa_output();
+	return -1;
 }
 
 static int write_alsa_output(char * output_data, int output_size) {
@@ -556,7 +573,7 @@ static int write_alsa_output(char * output_data, int output_size) {
 		if ((err = snd_pcm_writei(pcm, output_data, frames)) < 0) {
 			if (snd_pcm_state(pcm) == SND_PCM_STATE_XRUN) {
 				if ((err = snd_pcm_prepare(pcm)) < 0)
-					printf("snd_pcm_prepare() failed.\r\n");
+					fprintf(stderr, "\nsnd_pcm_prepare() failed.\r\n");
 				alsa_first_time = 1;
 				continue;
 			}
@@ -574,8 +591,10 @@ static int write_alsa_output(char * output_data, int output_size) {
 }
 
 static void close_alsa_output(void) {
+	if (!pcm) return;
+	printf("Shutting down sound output\r\n");
 	snd_pcm_close(pcm);
-	shutdown_output();
+	pcm = NULL;
 }
 
 #elif defined AUDIODRV_OSS
@@ -595,8 +614,7 @@ static void close_alsa_output(void) {
 
 static char *buffer = NULL;
 static unsigned long int max_buffer;
-static unsigned long int buffer_delay;
-static unsigned long int counter;
+static int counter;
 static struct audio_buf_info info;
 
 #define open_audio_output open_oss_output
@@ -611,88 +629,75 @@ static int open_oss_output(void) {
 	unsigned long int sz = sysconf(_SC_PAGESIZE);
 
 	if (!pcmname) {
-		pcmname = malloc(9);
-		strcpy(pcmname, "/dev/dsp");
+		pcmname = strdup("/dev/dsp");
 	}
 
 	if ((audio_fd = open(pcmname, omode)) < 0) {
-		printf("ERROR: Unable to open /dev/dsp (%s)\r\n", strerror(errno));
+		fprintf(stderr, "ERROR: Unable to open dsp (%s)\r\n", strerror(errno));
 		return -1;
 	}
 	if (ioctl(audio_fd, SNDCTL_DSP_RESET, 0) < 0) {
-		printf("ERROR: Unable to reset /dev/dsp\r\n");
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: Unable to reset dsp\r\n");
+		goto fail;
 	}
-	if (ioctl(audio_fd, SNDCTL_DSP_GETCAPS, &caps) == -1) {
-		printf("ERROR: Driver Too Old\r\n");
-		shutdown_output();
-		return -1;
+	if (ioctl(audio_fd, SNDCTL_DSP_GETCAPS, &caps) < 0) {
+		fprintf(stderr, "ERROR: Unable to retrieve soundcard capabilities\r\n");
+		goto fail;
 	}
 	if (!(caps & DSP_CAP_TRIGGER) || !(caps & DSP_CAP_MMAP)) {
-		printf("Sound device can't do memory-mapped I/O.\r\n");
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: Audio driver doesn't support mmap or trigger\r\n");
+		goto fail;
 	}
 
 	/* the library specifically outputs LE data. */
 	rc = AFMT_S16_LE;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
-		printf("Can't set 16bit\r\n");
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: Unable to set 16bit sound format\r\n");
+		goto fail;
 	}
 
 	tmp = 2;
 	if (ioctl(audio_fd, SNDCTL_DSP_CHANNELS, &tmp) < 0) {
-		printf("Can't set stereo\r\n");
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: Unable to set stereo\r\n");
+		goto fail;
 	}
 
 	if (ioctl(audio_fd, SNDCTL_DSP_SPEED, &rate) < 0) {
-		printf("ERROR: /dev/dsp does not support %iHz output\r\n", rate);
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: Unable to set %iHz sample rate\r\n", rate);
+		goto fail;
 	}
 
-	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) == -1) {
-		printf("Um, can't do GETOSPACE?\r\n");
-		shutdown_output();
-		return -1;
+	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) < 0) {
+		fprintf(stderr, "ERROR: Unable to retrieve buffer status\r\n");
+		goto fail;
 	}
 	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
 
 	buffer = (char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
 	if (buffer == MAP_FAILED) {
-		printf("couldn't mmap %s\r\n", strerror(errno));
 		buffer = NULL;
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: couldn't mmap dsp (%s)\r\n", strerror(errno));
+		goto fail;
 	}
 
 	tmp = 0;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
-		printf("Couldn't toggle\r\n");
-		munmap(buffer, max_buffer);
-		buffer = NULL;
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: Could not toggle dsp\r\n");
+		goto fail;
 	}
 
 	tmp = PCM_ENABLE_OUTPUT;
 	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
-		printf("Couldn't toggle\r\n");
-		munmap(buffer, max_buffer);
-		buffer = NULL;
-		shutdown_output();
-		return -1;
+		fprintf(stderr, "ERROR: Could not toggle dsp\r\n");
+		goto fail;
 	}
-	buffer_delay = 1000000 / (rate / 4);
 	send_output = write_oss_output;
 	close_output = close_oss_output;
 	pause_output = pause_output_nop;
 	return (0);
+
+fail:	close_oss_output();
+	return -1;
 }
 
 static int write_oss_output(char * output_data, int output_size) {
@@ -701,11 +706,8 @@ static int write_oss_output(char * output_data, int output_size) {
 	int free_size = 0;
 	while (output_size != 0) {
 		while (1) {
-			if (ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &count) == -1) {
-				printf("Dead Sound\r\n");
-				munmap(buffer, max_buffer);
-				buffer = NULL;
-				shutdown_output();
+			if (ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &count) < 0) {
+				fprintf(stderr, "\nERROR: Sound dead\r\n");
 				return -1;
 			}
 			if ((count.ptr < counter) || (count.ptr >= (counter + 4))) {
@@ -724,7 +726,7 @@ static int write_oss_output(char * output_data, int output_size) {
 		memcpy(&buffer[counter], &output_data[data_read], free_size);
 		data_read += free_size;
 		counter += free_size;
-		if (counter >= max_buffer)
+		if (counter >= (long)max_buffer)
 			counter = 0;
 		output_size -= free_size;
 	}
@@ -732,11 +734,15 @@ static int write_oss_output(char * output_data, int output_size) {
 }
 
 static void close_oss_output(void) {
+	if (!buffer && audio_fd < 0)
+		return;
+	printf("Shutting down sound output\r\n");
 	/* unmap before closing audio_fd */
 	if (buffer != NULL)
 		munmap(buffer, max_buffer);
-	shutdown_output();
 	buffer = NULL;
+	if (audio_fd >= 0)
+		close(audio_fd);
 	audio_fd = -1;
 }
 
@@ -766,7 +772,7 @@ static void pause_output_openal(void) {
 static int write_openal_output(char * output_data, int output_size) {
 	ALint processed, state;
 
-	if (frames <= PRIME) { // prime the pump
+	if (frames <= PRIME) { /* prime the pump */
 		alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data,
 				output_size, rate);
 
@@ -797,8 +803,8 @@ static int write_openal_output(char * output_data, int output_size) {
 			alSourceQueueBuffers(sourceId, 1, &bufid);
 		}
 		if (alGetError() != AL_NO_ERROR) {
-			fprintf(stderr, "Error buffering data\n");
-			return 0;
+			fprintf(stderr, "\nError buffering data\r\n");
+			return (-1);
 		}
 	}
 
@@ -811,11 +817,11 @@ static int write_openal_output(char * output_data, int output_size) {
 		if(queued == 0)
 			return (-1);
 
-		//printf("STATE: %#08x - %d\n", state, queued);
+		/*printf("STATE: %#08x - %d\n", state, queued);*/
 
 		alSourcePlay(sourceId);
 		if (alGetError() != AL_NO_ERROR) {
-			fprintf(stderr, "Error restarting playback\n");
+			fprintf(stderr, "\nError restarting playback\r\n");
 			return (-1);
 		}
 	}
@@ -831,37 +837,38 @@ static int write_openal_output(char * output_data, int output_size) {
 }
 
 static void close_openal_output(void) {
-	alSourceStop(sourceId);				// stop playing
-	alSourcei(sourceId, AL_BUFFER, 0);// unload buffer from source
+	if (!context) return;
+	printf("Shutting down sound output\r\n");
+	alSourceStop(sourceId);			/* stop playing */
+	alSourcei(sourceId, AL_BUFFER, 0);	/* unload buffer from source */
 	alDeleteBuffers(NUM_BUFFERS, buffers);
 	alDeleteSources(1, &sourceId);
 	alcDestroyContext(context);
 	alcCloseDevice(device);
-	shutdown_output();
 	context = NULL;
 	device = NULL;
 }
 
 static int open_openal_output(void) {
-	// setup our audio devices and contexts
+	/* setup our audio devices and contexts */
 	device = alcOpenDevice(NULL);
 	if (!device) {
-		printf("OpenAL: Unable to open default device.\n");
+		fprintf(stderr, "OpenAL: Unable to open default device.\r\n");
 		return (-1);
 	}
 
 	context = alcCreateContext(device, NULL);
 	if (context == NULL || alcMakeContextCurrent(context) == ALC_FALSE) {
 		if (context != NULL)
-		alcDestroyContext(context);
+			alcDestroyContext(context);
 		alcCloseDevice(device);
 		context = NULL;
 		device = NULL;
-		printf("OpenAL: Failed to create the default context.\n");
+		fprintf(stderr, "OpenAL: Failed to create the default context.\r\n");
 		return (-1);
 	}
 
-	// setup our sources and buffers
+	/* setup our sources and buffers */
 	alGenSources(1, &sourceId);
 	alGenBuffers(NUM_BUFFERS, buffers);
 
@@ -901,53 +908,51 @@ static struct option const long_options[] = {
 };
 
 static void do_help(void) {
-	printf("  -v    --version        Display version\r\n");
-	printf("  -h    --help           This help.\r\n");
+	printf("  -v    --version        Display version\n");
+	printf("  -h    --help           This help.\n");
 #ifndef _WIN32
-	printf("  -d D  --device=D       Use device D for audio output instead\r\n");
-	printf("                         of the default\r\n");
+	printf("  -d D  --device=D       Use device D for audio output instead\n");
+	printf("                         of the default\n");
 #endif
-	printf("MIDI Options\r\n");
-	printf("  -w    --wholetempo       round down tempo to whole number\r\n");
-	printf("  -n    --roundtempo       round tempo to nearest whole number\r\n");
-	printf("Software Wavetable Options\r\n");
-	printf("  -o W  --wavout=W       Saves the output to W in wav format\r\n");
-	printf("                         at 44100Hz 16 bit stereo\r\n");
-	printf("  -l    --log_vol        Use log volume adjustments\r\n");
-	printf("  -r N  --rate=N         output at N samples per second\r\n");
-	printf("  -c P  --config_file=P  P is the path and filename to your wildmidi.cfg\r\n");
-	printf("                         Defaults to %s\n\r\n", WILDMIDI_CFG);
-	printf(" -m V  --master_volume=V Sets the master volumes, default is 100\r\n");
-	printf("                         range is 0-127 with 127 being the loudest\r\n");
-	printf(" -b    --reverb          Enable final output reverb engine\r\n");
-
+	printf("MIDI Options\n");
+	printf("  -w    --wholetempo       round down tempo to whole number\n");
+	printf("  -n    --roundtempo       round tempo to nearest whole number\n");
+	printf("Software Wavetable Options\n");
+	printf("  -o W  --wavout=W       Saves the output to W in wav format\n");
+	printf("                         at 44100Hz 16 bit stereo\n");
+	printf("  -l    --log_vol        Use log volume adjustments\n");
+	printf("  -r N  --rate=N         output at N samples per second\n");
+	printf("  -c P  --config_file=P  P is the path and filename to your wildmidi.cfg\n");
+	printf("                         Defaults to %s\n", WILDMIDI_CFG);
+	printf(" -m V  --master_volume=V Sets the master volumes, default is 100\n");
+	printf("                         range is 0-127 with 127 being the loudest\n");
+	printf(" -b    --reverb          Enable final output reverb engine\n");
 }
 
 static void do_version(void) {
-	printf("\nWildMidi %s Open Source Midi Sequencer\r\n", PACKAGE_VERSION);
-	printf("Copyright (C) WildMIDI Developers 2001-2014\r\n\r\n");
-	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\r\n");
-	printf("This is free software, and you are welcome to redistribute it\r\n");
-	printf("under the terms and conditions of the GNU General Public License version 3.\r\n");
-	printf("For more information see COPYING\n\r\n");
-	printf("Report bugs to %s\r\n", PACKAGE_BUGREPORT);
-	printf("WildMIDI homepage at %s\n\r\n", PACKAGE_URL);
+	printf("\nWildMidi %s Open Source Midi Sequencer\n", PACKAGE_VERSION);
+	printf("Copyright (C) WildMIDI Developers 2001-2014\n\n");
+	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\n");
+	printf("This is free software, and you are welcome to redistribute it\n");
+	printf("under the terms and conditions of the GNU General Public License version 3.\n");
+	printf("For more information see COPYING\n\n");
+	printf("Report bugs to %s\n", PACKAGE_BUGREPORT);
+	printf("WildMIDI homepage at %s\n\n", PACKAGE_URL);
 }
 
 static void do_syntax(void) {
-	printf("wildmidi [options] filename.mid\n\r\n");
+	printf("wildmidi [options] filename.mid\n\n");
 }
 
 int main(int argc, char **argv) {
-	struct _WM_Info * wm_info = NULL;
-	int i;
+	struct _WM_Info *wm_info;
+	int i, res;
 	int option_index = 0;
 	unsigned long int mixer_options = 0;
-	static char *config_file = NULL;
-	void *midi_ptr = NULL;
+	char *config_file = NULL;
+	void *midi_ptr;
 	unsigned char master_volume = 100;
-	int output_result = 0;
-	char * output_buffer = NULL;
+	char *output_buffer;
 	unsigned long int perc_play = 0;
 	unsigned long int pro_mins = 0;
 	unsigned long int pro_secs = 0;
@@ -958,7 +963,7 @@ int main(int argc, char **argv) {
 	unsigned char ch;
 	unsigned char test_midi = 0;
 	unsigned char test_count = 0;
-	unsigned char *test_data = NULL;
+	unsigned char *test_data;
 	unsigned char test_bank = 0;
 	unsigned char test_patch = 0;
 	static char spinner[] = "|/-\\";
@@ -987,66 +992,75 @@ int main(int argc, char **argv) {
 		if (i == -1)
 			break;
 		switch (i) {
-		case 'v': // Version
+		case 'v': /* Version */
 			return (0);
-		case 'h': // help
+		case 'h': /* help */
 			do_syntax();
 			do_help();
 			return (0);
-		case 'r': // SoundCard Rate
-			rate = atoi(optarg);
+		case 'r': /* Sample Rate */
+			res = atoi(optarg);
+			if (res < 0 || res > 65535) {
+				fprintf(stderr, "Error: bad rate %i.\n", res);
+				return (0);
+			}
+			rate = res;
 			break;
-		case 'b': // Reverb
+		case 'b': /* Reverb */
 			mixer_options ^= WM_MO_REVERB;
 			break;
-		case 'm': // Master Volume
+		case 'm': /* Master Volume */
 			master_volume = (unsigned char) atoi(optarg);
 			break;
-		case 'o': // Wav Output
+		case 'o': /* Wav Output */
+			if (!*optarg) {
+				fprintf(stderr, "Error: empty wavfile name.\n");
+				return (0);
+			}
 			strcpy(wav_file, optarg);
 			break;
-		case 'c': // Config File
-			config_file = malloc(strlen(optarg) + 1);
-			strcpy(config_file, optarg);
+		case 'c': /* Config File */
+			config_file = strdup(optarg);
 			break;
-		case 'd': // Output device
-			pcmname = malloc(strlen(optarg) + 1);
-			strcpy(pcmname, optarg);
+		case 'd': /* Output device */
+			if (!*optarg) {
+				fprintf(stderr, "Error: empty device name.\n");
+				return (0);
+			}
+			pcmname = strdup(optarg);
 			break;
-		case 'e': // Enhanced Resampling
+		case 'e': /* Enhanced Resampling */
 			mixer_options |= WM_MO_ENHANCED_RESAMPLING;
 			break;
-		case 'l': // log volume
+		case 'l': /* log volume */
 			mixer_options |= WM_MO_LOG_VOLUME;
 			break;
-		case 't': // play test midis
+		case 't': /* play test midis */
 			test_midi = 1;
 			break;
-		case 'k': // set test bank
+		case 'k': /* set test bank */
 			test_bank = (unsigned char) atoi(optarg);
 			break;
-		case 'p': // set test patch
+		case 'p': /* set test patch */
 			test_patch = (unsigned char) atoi(optarg);
 			break;
-		case 'w': // whole number tempo
+		case 'w': /* whole number tempo */
 			mixer_options |= WM_MO_WHOLETEMPO;
 			break;
-		case 'n': // whole number tempo
+		case 'n': /* whole number tempo */
 			mixer_options |= WM_MO_ROUNDTEMPO;
 			break;
 		default:
-			printf("Unknown Option -%o ??\r\n", i);
+			fprintf(stderr, "Error: Unknown option -%o\n", i);
 			return (0);
 		}
 	}
 
 	if (!config_file) {
-		config_file = malloc(sizeof(WILDMIDI_CFG) + 1);
-		strncpy(config_file, WILDMIDI_CFG, sizeof(WILDMIDI_CFG));
-		config_file[sizeof(WILDMIDI_CFG)] = '\0';
+		config_file = strdup(WILDMIDI_CFG);
 	}
 	if (optind < argc || test_midi) {
-		printf("Initializing Sound System\r\n");
+		printf("Initializing Sound System\n");
 
 		if (wav_file[0] != '\0') {
 			if (open_wav_output() == -1) {
@@ -1063,14 +1077,14 @@ int main(int argc, char **argv) {
 			return (0);
 		}
 
-		printf(" +  Volume up        e  Better resampling    n  Next Midi\r\n");
-		printf(" -  Volume down      l  Log volume           q  Quit\r\n");
-		printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\r\n");
-		printf("                     p  Pause On/Off\n\r\n");
+		printf(" +  Volume up        e  Better resampling    n  Next Midi\n");
+		printf(" -  Volume down      l  Log volume           q  Quit\n");
+		printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
+		printf("                     p  Pause On/Off\n\n");
 
 		output_buffer = malloc(16384);
 		if (output_buffer == NULL) {
-			printf("Not enough ram, exiting\r\n");
+			fprintf(stderr, "Not enough memory, exiting\n");
 			WildMidi_Shutdown();
 			return (0);
 		}
@@ -1099,6 +1113,7 @@ int main(int argc, char **argv) {
 
 				midi_ptr = WildMidi_Open(argv[optind]);
 				if (midi_ptr == NULL) {
+					printf("\r");
 					optind++;
 					continue;
 				}
@@ -1186,15 +1201,7 @@ int main(int argc, char **argv) {
 						break;
 					case 'q':
 						printf("\r\n");
-						WildMidi_Close(midi_ptr);
-						WildMidi_Shutdown();
-						close_output();
-#if !defined(_WIN32) && !defined(__DJGPP__)
-						if (isatty(my_tty))
-							resetty();
-#endif
-						printf("\r\n");
-						exit(0);
+						goto end1;
 					case '-':
 						if (master_volume > 0) {
 							master_volume--;
@@ -1207,8 +1214,7 @@ int main(int argc, char **argv) {
 							WildMidi_MasterVolume(master_volume);
 						}
 						break;
-						// seeking examples
-					case ',': // fast seek backwards
+					case ',': /* fast seek backwards */
 						if (wm_info->current_sample < rate) {
 							seek_to_sample = 0;
 						} else {
@@ -1216,7 +1222,7 @@ int main(int argc, char **argv) {
 						}
 						WildMidi_FastSeek(midi_ptr, &seek_to_sample);
 						break;
-					case '.': // fast seek forwards
+					case '.': /* fast seek forwards */
 						if ((wm_info->approx_total_samples
 								- wm_info->current_sample) < rate) {
 							seek_to_sample = wm_info->approx_total_samples;
@@ -1250,15 +1256,9 @@ int main(int argc, char **argv) {
 					continue;
 				}
 
-				if (count_diff < 4096) {
-					output_result = WildMidi_GetOutput(midi_ptr, output_buffer,
-							(count_diff * 4));
-				} else {
-					output_result = WildMidi_GetOutput(midi_ptr, output_buffer,
-							4096);
-				}
-
-				if (output_result <= 0)
+				res = WildMidi_GetOutput(midi_ptr, output_buffer,
+							 (count_diff >= 4096)? 16384 : (count_diff * 4));
+				if (res <= 0)
 					break;
 
 				wm_info = WildMidi_GetInfo(midi_ptr);
@@ -1275,52 +1275,48 @@ int main(int argc, char **argv) {
 						apr_mins, apr_secs, modes, master_volume, pro_mins,
 						pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
-				if (output_result > 0) {
 #if defined(AUDIODRV_OPENAL) && defined(WORDS_BIGENDIAN)
-					if (context != NULL) { /* OpenAL is active, not wav writer */
-						unsigned short *swp =
-							(unsigned short *) output_buffer;
-						/* the library specifically outputs LE data
-						 * but OpenAL expects host-endian: do swap. */
-						for (i = 0; i < output_result / 2; ++i) {
-							swp[i] = (swp[i] << 8) | (swp[i] >> 8);
-						}
+				if (context != NULL) { /* OpenAL is active, not wav writer */
+					unsigned short *swp =
+						(unsigned short *) output_buffer;
+					/* the library specifically outputs LE data
+					 * but OpenAL expects host-endian: do swap. */
+					for (i = 0; i < output_result / 2; ++i) {
+						swp[i] = (swp[i] << 8) | (swp[i] >> 8);
 					}
+				}
 #endif
-					if (send_output(output_buffer, output_result) < 0) {
-						/* driver prints an error message already. */
-						break;
-					}
+				if (send_output(output_buffer, res) < 0) {
+				/* driver prints an error message already. */
+					printf("\r");
+					goto end2;
 				}
 			}
 			NEXTMIDI: fprintf(stderr, "\r\n");
 			if (WildMidi_Close(midi_ptr) == -1) {
-				printf("oops\r\n");
+				fprintf(stderr, "OOPS: failed closing midi handle!\r\n");
 			}
 			memset(output_buffer, 0, 16384);
 			send_output(output_buffer, 16384);
 		}
-		memset(output_buffer, 0, 16384);
-		if (send_output(output_buffer, 16384) == 0) {
-		    send_output(output_buffer, 16384);
-		}
+end1:		memset(output_buffer, 0, 16384);
+		send_output(output_buffer, 16384);
 		msleep(5);
-		close_output();
+end2:		close_output();
+		free(output_buffer);
 		if (WildMidi_Shutdown() == -1)
-			printf("oops\r\n");
+			fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
 #if !defined(_WIN32) && !defined(__DJGPP__)
 		if (isatty(my_tty))
 			resetty();
 #endif
 	} else {
-		printf("ERROR: No midi file given\r\n");
+		fprintf(stderr, "ERROR: No midi file given\r\n");
 		do_syntax();
 		return (0);
 	}
 
-	if (output_buffer != NULL)
-		free(output_buffer);
-	printf("\r");
+	printf("\r\n");
 	return (0);
 }
 
