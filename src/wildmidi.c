@@ -62,6 +62,7 @@ static int msleep(unsigned long millisec);
 #include <conio.h>
 #include <windows.h>
 #include <mmsystem.h>
+#define msleep(s) Sleep((s))
 #include <io.h>
 #include "getopt_long.h"
 #else
@@ -211,7 +212,11 @@ static char *pcmname = NULL;
 
 static int (*send_output)(char * output_data, int output_size);
 static void (*close_output)(void);
+static void (*pause_output)(void);
 static int audio_fd;
+
+static void pause_output_nop(void) {
+}
 
 static void shutdown_output(void) {
 	printf("Shutting Down Sound System.\r\n");
@@ -268,6 +273,7 @@ static int open_wav_output(void) {
 	wav_size = 0;
 	send_output = write_wav_output;
 	close_output = close_wav_output;
+	pause_output = pause_output_nop;
 	return (0);
 }
 
@@ -317,6 +323,7 @@ static void close_wav_output(void) {
 static HWAVEOUT hWaveOut;
 static CRITICAL_SECTION waveCriticalSection;
 
+#define open_audio_output open_mm_output
 static int write_mm_output (char * output_data, int output_size);
 static void close_mm_output (void);
 
@@ -385,6 +392,7 @@ open_mm_output (void) {
 
 	send_output = write_mm_output;
 	close_output = close_mm_output;
+	pause_output = pause_output_nop;
 	return (0);
 }
 
@@ -448,6 +456,7 @@ close_mm_output (void) {
 static int alsa_first_time = 1;
 static snd_pcm_t *pcm;
 
+#define open_audio_output open_alsa_output
 static int write_alsa_output(char * output_data, int output_size);
 static void close_alsa_output(void);
 
@@ -531,6 +540,7 @@ static int open_alsa_output(void) {
 
 	send_output = write_alsa_output;
 	close_output = close_alsa_output;
+	pause_output = pause_output_nop;
 	if (pcmname != NULL) {
 		free(pcmname);
 	}
@@ -589,6 +599,7 @@ static unsigned long int buffer_delay;
 static unsigned long int counter;
 static struct audio_buf_info info;
 
+#define open_audio_output open_oss_output
 static int write_oss_output(char * output_data, int output_size);
 static void close_oss_output(void);
 
@@ -680,6 +691,7 @@ static int open_oss_output(void) {
 	buffer_delay = 1000000 / (rate / 4);
 	send_output = write_oss_output;
 	close_output = close_oss_output;
+	pause_output = pause_output_nop;
 	return (0);
 }
 
@@ -744,6 +756,12 @@ static ALCcontext *context;
 static ALuint sourceId = 0;
 static ALuint buffers[NUM_BUFFERS];
 static ALuint frames = 0;
+
+#define open_audio_output open_openal_output
+
+static void pause_output_openal(void) {
+	alSourcePause(sourceId);
+}
 
 static int write_openal_output(char * output_data, int output_size) {
 	ALint processed, state;
@@ -849,7 +867,15 @@ static int open_openal_output(void) {
 
 	send_output = write_openal_output;
 	close_output = close_openal_output;
+	pause_output = pause_output_openal;
 	return (0);
+}
+
+#else /* no audio output driver compiled in: */
+
+#define open_audio_output open_noaudio_output
+static int open_noaudio_output(void) {
+	return -1;
 }
 
 #endif /* AUDIODRV_ALSA */
@@ -952,7 +978,7 @@ int main(int argc, char **argv) {
 		_res_oflg = _tty.c_oflag, _res_lflg = _tty.c_lflag)
 #define resetty() (_tty.c_oflag = _res_oflg, _tty.c_lflag = _res_lflg,\
 		(void) tcsetattr(my_tty, TCSADRAIN, &_tty))
-#endif
+#endif /* !_WIN32, !__DJGPP__ */
 
 	do_version();
 	while (1) {
@@ -1027,17 +1053,7 @@ int main(int argc, char **argv) {
 				return (0);
 			}
 		} else {
-#if (defined _WIN32) || (defined __CYGWIN__)
-			if (open_mm_output() == -1) {
-#elif defined AUDIODRV_ALSA
-			if (open_alsa_output() == -1) {
-#elif defined AUDIODRV_OSS
-			if (open_oss_output() == -1) {
-#elif defined AUDIODRV_OPENAL
-			if (open_openal_output() == -1) {
-#else /* no audio output driver compiled in */
-			{
-#endif
+			if (open_audio_output() == -1) {
 				return (0);
 			}
 		}
@@ -1229,20 +1245,8 @@ int main(int argc, char **argv) {
 						apr_mins, apr_secs, modes, master_volume, pro_mins,
 						pro_secs, perc_play);
 
-#ifdef _WIN32
-					Sleep(5);
-#else
 					msleep(5);
-#endif
-#ifdef AUDIODRV_ALSA
-					;
-#elif defined AUDIODRV_OSS
-					;
-#elif defined AUDIODRV_OPENAL
-					alSourcePause(sourceId);
-#else
-					;
-#endif
+					pause_output();
 					continue;
 				}
 
@@ -1273,17 +1277,20 @@ int main(int argc, char **argv) {
 
 				if (output_result > 0) {
 #if defined(AUDIODRV_OPENAL) && defined(WORDS_BIGENDIAN)
-					if (context != NULL) {
-					/* the library specifically outputs LE data
-					 * but OpenAL expects host-endian: do swap. */
+					if (context != NULL) { /* OpenAL is active, not wav writer */
 						unsigned short *swp =
 							(unsigned short *) output_buffer;
+						/* the library specifically outputs LE data
+						 * but OpenAL expects host-endian: do swap. */
 						for (i = 0; i < output_result / 2; ++i) {
 							swp[i] = (swp[i] << 8) | (swp[i] >> 8);
 						}
 					}
 #endif
-					send_output(output_buffer, output_result);
+					if (send_output(output_buffer, output_result) < 0) {
+						/* driver prints an error message already. */
+						break;
+					}
 				}
 			}
 			NEXTMIDI: fprintf(stderr, "\r\n");
@@ -1294,16 +1301,13 @@ int main(int argc, char **argv) {
 			send_output(output_buffer, 16384);
 		}
 		memset(output_buffer, 0, 16384);
-		send_output(output_buffer, 16384);
-		send_output(output_buffer, 16384);
-#ifdef _WIN32
-		Sleep(5);
-#else
+		if (send_output(output_buffer, 16384) == 0) {
+		    send_output(output_buffer, 16384);
+		}
 		msleep(5);
-#endif
+		close_output();
 		if (WildMidi_Shutdown() == -1)
 			printf("oops\r\n");
-		close_output();
 #if !defined(_WIN32) && !defined(__DJGPP__)
 		if (isatty(my_tty))
 			resetty();
