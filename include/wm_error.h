@@ -40,10 +40,10 @@
 
  extern void WM_ERROR_NEW(const char * wmfmt, ...)
 #ifdef __GNUC__
-		__attribute__((format(printf, 1, 2))) // for tracking down formatting issues
+		__attribute__((format(printf, 1, 2))) /* for tracking down formatting issues */
 #endif
 		;
- extern void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
+ extern void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		const char * wmfor, int error);
 
 #endif /* __WM_ERROR_H */

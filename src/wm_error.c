@@ -39,7 +39,7 @@ void WM_ERROR_NEW(const char * wmfmt, ...) {
 	fprintf(stderr, "\n");
 }
 
-void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
+void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		const char * wmfor, int error) {
 
 	static const char *errors[] = {
@@ -57,19 +57,20 @@ void WM_ERROR(const char * func, unsigned long int lne, int wmerno,
 
 	if (wmfor != NULL) {
 		if (error != 0) {
-			fprintf(stderr, "\rlibWildMidi(%s:%lu): ERROR %s %s (%s)\n", func,
+			fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s %s (%s)\n", func,
 					lne, errors[wmerno], wmfor, strerror(error));
 		} else {
-			fprintf(stderr, "\rlibWildMidi(%s:%lu): ERROR %s %s\n", func, lne,
+			fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s %s\n", func, lne,
 					errors[wmerno], wmfor);
 		}
 	} else {
 		if (error != 0) {
-			fprintf(stderr, "\rlibWildMidi(%s:%lu): ERROR %s (%s)\n", func, lne,
+			fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s (%s)\n", func, lne,
 					errors[wmerno], strerror(error));
 		} else {
-			fprintf(stderr, "\rlibWildMidi(%s:%lu): ERROR %s\n", func, lne,
+			fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s\n", func, lne,
 					errors[wmerno]);
 		}
 	}
 }
+
