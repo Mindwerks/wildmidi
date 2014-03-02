@@ -70,6 +70,8 @@
  * =========================
  */
 
+unsigned int DEBUG[20] = {0}; // TODO: Delete me when finished debugging
+
 static int WM_Initialized = 0;
 static signed short int WM_MasterVolume = 948;
 static unsigned short int WM_MixerOptions = 0;
@@ -221,6 +223,7 @@ static void init_gauss(void) {
 	x_inc = 1.0 / (1 << 10);
 	for (m = 0, x = 0.0; m < (1 << 10); m++, x += x_inc) {
 		xz = (x + n_half) / (4 * M_PI);
+		DEBUG[1]++; // TODO: removed me when finished
 		gptr = gauss_table[m] = realloc(gauss_table[m],
 				(n + 1) * sizeof(double));
 
@@ -580,6 +583,7 @@ WM_LC_Tokenize_Line(char * line_data) {
 				 */
 				token_start = 1;
 				if (token_count >= token_data_length) {
+					DEBUG[0]++;
 					token_data_length += line_length; // allocate a buffer big enough
 					token_data = realloc(token_data,( token_data_length * sizeof(char *)));
 					if (token_data == NULL){
@@ -599,6 +603,7 @@ WM_LC_Tokenize_Line(char * line_data) {
 	 if we have found some tokens then add a null token to the end
 	 */
 	if (token_count) {
+		DEBUG[2]++; // TODO: removed me when finished
 		token_data = realloc(token_data,
 				((token_count + 1) * sizeof(char *)));
 		token_data[token_count] = NULL;
@@ -667,6 +672,7 @@ static int WM_LoadConfig(const char *config_file) {
 							return -1;
 						}
 						if (!IS_DIR_SEPARATOR(config_dir[strlen(config_dir) - 1])) {
+							DEBUG[3]++; // TODO: removed me when finished
 							config_dir = realloc(config_dir,
 									(strlen(config_dir) + 2));
 							config_dir[strlen(config_dir) + 1] = '\0';
@@ -989,6 +995,7 @@ static int WM_LoadConfig(const char *config_file) {
 						if (strncasecmp(
 								&tmp_patch->filename[strlen(tmp_patch->filename)
 										- 4], ".pat", 4) != 0) {
+							DEBUG[4]++; // TODO: removed me when finished
 							tmp_patch->filename = realloc(tmp_patch->filename,
 									strlen(tmp_patch->filename) + 5);
 							if (tmp_patch->filename == NULL) {
@@ -1320,6 +1327,7 @@ static void load_patch(struct _mdi *mdi, unsigned short patchid) {
 	}
 
 	mdi->patch_count++;
+	DEBUG[5]++; // TODO: removed me when finished
 	mdi->patches = realloc(mdi->patches,
 			(sizeof(struct _patch) * mdi->patch_count));
 	mdi->patches[mdi->patch_count - 1] = tmp_patch;
@@ -2006,6 +2014,7 @@ static int midi_setup_noteoff(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| velocity;
 	} else {
+		DEBUG[6]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_note_off;
@@ -2026,6 +2035,7 @@ static int midi_setup_noteon(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| velocity;
 	} else {
+		DEBUG[7]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_note_on;
@@ -2049,6 +2059,7 @@ static int midi_setup_aftertouch(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| pressure;
 	} else {
+		DEBUG[8]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_aftertouch;
@@ -2124,6 +2135,7 @@ static int midi_setup_control(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = setting;
 	} else {
+		DEBUG[10]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = tmp_event;
@@ -2143,6 +2155,7 @@ static int midi_setup_patch(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = patch;
 	} else {
+		DEBUG[11]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_patch;
@@ -2170,6 +2183,7 @@ static int midi_setup_channel_pressure(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pressure;
 	} else {
+		DEBUG[12]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_channel_pressure;
@@ -2190,6 +2204,7 @@ static int midi_setup_pitch(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pitch;
 	} else {
+		DEBUG[13]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_pitch;
@@ -2210,6 +2225,7 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = setting;
 	} else {
+		DEBUG[14]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_sysex_roland_drum_track;
@@ -2235,6 +2251,7 @@ static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
 		mdi->events[mdi->event_count - 1].event_data.channel = 0;
 		mdi->events[mdi->event_count - 1].event_data.data = 0;
 	} else {
+		DEBUG[15]++; // TODO: removed me when finished
 		mdi->events = realloc(mdi->events,
 				((mdi->event_count + 1) * sizeof(struct _event)));
 		mdi->events[mdi->event_count].do_event = *do_sysex_roland_reset;
@@ -2652,6 +2669,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 									+ (*tracks[i] & 0x7f);
 							// Copy copyright info in the getinfo struct
 							if (mdi->info.copyright != NULL) {
+								DEBUG[16]++; // TODO: removed me when finished
 								mdi->info.copyright = realloc(
 										mdi->info.copyright,
 										(strlen(mdi->info.copyright) + 1
@@ -2729,6 +2747,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 						running_event[i] = 0;
 
+						DEBUG[17]++; // TODO: removed me when finished
 						sysex_store = realloc(sysex_store,
 								sizeof(unsigned char)
 										* (sysex_store_len + sysex_len));
@@ -2829,6 +2848,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 				&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 			mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
 		} else {
+			DEBUG[18]++; // TODO: removed me when finished
 			mdi->events = realloc(mdi->events,
 					((mdi->event_count + 1) * sizeof(struct _event)));
 			mdi->events[mdi->event_count].do_event = NULL;
@@ -3989,5 +4009,10 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 	WM_FreePatches();
 	free_gauss();
 	WM_Initialized = 0;
+
+
+	for (int x = 0; x < 20; x++)
+		printf("DEBUG Allocs in location %d - %d\r\n", x, DEBUG[x]);
+
 	return 0;
 }
