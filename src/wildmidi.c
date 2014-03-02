@@ -627,18 +627,19 @@ static struct audio_buf_info info;
 static int write_oss_output(char * output_data, int output_size);
 static void close_oss_output(void);
 
+static void pause_output_oss(void) {
+	memset(buffer, 0, max_buffer);
+}
+
 static int open_oss_output(void) {
 	int caps, rc, tmp;
-	unsigned long int omode = O_RDWR;
-	unsigned long int mmmode = PROT_WRITE | PROT_READ;
-	unsigned long int mmflags = MAP_FILE | MAP_SHARED;
 	unsigned long int sz = sysconf(_SC_PAGESIZE);
 
 	if (!pcmname) {
 		pcmname = strdup("/dev/dsp");
 	}
 
-	if ((audio_fd = open(pcmname, omode)) < 0) {
+	if ((audio_fd = open(pcmname, O_RDWR)) < 0) {
 		fprintf(stderr, "ERROR: Unable to open dsp (%s)\r\n", strerror(errno));
 		return -1;
 	}
@@ -676,9 +677,11 @@ static int open_oss_output(void) {
 		fprintf(stderr, "ERROR: Unable to retrieve buffer status\r\n");
 		goto fail;
 	}
-	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
 
-	buffer = (char *) mmap(NULL, max_buffer, mmmode, mmflags, audio_fd, 0);
+	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
+	buffer = (char *) mmap(NULL, max_buffer, PROT_WRITE|PROT_READ,
+					MAP_FILE|MAP_SHARED, audio_fd, 0);
+
 	if (buffer == MAP_FAILED) {
 		buffer = NULL;
 		fprintf(stderr, "ERROR: couldn't mmap dsp (%s)\r\n", strerror(errno));
@@ -698,7 +701,7 @@ static int open_oss_output(void) {
 	}
 	send_output = write_oss_output;
 	close_output = close_oss_output;
-	pause_output = pause_output_nop;
+	pause_output = pause_output_oss;
 	return (0);
 
 fail:	close_oss_output();
