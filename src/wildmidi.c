@@ -62,6 +62,8 @@ static int msleep(unsigned long millisec);
 #include <windows.h>
 #include <mmsystem.h>
 #define msleep(s) Sleep((s))
+#undef strdup
+#define strdup _strdup
 #include <io.h>
 #include "getopt_long.h"
 #else
@@ -205,7 +207,7 @@ static int midi_test_max = 1;
  */
 
 static unsigned int rate = 32072;
-static char pcmname[128];
+static char *pcmname = NULL;
 
 static int (*send_output)(char * output_data, int output_size);
 static void (*close_output)(void);
@@ -481,8 +483,8 @@ static int open_alsa_output(void) {
 	unsigned int alsa_buffer_time;
 	unsigned int alsa_period_time;
 
-	if (!pcmname[0]) {
-		strcpy(pcmname, "default");
+	if (!pcmname) {
+		pcmname = strdup("default");
 	}
 
 	if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
@@ -549,6 +551,9 @@ static int open_alsa_output(void) {
 	send_output = write_alsa_output;
 	close_output = close_alsa_output;
 	pause_output = pause_output_nop;
+	if (pcmname != NULL) {
+		free(pcmname);
+	}
 	return (0);
 
 fail:	close_alsa_output();
@@ -620,8 +625,8 @@ static int open_oss_output(void) {
 	int caps, rc, tmp;
 	unsigned long int sz = sysconf(_SC_PAGESIZE);
 
-	if (!pcmname[0]) {
-		strcpy(pcmname, "/dev/dsp");
+	if (!pcmname) {
+		pcmname = strdup("/dev/dsp");
 	}
 
 	if ((audio_fd = open(pcmname, O_RDWR)) < 0) {
@@ -979,8 +984,6 @@ int main(int argc, char **argv) {
 		(void) tcsetattr(my_tty, TCSADRAIN, &_tty))
 #endif /* !_WIN32, !__DJGPP__ */
 
-	pcmname[0] = '\0';
-
 	do_version();
 	while (1) {
 		i = getopt_long(argc, argv, "vho:lr:c:m:btk:p:ed:wn", long_options,
@@ -1016,16 +1019,14 @@ int main(int argc, char **argv) {
 			strcpy(wav_file, optarg);
 			break;
 		case 'c': /* Config File */
-			config_file = malloc((strlen(optarg)+1) * sizeof(char));
-			 strcpy(config_file, optarg);
+			config_file = strdup(optarg);
 			break;
 		case 'd': /* Output device */
 			if (!*optarg) {
 				fprintf(stderr, "Error: empty device name.\n");
 				return (0);
 			}
-			strncpy(pcmname, optarg, 127);
-			pcmname[127] = '\0';
+			pcmname = strdup(optarg);
 			break;
 		case 'e': /* Enhanced Resampling */
 			mixer_options |= WM_MO_ENHANCED_RESAMPLING;
@@ -1055,8 +1056,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (!config_file) {
-		config_file = malloc((strlen(WILDMIDI_CFG) + 1) * sizeof(char));
-		strcpy(config_file, WILDMIDI_CFG);
+		config_file = strdup(WILDMIDI_CFG);
 	}
 	if (optind < argc || test_midi) {
 		printf("Initializing Sound System\n");
