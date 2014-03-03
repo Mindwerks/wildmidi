@@ -1296,6 +1296,7 @@ end1:		memset(output_buffer, 0, 16384);
 		msleep(5);
 end2:		close_output();
 		free(output_buffer);
+		free(config_file);
 		if (WildMidi_Shutdown() == -1)
 			fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
 #if !defined(_WIN32) && !defined(__DJGPP__)
