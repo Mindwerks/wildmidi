@@ -2947,7 +2947,7 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 		do {
 			note_data = mdi->note;
 			left_mix = right_mix = 0;
-			if (__builtin_expect((note_data ), 1)) {
+			if (__builtin_expect((note_data != NULL), 1)) {
 				while (note_data) {
 					/*
 					 * ===================
@@ -3061,7 +3061,7 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 						note_data = note_data->next;
 						continue;
 					case 6:
-						if (__builtin_expect((note_data->replay ), 1)) {
+						if (__builtin_expect((note_data->replay != NULL), 1)) {
 							RESTART_NOTE: note_data->active = 0;
 							{
 								struct _note *prev_note = NULL;
@@ -3251,7 +3251,7 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 		do {
 			note_data = mdi->note;
 			left_mix = right_mix = 0;
-			if (__builtin_expect((note_data ), 1)) {
+			if (__builtin_expect((note_data != NULL), 1)) {
 				while (note_data) {
 					/*
 					 * ===================
@@ -3397,7 +3397,7 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 						note_data = note_data->next;
 						continue;
 					case 6:
-						if (__builtin_expect((note_data->replay ), 1)) {
+						if (__builtin_expect((note_data->replay != NULL), 1)) {
 							RESTART_NOTE: note_data->active = 0;
 							{
 								struct _note *prev_note = NULL;
