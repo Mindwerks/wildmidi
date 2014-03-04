@@ -169,6 +169,9 @@ struct _mdi {
 	unsigned long int patch_count;
 	signed short int amp;
 
+	signed long int *mix_buffer;
+	unsigned int mix_buffer_size;
+
 	struct _rvb *reverb;
 };
 
@@ -2889,8 +2892,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	return mdi;
 }
 
-static int WM_GetOutput_Linear(midi * handle, char * buffer,
-		unsigned long int size) {
+static int WM_GetOutput_Linear(midi * handle, char * buffer, unsigned long int size) {
 	unsigned long int buffer_used = 0;
 	unsigned long int i;
 	struct _mdi *mdi = (struct _mdi *) handle;
@@ -2908,7 +2910,18 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 
 	buffer_used = 0;
 	memset(buffer, 0, size);
-	tmp_buffer = malloc((size / 2) * sizeof(signed long int));
+
+	if ( (size / 2) > mdi->mix_buffer_size) {
+		if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
+			mdi->mix_buffer_size += MEM_CHUNK;
+		} else {
+			mdi->mix_buffer_size = size / 2;
+		}
+		mdi->mix_buffer = realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(signed long int));
+	}
+
+	tmp_buffer = mdi->mix_buffer;
+
 	memset(tmp_buffer, 0, ((size / 2) * sizeof(signed long int)));
 	out_buffer = tmp_buffer;
 
@@ -3183,13 +3196,11 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 #endif
 	}
 
-	free(out_buffer);
 	WM_Unlock(&mdi->lock);
 	return buffer_used;
 }
 
-static int WM_GetOutput_Gauss(midi * handle, char * buffer,
-		unsigned long int size) {
+static int WM_GetOutput_Gauss(midi * handle, char * buffer, unsigned long int size) {
 	unsigned long int buffer_used = 0;
 	unsigned long int i;
 	struct _mdi *mdi = (struct _mdi *) handle;
@@ -3212,7 +3223,15 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 
 	buffer_used = 0;
 	memset(buffer, 0, size);
-	tmp_buffer = malloc((size / 2) * sizeof(signed long int));
+	if ( (size / 2) > mdi->mix_buffer_size) {
+		if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
+			mdi->mix_buffer_size += MEM_CHUNK;
+		} else {
+			mdi->mix_buffer_size = size / 2;
+		}
+		mdi->mix_buffer = realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(signed long int));
+	}
+	tmp_buffer = mdi->mix_buffer;
 	memset(tmp_buffer, 0, ((size / 2) * sizeof(signed long int)));
 	out_buffer = tmp_buffer;
 
@@ -3518,7 +3537,6 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 		(*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
 #endif
 	}
-	free(out_buffer);
 	WM_Unlock(&mdi->lock);
 	return buffer_used;
 }
@@ -3677,6 +3695,10 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 
 	if (mdi->reverb) {
 		free_reverb(mdi->reverb);
+	}
+
+	if (mdi->mix_buffer) {
+		free(mdi->mix_buffer);
 	}
 
 	free(mdi);
