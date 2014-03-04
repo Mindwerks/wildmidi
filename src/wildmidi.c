@@ -1,6 +1,5 @@
 /*
  wildmidi.c
-
  Midi Player using the WildMidi Midi Processing Library
 
  Copyright (C) Chris Ison  2001-2011
@@ -79,17 +78,8 @@ static int msleep(unsigned long millisec);
 #   include <machine/soundcard.h>
 #   endif
 # elif defined AUDIODRV_OPENAL
-#   if defined(__APPLE__) && defined(__MACH__)
-    /* Mac OS X framework */
-#     include <OpenAL/al.h>
-#     include <OpenAL/alc.h>
-#   else
-    /* FIXME: Creative OpenAL 1.1 SDK headers aren't under AL/
-     * However with OpenAL-soft, all headers are under the AL/
-     * (http://kcat.strangesoft.net/openal.html) */
-#     include <AL/al.h>
-#     include <AL/alc.h>
-#   endif
+#   include <al.h>
+#   include <alc.h>
 # endif
 #endif
 
