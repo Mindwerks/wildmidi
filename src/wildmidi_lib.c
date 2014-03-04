@@ -70,6 +70,8 @@
  * =========================
  */
 
+#define MEM_CHUNK 8192
+
 static int WM_Initialized = 0;
 static signed short int WM_MasterVolume = 948;
 static unsigned short int WM_MixerOptions = 0;
@@ -178,7 +180,7 @@ struct _event {
 };
 
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
-static double newt_coeffs[58][58]; /* for start/end of samples */
+static double newt_coeffs[58][58] = { { 0, 0 } }; /* for start/end of samples */
 static double *gauss_table[(1 << 10)] = { 0 }; /* don't need doubles */
 //static int gauss_window[35] = {0};
 static int gauss_n = 34; /* do not set this value higher than 34 */
@@ -194,7 +196,6 @@ static void init_gauss(void) {
 	double x, x_inc, xz;
 	double z[35];
 	double *gptr;
-
 	newt_coeffs[0][0] = 1;
 
 	for (i = 0; i <= n; i++) {
@@ -511,7 +512,7 @@ static unsigned long int freq_table[] = { 837201792, 837685632, 838169728,
 
 static void WM_CheckEventMemoryPool(struct _mdi *mdi){
 	if (mdi->event_count >= mdi->events_size) {
-		mdi->events_size *= 2;
+		mdi->events_size += MEM_CHUNK;
 		mdi->events = realloc(mdi->events,
 			(mdi->events_size * sizeof(struct _event)));
 	}
@@ -2289,7 +2290,7 @@ Init_MDI(void) {
 
 	load_patch(mdi, 0x0000);
 
-	mdi->events_size = 4096;
+	mdi->events_size = MEM_CHUNK;
 	mdi->events = malloc(mdi->events_size * sizeof(struct _event));
 	mdi->events[0].do_event = NULL;
 	mdi->events[0].event_data.channel = 0;
@@ -3567,7 +3568,6 @@ WM_SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,
 	WM_Initialized = 1;
 	patch_lock = 0;
 
-	init_gauss();
 	return 0;
 }
 
@@ -3871,6 +3871,8 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, char * buffer, unsigned long int
 		return -1;
 	}
 	if (mdi->info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
+		if (newt_coeffs[0][0] == 0)
+			init_gauss();
 		return WM_GetOutput_Gauss(handle, buffer, size);
 	} else {
 		return WM_GetOutput_Linear(handle, buffer, size);
@@ -3987,7 +3989,8 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 		}
 	}
 	WM_FreePatches();
-	free_gauss();
+	if (newt_coeffs[0][0])
+		free_gauss();
 	WM_Initialized = 0;
 
 	return 0;
