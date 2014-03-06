@@ -24,21 +24,22 @@
  <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "internal_midi.h"
 
 struct _event {
 	void (*do_event)(struct _mdi *mdi, struct _event_data *data);
-	unsigned long int event_data;
-	unsigned long int samples_to_next;
-	unsigned long int samples_to_next_fixed;
+	uint32_t event_data;
+	uint32_t samples_to_next;
+	uint32_t samples_to_next_fixed;
 };
 
 struct _event_list {
 	struct _event *events;
 	struct _event *current_event;
-	unsigned long int event_count;
+	uint32_t event_count;
 };
 
 void free_event_list(struct _event_list *event_list) {
@@ -52,7 +53,7 @@ void free_event_list(struct _event_list *event_list) {
 
 struct _event_list *add_event(struct _event_list *event_list,
 		void (*do_event)(struct _mdi *mdi, struct _event_data *data),
-		unsigned long int event_data) {
+		uint32_t event_data) {
 	struct _event *tmp_events = NULL;
 
 	if (event_list == NULL) {

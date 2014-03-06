@@ -27,6 +27,7 @@ Requirements:
 CHANGELOG
 
 0.4.0
+* Greatly reduced the heap usage (was a regression introduced in 0.2.3)
 * API change: The library now returns audio data in host-endian format,
   not little-endian.
 * API change: WildMidi_GetVersion() added to the api, along with new
@@ -34,6 +35,11 @@ CHANGELOG
   is changed from 1 to 2.
 * API change: WildMidi_GetString(), and its associated WM_GS_VERSION
   constant are removed.
+* API change: All long or unsigned long type _WM_Info fields changed
+  into strictly 32bit fields (int32_t or uint32_t.)
+* API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
+  to accept strictly 32bit size parameters, i.e. uint32_t, instead of
+  unsigned long.
 * OpenAL support: Fixed audio output on big-endian systems.
 * Build fixes for MSVC. Revised visibility attributes usage.
 

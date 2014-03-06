@@ -23,7 +23,7 @@ AR=$(CROSS)-ar
 RANLIB=$(CROSS)-ranlib
 endif
 
-INCLUDE = -I. -I../include
+INCLUDE = -I. -I../include/stdint -I../include
 CFLAGS = $(INCLUDE) -Wall -W
 ARFLAGS = cr
 
