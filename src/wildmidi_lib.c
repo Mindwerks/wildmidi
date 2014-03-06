@@ -156,7 +156,7 @@ struct _mdi {
 	struct _event *events;
 	struct _event *current_event;
 	unsigned long int event_count;
-	unsigned int events_size;	// try to stay optimally ahead to prevent reallocs
+	unsigned int events_size;	/* try to stay optimally ahead to prevent reallocs */
 
 	unsigned short midi_master_vol;
 	struct _WM_Info info;
@@ -568,7 +568,7 @@ WM_LC_Tokenize_Line(char * line_data) {
 	int token_count = 0;
 
 	if (line_length == 0)
-		return token_data;
+		return NULL;
 
 	do {
 		/*
@@ -593,7 +593,7 @@ WM_LC_Tokenize_Line(char * line_data) {
 				 */
 				token_start = 1;
 				if (token_count >= token_data_length) {
-					token_data_length += line_length; // allocate a buffer big enough
+					token_data_length += line_length; /* allocate a buffer big enough */
 					token_data = realloc(token_data,( token_data_length * sizeof(char *)));
 					if (token_data == NULL){
 						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,"to parse config", errno);
@@ -1160,7 +1160,7 @@ static int load_sample(struct _patch *sample_patch) {
 	struct _sample *tmp_sample = NULL;
 	unsigned int i = 0;
 
-	// we only want to try loading the guspat once.
+	/* we only want to try loading the guspat once. */
 	sample_patch->loaded = 1;
 
 	if ((guspat = load_gus_pat(sample_patch->filename, fix_release)) == NULL) {

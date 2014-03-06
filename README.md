@@ -27,6 +27,7 @@ Requirements:
 CHANGELOG
 
 0.4.0
+* Greatly reduced the heap usage (was a regression introduced in 0.2.3)
 * API change: The library now returns audio data in host-endian format,
   not little-endian.
 * API change: WildMidi_GetVersion() added to the api, along with new
