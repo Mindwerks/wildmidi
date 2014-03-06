@@ -2109,6 +2109,7 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
 	case 98:
 	case 99:
 		tmp_event = *do_control_non_registered_param;
+		break;
 	case 100:
 		tmp_event = *do_control_registered_param_fine;
 		break;
