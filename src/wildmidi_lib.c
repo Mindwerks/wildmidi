@@ -668,8 +668,7 @@ static int WM_LoadConfig(const char *config_file) {
 						if (config_dir) {
 							free(config_dir);
 						}
-						if (line_tokens[1] == NULL ||
-								(config_dir = strdup(line_tokens[1])) == NULL) {
+						if (!line_tokens[1] || !(config_dir = strdup(line_tokens[1]))) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 									"to parse config", errno);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -708,7 +707,7 @@ static int WM_LoadConfig(const char *config_file) {
 							strcpy(&new_config[strlen(config_dir)],
 									line_tokens[1]);
 						} else {
-							if ( line_tokens[1] == NULL || (new_config = malloc(strlen(line_tokens[1]) + 1)) == NULL) {
+							if (!line_tokens[1] || !(new_config = malloc(strlen(line_tokens[1]) + 1))) {
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 										"to parse config", errno);
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -730,7 +729,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 						free(new_config);
 					} else if (strcasecmp(line_tokens[0], "bank") == 0) {
-						if (line_tokens[1] == NULL || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
 									"(syntax error in bank line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -744,7 +743,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 						patchid = (atoi(line_tokens[1]) & 0xFF) << 8;
 					} else if (strcasecmp(line_tokens[0], "drumset") == 0) {
-						if (line_tokens[1] == NULL || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
 									"(syntax error in drumset line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -759,7 +758,7 @@ static int WM_LoadConfig(const char *config_file) {
 						patchid = ((atoi(line_tokens[1]) & 0xFF) << 8) | 0x80;
 					} else if (strcasecmp(line_tokens[0], "reverb_room_width")
 							== 0) {
-						if (line_tokens[1] == NULL || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_width line)",
 									0);
@@ -786,7 +785,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0], "reverb_room_length")
 							== 0) {
-						if (line_tokens[1] == NULL || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_length line)",
 									0);
@@ -813,7 +812,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posx") == 0) {
-						if (line_tokens[1] == NULL || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_listen_posx line)",
 									0);
@@ -836,7 +835,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posy") == 0) {
-						if (line_tokens[1] == NULL || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_listen_posy line)",
 									0);
@@ -985,8 +984,7 @@ static int WM_LoadConfig(const char *config_file) {
 							strcpy(tmp_patch->filename, config_dir);
 							strcat(tmp_patch->filename, line_tokens[1]);
 						} else {
-							if (line_tokens[1] == NULL ||
-									(tmp_patch->filename = malloc(strlen(line_tokens[1]) + 1)) == NULL) {
+							if (!line_tokens[1] || !(tmp_patch->filename = malloc(strlen(line_tokens[1]) + 1))) {
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 										NULL, 0);
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
