@@ -1319,7 +1319,7 @@ static void load_patch(struct _mdi *mdi, unsigned short patchid) {
 
 	mdi->patch_count++;
 	mdi->patches = realloc(mdi->patches,
-			(sizeof(struct _patch) * mdi->patch_count));
+			(sizeof(struct _patch*) * mdi->patch_count));
 	mdi->patches[mdi->patch_count - 1] = tmp_patch;
 	tmp_patch->inuse_count++;
 	WM_Unlock(&patch_lock);
@@ -3900,7 +3900,6 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, unsigned short int options,
 			| (options & setting));
 
 	if (options & WM_MO_LOG_VOLUME) {
-
 		for (i = 0; i < 16; i++) {
 			do_pan_adjust(mdi, i);
 		}
