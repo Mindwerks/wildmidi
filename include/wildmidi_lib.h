@@ -70,34 +70,36 @@
 #  define WM_SYMBOL
 #endif
 
+#include <stdint.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 struct _WM_Info {
 	char *copyright;
-	unsigned long int current_sample;
-	unsigned long int approx_total_samples;
-	unsigned short int mixer_options;
-	unsigned long int total_midi_time;
+	uint32_t current_sample;
+	uint32_t approx_total_samples;
+	uint16_t mixer_options;
+	uint32_t total_midi_time;
 };
 
 typedef void midi;
 
 WM_SYMBOL long WildMidi_GetVersion (void);
-WM_SYMBOL int WildMidi_Init (const char * config_file, unsigned short int rate, unsigned short int options);
-WM_SYMBOL int WildMidi_MasterVolume (unsigned char master_volume);
+WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t options);
+WM_SYMBOL int WildMidi_MasterVolume (uint8_t master_volume);
 WM_SYMBOL midi * WildMidi_Open (const char *midifile);
-WM_SYMBOL midi * WildMidi_OpenBuffer (unsigned char *midibuffer, unsigned long int size);
-WM_SYMBOL int WildMidi_GetOutput (midi * handle, char * buffer, unsigned long int size);
-WM_SYMBOL int WildMidi_SetOption (midi * handle, unsigned short int options, unsigned short int setting);
+WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
+WM_SYMBOL int WildMidi_GetOutput (midi *handle, int8_t *buffer, uint32_t size);
+WM_SYMBOL int WildMidi_SetOption (midi *handle, uint16_t options, uint16_t setting);
 WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
 WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
 
 /* NOTE: Not Yet Implemented Or Tested Properly */
-/*int WildMidi_Live (midi * handle, unsigned long int midi_event);*/
+/*int WildMidi_Live (midi * handle, uint32_t midi_event);*/
 
 #if defined(__cplusplus)
 }

@@ -52,7 +52,8 @@ void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"File corrupt",
 		"Library not Initialized",
 		"Invalid argument",
-		"Library Already Initialized"
+		"Library Already Initialized",
+		"Refusing to load unusually long file"
 	};
 
 	if (wmfor != NULL) {

@@ -42,42 +42,42 @@
 #define SAMPLE_CONVERT_DEBUG(dx)
 #endif
 
- extern unsigned short int WM_SampleRate;
+extern uint16_t WM_SampleRate;
 
 struct _sample {
-	unsigned long int data_length;
-	unsigned long int loop_start;
-	unsigned long int loop_end;
-	unsigned long int loop_size;
-	unsigned char loop_fraction;
-	unsigned short int rate;
-	unsigned long int freq_low;
-	unsigned long int freq_high;
-	unsigned long int freq_root;
-	unsigned char modes;
-	unsigned long int env_rate[7];
-	unsigned long int env_target[7];
-	unsigned long int inc_div;
-	signed short *data;
+	uint32_t data_length;
+	uint32_t loop_start;
+	uint32_t loop_end;
+	uint32_t loop_size;
+	uint8_t  loop_fraction;
+	uint16_t rate;
+	uint32_t freq_low;
+	uint32_t freq_high;
+	uint32_t freq_root;
+	uint8_t  modes;
+	uint32_t env_rate[7];
+	uint32_t env_target[7];
+	uint32_t inc_div;
+	int16_t *data;
 	struct _sample *next;
 };
 
 struct _env {
 	float time;
 	float level;
-	unsigned char set;
+	uint8_t set;
 };
 
 struct _patch {
-	unsigned short patchid;
-	unsigned char loaded;
+	uint16_t patchid;
+	uint8_t loaded;
 	char *filename;
-	signed short int amp;
-	unsigned char keep;
-	unsigned char remove;
+	int16_t amp;
+	uint8_t keep;
+	uint8_t remove;
 	struct _env env[6];
-	unsigned char note;
-	unsigned long int inuse_count;
+	uint8_t  note;
+	uint32_t inuse_count;
 	struct _sample *first_sample;
 	struct _patch *next;
 };

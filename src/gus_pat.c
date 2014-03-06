@@ -26,6 +26,7 @@
 
 #include "config.h"
 
+#include <stdint.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,14 +60,13 @@
  */
 
 /* 8bit signed */
-static int convert_8s(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
+static int convert_8s(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -82,19 +82,19 @@ static int convert_8s(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 8bit signed ping pong */
-static int convert_8sp(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_8sp(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->loop_start;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->loop_start;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(signed short int));
+	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -134,15 +134,14 @@ static int convert_8sp(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 8bit signed reverse */
-static int convert_8sr(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
-	unsigned long int tmp_loop = 0;
+static int convert_8sr(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
+	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data + gus_sample->data_length - 1;
 		do {
@@ -161,19 +160,19 @@ static int convert_8sr(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 8bit signed reverse ping pong */
-static int convert_8srp(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_8srp(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data + gus_sample->data_length - 1;
-	unsigned char *read_end = data + gus_sample->loop_end;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data + gus_sample->data_length - 1;
+	uint8_t *read_end = data + gus_sample->loop_end;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(signed short int));
+	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -212,14 +211,13 @@ static int convert_8srp(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 8bit unsigned */
-static int convert_8u(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
+static int convert_8u(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -233,19 +231,19 @@ static int convert_8u(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 8bit unsigned ping pong */
-static int convert_8up(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_8up(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->loop_start;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->loop_start;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(signed short int));
+	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -285,15 +283,14 @@ static int convert_8up(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 8bit unsigned reverse */
-static int convert_8ur(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
-	unsigned long int tmp_loop = 0;
+static int convert_8ur(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
+	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data + gus_sample->data_length - 1;
 		do {
@@ -312,19 +309,19 @@ static int convert_8ur(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 8bit unsigned reverse ping pong */
-static int convert_8urp(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_8urp(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data + gus_sample->data_length - 1;
-	unsigned char *read_end = data + gus_sample->loop_end;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data + gus_sample->data_length - 1;
+	uint8_t *read_end = data + gus_sample->loop_end;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(signed short int));
+	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -362,14 +359,13 @@ static int convert_8urp(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit signed */
-static int convert_16s(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
+static int convert_16s(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -387,20 +383,19 @@ static int convert_16s(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit signed ping pong */
-static int convert_16sp(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_16sp(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->loop_start;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->loop_start;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -448,15 +443,14 @@ static int convert_16sp(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit signed reverse */
-static int convert_16sr(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
-	unsigned long int tmp_loop = 0;
+static int convert_16sr(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
+	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data + (gus_sample->data_length >> 1) - 1;
 		do {
@@ -479,20 +473,19 @@ static int convert_16sr(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit signed reverse ping pong */
-static int convert_16srp(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_16srp(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data + gus_sample->data_length - 1;
-	unsigned char *read_end = data + gus_sample->loop_end;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data + gus_sample->data_length - 1;
+	uint8_t *read_end = data + gus_sample->loop_end;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -536,14 +529,13 @@ static int convert_16srp(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit unsigned */
-static int convert_16u(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
+static int convert_16u(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -561,20 +553,19 @@ static int convert_16u(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit unsigned ping pong */
-static int convert_16up(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_16up(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->loop_start;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->loop_start;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -622,15 +613,14 @@ static int convert_16up(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit unsigned reverse */
-static int convert_16ur(unsigned char *data, struct _sample *gus_sample) {
-	unsigned char *read_data = data;
-	unsigned char *read_end = data + gus_sample->data_length;
-	signed short int *write_data = NULL;
-	unsigned long int tmp_loop = 0;
+static int convert_16ur(uint8_t *data, struct _sample *gus_sample) {
+	uint8_t *read_data = data;
+	uint8_t *read_end = data + gus_sample->data_length;
+	int16_t *write_data = NULL;
+	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data + (gus_sample->data_length >> 1) - 1;
 		do {
@@ -653,20 +643,19 @@ static int convert_16ur(unsigned char *data, struct _sample *gus_sample) {
 }
 
 /* 16bit unsigned reverse ping pong */
-static int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
-	unsigned long int loop_length = gus_sample->loop_end
+static int convert_16urp(uint8_t *data, struct _sample *gus_sample) {
+	uint32_t loop_length = gus_sample->loop_end
 			- gus_sample->loop_start;
-	unsigned long int dloop_length = loop_length * 2;
-	unsigned long int new_length = gus_sample->data_length + dloop_length;
-	unsigned char *read_data = data + gus_sample->data_length - 1;
-	unsigned char *read_end = data + gus_sample->loop_end;
-	signed short int *write_data = NULL;
-	signed short int *write_data_a = NULL;
-	signed short int *write_data_b = NULL;
+	uint32_t dloop_length = loop_length * 2;
+	uint32_t new_length = gus_sample->data_length + dloop_length;
+	uint8_t *read_data = data + gus_sample->data_length - 1;
+	uint8_t *read_end = data + gus_sample->loop_end;
+	int16_t *write_data = NULL;
+	int16_t *write_data_a = NULL;
+	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1),
-			sizeof(signed short int));
+	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
 	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
 		write_data = gus_sample->data;
 		do {
@@ -710,16 +699,16 @@ static int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
 
 /* sample loading */
 
-struct _sample * load_gus_pat(char * filename, int fix_release) {
-	unsigned char *gus_patch;
-	unsigned long int gus_size;
-	unsigned long int gus_ptr;
-	unsigned char no_of_samples;
+struct _sample * load_gus_pat(const char *filename, int fix_release) {
+	uint8_t *gus_patch;
+	uint32_t gus_size;
+	uint32_t gus_ptr;
+	uint8_t no_of_samples;
 	struct _sample *gus_sample = NULL;
 	struct _sample *first_gus_sample = NULL;
-	unsigned long int i = 0;
+	uint32_t i = 0;
 
-	int (*do_convert[])(unsigned char *data, struct _sample *gus_sample) = {
+	int (*do_convert[])(uint8_t *data, struct _sample *gus_sample) = {
 		convert_8s,
 		convert_16s,
 		convert_8u,
@@ -737,11 +726,11 @@ struct _sample * load_gus_pat(char * filename, int fix_release) {
 		convert_8urp,
 		convert_16urp
 	};
-	unsigned long int tmp_loop;
+	uint32_t tmp_loop;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__); SAMPLE_CONVERT_DEBUG(filename);
 
-	if ((gus_patch = WM_BufferFile(filename, &gus_size)) == NULL) {
+	if ((gus_patch = (uint8_t *) WM_BufferFile(filename, &gus_size)) == NULL) {
 		return NULL ;
 	}
 	if (gus_size < 239) {
@@ -778,7 +767,7 @@ struct _sample * load_gus_pat(char * filename, int fix_release) {
 	no_of_samples = gus_patch[198];
 	gus_ptr = 239;
 	while (no_of_samples) {
-		unsigned long int tmp_cnt;
+		uint32_t tmp_cnt;
 		if (first_gus_sample == NULL) {
 			first_gus_sample = malloc(sizeof(struct _sample));
 			gus_sample = first_gus_sample;
@@ -843,11 +832,10 @@ struct _sample * load_gus_pat(char * filename, int fix_release) {
 		/*
 		 FIXME: Experimental Hacky Fix
 		 */
-
 		if (fix_release) {
 			if (env_time_table[gus_patch[gus_ptr + 40]]
 					< env_time_table[gus_patch[gus_ptr + 41]]) {
-				unsigned char tmp_hack_rate = gus_patch[gus_ptr + 41];
+				uint8_t tmp_hack_rate = gus_patch[gus_ptr + 41];
 				gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 40];
 				gus_patch[gus_ptr + 40] = tmp_hack_rate;
 			}
@@ -855,30 +843,30 @@ struct _sample * load_gus_pat(char * filename, int fix_release) {
 
 		for (i = 0; i < 6; i++) {
 			if (gus_sample->modes & SAMPLE_ENVELOPE) {
-				unsigned char env_rate = gus_patch[gus_ptr + 37 + i];
+				uint8_t env_rate = gus_patch[gus_ptr + 37 + i];
 				gus_sample->env_target[i] = 16448 * gus_patch[gus_ptr + 43 + i];
 				GUSPAT_INT_DEBUG("Envelope Level",gus_patch[gus_ptr+43+i]); GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[env_rate]);
-				gus_sample->env_rate[i] = (unsigned long int) (4194303.0
+				gus_sample->env_rate[i] = (uint32_t) (4194303.0
 						/ ((float) WM_SampleRate * env_time_table[env_rate]));
 
 				if (gus_sample->env_rate[i] == 0) {
 					fprintf(stderr,
-							"\rWarning: libWildMidi %s found invalid envelope(%lu) rate setting in %s. Using %f instead.\n",
+							"\rWarning: libWildMidi %s found invalid envelope(%u) rate setting in %s. Using %f instead.\n",
 							__FUNCTION__, i, filename, env_time_table[63]);
-					gus_sample->env_rate[i] = (unsigned long int) (4194303.0
+					gus_sample->env_rate[i] = (uint32_t) (4194303.0
 							/ ((float) WM_SampleRate * env_time_table[63]));
 					GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 				}
 			} else {
 				gus_sample->env_target[i] = 4194303;
-				gus_sample->env_rate[i] = (unsigned long int) (4194303.0
+				gus_sample->env_rate[i] = (uint32_t) (4194303.0
 						/ ((float) WM_SampleRate * env_time_table[63]));
 				GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 			}
 		}
 
 		gus_sample->env_target[6] = 0;
-		gus_sample->env_rate[6] = (unsigned long int) (4194303.0
+		gus_sample->env_rate[6] = (uint32_t) (4194303.0
 				/ ((float) WM_SampleRate * env_time_table[63]));
 
 		gus_ptr += 96;

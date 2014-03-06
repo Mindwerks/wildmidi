@@ -26,6 +26,7 @@
 
 #include "config.h"
 
+#include <stdint.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -95,8 +96,8 @@ static int msleep(unsigned long millisec);
 #include "filenames.h"
 
 struct _midi_test {
-	unsigned char *data;
-	unsigned long int size;
+	uint8_t *data;
+	uint32_t size;
 };
 
 /* scale test from 0 to 127
@@ -105,7 +106,7 @@ struct _midi_test {
  * offset 25 (0x1A) = bank number
  * offset 28 (0x1D) = patch number
  */
-static unsigned char midi_test_c_scale[] = {
+static uint8_t midi_test_c_scale[] = {
 	0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, /* 0x00    */
 	0x00, 0x00, 0x00, 0x01, 0x00, 0x06, 0x4d, 0x54, /* 0x08    */
 	0x72, 0x6b, 0x00, 0x00, 0x02, 0x63, 0x00, 0xb0, /* 0x10    */
@@ -209,7 +210,7 @@ static int midi_test_max = 1;
 static unsigned int rate = 32072;
 static char *pcmname = NULL;
 
-static int (*send_output)(char * output_data, int output_size);
+static int (*send_output)(int8_t *output_data, int output_size);
 static void (*close_output)(void);
 static void (*pause_output)(void);
 static int audio_fd = -1;
@@ -222,14 +223,14 @@ static void pause_output_nop(void) {
  */
 
 static char wav_file[1024] = "\0";
-static unsigned long int wav_size;
+static uint32_t wav_size;
 
-static int write_wav_output(char * output_data, int output_size);
+static int write_wav_output(int8_t *output_data, int output_size);
 static void close_wav_output(void);
 
 static int open_wav_output(void) {
 
-	unsigned char wav_hdr[] = { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
+	uint8_t wav_hdr[] = { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
 			0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74, 0x20, 0x10, 0x00, 0x00,
 			0x00, 0x01, 0x00, 0x02, 0x00, 0x44, 0xAC, 0x00, 0x00, 0x10, 0xB1,
 			0x02, 0x00, 0x04, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00,
@@ -246,7 +247,7 @@ static int open_wav_output(void) {
 		fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
 		return (-1);
 	} else {
-		unsigned long int bytes_per_sec;
+		uint32_t bytes_per_sec;
 
 		wav_hdr[24] = (rate) & 0xFF;
 		wav_hdr[25] = (rate >> 8) & 0xFF;
@@ -272,10 +273,10 @@ static int open_wav_output(void) {
 	return (0);
 }
 
-static int write_wav_output(char * output_data, int output_size) {
+static int write_wav_output(int8_t *output_data, int output_size) {
 #ifdef WORDS_BIGENDIAN
 /* libWildMidi outputs host-endian, *.wav must have little-endian. */
-	unsigned short *swp = (unsigned short *) output_data;
+	uint16_t *swp = (uint16_t *) output_data;
 	int i = (output_size / 2) - 1;
 	for (; i >= 0; --i) {
 		swp[i] = (swp[i] << 8) | (swp[i] >> 8);
@@ -293,7 +294,7 @@ static int write_wav_output(char * output_data, int output_size) {
 }
 
 static void close_wav_output(void) {
-	char wav_count[4];
+	uint8_t wav_count[4];
 	if (audio_fd < 0)
 		return;
 
@@ -331,15 +332,15 @@ static HWAVEOUT hWaveOut = NULL;
 static CRITICAL_SECTION waveCriticalSection;
 
 #define open_audio_output open_mm_output
-static int write_mm_output (char * output_data, int output_size);
+static int write_mm_output (int8_t *output_data, int output_size);
 static void close_mm_output (void);
 
 static WAVEHDR *mm_blocks = NULL;
 #define MM_BLOCK_SIZE 16384
 #define MM_BLOCK_COUNT 3
 
-static unsigned long int mm_free_blocks = MM_BLOCK_COUNT;
-static unsigned long int mm_current_block = 0;
+static DWORD mm_free_blocks = MM_BLOCK_COUNT;
+static DWORD mm_current_block = 0;
 
 #if defined(_MSC_VER) && (_MSC_VER < 1300)
 typedef DWORD DWORD_PTR;
@@ -407,7 +408,7 @@ open_mm_output (void) {
 }
 
 static int
-write_mm_output (char * output_data, int output_size) {
+write_mm_output (int8_t *output_data, int output_size) {
 	WAVEHDR* current;
 	int free_size = 0;
 	int data_read = 0;
@@ -473,7 +474,7 @@ static int alsa_first_time = 1;
 static snd_pcm_t *pcm = NULL;
 
 #define open_audio_output open_alsa_output
-static int write_alsa_output(char * output_data, int output_size);
+static int write_alsa_output(int8_t *output_data, int output_size);
 static void close_alsa_output(void);
 
 static int open_alsa_output(void) {
@@ -560,7 +561,7 @@ fail:	close_alsa_output();
 	return -1;
 }
 
-static int write_alsa_output(char * output_data, int output_size) {
+static int write_alsa_output(int8_t *output_data, int output_size) {
 	int err;
 	snd_pcm_uframes_t frames;
 
@@ -608,13 +609,13 @@ static void close_alsa_output(void) {
 #endif
 #endif
 
-static char *buffer = NULL;
+static int8_t *buffer = NULL;
 static unsigned long int max_buffer;
 static int counter;
 static struct audio_buf_info info;
 
 #define open_audio_output open_oss_output
-static int write_oss_output(char * output_data, int output_size);
+static int write_oss_output(int8_t *output_data, int output_size);
 static void close_oss_output(void);
 
 static void pause_output_oss(void) {
@@ -669,7 +670,7 @@ static int open_oss_output(void) {
 	}
 
 	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
-	buffer = (char *) mmap(NULL, max_buffer, PROT_WRITE|PROT_READ,
+	buffer = (int8_t *) mmap(NULL, max_buffer, PROT_WRITE|PROT_READ,
 					MAP_FILE|MAP_SHARED, audio_fd, 0);
 
 	if (buffer == MAP_FAILED) {
@@ -698,7 +699,7 @@ fail:	close_oss_output();
 	return -1;
 }
 
-static int write_oss_output(char * output_data, int output_size) {
+static int write_oss_output(int8_t *output_data, int output_size) {
 	struct count_info count;
 	int data_read = 0;
 	int free_size = 0;
@@ -767,7 +768,7 @@ static void pause_output_openal(void) {
 	alSourcePause(sourceId);
 }
 
-static int write_openal_output(char * output_data, int output_size) {
+static int write_openal_output(int8_t *output_data, int output_size) {
 	ALint processed, state;
 
 	if (frames <= PRIME) { /* prime the pump */
@@ -946,24 +947,24 @@ int main(int argc, char **argv) {
 	struct _WM_Info *wm_info;
 	int i, res;
 	int option_index = 0;
-	unsigned long int mixer_options = 0;
+	uint32_t mixer_options = 0;
 	char *config_file = NULL;
 	void *midi_ptr;
-	unsigned char master_volume = 100;
-	char *output_buffer;
-	unsigned long int perc_play = 0;
-	unsigned long int pro_mins = 0;
-	unsigned long int pro_secs = 0;
-	unsigned long int apr_mins = 0;
-	unsigned long int apr_secs = 0;
-	unsigned char modes[4];
-	unsigned long int count_diff;
-	unsigned char ch;
-	unsigned char test_midi = 0;
-	unsigned char test_count = 0;
-	unsigned char *test_data;
-	unsigned char test_bank = 0;
-	unsigned char test_patch = 0;
+	uint8_t master_volume = 100;
+	int8_t *output_buffer;
+	uint32_t perc_play = 0;
+	uint32_t pro_mins = 0;
+	uint32_t pro_secs = 0;
+	uint32_t apr_mins = 0;
+	uint32_t apr_secs = 0;
+	char modes[4];
+	uint32_t count_diff;
+	uint8_t ch;
+	uint8_t test_midi = 0;
+	uint8_t test_count = 0;
+	uint8_t *test_data;
+	uint8_t test_bank = 0;
+	uint8_t test_patch = 0;
 	static char spinner[] = "|/-\\";
 	static int spinpoint = 0;
 	unsigned long int seek_to_sample = 0;
@@ -1009,7 +1010,7 @@ int main(int argc, char **argv) {
 			mixer_options ^= WM_MO_REVERB;
 			break;
 		case 'm': /* Master Volume */
-			master_volume = (unsigned char) atoi(optarg);
+			master_volume = (uint8_t) atoi(optarg);
 			break;
 		case 'o': /* Wav Output */
 			if (!*optarg) {
@@ -1038,10 +1039,10 @@ int main(int argc, char **argv) {
 			test_midi = 1;
 			break;
 		case 'k': /* set test bank */
-			test_bank = (unsigned char) atoi(optarg);
+			test_bank = (uint8_t) atoi(optarg);
 			break;
 		case 'p': /* set test patch */
-			test_patch = (unsigned char) atoi(optarg);
+			test_patch = (uint8_t) atoi(optarg);
 			break;
 		case 'w': /* whole number tempo */
 			mixer_options |= WM_MO_WHOLETEMPO;
@@ -1250,7 +1251,7 @@ int main(int argc, char **argv) {
 					modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
 					modes[3] = '\0';
 					fprintf(stderr,
-						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
+						"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] 0  \r",
 						apr_mins, apr_secs, modes, master_volume, pro_mins,
 						pro_secs, perc_play);
 
@@ -1274,7 +1275,7 @@ int main(int argc, char **argv) {
 				modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
 				modes[3] = '\0';
 				fprintf(stderr,
-						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  \r",
+						"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
 						apr_mins, apr_secs, modes, master_volume, pro_mins,
 						pro_secs, perc_play, spinner[spinpoint++ % 4]);
 

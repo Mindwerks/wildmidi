@@ -29,14 +29,14 @@
 
 struct _rvb {
 	/* filter data */
-	signed long int l_buf_flt_in[8][6][2];
-	signed long int l_buf_flt_out[8][6][2];
-	signed long int r_buf_flt_in[8][6][2];
-	signed long int r_buf_flt_out[8][6][2];
-	signed long int coeff[8][6][5];
+	int32_t l_buf_flt_in[8][6][2];
+	int32_t l_buf_flt_out[8][6][2];
+	int32_t r_buf_flt_in[8][6][2];
+	int32_t r_buf_flt_out[8][6][2];
+	int32_t coeff[8][6][5];
 	/* buffer data */
-	signed long int *l_buf;
-	signed long int *r_buf;
+	int32_t *l_buf;
+	int32_t *r_buf;
 	int l_buf_size;
 	int r_buf_size;
 	int l_out;
@@ -46,12 +46,12 @@ struct _rvb {
 	int l_in[4];
 	int r_in[4];
 	int gain;
-	unsigned long int max_reverb_time;
+	uint32_t max_reverb_time;
 };
 
  extern void reset_reverb (struct _rvb *rvb);
  extern struct _rvb *init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y);
  extern void free_reverb (struct _rvb *rvb);
- extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
+ extern void do_reverb (struct _rvb *rvb, int32_t *buffer, int size);
 
 #endif /* __REVERB_H */

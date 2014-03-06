@@ -49,6 +49,12 @@
 /* define this if you are running a bigendian system (motorola, sparc, etc) */
 #cmakedefine WORDS_BIGENDIAN 1
 
+/* Define if you have the <stdint.h> header file. */
+#cmakedefine HAVE_STDINT_H
+
+/* Define if you have the <inttypes.h> header file. */
+#cmakedefine HAVE_INTTYPES_H
+
 /* Define our audio drivers */
 #cmakedefine HAVE_LINUX_SOUNDCARD_H
 #cmakedefine HAVE_SYS_SOUNDCARD_H
