@@ -710,7 +710,7 @@ static int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
 
 /* sample loading */
 
-struct _sample * load_gus_pat(char * filename, int fix_release) {
+struct _sample * load_gus_pat(const char *filename, int fix_release) {
 	unsigned char *gus_patch;
 	unsigned long int gus_size;
 	unsigned long int gus_ptr;
