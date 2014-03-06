@@ -1142,7 +1142,7 @@ static int load_sample(struct _patch *sample_patch) {
 	struct _sample *tmp_sample = NULL;
 	unsigned int i = 0;
 
-	// we only want to try loading the guspat once.
+	/* we only want to try loading the guspat once. */
 	sample_patch->loaded = 1;
 
 	if ((guspat = load_gus_pat(sample_patch->filename, fix_release)) == NULL) {
@@ -2369,7 +2369,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	unsigned long int sysex_store_len = 0;
 
 	unsigned long int *track_delta;
-	char *track_end;
+	unsigned char *track_end;
 	unsigned long int smallest_delta = 0;
 	unsigned long int subtract_delta = 0;
 	unsigned long int tmp_length = 0;
@@ -2461,7 +2461,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	pulses_per_second = 1000000.0f / microseconds_per_pulse;
 	samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
 
-	tracks = malloc(sizeof(char *) * no_tracks);
+	tracks = malloc(sizeof(unsigned char *) * no_tracks);
 	track_delta = malloc(sizeof(unsigned long int) * no_tracks);
 	track_end = malloc(sizeof(unsigned char) * no_tracks);
 	running_event = malloc(sizeof(unsigned char) * no_tracks);
