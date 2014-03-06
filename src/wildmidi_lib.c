@@ -3732,11 +3732,11 @@ WildMidi_OpenBuffer(unsigned char *midibuffer, unsigned long int size) {
 }
 
 WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
-	struct _mdi *mdi = (struct _mdi *) handle;
-	unsigned long int real_samples_to_mix = 0;
+	struct _mdi *mdi;
+	struct _event *event;
+	struct _note *note_data;
+	unsigned long int real_samples_to_mix;
 	unsigned long int count;
-	struct _event *event = mdi->current_event;
-	struct _note *note_data = mdi->note;
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
@@ -3753,7 +3753,12 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 		return -1;
 	}
 
+	mdi = (struct _mdi *) handle;
+
 	WM_Lock(&mdi->lock);
+
+	event = mdi->current_event;
+	real_samples_to_mix = 0;
 
 	// make sure we havent asked for a positions beyond the end of the song.
 	if (*sample_pos > mdi->info.approx_total_samples) {
