@@ -3752,11 +3752,8 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	}
 
 	mdi = (struct _mdi *) handle;
-
 	WM_Lock(&mdi->lock);
-
 	event = mdi->current_event;
-	real_samples_to_mix = 0;
 
 	// make sure we havent asked for a positions beyond the end of the song.
 	if (*sample_pos > mdi->info.approx_total_samples) {
