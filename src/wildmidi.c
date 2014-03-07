@@ -26,6 +26,7 @@
 
 #include "config.h"
 
+#include <limits.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -222,7 +223,11 @@ static void pause_output_nop(void) {
  */
 
 static char wav_file[1024] = "\0";
+#if (INT_MAX == 2147483647)
+static unsigned int wav_size;
+#else
 static unsigned long int wav_size;
+#endif
 
 static int write_wav_output(char * output_data, int output_size);
 static void close_wav_output(void);
