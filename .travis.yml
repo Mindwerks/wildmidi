@@ -26,8 +26,8 @@ before_install:
  - sudo ln -s /usr/src/gtest/build/libgtest_main.so /usr/lib/libgtest_main.so
 before_script:
  - cd -
- - mkdir debug
- - cd debug
+ - mkdir build
+ - cd build
  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
 script:
  - make -j2
@@ -43,5 +43,5 @@ notifications:
   irc:    
     channels:
       - "chat.freenode.net#wildmidi"
-    on_success: always
+    on_success: change
     on_failure: always    
