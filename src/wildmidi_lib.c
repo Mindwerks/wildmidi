@@ -2384,15 +2384,12 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint8_t *running_event;
 	uint32_t decay_samples = 0;
 
-	mdi = Init_MDI();
-
 	if (memcmp(midi_data, "RIFF", 4) == 0) {
 		midi_data += 20;
 		midi_size -= 20;
 	}
 	if (memcmp(midi_data, "MThd", 4) != 0) {
 		printf("Not a midi file\n");
-		free(mdi);
 		return NULL;
 	}
 	midi_data += 4;
@@ -2400,7 +2397,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 
 	if (midi_size < 10) {
 		printf("Midi File Too Short\n");
-		free(mdi);
 		return NULL;
 	}
 
@@ -2414,7 +2410,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 4;
 	if (tmp_val != 6) {
 		printf("Corrupt Midi Header\n");
-		free(mdi);
 		return NULL;
 	}
 
@@ -2426,7 +2421,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val > 1) {
 		printf("Midi Format Not Supported\n");
-		free(mdi);
 		return NULL;
 	}
 
@@ -2438,7 +2432,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val < 1) {
 		printf("Midi Contains No Tracks\n");
-		free(mdi);
 		return NULL;
 	}
 	no_tracks = tmp_val;
@@ -2451,7 +2444,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (divisions & 0x00008000) {
 		printf("Division Type Not Supported\n");
-		free(mdi);
 		return NULL;
 	}
 
@@ -2467,6 +2459,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	pulses_per_second = 1000000.0f / microseconds_per_pulse;
 	samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
 
+	mdi = Init_MDI();
+
 	tracks = malloc(sizeof(uint8_t *) * no_tracks);
 	track_delta = malloc(sizeof(uint32_t) * no_tracks);
 	track_end = malloc(sizeof(uint8_t) * no_tracks);
@@ -2475,22 +2469,11 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	for (i = 0; i < no_tracks; i++) {
 		if (midi_size < 8) {
 			printf("Midi File Too Short\n");
-			free(tracks);
-			free(track_delta);
-			free(track_end);
-			free(running_event);
-			free(mdi);
-			return NULL;
+			goto _end;
 		}
-
 		if (memcmp(midi_data, "MTrk", 4) != 0) {
 			printf("Expected Track Header\n");
-			free(tracks);
-			free(track_delta);
-			free(track_end);
-			free(running_event);
-			free(mdi);
-			return NULL;
+			goto _end;
 		}
 		midi_data += 4;
 		midi_size -= 4;
@@ -2502,23 +2485,13 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		midi_size -= 4;
 		if (midi_size < track_size) {
 			printf("Midi File Too Short\n");
-			free(tracks);
-			free(track_delta);
-			free(track_end);
-			free(running_event);
-			free(mdi);
-			return NULL;
+			goto _end;
 		}
 		if ((midi_data[track_size - 3] != 0xFF)
 				|| (midi_data[track_size - 2] != 0x2F)
 				|| (midi_data[track_size - 1] != 0x00)) {
 			printf("Corrupt Midi, Expected EOT\n");
-			free(tracks);
-			free(track_delta);
-			free(track_end);
-			free(running_event);
-			free(mdi);
-			return NULL;
+			goto _end;
 		}
 		tracks[i] = midi_data;
 		midi_data += track_size;
@@ -2559,13 +2532,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 					current_event = running_event[i];
 					if (running_event[i] < 0x80) {
 						printf("Invalid Data in Midi, Expected Event\n");
-						free(tracks);
-						free(track_end);
-						free(track_delta);
-						if (mdi->events)
-							free(mdi->events);
-						free(mdi);
-						return NULL;
+						goto _end;
 					}
 				}
 				current_event_ch = current_event & 0x0F;
@@ -2782,25 +2749,12 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 						tracks[i] += sysex_len;
 					} else {
 						printf("Um, WTF is this?\n");
-						free(tracks);
-						free(track_end);
-						free(track_delta);
-						if (mdi->events)
-							free(mdi->events);
-						free(mdi);
-						return NULL;
+						goto _end;
 					}
 					break;
 				default:
 					printf("Should Never of Gotten Here\n");
-					free(tracks);
-					free(track_end);
-					free(track_delta);
-					free(running_event);
-					if (mdi->events)
-						free(mdi->events);
-					free(mdi);
-					return NULL;
+					goto _end;
 				}
 				while (*tracks[i] > 0x7F) {
 					track_delta[i] = (track_delta[i] << 7)
@@ -2859,14 +2813,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 			reverb_room_length, reverb_listen_posx, reverb_listen_posy))
 			== NULL) {
 		printf("Reverb Init Failed\n");
-		free(tracks);
-		free(track_end);
-		free(track_delta);
-		free(running_event);
-		if (mdi->events)
-			free(mdi->events);
-		free(mdi);
-		return NULL;
+		goto _end;
 	}
 
 	mdi->info.current_sample = 0;
@@ -2876,11 +2823,15 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 
 	WM_ResetToStart(mdi);
 
+_end:	if (sysex_store) free(sysex_store);
 	free(track_end);
 	free(track_delta);
 	free(running_event);
 	free(tracks);
-	return mdi;
+	if (mdi->reverb) return mdi;
+	if (mdi->events) free(mdi->events);
+	free(mdi);
+	return NULL;
 }
 
 static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
