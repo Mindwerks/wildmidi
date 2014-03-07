@@ -48,6 +48,9 @@ IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(
         -D_POSIX_C_SOURCE=200809L
         -D_BSD_SOURCE=1
+        -D_LARGEFILE_SOURCE 
+        -D_FILE_OFFSET_BITS=64 
+        -D_LARGE_FILES
         -pedantic
         -Wall -W
         )
