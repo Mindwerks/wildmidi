@@ -8,7 +8,7 @@ WildMidi_FastSeek \- Move to a position in a midi file
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B int WildMidi_FastSeek (midi *\fIhandle\fB, unsigned short int *\fIsample_pos\fB);
+.B int WildMidi_FastSeek (midi *\fIhandle\fB, unsigned long int *\fIsample_pos\fB);
 .PP
 .SH DESCRIPTION
 Resets all note specific midi states and active notes before scanning to \fIsample_pos\fP samples from the beginning taking note of any changes to midi channel states. The next call to \fIWildMidi_GetOutput\fP\fR(3)\fP will behave as if you started to play the midi from that position.
