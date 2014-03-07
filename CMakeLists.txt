@@ -1,6 +1,6 @@
 # ########## Project setup ##########
 PROJECT(wildmidi C)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
 # WildMIDI Version
 SET(VERSION_MAJOR 0)
@@ -137,10 +137,6 @@ IF(UNIX AND NOT APPLE)
             ENDIF()
             SET(AUDIODRV_ALSA 1)
             SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-            # FIXME: we need to add ALSA_INCLUDE_DIR only to the wildmidi
-            # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-            # but that requires cmake-2.8.11 or newer
-            INCLUDE_DIRECTORIES(${ALSA_INCLUDE_DIR})
         ELSEIF(WANT_OSS)
             IF(NOT OSS_FOUND)
                 MESSAGE(FATAL_ERROR "OSS required but not found.")
@@ -154,20 +150,12 @@ IF(UNIX AND NOT APPLE)
             SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
             INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
-            # FIXME: we need to add OPENAL_INCLUDE_DIR only to the wildmidi
-            # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-            # but that requires cmake-2.8.11 or newer
-            INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
         ELSE() # Try to auto-detect
 
             IF(ALSA_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
                 SET(AUDIODRV_ALSA 1)
-                # FIXME: we need to add ALSA_INCLUDE_DIR only to the wildmidi
-                # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-                # but that requires cmake-2.8.11 or newer
-                INCLUDE_DIRECTORIES(${ALSA_INCLUDE_DIR})
 
             ELSEIF(OSS_FOUND)
                 SET(AUDIO_LIBRARY ${OSS_LIBRARY})
@@ -176,10 +164,6 @@ IF(UNIX AND NOT APPLE)
             ELSEIF(OPENAL_FOUND)
                 SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
                 SET(AUDIODRV_OPENAL 1)
-                # FIXME: we need to add OPENAL_INCLUDE_DIR only to the wildmidi
-                # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-                # but that requires cmake-2.8.11 or newer
-                INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
             ELSE()
                 MESSAGE(WARNING "Could not find an audio sub-system!")
@@ -212,10 +196,6 @@ IF (APPLE AND WANT_PLAYER)
         IF(OPENAL_FOUND)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
             SET(AUDIODRV_OPENAL 1)
-            # FIXME: we need to add OPENAL_INCLUDE_DIR only to the wildmidi
-            # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-            # but that requires cmake-2.8.11 or newer
-            INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
         ELSE()
             MESSAGE(WARNING "Could not find an audio sub-system!")

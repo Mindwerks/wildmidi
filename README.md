@@ -42,6 +42,7 @@ CHANGELOG
   unsigned long.
 * OpenAL support: Fixed audio output on big-endian systems.
 * Build fixes for MSVC. Revised visibility attributes usage.
+* Build requires cmake-2.8.11 or newer now.
 
 0.3.4
 * OpenAL support: This gains us OSX and other platforms that OpenAL
