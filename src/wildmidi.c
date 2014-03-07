@@ -1310,6 +1310,7 @@ end2:		close_output();
 #endif
 	} else {
 		fprintf(stderr, "ERROR: No midi file given\r\n");
+		free(config_file);
 		do_syntax();
 		return (0);
 	}
