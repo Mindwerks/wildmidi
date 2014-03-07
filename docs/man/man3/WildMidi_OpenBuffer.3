@@ -1,4 +1,4 @@
-.TH WildMidi_OpenBuffer 3 "27 February 2014" "" "WildMidi Programmer's Manual"
+.TH WildMidi_OpenBuffer 3 "7 March 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_OpenBuffer \- Open a midi file buffer for processing
 .PP
@@ -8,7 +8,7 @@ WildMidi_OpenBuffer \- Open a midi file buffer for processing
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B midi *WildMidi_OpenBuffer (unsigned char *\fImidibuffer\fP, unsigned long int \fIsize\fP)
+.B midi *WildMidi_OpenBuffer (uint8_t *\fImidibuffer\fP, uint32_t \fIsize\fP)
 .PP
 .SH DESCRIPTION
 Open a midi file, that you have buffered in memory, for processing.
