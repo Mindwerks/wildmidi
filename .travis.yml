@@ -13,6 +13,7 @@ before_install:
  - pwd
  - git submodule update --init --recursive
  - echo "yes" | sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu `lsb_release -sc` main universe restricted multiverse"
+ - echo "yes" | sudo apt-add-repository ppa:psi29a/precise
  - sudo apt-get update -qq
  - sudo apt-get install -qq libgtest-dev google-mock 
  - sudo apt-get install -qq libasound2-dev libopenal-dev
