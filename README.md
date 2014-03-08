@@ -29,6 +29,9 @@ CHANGELOG
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
 * OpenAL support: Fixed audio output on big-endian systems.
+* Worked around an invalid memory read found by valgrind when playing
+  Beethoven's Fur Elise.rmi at 44100 Hz using the old MIDIA patch-set
+  from 1994.
 * Build fixes for MSVC. Revised visibility attributes usage.
 
 0.3.4
