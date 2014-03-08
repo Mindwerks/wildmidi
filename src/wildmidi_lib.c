@@ -187,7 +187,7 @@ struct _event {
 #define FPMASK ((1L<<FPBITS)-1L)
 
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
-static double newt_coeffs[58][58] = { { 0, 0 } }; /* for start/end of samples */
+static double newt_coeffs[58][58];	/* for start/end of samples */
 #define MAX_GAUSS_ORDER 34		/* 34 is as high as we can go before errors crop up */
 static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
 static int gauss_n = MAX_GAUSS_ORDER;
@@ -3527,6 +3527,7 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t opt
 	WM_Initialized = 1;
 	patch_lock = 0;
 
+	init_gauss();
 	return 0;
 }
 
@@ -3839,8 +3840,6 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 		return -1;
 	}
 	if (mdi->info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
-		if (newt_coeffs[0][0] == 0)
-			init_gauss();
 		return WM_GetOutput_Gauss(handle, buffer, size);
 	} else {
 		return WM_GetOutput_Linear(handle, buffer, size);
@@ -3956,9 +3955,7 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 		}
 	}
 	WM_FreePatches();
-	if (newt_coeffs[0][0])
-		free_gauss();
+	free_gauss();
 	WM_Initialized = 0;
-
 	return 0;
 }
