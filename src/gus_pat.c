@@ -66,8 +66,8 @@ static int convert_8s(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((gus_sample->data_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data++ = (*read_data++) << 8;
@@ -94,8 +94,8 @@ static int convert_8sp(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((new_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data++ = (*read_data++) << 8;
@@ -141,8 +141,8 @@ static int convert_8sr(uint8_t *data, struct _sample *gus_sample) {
 	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((gus_sample->data_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data + gus_sample->data_length - 1;
 		do {
 			*write_data-- = (*read_data++) << 8;
@@ -172,8 +172,8 @@ static int convert_8srp(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((new_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data++ = (*read_data--) << 8;
@@ -217,8 +217,8 @@ static int convert_8u(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((gus_sample->data_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data++ = ((*read_data++) ^ 0x80) << 8;
@@ -243,8 +243,8 @@ static int convert_8up(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((new_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data++ = ((*read_data++) ^ 0x80) << 8;
@@ -290,8 +290,8 @@ static int convert_8ur(uint8_t *data, struct _sample *gus_sample) {
 	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((gus_sample->data_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((gus_sample->data_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data + gus_sample->data_length - 1;
 		do {
 			*write_data-- = ((*read_data++) ^ 0x80) << 8;
@@ -321,8 +321,8 @@ static int convert_8urp(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc((new_length + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc((new_length + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data++ = ((*read_data--) ^ 0x80) << 8;
@@ -365,8 +365,8 @@ static int convert_16s(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = *read_data++;
@@ -395,8 +395,8 @@ static int convert_16sp(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((new_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = (*read_data++);
@@ -450,8 +450,8 @@ static int convert_16sr(uint8_t *data, struct _sample *gus_sample) {
 	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data + (gus_sample->data_length >> 1) - 1;
 		do {
 			*write_data = *read_data++;
@@ -485,8 +485,8 @@ static int convert_16srp(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((new_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = (*read_data--) << 8;
@@ -534,8 +534,8 @@ static int convert_16u(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = *read_data++;
@@ -564,8 +564,8 @@ static int convert_16up(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((new_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = (*read_data++);
@@ -619,8 +619,8 @@ static int convert_16ur(uint8_t *data, struct _sample *gus_sample) {
 	uint32_t tmp_loop = 0;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((gus_sample->data_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data + (gus_sample->data_length >> 1) - 1;
 		do {
 			*write_data = *read_data++;
@@ -654,8 +654,8 @@ static int convert_16urp(uint8_t *data, struct _sample *gus_sample) {
 	int16_t *write_data_b = NULL;
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__);
-	gus_sample->data = calloc(((new_length >> 1) + 1), sizeof(int16_t));
-	if (__builtin_expect((gus_sample->data != NULL ), 1)) {
+	gus_sample->data = calloc(((new_length >> 1) + 2), sizeof(int16_t));
+	if (__builtin_expect((gus_sample->data != NULL), 1)) {
 		write_data = gus_sample->data;
 		do {
 			*write_data = ((*read_data--) ^ 0x80) << 8;

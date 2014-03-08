@@ -27,7 +27,6 @@ Requirements:
 CHANGELOG
 
 0.4.0
-* Greatly reduced the heap usage (was a regression introduced in 0.2.3)
 * API change: The library now returns audio data in host-endian format,
   not little-endian.
 * API change: WildMidi_GetVersion() added to the api, along with new
@@ -40,9 +39,15 @@ CHANGELOG
 * API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
   to accept strictly 32bit size parameters, i.e. uint32_t, instead of
   unsigned long.
-* OpenAL support: Fixed audio output on big-endian systems.
-* Build fixes for MSVC. Revised visibility attributes usage.
 * Build requires cmake-2.8.11 or newer now.
+
+0.3.5
+* Greatly reduced the heap usage (was a regression introduced in 0.2.3)
+* OpenAL support: Fixed audio output on big-endian systems.
+* Worked around an invalid memory read found by valgrind when playing
+  Beethoven's Fur Elise.rmi at 44100 Hz using the old MIDIA patch-set
+  from 1994.
+* Build fixes for MSVC. Revised visibility attributes usage.
 
 0.3.4
 * OpenAL support: This gains us OSX and other platforms that OpenAL
