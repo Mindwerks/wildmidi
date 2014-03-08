@@ -38,7 +38,7 @@
 #include "common.h"
 
 /*
- WL_Lock(wmlock)
+ WM_Lock(wmlock)
 
  wm_lock = a pointer to a value
 
@@ -47,25 +47,17 @@
  Attemptes to set a lock on the MDI tree so that
  only 1 library command may access it at any time.
  If lock fails the process retries untill successful.
-
  */
-
 void WM_Lock(int * wmlock) {
 	LOCK_START:
-	/*
-	 Check if lock is clear, if so set it
-	 */
+	/* Check if lock is clear, if so set it */
 	if (__builtin_expect(((*wmlock) == 0), 1)) {
 		(*wmlock)++;
-		/*
-		 Now that the lock is set, make sure we don't have a race condition.
-		 If so decrement the lock by one and retry
-		 */
+		/* Now that the lock is set, make sure we
+		 * don't have a race condition.  If so,
+		 * decrement the lock by one and retry.  */
 		if (__builtin_expect(((*wmlock) == 1), 1)) {
-			/*
-			 Lock cleanly set
-			 */
-			return;
+			return; /* Lock cleanly set */
 		}
 		(*wmlock)--;
 	}
@@ -78,7 +70,7 @@ void WM_Lock(int * wmlock) {
 }
 
 /*
- WL_Unlock(wmlock)
+ WM_Unlock(wmlock)
 
  wm_lock = a pointer to a value
 
@@ -86,11 +78,8 @@ void WM_Lock(int * wmlock) {
 
  Removes a lock previously placed on the MDI tree.
  */
-
 void WM_Unlock(int *wmlock) {
-	/*
-	 We don't want a -1 lock so just to make sure
-	 */
+	/* We don't want a -1 lock, so just to make sure */
 	if ((*wmlock) != 0) {
 		(*wmlock)--;
 	}

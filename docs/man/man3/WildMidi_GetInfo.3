@@ -1,4 +1,4 @@
-.TH WildMidi_GetInfo 3 "27 February 2014" "" "WildMidi Programmer's Manual"
+.TH WildMidi_GetInfo 3 "7 March 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_GetInfo \- get information on a midi
 .SH LIBRARY
@@ -22,10 +22,11 @@ Otherwise returns a pointer to a struct containing the information.
 .nf
 struct _WM_Info {
    char *\fIcopyright\fP;
-   unsigned long int \fIcurrent_sample\fP;
-   unsigned long int \fIapprox_total_samples\fP;
-   unsigned long int \fItotal_midi_time\fP;
-   unsigned short int \fImixer_options\fP;
+   uint32_t \fIcurrent_sample\fP;
+   uint32_t \fIapprox_total_samples\fP;
+   uint32_t \fItotal_midi_time\fP;
+   uint16_t \fImixer_options\fP;
+   uint32_t \fItotal_midi_time\fP;
 };
 .fi
 .PP

@@ -1,4 +1,4 @@
-.TH WildMidi_GetOutput 3 "27 February 2014" "" "WildMidi Programmer's Manual"
+.TH WildMidi_GetOutput 3 "7 March 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_GetOutput \- retrieve raw audio data
 .PP
@@ -8,7 +8,7 @@ WildMidi_GetOutput \- retrieve raw audio data
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B int WildMidi_GetOutput (midi *\fIhandle\fP, char *\fIbuffer\fP, unsigned long int \fIsize\fP);
+.B int WildMidi_GetOutput (midi *\fIhandle\fP, int8_t *\fIbuffer\fP, uint32_t \fIsize\fP);
 .PP
 .SH DESCRIPTION
 Places \fIsize\fP bytes of audio data from a \fIhandle\fP, previously opened by \fBWildMidi_Open\fP\fR(3)\fP or \fBWildMidi_OpenBuffer\fP\fR(3)\fP, into a buffer pointer to by \fIbuffer\fP.

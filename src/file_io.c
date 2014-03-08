@@ -66,10 +66,10 @@ void *WM_BufferFile(const char *filename, uint32_t *size) {
 	struct stat buffer_stat;
 #endif
 #if !defined(_WIN32) && !defined(__DJGPP__)
-	char *home = NULL;
+	const char *home = NULL;
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
-#endif
+#endif /* unix builds */
 	char *buffer_file = NULL;
 
 #if !defined(_WIN32) && !defined(__DJGPP__)

@@ -483,6 +483,7 @@ static int open_alsa_output(void) {
 	int err;
 	unsigned int alsa_buffer_time;
 	unsigned int alsa_period_time;
+	unsigned int r;
 
 	if (!pcmname) {
 		pcmname = strdup("default");
@@ -517,9 +518,13 @@ static int open_alsa_output(void) {
 		goto fail;
 	}
 
+	r = rate;
 	if (snd_pcm_hw_params_set_rate_near(pcm, hw, &rate, 0) < 0) {
-		fprintf(stderr, "ALSA does not support %iHz for your soundcard\r\n", rate);
+		fprintf(stderr, "ALSA does not support %uHz for your soundcard\r\n", rate);
 		goto fail;
+	}
+	if (r != rate) {
+		fprintf(stderr, "ALSA: sample rate set to %uHz instead of %u\r\n", rate, r);
 	}
 
 	alsa_buffer_time = 500000;
@@ -625,6 +630,7 @@ static void pause_output_oss(void) {
 static int open_oss_output(void) {
 	int caps, rc, tmp;
 	unsigned long int sz = sysconf(_SC_PAGESIZE);
+	unsigned int r;
 
 	if (!pcmname) {
 		pcmname = strdup("/dev/dsp");
@@ -659,9 +665,13 @@ static int open_oss_output(void) {
 		goto fail;
 	}
 
+	r = rate;
 	if (ioctl(audio_fd, SNDCTL_DSP_SPEED, &rate) < 0) {
-		fprintf(stderr, "ERROR: Unable to set %iHz sample rate\r\n", rate);
+		fprintf(stderr, "ERROR: Unable to set %uHz sample rate\r\n", rate);
 		goto fail;
+	}
+	if (r != rate) {
+		fprintf(stderr, "OSS: sample rate set to %uHz instead of %u\r\n", rate, r);
 	}
 
 	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) < 0) {
@@ -1306,6 +1316,7 @@ end2:		close_output();
 #endif
 	} else {
 		fprintf(stderr, "ERROR: No midi file given\r\n");
+		free(config_file);
 		do_syntax();
 		return (0);
 	}
