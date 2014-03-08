@@ -510,7 +510,7 @@ static uint32_t freq_table[] = { 837201792, 837685632, 838169728,
  * =========================
  */
 
-static void WM_CheckEventMemoryPool(struct _mdi *mdi){
+static void WM_CheckEventMemoryPool(struct _mdi *mdi) {
 	if (mdi->event_count >= mdi->events_size) {
 		mdi->events_size += MEM_CHUNK;
 		mdi->events = realloc(mdi->events,
@@ -568,31 +568,25 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
 		return NULL;
 
 	do {
-		/*
-		 ignore everything after #
-		 */
+		/* ignore everything after #  */
 		if (line_data[line_ofs] == '#') {
 			break;
 		}
 
 		if ((line_data[line_ofs] == ' ') || (line_data[line_ofs] == '\t')) {
-			/*
-			 whitespace means we aren't in a token
-			 */
+			/* whitespace means we aren't in a token */
 			if (token_start) {
 				token_start = 0;
 				line_data[line_ofs] = '\0';
 			}
 		} else {
 			if (!token_start) {
-				/*
-				 the start of a token in the line
-				 */
+				/* the start of a token in the line */
 				token_start = 1;
 				if (token_count >= token_data_length) {
 					token_data_length += TOKEN_CNT_INC;
 					token_data = realloc(token_data, token_data_length * sizeof(char *));
-					if (token_data == NULL){
+					if (token_data == NULL) {
 						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,"to parse config", errno);
 						return NULL;
 					}
@@ -605,9 +599,7 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
 		line_ofs++;
 	} while (line_ofs != line_length);
 
-	/*
-	 if we have found some tokens then add a null token to the end
-	 */
+	/* if we have found some tokens then add a null token to the end */
 	if (token_count) {
 		if (token_count >= token_data_length) {
 			token_data = realloc(token_data,
@@ -623,11 +615,11 @@ static int WM_LoadConfig(const char *config_file) {
 	uint32_t config_size = 0;
 	char *config_buffer = NULL;
 	const char *dir_end = NULL;
-	char * config_dir = NULL;
+	char *config_dir = NULL;
 	uint32_t config_ptr = 0;
 	uint32_t line_start_ptr = 0;
 	uint16_t patchid = 0;
-	char * new_config = NULL;
+	char *new_config = NULL;
 	struct _patch * tmp_patch;
 	char **line_tokens = NULL;
 	int token_count = 0;
@@ -1336,7 +1328,6 @@ static void load_patch(struct _mdi *mdi, uint16_t patchid) {
 	mdi->patches[mdi->patch_count - 1] = tmp_patch;
 	tmp_patch->inuse_count++;
 	WM_Unlock(&patch_lock);
-	return;
 }
 
 static struct _sample *
@@ -1417,8 +1408,6 @@ static void do_note_off_extra(struct _note *nte) {
 			}
 		}
 	}
-	return;
-
 }
 
 static void do_note_off(struct _mdi *mdi, struct _event_data *data) {
@@ -1443,7 +1432,6 @@ static void do_note_off(struct _mdi *mdi, struct _event_data *data) {
 	} else {
 		do_note_off_extra(nte);
 	}
-	return;
 }
 
 static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
@@ -1523,7 +1511,6 @@ static void do_note_on(struct _mdi *mdi, struct _event_data *data) {
 	}
 
 	sample = get_sample_data(patch, (freq / 100));
-
 	if (sample == NULL) {
 		return;
 	}
@@ -1994,7 +1981,7 @@ static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 		do_pan_adjust(mdi, i);
 	}
 	mdi->channel[9].isdrum = 1;
-	UNUSED(data); // NOOP, to please the compiler gods
+	UNUSED(data); /* NOOP, to please the compiler gods */
 }
 
 static void WM_ResetToStart(midi * handle) {
@@ -2944,10 +2931,8 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 								(note_data->sample_pos
 										>= note_data->sample->data_length),
 								0)) {
-							if (__builtin_expect((note_data->replay == NULL ),
-									1)) {
+							if (__builtin_expect((note_data->replay == NULL), 1)) {
 								goto KILL_NOTE;
-
 							}
 							goto RESTART_NOTE;
 						}
@@ -3287,10 +3272,8 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 								(note_data->sample_pos
 										>= note_data->sample->data_length),
 								0)) {
-							if (__builtin_expect((note_data->replay == NULL ),
-									1)) {
+							if (__builtin_expect((note_data->replay == NULL), 1)) {
 								goto KILL_NOTE;
-
 							}
 							goto RESTART_NOTE;
 						}
@@ -3644,7 +3627,6 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 	}
 
 	free(mdi);
-	// no need to unlock cause the struct containing the lock no-longer exists;
 	return 0;
 }
 
@@ -3819,12 +3801,12 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return -1;
 	}
-	if (__builtin_expect((handle == NULL ), 0)) {
+	if (__builtin_expect((handle == NULL), 0)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
 				0);
 		return -1;
 	}
-	if (__builtin_expect((buffer == NULL ), 0)) {
+	if (__builtin_expect((buffer == NULL), 0)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 				"(NULL buffer pointer)", 0);
 		return -1;

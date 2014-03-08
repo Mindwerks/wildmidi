@@ -43,8 +43,8 @@ struct _event_list {
 };
 
 void free_event_list(struct _event_list *event_list) {
-	if (event_list != NULL) {
-		if (event_list->events != NULL) {
+	if (event_list) {
+		if (event_list->events) {
 			free(event_list->events);
 		}
 		free(event_list);
@@ -56,20 +56,20 @@ struct _event_list *add_event(struct _event_list *event_list,
 		uint32_t event_data) {
 	struct _event *tmp_events = NULL;
 
-	if (event_list == NULL) {
-		if ((event_list = malloc(sizeof(struct _event_list))) == NULL) {
-			//TODO: ERROR
-			return NULL ;
+	if (!event_list) {
+		if (!(event_list = malloc(sizeof(struct _event_list)))) {
+			/* TODO: ERROR */
+			return NULL;
 		}
 		event_list->events = NULL;
 		event_list->current_event = NULL;
 		event_list->event_count = 0;
 	}
-	if ((tmp_events = realloc(event_list->events,
-			((event_list->event_count + 1) * sizeof(struct _event)))) == NULL) {
+	if (!(tmp_events = realloc(event_list->events,
+			((event_list->event_count + 1) * sizeof(struct _event))))) {
 
 		free_event_list(event_list);
-		return NULL ;
+		return NULL;
 	}
 
 	event_list->events = tmp_events;
