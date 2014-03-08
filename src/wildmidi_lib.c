@@ -158,7 +158,7 @@ struct _mdi {
 	struct _event *events;
 	struct _event *current_event;
 	unsigned long int event_count;
-	unsigned int events_size;	/* try to stay optimally ahead to prevent reallocs */
+	unsigned long int events_size;	/* try to stay optimally ahead to prevent reallocs */
 
 	unsigned short midi_master_vol;
 	struct _WM_Info info;
@@ -172,7 +172,7 @@ struct _mdi {
 	signed short int amp;
 
 	signed long int *mix_buffer;
-	unsigned int mix_buffer_size;
+	unsigned long int mix_buffer_size;
 
 	struct _rvb *reverb;
 };
