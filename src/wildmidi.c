@@ -291,7 +291,7 @@ static int write_wav_output(char * output_data, int output_size) {
 }
 
 static void close_wav_output(void) {
-	char wav_count[4];
+	unsigned char wav_count[4];
 	if (audio_fd < 0)
 		return;
 
