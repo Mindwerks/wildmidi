@@ -66,11 +66,10 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 	struct stat buffer_stat;
 #endif
 #if !defined(_WIN32) && !defined(__DJGPP__)
-	char *home = NULL;
+	const char *home = NULL;
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
-#endif
-
+#endif /* unix builds */
 	char *buffer_file = NULL;
 
 #if !defined(_WIN32) && !defined(__DJGPP__)
@@ -111,7 +110,7 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 		if (buffer_file == NULL) {
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
-			return NULL ;
+			return NULL;
 		}
 		strcpy(buffer_file, filename);
 	}
@@ -120,14 +119,14 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 	if (findfirst(buffer_file, &f, FA_ARCH | FA_RDONLY) != 0) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
 		free(buffer_file);
-		return NULL ;
+		return NULL;
 	}
 	*size = f.ff_fsize;
 #else
 	if (stat(buffer_file, &buffer_stat)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
 		free(buffer_file);
-		return NULL ;
+		return NULL;
 	}
 	*size = buffer_stat.st_size;
 #endif
@@ -137,7 +136,7 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
 		free(buffer_file);
-		return NULL ;
+		return NULL;
 	}
 
 	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
