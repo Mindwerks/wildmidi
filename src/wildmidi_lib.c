@@ -183,16 +183,18 @@ struct _event {
 	uint32_t samples_to_next_fixed;
 };
 
+#define FPBITS 10
+#define FPMASK ((1L<<FPBITS)-1L)
+
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
 static double newt_coeffs[58][58] = { { 0, 0 } }; /* for start/end of samples */
-static double *gauss_table[(1 << 10)] = { 0 }; /* don't need doubles */
-//static int gauss_window[35] = {0};
-static int gauss_n = 34; /* do not set this value higher than 34 */
-/* 34 is as high as we can go before errors crop up */
+#define MAX_GAUSS_ORDER 34		/* 34 is as high as we can go before errors crop up */
+static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
+static int gauss_n = MAX_GAUSS_ORDER;
 
 static void init_gauss(void) {
 	/* init gauss table */
-	int n = 34;
+	int n = gauss_n;
 	int m, i, k, n_half = (n >> 1);
 	int j;
 	int sign;
@@ -200,8 +202,8 @@ static void init_gauss(void) {
 	double x, x_inc, xz;
 	double z[35];
 	double *gptr;
-	newt_coeffs[0][0] = 1;
 
+	newt_coeffs[0][0] = 1;
 	for (i = 0; i <= n; i++) {
 		newt_coeffs[i][0] = 1;
 		newt_coeffs[i][i] = 1;
@@ -224,11 +226,11 @@ static void init_gauss(void) {
 		for (j = 0, sign = pow(-1, i); j <= i; j++, sign *= -1)
 			newt_coeffs[i][j] *= sign;
 
-	x_inc = 1.0 / (1 << 10);
-	for (m = 0, x = 0.0; m < (1 << 10); m++, x += x_inc) {
+	gauss_table = malloc((1<<FPBITS) * (n + 1) * sizeof(double));
+	x_inc = 1.0 / (1<<FPBITS);
+	for (m = 0, x = 0.0; m < (1<<FPBITS); m++, x += x_inc) {
 		xz = (x + n_half) / (4 * M_PI);
-		gptr = gauss_table[m] = realloc(gauss_table[m],
-				(n + 1) * sizeof(double));
+		gptr = &gauss_table[m * (n + 1)];
 
 		for (k = 0; k <= n; k++) {
 			ck = 1.0;
@@ -245,11 +247,8 @@ static void init_gauss(void) {
 }
 
 static void free_gauss(void) {
-	int m;
-	for (m = 0; m < (1 << 10); m++) {
-		free(gauss_table[m]);
-		gauss_table[m] = NULL;
-	}
+	free(gauss_table);
+	gauss_table = NULL;
 }
 
 struct _hndl {
@@ -504,9 +503,6 @@ static uint32_t freq_table[] = { 837201792, 837685632, 838169728,
 #endif
 
 #define MAX_AUTO_AMP 2.0
-
-#define FPBITS 10
-#define FPMASK ((1L<<FPBITS)-1L)
 
 /*
  * =========================
@@ -3254,7 +3250,8 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 						y += *sptr;
 					} else { /* otherwise, use Gauss as usual */
 						y = 0;
-						gptr = gauss_table[note_data->sample_pos & FPMASK];
+						gptr = &gauss_table[(note_data->sample_pos & FPMASK) *
+								     (gauss_n + 1)];
 						gend = gptr + gauss_n;
 						sptr = note_data->sample->data
 								+ (note_data->sample_pos >> FPBITS)
