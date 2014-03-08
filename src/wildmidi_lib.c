@@ -92,7 +92,7 @@ static int fix_release = 0;
 static int auto_amp = 0;
 static int auto_amp_with_amp = 0;
 
-static int patch_lock;
+static int patch_lock = 0;
 
 struct _channel {
 	unsigned char bank;
@@ -192,6 +192,7 @@ static double newt_coeffs[58][58];	/* for start/end of samples */
 #define MAX_GAUSS_ORDER 34		/* 34 is as high as we can go before errors crop up */
 static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
 static int gauss_n = MAX_GAUSS_ORDER;
+static int gauss_lock = 0;
 
 static void init_gauss(void) {
 	/* init gauss table */
@@ -202,7 +203,13 @@ static void init_gauss(void) {
 	double ck;
 	double x, x_inc, xz;
 	double z[35];
-	double *gptr;
+	double *gptr, *t;
+
+	WM_Lock(&gauss_lock);
+	if (gauss_table) {
+		WM_Unlock(&gauss_lock);
+		return;
+	}
 
 	newt_coeffs[0][0] = 1;
 	for (i = 0; i <= n; i++) {
@@ -227,11 +234,11 @@ static void init_gauss(void) {
 		for (j = 0, sign = pow(-1, i); j <= i; j++, sign *= -1)
 			newt_coeffs[i][j] *= sign;
 
-	gauss_table = malloc((1<<FPBITS) * (n + 1) * sizeof(double));
+	t = malloc((1<<FPBITS) * (n + 1) * sizeof(double));
 	x_inc = 1.0 / (1<<FPBITS);
 	for (m = 0, x = 0.0; m < (1<<FPBITS); m++, x += x_inc) {
 		xz = (x + n_half) / (4 * M_PI);
-		gptr = &gauss_table[m * (n + 1)];
+		gptr = &t[m * (n + 1)];
 
 		for (k = 0; k <= n; k++) {
 			ck = 1.0;
@@ -245,10 +252,13 @@ static void init_gauss(void) {
 			*gptr++ = ck;
 		}
 	}
+
+	gauss_table = t;
+	WM_Unlock(&gauss_lock);
 }
 
 static void free_gauss(void) {
-	free(gauss_table);
+	if (gauss_table) free(gauss_table);
 	gauss_table = NULL;
 }
 
@@ -3512,7 +3522,6 @@ WM_SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,
 	WM_Initialized = 1;
 	patch_lock = 0;
 
-	init_gauss();
 	return 0;
 }
 
@@ -3821,6 +3830,7 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, char * buffer, unsigned long int
 		return -1;
 	}
 	if (mdi->info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
+		if (!gauss_table) init_gauss();
 		return WM_GetOutput_Gauss(handle, buffer, size);
 	} else {
 		return WM_GetOutput_Linear(handle, buffer, size);
