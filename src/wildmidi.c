@@ -956,7 +956,7 @@ int main(int argc, char **argv) {
 	unsigned long int pro_secs = 0;
 	unsigned long int apr_mins = 0;
 	unsigned long int apr_secs = 0;
-	unsigned char modes[4];
+	char modes[4];
 	unsigned long int count_diff;
 	unsigned char ch;
 	unsigned char test_midi = 0;
@@ -1302,6 +1302,7 @@ end1:		memset(output_buffer, 0, 16384);
 		msleep(5);
 end2:		close_output();
 		free(output_buffer);
+		free(config_file);
 		if (WildMidi_Shutdown() == -1)
 			fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
 #if !defined(_WIN32) && !defined(__DJGPP__)

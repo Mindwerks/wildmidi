@@ -70,6 +70,8 @@
  * =========================
  */
 
+#define MEM_CHUNK 8192
+
 static int WM_Initialized = 0;
 static signed short int WM_MasterVolume = 948;
 static unsigned short int WM_MixerOptions = 0;
@@ -156,6 +158,7 @@ struct _mdi {
 	struct _event *events;
 	struct _event *current_event;
 	unsigned long int event_count;
+	unsigned int events_size;	/* try to stay optimally ahead to prevent reallocs */
 
 	unsigned short midi_master_vol;
 	struct _WM_Info info;
@@ -168,6 +171,9 @@ struct _mdi {
 	unsigned long int patch_count;
 	signed short int amp;
 
+	signed long int *mix_buffer;
+	unsigned int mix_buffer_size;
+
 	struct _rvb *reverb;
 };
 
@@ -178,16 +184,18 @@ struct _event {
 	unsigned long int samples_to_next_fixed;
 };
 
+#define FPBITS 10
+#define FPMASK ((1L<<FPBITS)-1L)
+
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
-static double newt_coeffs[58][58]; /* for start/end of samples */
-static double *gauss_table[(1 << 10)] = { 0 }; /* don't need doubles */
-//static int gauss_window[35] = {0};
-static int gauss_n = 34; /* do not set this value higher than 34 */
-/* 34 is as high as we can go before errors crop up */
+static double newt_coeffs[58][58];	/* for start/end of samples */
+#define MAX_GAUSS_ORDER 34		/* 34 is as high as we can go before errors crop up */
+static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
+static int gauss_n = MAX_GAUSS_ORDER;
 
 static void init_gauss(void) {
 	/* init gauss table */
-	int n = 34;
+	int n = gauss_n;
 	int m, i, k, n_half = (n >> 1);
 	int j;
 	int sign;
@@ -197,7 +205,6 @@ static void init_gauss(void) {
 	double *gptr;
 
 	newt_coeffs[0][0] = 1;
-
 	for (i = 0; i <= n; i++) {
 		newt_coeffs[i][0] = 1;
 		newt_coeffs[i][i] = 1;
@@ -220,11 +227,11 @@ static void init_gauss(void) {
 		for (j = 0, sign = pow(-1, i); j <= i; j++, sign *= -1)
 			newt_coeffs[i][j] *= sign;
 
-	x_inc = 1.0 / (1 << 10);
-	for (m = 0, x = 0.0; m < (1 << 10); m++, x += x_inc) {
+	gauss_table = malloc((1<<FPBITS) * (n + 1) * sizeof(double));
+	x_inc = 1.0 / (1<<FPBITS);
+	for (m = 0, x = 0.0; m < (1<<FPBITS); m++, x += x_inc) {
 		xz = (x + n_half) / (4 * M_PI);
-		gptr = gauss_table[m] = realloc(gauss_table[m],
-				(n + 1) * sizeof(double));
+		gptr = &gauss_table[m * (n + 1)];
 
 		for (k = 0; k <= n; k++) {
 			ck = 1.0;
@@ -241,11 +248,8 @@ static void init_gauss(void) {
 }
 
 static void free_gauss(void) {
-	int m;
-	for (m = 0; m < (1 << 10); m++) {
-		free(gauss_table[m]);
-		gauss_table[m] = NULL;
-	}
+	free(gauss_table);
+	gauss_table = NULL;
 }
 
 struct _hndl {
@@ -501,14 +505,19 @@ static unsigned long int freq_table[] = { 837201792, 837685632, 838169728,
 
 #define MAX_AUTO_AMP 2.0
 
-#define FPBITS 10
-#define FPMASK ((1L<<FPBITS)-1L)
-
 /*
  * =========================
  * Internal Functions
  * =========================
  */
+
+static void WM_CheckEventMemoryPool(struct _mdi *mdi){
+	if (mdi->event_count >= mdi->events_size) {
+		mdi->events_size += MEM_CHUNK;
+		mdi->events = realloc(mdi->events,
+			(mdi->events_size * sizeof(struct _event)));
+	}
+}
 
 static void WM_InitPatches(void) {
 	int i;
@@ -547,59 +556,65 @@ static void WM_FreePatches(void) {
 	WM_Unlock(&patch_lock);
 }
 
-static char **
-WM_LC_Tokenize_Line(char * line_data) {
+#define TOKEN_CNT_INC 8
+static char** WM_LC_Tokenize_Line(char *line_data) {
 	int line_length = strlen(line_data);
+	int token_data_length = 0;
 	int line_ofs = 0;
 	int token_start = 0;
 	char **token_data = NULL;
 	int token_count = 0;
-	if (line_length != 0) {
-		do {
-			/*
-			 ignore everything after #
-			 */
-			if (line_data[line_ofs] == '#') {
-				break;
-			}
 
-			if ((line_data[line_ofs] == ' ') || (line_data[line_ofs] == '\t')) {
-				/*
-				 whitespace means we aren't in a token
-				 */
-				if (token_start) {
-					token_start = 0;
-					line_data[line_ofs] = '\0';
-				}
-			} else {
-				if (!token_start) {
-					/*
-					 the start of a token in the line
-					 */
-					token_start = 1;
-					if ((token_data = realloc(token_data,
-							((token_count + 1) * sizeof(char *)))) == NULL) {
-						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
-								"to parse config", errno);
-						return NULL;
-					}
+	if (line_length == 0)
+		return NULL;
 
-					token_data[token_count] = &line_data[line_ofs];
-					token_count++;
-				}
-			}
-			line_ofs++;
-		} while (line_ofs != line_length);
-
+	do {
 		/*
-		 if we have found some tokens then add a null token to the end
+		 ignore everything after #
 		 */
-		if (token_count) {
-			token_data = realloc(token_data,
-					((token_count + 1) * sizeof(char *)));
-			token_data[token_count] = NULL;
+		if (line_data[line_ofs] == '#') {
+			break;
 		}
 
+		if ((line_data[line_ofs] == ' ') || (line_data[line_ofs] == '\t')) {
+			/*
+			 whitespace means we aren't in a token
+			 */
+			if (token_start) {
+				token_start = 0;
+				line_data[line_ofs] = '\0';
+			}
+		} else {
+			if (!token_start) {
+				/*
+				 the start of a token in the line
+				 */
+				token_start = 1;
+				if (token_count >= token_data_length) {
+					token_data_length += TOKEN_CNT_INC;
+					token_data = realloc(token_data, token_data_length * sizeof(char *));
+					if (token_data == NULL){
+						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,"to parse config", errno);
+						return NULL;
+					}
+				}
+
+				token_data[token_count] = &line_data[line_ofs];
+				token_count++;
+			}
+		}
+		line_ofs++;
+	} while (line_ofs != line_length);
+
+	/*
+	 if we have found some tokens then add a null token to the end
+	 */
+	if (token_count) {
+		if (token_count >= token_data_length) {
+			token_data = realloc(token_data,
+				((token_count + 1) * sizeof(char *)));
+		}
+		token_data[token_count] = NULL;
 	}
 
 	return token_data;
@@ -2001,8 +2016,7 @@ static int midi_setup_noteoff(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| velocity;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_note_off;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = (note << 8) | velocity;
@@ -2021,8 +2035,7 @@ static int midi_setup_noteon(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| velocity;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_note_on;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = (note << 8) | velocity;
@@ -2044,8 +2057,7 @@ static int midi_setup_aftertouch(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| pressure;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_aftertouch;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = (note << 8) | pressure;
@@ -2120,8 +2132,7 @@ static int midi_setup_control(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = setting;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = tmp_event;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = setting;
@@ -2139,8 +2150,7 @@ static int midi_setup_patch(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = patch;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_patch;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = patch;
@@ -2166,8 +2176,7 @@ static int midi_setup_channel_pressure(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pressure;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_channel_pressure;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = pressure;
@@ -2186,8 +2195,7 @@ static int midi_setup_pitch(struct _mdi *mdi, unsigned char channel,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pitch;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_pitch;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = pitch;
@@ -2206,8 +2214,7 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = setting;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_sysex_roland_drum_track;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = setting;
@@ -2231,8 +2238,7 @@ static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
 		mdi->events[mdi->event_count - 1].event_data.channel = 0;
 		mdi->events[mdi->event_count - 1].event_data.data = 0;
 	} else {
-		mdi->events = realloc(mdi->events,
-				((mdi->event_count + 1) * sizeof(struct _event)));
+		WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = *do_sysex_roland_reset;
 		mdi->events[mdi->event_count].event_data.channel = 0;
 		mdi->events[mdi->event_count].event_data.data = 0;
@@ -2285,7 +2291,8 @@ Init_MDI(void) {
 
 	load_patch(mdi, 0x0000);
 
-	mdi->events = malloc(sizeof(struct _event));
+	mdi->events_size = MEM_CHUNK;
+	mdi->events = malloc(mdi->events_size * sizeof(struct _event));
 	mdi->events[0].do_event = NULL;
 	mdi->events[0].event_data.channel = 0;
 	mdi->events[0].event_data.data = 0;
@@ -2779,8 +2786,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 				&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 			mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
 		} else {
-			mdi->events = realloc(mdi->events,
-					((mdi->event_count + 1) * sizeof(struct _event)));
+			WM_CheckEventMemoryPool(mdi);
 			mdi->events[mdi->event_count].do_event = NULL;
 			mdi->events[mdi->event_count].event_data.channel = 0;
 			mdi->events[mdi->event_count].event_data.data = 0;
@@ -2854,7 +2860,18 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 
 	buffer_used = 0;
 	memset(buffer, 0, size);
-	tmp_buffer = malloc((size / 2) * sizeof(signed long int));
+
+	if ( (size / 2) > mdi->mix_buffer_size) {
+		if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
+			mdi->mix_buffer_size += MEM_CHUNK;
+		} else {
+			mdi->mix_buffer_size = size / 2;
+		}
+		mdi->mix_buffer = realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(signed long int));
+	}
+
+	tmp_buffer = mdi->mix_buffer;
+
 	memset(tmp_buffer, 0, ((size / 2) * sizeof(signed long int)));
 	out_buffer = tmp_buffer;
 
@@ -3122,7 +3139,6 @@ static int WM_GetOutput_Linear(midi * handle, char * buffer,
 		(*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
 	}
 
-	free(out_buffer);
 	WM_Unlock(&mdi->lock);
 	return buffer_used;
 }
@@ -3151,7 +3167,15 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 
 	buffer_used = 0;
 	memset(buffer, 0, size);
-	tmp_buffer = malloc((size / 2) * sizeof(signed long int));
+	if ( (size / 2) > mdi->mix_buffer_size) {
+		if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
+			mdi->mix_buffer_size += MEM_CHUNK;
+		} else {
+			mdi->mix_buffer_size = size / 2;
+		}
+		mdi->mix_buffer = realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(signed long int));
+	}
+	tmp_buffer = mdi->mix_buffer;
 	memset(tmp_buffer, 0, ((size / 2) * sizeof(signed long int)));
 	out_buffer = tmp_buffer;
 
@@ -3229,7 +3253,8 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 						y += *sptr;
 					} else { /* otherwise, use Gauss as usual */
 						y = 0;
-						gptr = gauss_table[note_data->sample_pos & FPMASK];
+						gptr = &gauss_table[(note_data->sample_pos & FPMASK) *
+								     (gauss_n + 1)];
 						gend = gptr + gauss_n;
 						sptr = note_data->sample->data
 								+ (note_data->sample_pos >> FPBITS)
@@ -3450,7 +3475,6 @@ static int WM_GetOutput_Gauss(midi * handle, char * buffer,
 		(*buffer++) = right_mix & 0xff;
 		(*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
 	}
-	free(out_buffer);
 	WM_Unlock(&mdi->lock);
 	return buffer_used;
 }
@@ -3615,6 +3639,10 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 
 	if (mdi->reverb != NULL) {
 		free_reverb(mdi->reverb);
+	}
+
+	if (mdi->mix_buffer) {
+		free(mdi->mix_buffer);
 	}
 
 	free(mdi);
