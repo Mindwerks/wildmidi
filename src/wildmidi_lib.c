@@ -92,7 +92,7 @@ static int fix_release = 0;
 static int auto_amp = 0;
 static int auto_amp_with_amp = 0;
 
-static int patch_lock = 0;
+static int patch_lock;
 
 struct _channel {
 	unsigned char bank;
@@ -192,7 +192,7 @@ static double newt_coeffs[58][58];	/* for start/end of samples */
 #define MAX_GAUSS_ORDER 34		/* 34 is as high as we can go before errors crop up */
 static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
 static int gauss_n = MAX_GAUSS_ORDER;
-static int gauss_lock = 0;
+static int gauss_lock;
 
 static void init_gauss(void) {
 	/* init gauss table */
@@ -3519,8 +3519,10 @@ WM_SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,
 		return -1;
 	}
 	WM_SampleRate = rate;
-	WM_Initialized = 1;
+
+	gauss_lock = 0;
 	patch_lock = 0;
+	WM_Initialized = 1;
 
 	return 0;
 }
