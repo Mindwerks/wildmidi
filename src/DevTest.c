@@ -1,9 +1,7 @@
 /*
- DevTest.c
-
- Display Information about the Gravis Ultrasound patch file.
-
+ DevTest.c: Display Information about the Gravis Ultrasound patch file.
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
+ COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
  Copyright (C) Chris Ison  2001-2011
  Copyright (C) Bret Curtis 2013-2014
@@ -41,8 +39,12 @@
 # include <pwd.h>
 #endif
 
-static struct option const long_options[] = { { "debug-level", 1, 0, 'd' }, {
-		"version", 0, 0, 'v' }, { "help", 0, 0, 'h' }, { NULL, 0, NULL, 0 } };
+static struct option const long_options[] = {
+	{ "debug-level", 1, 0, 'd' },
+	{ "version", 0, 0, 'v' },
+	{ "help", 0, 0, 'h' },
+	{ NULL, 0, NULL, 0 }
+};
 
 static float env_time_table[] = { 0.0, 0.091728000, 0.045864000, 0.030576000,
 		0.022932000, 0.018345600, 0.015288000, 0.013104000, 0.011466000,
@@ -96,15 +98,17 @@ static float env_time_table[] = { 0.0, 0.091728000, 0.045864000, 0.030576000,
 		0.869717333, 0.853904291, 0.838656000, 0.823942737, 0.809736828,
 		0.796012475, 0.782745600, 0.769913705, 0.757495742, 0.745472000 };
 
+/* the following hardcoded to avoid the need for a config.h : */
+static const char *PACKAGE_URL = "http://www.mindwerks.net/projects/wildmidi/";
+static const char *PACKAGE_BUGREPORT = "https://github.com/Mindwerks/wildmidi/issues";
+static const char *PACKAGE_VERSION = "0.3";
+
 void do_version(void) {
-	printf("DevTest for WildMIDI %s - For testing purposes only\n\n",
-			PACKAGE_VERSION);
-	printf(
-			"Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
+	printf("DevTest for WildMIDI %s - For testing purposes only\n\n", PACKAGE_VERSION);
+	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
 	printf("DevTest comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
-	printf(
-			"under the terms and conditions of the GNU General Public License version 3.\n");
+	printf("under the terms and conditions of the GNU General Public License version 3.\n");
 	printf("For more information see COPYING\n\n");
 	printf("Report bugs to %s\n", PACKAGE_BUGREPORT);
 	printf("WildMIDI homepage at %s\n", PACKAGE_URL);
@@ -125,70 +129,67 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 	char *ret_data = NULL;
 	struct stat buffer_stat;
 #ifndef _WIN32
-	char *home = NULL;
+	const char *home = NULL;
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
 #endif
 
-	char *buffer_file = malloc(strlen(filename) + 1);
+	char *buffer_file = NULL;
 
-	if (buffer_file == NULL) {
-		printf("Unable to get ram to expand %s: %s\n", filename,
-				strerror(errno));
-		return NULL ;
-	}
-
-	strcpy(buffer_file, filename);
 #ifndef _WIN32
-	if (strncmp(buffer_file, "~/", 2) == 0) {
+	if (strncmp(filename, "~/", 2) == 0) {
 		if ((pwd_ent = getpwuid(getuid()))) {
 			home = pwd_ent->pw_dir;
 		} else {
 			home = getenv("HOME");
 		}
 		if (home) {
-			buffer_file = realloc(buffer_file,
-					(strlen(buffer_file) + strlen(home) + 1));
+			buffer_file = malloc(strlen(filename) + strlen(home) + 1);
 			if (buffer_file == NULL) {
 				printf("Unable to get ram to expand %s: %s\n", filename,
 						strerror(errno));
-				free(buffer_file);
-				return NULL ;
+				return NULL;
 			}
-			memmove((buffer_file + strlen(home)), (buffer_file + 1),
-					(strlen(buffer_file)));
-			strncpy(buffer_file, home, strlen(home));
+			strcpy(buffer_file, home);
+			strcat(buffer_file, filename + 1);
 		}
-	} else if (buffer_file[0] != '/') {
+	} else if (filename[0] != '/') {
 		ret_data = getcwd(buffer_dir, 1024);
-		if (buffer_dir[strlen(buffer_dir) - 1] != '/') {
-			buffer_dir[strlen(buffer_dir) + 1] = '\0';
-			buffer_dir[strlen(buffer_dir)] = '/';
+		if (ret_data != NULL)
+			buffer_file = malloc(strlen(filename) + strlen(buffer_dir) + 2);
+		if (buffer_file == NULL || ret_data == NULL) {
+			printf("Unable to get ram to expand %s: %s\n", filename,
+					strerror(errno));
+			return NULL;
 		}
-		buffer_file = realloc(buffer_file,
-				(strlen(buffer_file) + strlen(buffer_dir) + 1));
+		strcpy(buffer_file, buffer_dir);
+		if (buffer_dir[strlen(buffer_dir) - 1] != '/')
+			strcat(buffer_file, "/");
+		strcat(buffer_file, filename);
+	}
+#endif
+
+	if (buffer_file == NULL) {
+		buffer_file = malloc(strlen(filename) + 1);
 		if (buffer_file == NULL) {
 			printf("Unable to get ram to expand %s: %s\n", filename,
 					strerror(errno));
-			free(buffer_file);
-			return NULL ;
+			return NULL;
 		}
-		memmove((buffer_file + strlen(buffer_dir)), buffer_file,
-				strlen(buffer_file) + 1);
-		strncpy(buffer_file, buffer_dir, strlen(buffer_dir));
+		strcpy(buffer_file, filename);
 	}
-#endif
+
 	if (stat(buffer_file, &buffer_stat)) {
 		printf("Unable to stat %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
-		return NULL ;
+		return NULL;
 	}
 	*size = buffer_stat.st_size;
 	data = malloc(*size);
 	if (data == NULL) {
 		printf("Unable to get ram for %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
-		return NULL ;
+		return NULL;
 	}
 #ifdef _WIN32
 	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
@@ -198,14 +199,14 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 		printf("Unable to open %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
 		free(data);
-		return NULL ;
+		return NULL;
 	}
 	if (read(buffer_fd, data, *size) != buffer_stat.st_size) {
 		printf("Unable to read %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
 		free(data);
 		close(buffer_fd);
-		return NULL ;
+		return NULL;
 	}
 	close(buffer_fd);
 	free(buffer_file);
@@ -383,7 +384,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			// divisions pulses per quarter note
 			//if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));
 			if (verbose)
-				printf("Delta: %i, Accumilated Delta: %i\n", delta,
+				printf("Delta: %i, Accumilated Delta: %ld\n", delta,
 						delta_accum);
 
 			if (*midi_data < 0x80) {
@@ -548,8 +549,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 											sysex_ch -= 1;
 										}
 										if (verbose)
-											printf(
-													"Additional Drum Channel(0x%02x) Setting: 0x%02x\n",
+											printf("Additional Drum Channel(0x%02x) Setting: 0x%02x\n",
 													sysex_ch, sysex_store[7]);
 									} else if ((sysex_store[5] == 0x00)
 											&& (sysex_store[6] == 0x7F)
@@ -644,8 +644,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 						meta_length = (meta_length << 7) | (*midi_data & 0x7F);
 						midi_data++;
 						if (midi_size == 0) {
-							printf(
-									"Corrupt Midi, Missing or Corrupt Track Data\n");
+							printf("Corrupt Midi, Missing or Corrupt Track Data\n");
 							return -1;
 						}
 						midi_size--;
@@ -667,8 +666,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 				break;
 			}
 			if (midi_data > next_track) {
-				printf(
-						"Corrupt Midi, Track Data went beyond track boundries.\n");
+				printf("Corrupt Midi, Track Data went beyond track boundries.\n");
 				return -1;
 			}
 		}
@@ -680,12 +678,6 @@ int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 		unsigned int verbose) {
 	unsigned long int gus_ptr = 0;
 	unsigned char no_of_samples = 0;
-
-	unsigned long int tmp_lint = 0;
-	unsigned short int tmp_sint = 0;
-	unsigned char tmp_char = 0;
-
-	unsigned int i = 0;
 
 	if (filesize < 239) {
 		printf("File too short\n");
@@ -769,7 +761,6 @@ int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 			printf("Clamped Release Level: %i, Clamped Release Time: %fsecs\n",
 					gus_patch[gus_ptr + 48],
 					env_time_table[gus_patch[gus_ptr + 42]]);
-
 		}
 
 		if (env_time_table[gus_patch[gus_ptr + 40]]
@@ -811,6 +802,7 @@ int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 								| (gus_patch[gus_ptr + 9] << 8)
 								| gus_patch[gus_ptr + 8]);
 	} while (--no_of_samples);
+
 	return 0;
 }
 
