@@ -76,8 +76,6 @@ static int msleep(unsigned long millisec);
 #define write _write
 #undef lseek
 #define lseek _lseek
-#undef putch
-#define putch _putch
 #include "getopt_long.h"
 #else
 # ifdef AUDIODRV_ALSA
@@ -1193,7 +1191,7 @@ int main(int argc, char **argv) {
 #ifdef _WIN32
 				if (_kbhit()) {
 					ch = _getch();
-					putch(ch);
+					_putch(ch);
 				}
 #elif defined(__DJGPP__)
 				if (kbhit()) {
