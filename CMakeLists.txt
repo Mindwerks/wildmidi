@@ -130,8 +130,8 @@ IF(UNIX AND NOT APPLE)
     IF(WANT_PLAYER) # Set our preferred output
 
         FIND_PACKAGE(ALSA)
-        FIND_PACKAGE(OSS)
         FIND_PACKAGE(OpenAL)
+        FIND_PACKAGE(OSS)
 
         IF(WANT_ALSA)
             IF(NOT ALSA_FOUND)
