@@ -57,5 +57,5 @@ MARK_AS_ADVANCED (
 IF(OSS_FOUND)
     MESSAGE(STATUS "Found OSS headers.")
 ELSE(OSS_FOUND)
-    FATAL_ERROR(STATUS "Could not find OSS headers!")
+    MESSAGE(STATUS "Could not find OSS headers.")
 ENDIF()
