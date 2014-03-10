@@ -124,7 +124,7 @@ IF(WANT_PLAYER)
         ${ALSA_INCLUDE_DIR}
         )
     ELSEIF(AUDIODRV_OSS)
-        # no link libs needed, system headers alone are OK.
+     # no special header paths
     ENDIF()
 
     TARGET_LINK_LIBRARIES(wildmidi
