@@ -87,7 +87,7 @@ IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 ENDIF()
 
-IF(MSVC) # Set some MSVC magic
+IF(WIN32) # Set some Windows magic
 	ADD_DEFINITIONS( 
 		-DWIN32_LEAN_AND_MEAN         # only what we need
 		-D_CRT_SECURE_NO_WARNINGS     # we know how to use strcpy, thanks
