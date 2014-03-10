@@ -60,7 +60,6 @@
 # endif
 #endif
 
-#include "common.h"
 #include "wm_error.h"
 #include "file_io.h"
 

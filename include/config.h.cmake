@@ -67,8 +67,3 @@
 #cmakedefine AUDIODRV_ALSA
 #cmakedefine AUDIODRV_OSS
 #cmakedefine AUDIODRV_OPENAL
-
-/* set some windows magic */
-#define WIN32_LEAN_AND_MEAN		// only what we need
-#define _CRT_SECURE_NO_WARNINGS // we know how to use strcpy, thanks
-
