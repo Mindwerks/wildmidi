@@ -84,9 +84,9 @@ ENDIF()
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
 
-# MS Visual Studio 
+# MS Visual Studio
 IF(MSVC)
-    SET(GETOPT getopt.c getopt_long.c)
+    SET(GETOPT getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
 ENDIF(MSVC)
 
