@@ -66,6 +66,18 @@ static int msleep(unsigned long millisec);
 #undef strdup
 #define strdup _strdup
 #include <io.h>
+#undef close
+#define close _close
+#undef open
+#define open _open
+#undef read
+#define read _read
+#undef write
+#define write _write
+#undef lseek
+#define lseek _lseek
+#undef putch
+#define putch _putch
 #include "getopt_long.h"
 #else
 # ifdef AUDIODRV_ALSA
