@@ -59,6 +59,8 @@
 #cmakedefine HAVE_LINUX_SOUNDCARD_H
 #cmakedefine HAVE_SYS_SOUNDCARD_H
 #cmakedefine HAVE_MACHINE_SOUNDCARD_H
+#cmakedefine HAVE_SOUNDCARD_H
+
 #cmakedefine AUDIODRV_ALSA
 #cmakedefine AUDIODRV_OSS
 #cmakedefine AUDIODRV_OPENAL

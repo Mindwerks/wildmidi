@@ -73,10 +73,10 @@ static int msleep(unsigned long millisec);
 # elif defined AUDIODRV_OSS
 #   if defined HAVE_SYS_SOUNDCARD_H
 #   include <sys/soundcard.h>
-#   elif defined HAVE_LINUX_SOUNDCARD_H
-#   include <linux/soundcard.h>
 #   elif defined HAVE_MACHINE_SOUNDCARD_H
 #   include <machine/soundcard.h>
+#   elif defined HAVE_SOUNDCARD_H
+#   include <soundcard.h> /* less common, but exists. */
 #   endif
 # elif defined AUDIODRV_OPENAL
 #   include <al.h>
