@@ -91,9 +91,4 @@ struct _patch {
 #define M_LN2 0.69314718055994530942
 #endif
 
-/* Define this if the GCC __builtin_expect keyword is available */
-#ifndef HAVE___BUILTIN_EXPECT
-#define __builtin_expect(x,c) x
-#endif
-
 #endif /* __COMMON_H */

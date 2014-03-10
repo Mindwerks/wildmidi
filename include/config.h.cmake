@@ -45,6 +45,9 @@
 
 /* Define if the compiler has the `__builtin_expect' built-in function */
 #cmakedefine HAVE___BUILTIN_EXPECT
+#ifndef HAVE___BUILTIN_EXPECT
+#define __builtin_expect(x,c) x
+#endif
 
 /* define this if you are running a bigendian system (motorola, sparc, etc) */
 #cmakedefine WORDS_BIGENDIAN 1
