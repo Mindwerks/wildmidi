@@ -36,6 +36,12 @@
 
 #ifdef _WIN32
 #include <io.h>
+#undef close
+#define close _close
+#undef open
+#define open _open
+#undef read
+#define read _read
 #elif defined(__DJGPP__)
 #include <io.h>
 #include <dir.h>
@@ -54,6 +60,7 @@
 # endif
 #endif
 
+#include "common.h"
 #include "wm_error.h"
 #include "file_io.h"
 
