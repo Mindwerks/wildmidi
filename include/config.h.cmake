@@ -67,7 +67,3 @@
 #cmakedefine AUDIODRV_ALSA
 #cmakedefine AUDIODRV_OSS
 #cmakedefine AUDIODRV_OPENAL
-
-/* set some windows magic */
-#define WIN32_LEAN_AND_MEAN
-
