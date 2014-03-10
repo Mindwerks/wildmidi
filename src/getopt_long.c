@@ -55,6 +55,8 @@
 #include <stdio.h>
 #include "getopt_long.h"
 
+#define _CRT_SECURE_NO_WARNINGS // we know how to use getenv, MSVC
+
 int	opterr = 1;		/* if error message should be printed */
 int	optind = 1;		/* index into parent argv vector */
 int	optopt = '?';		/* character checked for validity */
