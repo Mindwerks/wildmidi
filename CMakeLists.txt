@@ -143,6 +143,10 @@ IF(UNIX AND NOT APPLE)
             ENDIF()
             SET(AUDIODRV_OSS 1)
             SET(AUDIO_LIBRARY ${OSS_LIBRARY})
+            # FIXME: we need to add OSS_INCLUDE_DIR only to the wildmidi
+            # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
+            # but that requires cmake-2.8.11 or newer
+            INCLUDE_DIRECTORIES(${OSS_INCLUDE_DIR})
         ELSEIF(WANT_OPENAL)
             IF(NOT OPENAL_FOUND)
                 MESSAGE(FATAL_ERROR "OpenAL required but not found.")
@@ -168,6 +172,10 @@ IF(UNIX AND NOT APPLE)
             ELSEIF(OSS_FOUND)
                 SET(AUDIO_LIBRARY ${OSS_LIBRARY})
                 SET(AUDIODRV_OSS 1)
+                # FIXME: we need to add OSS_INCLUDE_DIR only to the wildmidi
+                # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
+                # but that requires cmake-2.8.11 or newer
+                INCLUDE_DIRECTORIES(${OSS_INCLUDE_DIR})
 
             ELSEIF(OPENAL_FOUND)
                 SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
