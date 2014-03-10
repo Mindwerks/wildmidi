@@ -1309,7 +1309,7 @@ int main(int argc, char **argv) {
 						(unsigned short *) output_buffer;
 					/* the library specifically outputs LE data
 					 * but OpenAL expects host-endian: do swap. */
-					for (i = 0; i < output_result / 2; ++i) {
+					for (i = 0; i < res / 2; ++i) {
 						swp[i] = (swp[i] << 8) | (swp[i] >> 8);
 					}
 				}
