@@ -13,10 +13,18 @@ Cd in to the djgpp directory and run 'make', i.e.:
 .. which will generate libWildMidi.a and wildmidi.exe.
 
 
-The library part (libWildMidi.a) is fully functional.  The player
-part (wildmidi.exe) only outputs a wav file.  Run like:
+The player (wildmidi.exe) can either output to a Sound Blaster (SB1,
+SB2, SBPro, SB16, or compatible) hardware:
+
+  wildmidi mymidi.mid
+
+... or, it can generate a wav file:
 
   wildmidi -o output.wav mymidi.mid
 
-An actual sound output functionality might be added later.
+Use -r <SampleRate> to specify a sample rate, use -c <ConfigFile> to
+point to your wildmidi.cfg config file:
 
+  wildmidi -c c:\wildmidi.cfg -r 22050 mymidi.mid
+
+Run "wildmidi -h" to see other command line switches.
