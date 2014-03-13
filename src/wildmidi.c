@@ -492,7 +492,8 @@ close_mm_output (void) {
 
 #elif defined(__DJGPP__) && defined(AUDIODRV_DOSSB)
 /* SoundBlaster/Pro/16/AWE32 driver for DOS -- adapted from
- * libMikMod, written by Andrew Zabolotny <bit@eltech.ru>
+ * libMikMod,  written by Andrew Zabolotny <bit@eltech.ru>,
+ * further fixes by O.Sezer <sezero@users.sourceforge.net>.
  * Timer callback functionality replaced by a push mechanism
  * to keep the wildmidi player changes to a minimum, for now.
  */

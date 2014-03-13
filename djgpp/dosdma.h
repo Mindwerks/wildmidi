@@ -1,20 +1,22 @@
-/*
-    Interface for DMA routines on DOS
-    Copyright (C) 1999 by Andrew Zabolotny, <bit@eltech.ru>
+/* Interface for DMA routines on DOS -- from libMikMod.
+   Copyright (C) 1999 by Andrew Zabolotny, <bit@eltech.ru>
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
+   This file is part of WildMIDI.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
+   WildMIDI is free software: you can redistribute and/or modify the player
+   under the terms of the GNU General Public License and you can redistribute
+   and/or modify the library under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation, either version 3 of
+   the licenses, or(at your option) any later version.
 
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+   the GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU General Public License and the
+   GNU Lesser General Public License along with WildMIDI.  If not,  see
+   <http://www.gnu.org/licenses/>.
 */
 
 #ifndef __DOSDMA_H__
@@ -186,4 +188,3 @@ extern void dma_start(dma_buffer * buffer, unsigned long count,
 					  unsigned char mode);
 
 #endif /* __DOSDMA_H__ */
-
