@@ -148,9 +148,9 @@ IF(UNIX AND NOT APPLE)
             IF(NOT OSS_FOUND)
                 MESSAGE(FATAL_ERROR "OSS required but not found.")
             ENDIF()
-            # no link libs needed, system headers alone are OK.
+            # no special header paths
             SET(AUDIODRV_OSS 1)
-            SET(AUDIO_LIBRARY "")
+            SET(AUDIO_LIBRARY ${OSS_LIBRARY})
 
         ELSEIF(WANT_OPENAL)
             IF(NOT OPENAL_FOUND)
@@ -167,8 +167,8 @@ IF(UNIX AND NOT APPLE)
                 SET(AUDIODRV_ALSA 1)
 
             ELSEIF(OSS_FOUND)
-                # no link libs needed, system headers alone are OK.
-                SET(AUDIO_LIBRARY "")
+                # no special header paths
+                SET(AUDIO_LIBRARY ${OSS_LIBRARY})
                 SET(AUDIODRV_OSS 1)
 
             ELSEIF(OPENAL_FOUND)
