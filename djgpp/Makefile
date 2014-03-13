@@ -34,10 +34,12 @@ SB_OBJ = dosirq.o dosdma.o dossb.o
 LD = $(CC)
 LDFLAGS = -L. -lWildMidi -lm
 
+# build for pentium and newer (comment out if not wanted)
+CFLAGS += -march=i586
 ifeq ($(DEBUG),1)
 CFLAGS += -g
 else
-CFLAGS += -O2
+CFLAGS += -O2 -fomit-frame-pointer -ffast-math
 LDFLAGS+= -s
 endif
 

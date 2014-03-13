@@ -10,7 +10,8 @@ Cd in to the djgpp directory and run 'make', i.e.:
   cd djgpp
   make
 
-.. which will generate libWildMidi.a and wildmidi.exe.
+.. which will generate libWildMidi.a and wildmidi.exe.  If necessary,
+edit the Makefile to meet your needs/environment.
 
 
 The player (wildmidi.exe) can either output to a Sound Blaster (SB1,
