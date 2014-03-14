@@ -124,7 +124,7 @@ struct _note {
 	unsigned long int sample_inc;
 	signed long int env_inc;
 	unsigned char env;
-	unsigned long int env_level;
+	signed long int env_level;
 	unsigned char modes;
 	unsigned char hold;
 	unsigned char active;
@@ -1254,18 +1254,18 @@ static int load_sample(struct _patch *sample_patch) {
 			if (guspat->modes & SAMPLE_ENVELOPE) {
 				if (sample_patch->env[i].set & 0x02) {
 					guspat->env_target[i] = 16448
-							* (unsigned long int) (255.0
+							* (signed long int) (255.0
 									* sample_patch->env[i].level);
 				}
 
 				if (sample_patch->env[i].set & 0x01) {
-					guspat->env_rate[i] = (unsigned long int) (4194303.0
+					guspat->env_rate[i] = (signed long int) (4194303.0
 							/ ((float) WM_SampleRate
 									* (sample_patch->env[i].time / 1000.0)));
 				}
 			} else {
 				guspat->env_target[i] = 4194303;
-				guspat->env_rate[i] = (unsigned long int) (4194303.0
+				guspat->env_rate[i] = (signed long int) (4194303.0
 						/ ((float) WM_SampleRate * env_time_table[63]));
 			}
 		}

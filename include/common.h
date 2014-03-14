@@ -55,8 +55,8 @@ struct _sample {
 	unsigned long int freq_high;
 	unsigned long int freq_root;
 	unsigned char modes;
-	unsigned long int env_rate[7];
-	unsigned long int env_target[7];
+	signed long int env_rate[7];
+	signed long int env_target[7];
 	unsigned long int inc_div;
 	signed short *data;
 	struct _sample *next;
