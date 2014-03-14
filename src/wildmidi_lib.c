@@ -123,7 +123,7 @@ struct _note {
 	uint32_t sample_inc;
 	int32_t env_inc;
 	uint8_t env;
-	uint32_t env_level;
+	int32_t env_level;
 	uint8_t modes;
 	uint8_t hold;
 	uint8_t active;
@@ -1255,18 +1255,18 @@ static int load_sample(struct _patch *sample_patch) {
 			if (guspat->modes & SAMPLE_ENVELOPE) {
 				if (sample_patch->env[i].set & 0x02) {
 					guspat->env_target[i] = 16448
-							* (uint32_t) (255.0
+							* (int32_t) (255.0
 									* sample_patch->env[i].level);
 				}
 
 				if (sample_patch->env[i].set & 0x01) {
-					guspat->env_rate[i] = (uint32_t) (4194303.0
+					guspat->env_rate[i] = (int32_t) (4194303.0
 							/ ((float) WM_SampleRate
 									* (sample_patch->env[i].time / 1000.0)));
 				}
 			} else {
 				guspat->env_target[i] = 4194303;
-				guspat->env_rate[i] = (uint32_t) (4194303.0
+				guspat->env_rate[i] = (int32_t) (4194303.0
 						/ ((float) WM_SampleRate * env_time_table[63]));
 			}
 		}

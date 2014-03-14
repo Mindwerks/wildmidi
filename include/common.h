@@ -55,8 +55,8 @@ struct _sample {
 	uint32_t freq_high;
 	uint32_t freq_root;
 	uint8_t  modes;
-	uint32_t env_rate[7];
-	uint32_t env_target[7];
+	int32_t env_rate[7];
+	int32_t env_target[7];
 	uint32_t inc_div;
 	int16_t *data;
 	struct _sample *next;
