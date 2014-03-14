@@ -41,7 +41,6 @@
 # endif
 #include <termios.h>
 #include <sys/ioctl.h>
-#include <sys/mman.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <time.h>
@@ -96,10 +95,6 @@ static int msleep(unsigned long millisec);
 
 #ifndef FNONBLOCK
 #define FNONBLOCK O_NONBLOCK
-#endif
-
-#ifndef MAP_FILE
-#define MAP_FILE 0
 #endif
 
 #include "wildmidi_lib.h"
@@ -618,11 +613,6 @@ static void close_alsa_output(void) {
 }
 
 #elif defined AUDIODRV_OSS
-/*
- OSS Output Functions
- --------------------
- uses mmap'd audio
- */
 
 #if !defined(AFMT_S16_NE)
 #ifdef WORDS_BIGENDIAN
@@ -632,29 +622,26 @@ static void close_alsa_output(void) {
 #endif
 #endif
 
-static char *buffer = NULL;
-static unsigned long int max_buffer;
-static int counter;
-static struct audio_buf_info info;
+#define DEFAULT_FRAGSIZE 14
+#define DEFAULT_NUMFRAGS 16
 
 #define open_audio_output open_oss_output
 static int write_oss_output(char * output_data, int output_size);
 static void close_oss_output(void);
 
 static void pause_output_oss(void) {
-	memset(buffer, 0, max_buffer);
+	ioctl(audio_fd, SNDCTL_DSP_POST, 0);
 }
 
 static int open_oss_output(void) {
-	int caps, rc, tmp;
-	unsigned long int sz = sysconf(_SC_PAGESIZE);
+	int tmp;
 	unsigned int r;
 
 	if (!pcmname) {
 		pcmname = strdup("/dev/dsp");
 	}
 
-	if ((audio_fd = open(pcmname, O_RDWR)) < 0) {
+	if ((audio_fd = open(pcmname, O_WRONLY)) < 0) {
 		fprintf(stderr, "ERROR: Unable to open dsp (%s)\r\n", strerror(errno));
 		return -1;
 	}
@@ -662,18 +649,10 @@ static int open_oss_output(void) {
 		fprintf(stderr, "ERROR: Unable to reset dsp\r\n");
 		goto fail;
 	}
-	if (ioctl(audio_fd, SNDCTL_DSP_GETCAPS, &caps) < 0) {
-		fprintf(stderr, "ERROR: Unable to retrieve soundcard capabilities\r\n");
-		goto fail;
-	}
-	if (!(caps & DSP_CAP_TRIGGER) || !(caps & DSP_CAP_MMAP)) {
-		fprintf(stderr, "ERROR: Audio driver doesn't support mmap or trigger\r\n");
-		goto fail;
-	}
 
 	/* the library specifically outputs LE data. */
-	rc = AFMT_S16_LE;
-	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &rc) < 0) {
+	tmp = AFMT_S16_LE;
+	if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &tmp) < 0) {
 		fprintf(stderr, "ERROR: Unable to set 16bit sound format\r\n");
 		goto fail;
 	}
@@ -693,32 +672,12 @@ static int open_oss_output(void) {
 		fprintf(stderr, "OSS: sample rate set to %uHz instead of %u\r\n", rate, r);
 	}
 
-	if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info) < 0) {
-		fprintf(stderr, "ERROR: Unable to retrieve buffer status\r\n");
+	tmp = (DEFAULT_NUMFRAGS<<16)|DEFAULT_FRAGSIZE;
+	if (ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &tmp) < 0) {
+		fprintf(stderr, "ERROR: Unable to set fragment size\r\n");
 		goto fail;
 	}
 
-	max_buffer = (info.fragstotal * info.fragsize + sz - 1) & ~(sz - 1);
-	buffer = (char *) mmap(NULL, max_buffer, PROT_WRITE|PROT_READ,
-					MAP_FILE|MAP_SHARED, audio_fd, 0);
-
-	if (buffer == MAP_FAILED) {
-		buffer = NULL;
-		fprintf(stderr, "ERROR: couldn't mmap dsp (%s)\r\n", strerror(errno));
-		goto fail;
-	}
-
-	tmp = 0;
-	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
-		fprintf(stderr, "ERROR: Could not toggle dsp\r\n");
-		goto fail;
-	}
-
-	tmp = PCM_ENABLE_OUTPUT;
-	if (ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &tmp) < 0) {
-		fprintf(stderr, "ERROR: Could not toggle dsp\r\n");
-		goto fail;
-	}
 	send_output = write_oss_output;
 	close_output = close_oss_output;
 	pause_output = pause_output_oss;
@@ -729,48 +688,27 @@ fail:	close_oss_output();
 }
 
 static int write_oss_output(char * output_data, int output_size) {
-	struct count_info count;
-	int data_read = 0;
-	int free_size = 0;
-	while (output_size != 0) {
-		while (1) {
-			if (ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &count) < 0) {
-				fprintf(stderr, "\nERROR: Sound dead\r\n");
-				return -1;
-			}
-			if ((count.ptr < counter) || (count.ptr >= (counter + 4))) {
-				break;
-			}
-			msleep(5);
-		}
-		if (count.ptr < counter) {
-			free_size = max_buffer - counter;
+	int res = 0;
+	while (output_size > 0) {
+		res = write(audio_fd, output_data, output_size);
+		if (res > 0) {
+			output_size -= res;
+			output_data += res;
 		} else {
-			free_size = count.ptr - counter;
+			fprintf(stderr, "\nOSS: write failure to dsp: %s.\r\n",
+				strerror(errno));
+			return -1;
 		}
-		if (free_size > output_size)
-		free_size = output_size;
-
-		memcpy(&buffer[counter], &output_data[data_read], free_size);
-		data_read += free_size;
-		counter += free_size;
-		if (counter >= (long)max_buffer)
-			counter = 0;
-		output_size -= free_size;
 	}
 	return (0);
 }
 
 static void close_oss_output(void) {
-	if (!buffer && audio_fd < 0)
+	if (audio_fd < 0)
 		return;
 	printf("Shutting down sound output\r\n");
-	/* unmap before closing audio_fd */
-	if (buffer != NULL)
-		munmap(buffer, max_buffer);
-	buffer = NULL;
-	if (audio_fd >= 0)
-		close(audio_fd);
+	ioctl(audio_fd, SNDCTL_DSP_RESET, 0);
+	close(audio_fd);
 	audio_fd = -1;
 }
 
