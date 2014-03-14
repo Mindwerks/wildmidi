@@ -36,9 +36,6 @@
 #include <sys/types.h>
 
 #if !defined(_WIN32) && !defined(__DJGPP__)
-# if (defined __gnu_hurd__)
-# define __USE_XOPEN 1
-# endif
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
