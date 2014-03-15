@@ -360,19 +360,16 @@ typedef DWORD DWORD_PTR;
 #endif
 
 static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
-	int* freeBlockCounter = (int*)dwInstance;
-	HWAVEOUT tmp_hWaveOut = hWaveOut;
-	DWORD tmp_dwParam1 = dwParam1;
-	DWORD tmp_dwParam2 = dwParam2;
-
-	tmp_hWaveOut = hWaveOut;
-	tmp_dwParam1 = dwParam2;
-	tmp_dwParam2 = dwParam1;
+	/* unused params */
+	(void)hWaveOut;
+	(void)dwParam1;
+	(void)dwParam2;
 
 	if(uMsg != WOM_DONE)
 		return;
+	/* increment mm_free_blocks */
 	EnterCriticalSection(&waveCriticalSection);
-	(*freeBlockCounter)++;
+	(*(DWORD *)dwInstance)++;
 	LeaveCriticalSection(&waveCriticalSection);
 }
 
@@ -406,7 +403,7 @@ open_mm_output (void) {
 	wfx.nBlockAlign = (wfx.wBitsPerSample >> 3) * wfx.nChannels;
 	wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
 
-	if(waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, (DWORD_PTR)mmOutProc, (DWORD_PTR)&mm_free_blocks, CALLBACK_FUNCTION ) != MMSYSERR_NOERROR) {
+	if(waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, (DWORD_PTR)mmOutProc, (DWORD_PTR)&mm_free_blocks, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) {
 		fprintf(stderr, "unable to open WAVE_MAPPER device\r\n");
 		HeapFree(GetProcessHeap(), 0, mm_blocks);
 		hWaveOut = NULL;
@@ -430,7 +427,7 @@ write_mm_output (char * output_data, int output_size) {
 
 	while (output_size) {
 		if(current->dwFlags & WHDR_PREPARED)
-		waveOutUnprepareHeader(hWaveOut, current, sizeof(WAVEHDR));
+			waveOutUnprepareHeader(hWaveOut, current, sizeof(WAVEHDR));
 		free_size = MM_BLOCK_SIZE - current->dwUser;
 		if (free_size > output_size)
 			free_size = output_size;
