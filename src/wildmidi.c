@@ -218,9 +218,12 @@ static char *pcmname = NULL;
 static int (*send_output)(int8_t *output_data, int output_size);
 static void (*close_output)(void);
 static void (*pause_output)(void);
+static void (*resume_output)(void);
 static int audio_fd = -1;
 
 static void pause_output_nop(void) {
+}
+static void resume_output_nop(void) {
 }
 
 /*
@@ -285,6 +288,7 @@ static int open_wav_output(void) {
 	send_output = write_wav_output;
 	close_output = close_wav_output;
 	pause_output = pause_output_nop;
+	resume_output = resume_output_nop;
 	return (0);
 }
 
@@ -419,6 +423,7 @@ open_mm_output (void) {
 	send_output = write_mm_output;
 	close_output = close_mm_output;
 	pause_output = pause_output_nop;
+	resume_output = resume_output_nop;
 	return (0);
 }
 
@@ -632,14 +637,17 @@ static int open_sb_output(void)
 	if (sb.caps & SBMODE_16BITS) { /* can do stereo, too */
 		send_output = write_sb_s16stereo;
 		pause_output = sb_silence_s16;
+		resume_output = resume_output_nop;
 		printf("Sound Blaster 16 or compatible (16 bit, stereo, %u Hz)\n", rate);
 	} else if (sb.caps & SBMODE_STEREO) {
 		send_output = write_sb_u8stereo;
 		pause_output = sb_silence_u8;
+		resume_output = resume_output_nop;
 		printf("Sound Blaster Pro or compatible (8 bit, stereo, %u Hz)\n", rate);
 	} else {
 		send_output = write_sb_u8mono;
 		pause_output = sb_silence_u8;
+		resume_output = resume_output_nop;
 		printf("Sound Blaster %c or compatible (8 bit, mono, %u Hz)\n",
 						(sb.dspver < SBVER_20)? '1' : '2', rate);
 	}
@@ -738,6 +746,7 @@ static int open_alsa_output(void) {
 	send_output = write_alsa_output;
 	close_output = close_alsa_output;
 	pause_output = pause_output_nop;
+	resume_output = resume_output_nop;
 	if (pcmname != NULL) {
 		free(pcmname);
 	}
@@ -848,6 +857,7 @@ static int open_oss_output(void) {
 	send_output = write_oss_output;
 	close_output = close_oss_output;
 	pause_output = pause_output_oss;
+	resume_output = resume_output_nop;
 	return (0);
 
 fail:	close_oss_output();
@@ -1008,6 +1018,7 @@ static int open_openal_output(void) {
 	send_output = write_openal_output;
 	close_output = close_openal_output;
 	pause_output = pause_output_openal;
+	resume_output = resume_output_nop;
 	return (0);
 }
 
@@ -1331,9 +1342,11 @@ int main(int argc, char **argv) {
 						if (inpause) {
 							inpause = 0;
 							fprintf(stderr, "       \r");
+							resume_output();
 						} else {
 							inpause = 1;
 							fprintf(stderr, "Paused \r");
+							pause_output();
 							continue;
 						}
 						break;
@@ -1390,7 +1403,6 @@ int main(int argc, char **argv) {
 						pro_secs, perc_play);
 
 					msleep(5);
-					pause_output();
 					continue;
 				}
 
