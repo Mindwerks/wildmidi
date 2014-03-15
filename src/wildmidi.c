@@ -465,18 +465,17 @@ write_mm_output (int8_t *output_data, int output_size) {
 
 static void
 close_mm_output (void) {
-	WAVEHDR* current;
 	int i;
 
 	if (!hWaveOut) return;
 
 	printf("Shutting down sound output\r\n");
-
-	current = &mm_blocks[mm_current_block];
-	i = MM_BLOCK_SIZE - current->dwUser;
-
-	for (; i; i--)
-		write_mm_output (0, 0);
+	for (i = 0; i < MM_BLOCK_COUNT; i++) {
+		while (waveOutUnprepareHeader(hWaveOut, &mm_blocks[i], sizeof(WAVEHDR))
+				== WAVERR_STILLPLAYING) {
+			Sleep(10);
+		}
+	}
 
 	waveOutClose (hWaveOut);
 	HeapFree(GetProcessHeap(), 0, mm_blocks);
