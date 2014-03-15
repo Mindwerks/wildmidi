@@ -460,7 +460,7 @@ write_mm_output (char * output_data, int output_size) {
 static void
 close_mm_output (void) {
 	WAVEHDR* current;
-	int i, j;
+	int i;
 
 	if (!hWaveOut) return;
 
@@ -469,7 +469,7 @@ close_mm_output (void) {
 	current = &mm_blocks[mm_current_block];
 	i = MM_BLOCK_SIZE - current->dwUser;
 
-	for (j = i; i; i--)
+	for (; i; i--)
 		write_mm_output (0, 0);
 
 	waveOutClose (hWaveOut);
