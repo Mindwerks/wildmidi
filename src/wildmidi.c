@@ -352,8 +352,8 @@ static WAVEHDR *mm_blocks = NULL;
 #define MM_BLOCK_SIZE 16384
 #define MM_BLOCK_COUNT 3
 
-static unsigned long int mm_free_blocks = MM_BLOCK_COUNT;
-static unsigned long int mm_current_block = 0;
+static DWORD mm_free_blocks = MM_BLOCK_COUNT;
+static DWORD mm_current_block = 0;
 
 #if defined(_MSC_VER) && (_MSC_VER < 1300)
 typedef DWORD DWORD_PTR;
