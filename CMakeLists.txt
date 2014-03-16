@@ -43,15 +43,28 @@ ELSE()
 SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
 ENDIF()
 
-# Compiler specific settings
-IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+# Platform specific defines
+IF(UNIX)
     ADD_DEFINITIONS(
         -D_POSIX_C_SOURCE=200809L
         -D_BSD_SOURCE=1
         -D_XOPEN_SOURCE=600
-        -D_LARGEFILE_SOURCE 
-        -D_FILE_OFFSET_BITS=64 
+        -D_LARGEFILE_SOURCE
+        -D_FILE_OFFSET_BITS=64
         -D_LARGE_FILES
+        )
+ENDIF()
+
+IF(WIN32)
+    ADD_DEFINITIONS(
+        -DWIN32_LEAN_AND_MEAN
+        -D_CRT_SECURE_NO_WARNINGS
+        )
+ENDIF()
+
+# Compiler specific settings
+IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+    ADD_DEFINITIONS(
         -pedantic
         -Wall -W
         )
@@ -66,7 +79,7 @@ IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
 
     IF(CMAKE_COMPILER_IS_MINGW)
     # some mingw.org headers are overzealous with __STRICT_ANSI__
-    # and -std=c99 (not gnu99) defines it
+    # and -std=c99 defines it
         ADD_DEFINITIONS(-U__STRICT_ANSI__)
     ENDIF()
 
@@ -86,13 +99,6 @@ IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Release")
         ADD_DEFINITIONS( -O3 )
     ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
-ENDIF()
-
-IF(WIN32) # Set some Windows magic
-	ADD_DEFINITIONS( 
-		-DWIN32_LEAN_AND_MEAN         # only what we need
-		-D_CRT_SECURE_NO_WARNINGS     # we know how to use strcpy, thanks
-		)
 ENDIF()
 
 IF("${CMAKE_C_COMPILER_ID}" MATCHES "SunPro")
