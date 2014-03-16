@@ -971,6 +971,7 @@ int main(int argc, char **argv) {
 		case 'o': /* Wav Output */
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 			free(pcmname);	/* we won't output to the sound device */
+			pcmname = NULL;
 #endif
 			if (!*optarg) {
 				fprintf(stderr, "Error: empty wavfile name.\n");
