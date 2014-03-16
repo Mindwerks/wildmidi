@@ -28,7 +28,8 @@ CHANGELOG
 
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
-* OpenAL support: Fixed audio output on big-endian systems.
+* OpenAL support: Fixed audio output on big-endian systems. Fixed audio
+  skips at song start.
 * OSS support: No longer uses mmap mode for better compatibility.
 * Worked around an invalid memory read found by valgrind when playing
   Beethoven's Fur Elise.rmi at 44100 Hz using the old MIDIA patch-set
