@@ -888,14 +888,7 @@ static void close_oss_output(void) {
 
 #elif defined AUDIODRV_OPENAL
 
-#define NUM_BUFFERS 16
-#define PRIME 8
-
-struct position {
-	ALfloat x;
-	ALfloat y;
-	ALfloat z;
-};
+#define NUM_BUFFERS 8
 
 static ALCdevice *device;
 static ALCcontext *context;
@@ -911,54 +904,23 @@ static void pause_output_openal(void) {
 
 static int write_openal_output(int8_t *output_data, int output_size) {
 	ALint processed, state;
+	ALuint bufid;
 
-	if (frames <= PRIME) { /* prime the pump */
+	if (frames < NUM_BUFFERS) { /* initial state: fill the buffers */
 		alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data,
 				output_size, rate);
 
 		/* Now queue and start playback! */
-		if (frames == PRIME) {
+		if (++frames == NUM_BUFFERS) {
 			alSourceQueueBuffers(sourceId, frames, buffers);
 			alSourcePlay(sourceId);
 		}
-		frames++;
 		return 0;
 	}
 
 	/* Get relevant source info */
 	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-	alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
-
-	/* Unqueue and handle each processed buffer */
-	while (processed > 0) {
-		ALuint bufid;
-
-		alSourceUnqueueBuffers(sourceId, 1, &bufid);
-		processed--;
-
-		/* Read the next chunk of data, refill the buffer, and queue it
-		 * back on the source */
-		if (output_data != NULL) {
-			alBufferData(bufid, AL_FORMAT_STEREO16, output_data, output_size, rate);
-			alSourceQueueBuffers(sourceId, 1, &bufid);
-		}
-		if (alGetError() != AL_NO_ERROR) {
-			fprintf(stderr, "\nError buffering data\r\n");
-			return (-1);
-		}
-	}
-
-	/* Make sure the source hasn't underrun */
-	if (state != AL_PLAYING) {
-		ALint queued;
-
-		/* If no buffers are queued, playback is finished */
-		alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
-		if(queued == 0)
-			return (-1);
-
-		/*printf("STATE: %#08x - %d\n", state, queued);*/
-
+	if (state == AL_PAUSED) { /* resume it, then.. */
 		alSourcePlay(sourceId);
 		if (alGetError() != AL_NO_ERROR) {
 			fprintf(stderr, "\nError restarting playback\r\n");
@@ -966,11 +928,37 @@ static int write_openal_output(int8_t *output_data, int output_size) {
 		}
 	}
 
-	/* block while playing back samples */
-	while (state == AL_PLAYING && processed == 0) {
-		msleep(1);
-		alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	processed = 0;
+	while (processed == 0) { /* Wait until we have a processed buffer */
 		alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
+	}
+
+	/* Unqueue and handle each processed buffer */
+	alSourceUnqueueBuffers(sourceId, 1, &bufid);
+
+	/* Read the next chunk of data, refill the buffer, and queue it
+	 * back on the source */
+	alBufferData(bufid, AL_FORMAT_STEREO16, output_data, output_size, rate);
+	alSourceQueueBuffers(sourceId, 1, &bufid);
+	if (alGetError() != AL_NO_ERROR) {
+		fprintf(stderr, "\nError buffering data\r\n");
+		return (-1);
+	}
+
+	/* Make sure the source hasn't underrun */
+	alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
+	/*printf("STATE: %#08x - %d\n", state, queued);*/
+	if (state != AL_PLAYING) {
+		ALint queued;
+
+		/* If no buffers are queued, playback is finished */
+		alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
+		if (queued == 0) {
+			fprintf(stderr, "\nNo buffers queued for playback\r\n");
+			return (-1);
+		}
+
+		alSourcePlay(sourceId);
 	}
 
 	return (0);
@@ -987,6 +975,7 @@ static void close_openal_output(void) {
 	alcCloseDevice(device);
 	context = NULL;
 	device = NULL;
+	frames = 0;
 }
 
 static int open_openal_output(void) {
@@ -1356,6 +1345,7 @@ int main(int argc, char **argv) {
 						break;
 					case 'q':
 						printf("\r\n");
+						if (inpause) goto end2;
 						goto end1;
 					case '-':
 						if (master_volume > 0) {
