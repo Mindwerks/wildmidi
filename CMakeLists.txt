@@ -165,7 +165,6 @@ IF(UNIX AND NOT APPLE)
             ENDIF()
             SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-            INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
         ELSE() # Try to auto-detect
 
