@@ -165,7 +165,6 @@ IF(UNIX AND NOT APPLE)
             ENDIF()
             SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-            INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
             # FIXME: we need to add OPENAL_INCLUDE_DIR only to the wildmidi
             # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
             # but that requires cmake-2.8.11 or newer
