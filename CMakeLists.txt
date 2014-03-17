@@ -139,7 +139,6 @@ IF(UNIX AND NOT APPLE)
 
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
-
         FIND_PACKAGE(ALSA)
         FIND_PACKAGE(OpenAL)
         FIND_PACKAGE(OSS)
@@ -201,7 +200,7 @@ IF(UNIX AND NOT APPLE)
 ENDIF(UNIX AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
-    INCLUDE(FindOpenAL)
+    FIND_PACKAGE(OpenAL)
 
     IF(WANT_OPENAL)
         IF(NOT OPENAL_FOUND)
