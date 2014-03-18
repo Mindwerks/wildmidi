@@ -1100,7 +1100,6 @@ int main(int argc, char **argv) {
 			wm_info = WildMidi_GetInfo(midi_ptr);
 			apr_mins = wm_info->approx_total_samples / (rate * 60);
 			apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
-			pro_mins = pro_secs = perc_play = 0;
 			mixer_options = wm_info->mixer_options;
 			modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
 			modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
