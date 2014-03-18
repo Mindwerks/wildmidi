@@ -562,7 +562,7 @@ int GetVLQ(DataSource *source, unsigned int &quant) {
 	unsigned int data;
 
 	for (i = 0; i < 4; i++) {
-		data = source->read1();
+		data = read1(source);
 		quant <<= 7;
 		quant |= data & 0x7F;
 
@@ -582,9 +582,9 @@ int GetVLQ2(DataSource *source, unsigned int &quant) {
 	int data = 0;
 
 	for (i = 0; i < 4; i++) {
-		data = source->read1();
+		data = read1(source);
 		if (data & 0x80) {
-			source->skip(-1);
+			skip(-1, source);
 			break;
 		}
 		quant += data;
@@ -828,11 +828,11 @@ int ConvertEvent(const int time, const unsigned char status,
 	unsigned int delta = 0;
 	int data;
 
-	data = source->read1();
+	data = read1(source);
 
 	// Bank changes are handled here
 	if ((status >> 4) == 0xB && data == 0) {
-		data = source->read1();
+		data = read1(source);
 
 		bank127[status & 0xF] = false;
 
@@ -896,7 +896,7 @@ else if ((status >> 4) == 0xC && (status&0xF) == 9 &&
 	if (size == 1)
 		return (1);
 
-	current->data[1] = source->read1();
+	current->data[1] = read1(source);
 
 	if (size == 2)
 		return (2);
@@ -924,7 +924,7 @@ int ConvertSystemMessage(const int time, const unsigned char status,
 
 	// Handling of Meta events
 	if (status == 0xFF) {
-		current->data[0] = source->read1();
+		current->data[0] = read1(source);
 		i++;
 	}
 
@@ -935,7 +935,7 @@ int ConvertSystemMessage(const int time, const unsigned char status,
 
 	current->buffer = new unsigned char[current->len];
 
-	source->read((char *) current->buffer, current->len);
+	read((char *) current->buffer, current->len, source);
 
 	return (i + current->len);
 }
@@ -950,7 +950,7 @@ int ConvertFiletoList(DataSource *source, const bool is_xmi) {
 	int tempo_set = 0;
 	unsigned int status = 0;
 	int play_size = 2;
-	unsigned int file_size = source->getSize();
+	unsigned int file_size = getSize(source);
 
 	if (is_xmi)
 		play_size = 3;
@@ -963,23 +963,23 @@ int ConvertFiletoList(DataSource *source, const bool is_xmi) {
 		current->data[1] = 127;
 	}
 
-	while (!end && source->getPos() < file_size) {
+	while (!end && getPos(source) < file_size) {
 
 		if (!is_xmi) {
 			GetVLQ(source, data);
 			time += data;
 
-			data = source->read1();
+			data = read1(source);
 
 			if (data >= 0x80) {
 				status = data;
 			} else
-				source->skip(-1);
+				skip(-1,source);
 		} else {
 			GetVLQ2(source, data);
 			time += data * 3;
 
-			status = source->read1();
+			status = read1(source);
 		}
 
 		switch (status >> 4) {
@@ -1003,27 +1003,27 @@ int ConvertFiletoList(DataSource *source, const bool is_xmi) {
 
 		case MIDI_STATUS_SYSEX:
 			if (status == 0xFF) {
-				int pos = source->getPos();
-				unsigned int data = source->read1();
+				int pos = getPos(source);
+				unsigned int data = read1(source);
 
 				if (data == 0x2F) // End
 					end = 1;
 				else if (data == 0x51 && !tempo_set) // Tempo. Need it for PPQN
 						{
-					source->skip(1);
-					tempo = source->read1() << 16;
-					tempo += source->read1() << 8;
-					tempo += source->read1();
+					skip(1,source);
+					tempo = read1(source) << 16;
+					tempo += read1(source) << 8;
+					tempo += read1(source);
 					tempo *= 3;
 					tempo_set = 1;
 				} else if (data == 0x51 && tempo_set && is_xmi) // Skip any other tempo changes
 						{
 					GetVLQ(source, data);
-					source->skip(data);
+					skip(data,source);
 					break;
 				}
 
-				source->seek(pos);
+				seek(pos,source);
 			}
 			ConvertSystemMessage(time, status, source);
 			break;
@@ -1143,25 +1143,25 @@ int ExtractTracksFromXmi(DataSource *source) {
 	unsigned int len = 0;
 	char buf[32];
 
-	while (source->getPos() < source->getSize() && num != info.tracks) {
+	while (getPos(source) < getSize(source) && num != info.tracks) {
 		// Read first 4 bytes of name
-		source->read(buf, 4);
-		len = source->read4high();
+		read(buf, 4, source);
+		len = read4high(source);
 
 		// Skip the FORM entries
 		if (!memcmp(buf, "FORM", 4)) {
-			source->skip(4);
-			source->read(buf, 4);
-			len = source->read4high();
+			skip(4,source);
+			read(buf, 4,source);
+			len = read4high(source);
 		}
 
 		if (memcmp(buf, "EVNT", 4)) {
-			source->skip((len + 1) & ~1);
+			skip((len + 1) & ~1, source);
 			continue;
 		}
 
 		list = NULL;
-		int begin = source->getPos();
+		int begin = getPos(source);
 
 		// Convert it
 		if (!(ppqn = ConvertFiletoList(source, true))) {
@@ -1175,7 +1175,7 @@ int ExtractTracksFromXmi(DataSource *source) {
 		num++;
 
 		// go to start of next track
-		source->seek(begin + ((len + 1) & ~1));
+		seek(begin + ((len + 1) & ~1), source);
 	}
 
 	// Return how many were converted
@@ -1187,18 +1187,18 @@ int ExtractTracksFromMid(DataSource *source) {
 	unsigned int len = 0;
 	char buf[32];
 
-	while (source->getPos() < source->getSize() && num != info.tracks) {
+	while (getPos(source) < getSize(source) && num != info.tracks) {
 		// Read first 4 bytes of name
-		source->read(buf, 4);
-		len = source->read4high();
+		read(buf, 4, source);
+		len = read4high(source);
 
 		if (memcmp(buf, "MTrk", 4)) {
-			source->skip(len);
+			skip(len, source);
 			continue;
 		}
 
 		list = NULL;
-		int begin = source->getPos();
+		int begin = getPos(source);
 
 		// Convert it
 		if (!ConvertFiletoList(source, false)) {
@@ -1210,7 +1210,7 @@ int ExtractTracksFromMid(DataSource *source) {
 
 		// Increment Counter
 		num++;
-		source->seek(begin + len);
+		seek(begin + len,source);
 	}
 
 	// Return how many were converted
@@ -1226,17 +1226,17 @@ int ExtractTracks(DataSource *source) {
 	char buf[32];
 
 	// Read first 4 bytes of header
-	source->read(buf, 4);
+	read(buf, 4, source);
 
 	// Could be XMIDI
 	if (!memcmp(buf, "FORM", 4)) {
 		// Read length of 
-		len = source->read4high();
+		len = read4high(source);
 
-		start = source->getPos();
+		start = getPos(source);
 
 		// Read 4 bytes of type
-		source->read(buf, 4);
+		read(buf, 4, source);
 
 		// XDIRless XMIDI, we can handle them here.
 		if (!memcmp(buf, "XMID", 4)) {
@@ -1254,17 +1254,17 @@ int ExtractTracks(DataSource *source) {
 
 			for (i = 4; i < len; i++) {
 				// Read 4 bytes of type
-				source->read(buf, 4);
+				read(buf, 4, source);
 
 				// Read length of chunk
-				chunk_len = source->read4high();
+				chunk_len = read4high(source);
 
 				// Add eight bytes
 				i += 8;
 
 				if (memcmp(buf, "INFO", 4)) {
 					// Must allign
-					source->skip((chunk_len + 1) & ~1);
+					skip((chunk_len + 1) & ~1, source);
 					i += (chunk_len + 1) & ~1;
 					continue;
 				}
@@ -1273,7 +1273,7 @@ int ExtractTracks(DataSource *source) {
 				if (chunk_len < 2)
 					break;
 
-				info.tracks = source->read2();
+				info.tracks = read2(source);
 				break;
 			}
 
@@ -1285,10 +1285,10 @@ int ExtractTracks(DataSource *source) {
 
 			// Ok now to start part 2
 			// Goto the right place
-			source->seek(start + ((len + 1) & ~1));
+			seek(start + ((len + 1) & ~1), source);
 
 			// Read 4 bytes of type
-			source->read(buf, 4);
+			read(buf, 4, source);
 
 			// Not an XMID
 			if (memcmp(buf, "CAT ", 4)) {
@@ -1297,10 +1297,10 @@ int ExtractTracks(DataSource *source) {
 			}
 
 			// Now read length of this track
-			len = source->read4high();
+			len = read4high(source);
 
 			// Read 4 bytes of type
-			source->read(buf, 4);
+			read(buf, 4, source);
 
 			// Not an XMID
 			if (memcmp(buf, "XMID", 4)) {
@@ -1343,21 +1343,21 @@ int ExtractTracks(DataSource *source) {
 	}			// Definately a Midi
 	else if (!memcmp(buf, "MThd", 4)) {
 		// Simple read length of header
-		len = source->read4high();
+		len = read4high(source);
 
 		if (len < 6) {
 			printf("Not a valid MIDI\n");
 			return (0);
 		}
 
-		info.type = source->read2high();
+		info.type = read2high(source);
 
-		info.tracks = source->read2high();
+		info.tracks = read2high(source);
 
 		events = new midi_event *[info.tracks];
 		timing = new short[info.tracks];
 		fixed = new bool[info.tracks];
-		timing[0] = source->read2high();
+		timing[0] = read2high(source);
 		for (i = 0; i < info.tracks; i++) {
 			timing[i] = timing[0];
 			events[i] = NULL;
@@ -1384,10 +1384,10 @@ int ExtractTracks(DataSource *source) {
 	}// A RIFF Midi, just pass the source back to this function at the start of the midi file
 	else if (!memcmp(buf, "RIFF", 4)) {
 		// Read len
-		len = source->read4();
+		len = read4(source);
 
 		// Read 4 bytes of type
-		source->read(buf, 4);
+		read(buf, 4, source);
 
 		// Not an RMID
 		if (memcmp(buf, "RMID", 4)) {
@@ -1399,15 +1399,15 @@ int ExtractTracks(DataSource *source) {
 
 		for (i = 4; i < len; i++) {
 			// Read 4 bytes of type
-			source->read(buf, 4);
+			read(buf, 4, source);
 
-			chunk_len = source->read4();
+			chunk_len = read4(source);
 
 			i += 8;
 
 			if (memcmp(buf, "data", 4)) {
 				// Must allign
-				source->skip((chunk_len + 1) & ~1);
+				skip((chunk_len + 1) & ~1, source);
 				i += (chunk_len + 1) & ~1;
 				continue;
 			}

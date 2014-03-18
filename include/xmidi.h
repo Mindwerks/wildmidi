@@ -21,6 +21,7 @@
 #ifndef RANDGEN_XMIDI_H
 #define RANDGEN_XMIDI_H
 
+#include <stddef.h>
 #include <string.h>
 
 struct DataSource{
