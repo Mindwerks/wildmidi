@@ -444,7 +444,7 @@ int retrieve(unsigned int track, DataSource *dest) {
 	// And fix the midis if they are broken
 	if (!fixed[track]) {
 		list = events[track];
-		MovePatchVolAndPan();
+		MovePatchVolAndPan(-1);
 		fixed[track] = true;
 		events[track] = list;
 	}
@@ -472,7 +472,7 @@ int retrieve(unsigned int track, DataSource *dest) {
 	return (len + 14);
 }
 
-int retrieve(unsigned int track, midi_event **dest, int &ppqn) {
+int retrieveEventList(unsigned int track, midi_event **dest, int *ppqn) {
 	if (!events) {
 		printf("No midi data in loaded.\n");
 		return (0);
@@ -483,7 +483,7 @@ int retrieve(unsigned int track, midi_event **dest, int &ppqn) {
 		return (0);
 	}
 	DuplicateAndMerge(track);
-	MovePatchVolAndPan();
+	MovePatchVolAndPan(-1);
 
 	*dest = list;
 	ppqn = timing[track];
@@ -556,7 +556,7 @@ void CreateNewEvent(int time) {
 }
 
 // Conventional Variable Length Quantity
-int GetVLQ(DataSource *source, unsigned int &quant) {
+int GetVLQ(DataSource *source, unsigned int quant) {
 	int i;
 	quant = 0;
 	unsigned int data;
@@ -576,7 +576,7 @@ int GetVLQ(DataSource *source, unsigned int &quant) {
 }
 
 // XMIDI Delta Variable Length Quantity
-int GetVLQ2(DataSource *source, unsigned int &quant) {
+int GetVLQ2(DataSource *source, unsigned int quant) {
 	int i;
 	quant = 0;
 	int data = 0;

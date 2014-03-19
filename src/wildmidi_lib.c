@@ -64,6 +64,7 @@
 #include "common.h"
 #include "wildmidi_lib.h"
 #include "filenames.h"
+#include "xmidi.h"
 
 /*
  * =========================

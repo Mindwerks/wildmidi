@@ -21,6 +21,8 @@
 #ifndef RANDGEN_XMIDI_H
 #define RANDGEN_XMIDI_H
 
+#include <stdbool.h> // C99
+
 #include <stddef.h>
 #include <string.h>
 
@@ -64,16 +66,7 @@ struct midi_event {
 	unsigned int len;
 	unsigned char *buffer;
 
-	midi_event *next;
-
-	midi_event() :
-			len(0), buffer(NULL), next(NULL), time(0), status(0) {
-	}
-
-	~midi_event() {
-		delete[] buffer;
-		buffer = NULL;
-	}
+	struct midi_event *next;
 };
 
 
@@ -83,16 +76,14 @@ struct midi_descriptor {
 };
 
 
-midi_descriptor info;
+struct midi_descriptor info;
 
-midi_event **events;
+struct midi_event **events;
 signed short *timing;
 
-midi_event *list;
-midi_event *current;
+struct midi_event *list;
+struct midi_event *current;
 
-const static char mt32asgm[128];
-const static char mt32asgs[256];
 bool bank127[16];
 int convert_type;
 bool *fixed;
@@ -105,11 +96,11 @@ int number_of_tracks() {
 }
 
 // Retrieve it to a data source
-int retrieve(unsigned int track, DataSource *dest);
+int retrieve(unsigned int track, struct DataSource *dest);
 
 // External Event list functions
-int retrieve(unsigned int track, midi_event **dest, int &ppqn);
-static void DeleteEventList(midi_event *mlist);
+int retrieveEventList(unsigned int track, struct midi_event **dest, int *ppqn);
+void DeleteEventList(struct midi_event *mlist);
 
 // Not yet implemented
 // int apply_patch (int track, DataSource *source);
@@ -120,24 +111,24 @@ static void DeleteEventList(midi_event *mlist);
 void CreateNewEvent(int time);
 
 // Variable length quantity
-int GetVLQ(DataSource *source, unsigned int &quant);
-int GetVLQ2(DataSource *source, unsigned int &quant);
-int PutVLQ(DataSource *dest, unsigned int value);
+int GetVLQ(struct DataSource *source, unsigned int quant);
+int GetVLQ2(struct DataSource *source, unsigned int quant);
+int PutVLQ(struct DataSource *dest, unsigned int value);
 
-void MovePatchVolAndPan(int channel = -1);
-void DuplicateAndMerge(int num = 0);
+void MovePatchVolAndPan(int channel);
+void DuplicateAndMerge(int num);
 
 int ConvertEvent(const int time, const unsigned char status,
-		DataSource *source, const int size);
+		struct DataSource *source, const int size);
 int ConvertSystemMessage(const int time, const unsigned char status,
-		DataSource *source);
+		struct DataSource *source);
 
-int ConvertFiletoList(DataSource *source, bool is_xmi);
-unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist);
+int ConvertFiletoList(struct DataSource *source, bool is_xmi);
+unsigned int ConvertListToMTrk(struct DataSource *dest, struct midi_event *mlist);
 
-int ExtractTracksFromXmi(DataSource *source);
-int ExtractTracksFromMid(DataSource *source);
+int ExtractTracksFromXmi(struct DataSource *source);
+int ExtractTracksFromMid(struct DataSource *source);
 
-int ExtractTracks(DataSource *source);
+int ExtractTracks(struct DataSource *source);
 
 #endif //RANDGEN_XMIDI_H
