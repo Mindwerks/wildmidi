@@ -84,8 +84,8 @@ signed short *timing;
 struct midi_event *list;
 struct midi_event *current;
 
-bool bank127[16];
-int convert_type;
+bool bank127[16] = {0};
+int convert_type = 0;
 bool *fixed;
 
 int number_of_tracks() {
@@ -96,7 +96,7 @@ int number_of_tracks() {
 }
 
 // Retrieve it to a data source
-int retrieve(unsigned int track, struct DataSource *dest);
+int retrieve(unsigned int track, struct DataSource *source, struct DataSource *dest);
 
 // External Event list functions
 int retrieveEventList(unsigned int track, struct midi_event **dest, int *ppqn);

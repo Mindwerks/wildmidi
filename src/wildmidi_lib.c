@@ -2381,11 +2381,22 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint8_t *running_event;
 	uint32_t decay_samples = 0;
 
-	if (memcmp(midi_data, "RIFF", 4) == 0) {
+	if (!memcmp(midi_data, "FORM", 4)){ // detect possible xmi
+		struct DataSource *xin;
+		xin->buf = midi_data;
+		xin->buf_ptr = midi_data;
+		xin->size = midi_size;
+		struct DataSource *xout;
+		xout = malloc(sizeof(struct DataSource));
+
+		retrieve(0, xin, xout);
+	}
+
+	if (!memcmp(midi_data, "RIFF", 4)) {
 		midi_data += 20;
 		midi_size -= 20;
 	}
-	if (memcmp(midi_data, "MThd", 4) != 0) {
+	if (memcmp(midi_data, "MThd", 4)) {
 		printf("Not a midi file\n");
 		return NULL;
 	}
