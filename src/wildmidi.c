@@ -26,6 +26,7 @@
 
 #include "config.h"
 
+#include <sys/types.h>
 #include <stdint.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -33,16 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-
-#if !defined(_WIN32) && !defined(__DJGPP__)
-#include <termios.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <time.h>
-static int msleep(unsigned long millisec);
-#endif
 
 #if defined(__DJGPP__)
 #include "getopt_long.h"
@@ -62,8 +53,6 @@ static int msleep(unsigned long millisec);
 #include <windows.h>
 #include <mmsystem.h>
 #define msleep(s) Sleep((s))
-#undef strdup
-#define strdup _strdup
 #include <io.h>
 #undef close
 #define close _close
@@ -76,10 +65,17 @@ static int msleep(unsigned long millisec);
 #undef lseek
 #define lseek _lseek
 #include "getopt_long.h"
-#else
-# ifdef AUDIODRV_ALSA
+#endif
+
+#if !defined(_WIN32) && !defined(__DJGPP__) /* unix build */
+static int msleep(unsigned long millisec);
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <time.h>
+#ifdef AUDIODRV_ALSA
 #  include <alsa/asoundlib.h>
-# elif defined AUDIODRV_OSS
+#elif defined AUDIODRV_OSS
 #   if defined HAVE_SYS_SOUNDCARD_H
 #   include <sys/soundcard.h>
 #   elif defined HAVE_MACHINE_SOUNDCARD_H
@@ -87,18 +83,21 @@ static int msleep(unsigned long millisec);
 #   elif defined HAVE_SOUNDCARD_H
 #   include <soundcard.h> /* less common, but exists. */
 #   endif
-# elif defined AUDIODRV_OPENAL
+#elif defined AUDIODRV_OPENAL
 #   include <al.h>
 #   include <alc.h>
-# endif
 #endif
-
+#define _XOPEN_SOURCE 600 /* for ONLCR */
+#include <termios.h>
 #ifndef FNONBLOCK
 #define FNONBLOCK O_NONBLOCK
 #endif
+#endif /* !_WIN32, !__DJGPP__ (unix build) */
 
 #include "wildmidi_lib.h"
 #include "filenames.h"
+
+static char *wm_strdup (const char *str);
 
 struct _midi_test {
 	uint8_t *data;
@@ -671,7 +670,7 @@ static int open_alsa_output(void) {
 	unsigned int r;
 
 	if (!pcmname) {
-		pcmname = strdup("default");
+		pcmname = wm_strdup("default");
 	}
 
 	if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
@@ -811,7 +810,7 @@ static int open_oss_output(void) {
 	unsigned int r;
 
 	if (!pcmname) {
-		pcmname = strdup("/dev/dsp");
+		pcmname = wm_strdup("/dev/dsp");
 	}
 
 	if ((audio_fd = open(pcmname, O_WRONLY)) < 0) {
@@ -1154,7 +1153,7 @@ int main(int argc, char **argv) {
 			strcpy(wav_file, optarg);
 			break;
 		case 'c': /* Config File */
-			config_file = strdup(optarg);
+			config_file = wm_strdup(optarg);
 			break;
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 		case 'd': /* Output device */
@@ -1162,7 +1161,7 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "Error: empty device name.\n");
 				return (1);
 			}
-			pcmname = strdup(optarg);
+			pcmname = wm_strdup(optarg);
 			break;
 #endif
 		case 'e': /* Enhanced Resampling */
@@ -1194,7 +1193,7 @@ int main(int argc, char **argv) {
 
 	if (optind < argc || test_midi) {
 		if (!config_file) {
-			config_file = strdup(WILDMIDI_CFG);
+			config_file = wm_strdup(WILDMIDI_CFG);
 		}
 
 		printf("Initializing Sound System\n");
@@ -1447,6 +1446,8 @@ end2:		close_output();
 	return (0);
 }
 
+/* helper / replacement functions: */
+
 #if !defined(_WIN32) && !defined(__DJGPP__)
 static int msleep(unsigned long milisec) {
 	struct timespec req = { 0, 0 };
@@ -1459,3 +1460,13 @@ static int msleep(unsigned long milisec) {
 	return (1);
 }
 #endif
+
+static char *wm_strdup (const char *str) {
+	size_t l = strlen(str) + 1;
+	char *d = (char *) malloc(l * sizeof(char));
+	if (d) {
+		strcpy(d, str);
+		return d;
+	}
+	return NULL;
+}

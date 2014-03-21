@@ -52,8 +52,6 @@
 #define strcasecmp _stricmp
 #undef strncasecmp
 #define strncasecmp _tcsnicmp
-#undef strdup
-#define strdup _strdup
 #endif
 
 #include "wm_error.h"
@@ -565,6 +563,16 @@ static void WM_FreePatches(void) {
 	WM_Unlock(&patch_lock);
 }
 
+static char *wm_strdup (const char *str) {
+	size_t l = strlen(str) + 1;
+	char *d = (char *) malloc(l * sizeof(char));
+	if (d) {
+		strcpy(d, str);
+		return d;
+	}
+	return NULL;
+}
+
 #define TOKEN_CNT_INC 8
 static char** WM_LC_Tokenize_Line(char *line_data) {
 	int line_length = strlen(line_data);
@@ -669,7 +677,7 @@ static int WM_LoadConfig(const char *config_file) {
 						if (config_dir) {
 							free(config_dir);
 						}
-						if (!line_tokens[1] || !(config_dir = strdup(line_tokens[1]))) {
+						if (!line_tokens[1] || !(config_dir = wm_strdup(line_tokens[1]))) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 									"to parse config", errno);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
