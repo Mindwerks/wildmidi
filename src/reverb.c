@@ -107,7 +107,7 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 	};
 	*/
 
-	//distance
+	/* distance */
 	double SPL_DST[8] = {0.0};
 	double SPR_DST[8] = {0.0};
 	double RFN_DST[8] = {0.0};
@@ -134,9 +134,9 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 	};
 
 #if 0
-	struct _coord SPL = {2.5, 5.0}; // Left Speaker Position
-	struct _coord SPR = {7.5, 5.0}; // Right Speaker Position
-	// position of the reflective points
+	struct _coord SPL = {2.5, 5.0}; /* Left Speaker Position */
+	struct _coord SPR = {7.5, 5.0}; /* Right Speaker Position */
+	/* position of the reflective points */
 	struct _coord RFN[] = {
 		{	5.0, 0.0},
 		{	0.0, 6.66666},
@@ -148,9 +148,9 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 		{	10.0, 0.0}
 	};
 #else
-	struct _coord SPL; // Left Speaker Position
-	struct _coord SPR; // Right Speaker Position
-	// position of the reflective points
+	struct _coord SPL; /* Left Speaker Position */
+	struct _coord SPR; /* Right Speaker Position */
+	/* position of the reflective points */
 	struct _coord RFN[8];
 
 	SPL.x = room_x / 4.0;
@@ -258,9 +258,8 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 			double sn = sin(omega);
 			double cs = cos(omega);
 			double alpha = sn * sinh(M_LN2 / 2 * bandwidth * omega / sn);
-			double A = pow(10.0,
-					((dbAttn[j][i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
-		//	double A = pow(10.0, ((dbAttn[i] + (dbAirAbs[i] * RFN_DST[j])) / 40.0));
+			double A = pow(10.0, ((/*dbAttn[i]*/dbAttn[j][i] +
+						(dbAirAbs[i] * RFN_DST[j])) / 40.0) );
 			/*
 			 Peaking band EQ filter
 			 */

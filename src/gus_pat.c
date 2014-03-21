@@ -77,7 +77,6 @@ static int convert_8s(unsigned char *data, struct _sample *gus_sample) {
 
 	WM_ERROR_NEW("(%s:%i) ERROR: calloc failed (%s)", __FUNCTION__, __LINE__,
 			strerror(errno));
-//	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -820,7 +819,7 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 		gus_sample->inc_div = ((gus_sample->freq_root * 512) / gus_sample->rate) * 2;
 
 #if 0
-		// We dont use this info at this time ... kept in here for info
+		/* We dont use this info at this time, kept in here for info */
 		printf("\rTremolo Sweep: %i, Rate: %i, Depth %i\n",
 				gus_patch[gus_ptr+49], gus_patch[gus_ptr+50], gus_patch[gus_ptr+51]);
 		printf("\rVibrato Sweep: %i, Rate: %i, Depth %i\n",
