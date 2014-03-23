@@ -20,9 +20,20 @@
 // XMIDI/MIDI Converter/Loader
 #include "xmidi.h"
 #include <stdio.h>
+#include <stdlib.h>
 
-struct DataSource dest;
-struct DataSource source;
+static bool bank127[16] = {0};
+static int convert_type = 0;
+
+static struct DataSource *dest;
+static struct DataSource *source;
+
+int number_of_tracks() {
+	if (info.type != 1)
+		return (info.tracks);
+	else
+		return (1);
+}
 
 unsigned int read1(struct DataSource *data)
 {
@@ -64,10 +75,11 @@ unsigned int read4high(struct DataSource *data)
 	b2 = (unsigned char)data->buf_ptr++;
 	b1 = (unsigned char)data->buf_ptr++;
 	b0 = (unsigned char)data->buf_ptr++;
+	printf("data %d\n\r", (b0 + (b1<<8) + (b2<<16) + (b3<<24)) );
 	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
 }
 
-void read(char *b, int len, struct DataSource *data) {
+void copy(char *b, int len, struct DataSource *data) {
 	memcpy(b, data->buf_ptr, len);
 	data->buf_ptr += len;
 }
@@ -425,14 +437,17 @@ XMIDI(struct DataSource *source, int pconvert) :
 }
 */
 
-int retrieve(unsigned int track, struct DataSource *source, struct DataSource *dest) {
+int retrieve(unsigned int track, struct DataSource *in, struct DataSource *out) {
 	int len = 0;
+	source = in;
+	dest = out;
 	ExtractTracks(source);
-
+	/*
 	if (!events) {
 		printf("No midi data in loaded.\n");
 		return (0);
 	}
+	*/
 
 	// Convert type 1 midi's to type 0
 	if (info.type == 1) {
@@ -948,7 +963,7 @@ int ConvertSystemMessage(const int time, const unsigned char status,
 
 	current->buffer = malloc(sizeof(unsigned char)*current->len);
 
-	read((char *) current->buffer, current->len, source);
+	copy((char *) current->buffer, current->len, source);
 
 	return (i + current->len);
 }
@@ -1158,13 +1173,13 @@ int ExtractTracksFromXmi(struct DataSource *source) {
 
 	while (getPos(source) < getSize(source) && num != info.tracks) {
 		// Read first 4 bytes of name
-		read(buf, 4, source);
+		copy(buf, 4, source);
 		len = read4high(source);
 
 		// Skip the FORM entries
 		if (!memcmp(buf, "FORM", 4)) {
 			skip(4,source);
-			read(buf, 4,source);
+			copy(buf, 4,source);
 			len = read4high(source);
 		}
 
@@ -1202,7 +1217,7 @@ int ExtractTracksFromMid(struct DataSource *source) {
 
 	while (getPos(source) < getSize(source) && num != info.tracks) {
 		// Read first 4 bytes of name
-		read(buf, 4, source);
+		copy(buf, 4, source);
 		len = read4high(source);
 
 		if (memcmp(buf, "MTrk", 4)) {
@@ -1239,7 +1254,7 @@ int ExtractTracks(struct DataSource *source) {
 	char buf[32];
 
 	// Read first 4 bytes of header
-	read(buf, 4, source);
+	copy(buf, 4, source);
 
 	// Could be XMIDI
 	if (!memcmp(buf, "FORM", 4)) {
@@ -1249,7 +1264,7 @@ int ExtractTracks(struct DataSource *source) {
 		start = getPos(source);
 
 		// Read 4 bytes of type
-		read(buf, 4, source);
+		copy(buf, 4, source);
 
 		// XDIRless XMIDI, we can handle them here.
 		if (!memcmp(buf, "XMID", 4)) {
@@ -1267,7 +1282,7 @@ int ExtractTracks(struct DataSource *source) {
 
 			for (i = 4; i < len; i++) {
 				// Read 4 bytes of type
-				read(buf, 4, source);
+				copy(buf, 4, source);
 
 				// Read length of chunk
 				chunk_len = read4high(source);
@@ -1298,10 +1313,13 @@ int ExtractTracks(struct DataSource *source) {
 
 			// Ok now to start part 2
 			// Goto the right place
-			seek(start + ((len + 1) & ~1), source);
+			printf("source %s %d\n\r", source->buf_ptr, len);
+			printf("len %d %d\n\r", len, (len + 1) & ~1);
+			//seek(start + ((len + 1) & ~1), source);
+			printf("source %s - %d %d %d\n\r", source->buf_ptr, start, (len + 1),  ((len + 1) & ~1));
 
 			// Read 4 bytes of type
-			read(buf, 4, source);
+			copy(buf, 4, source);
 
 			// Not an XMID
 			if (memcmp(buf, "CAT ", 4)) {
@@ -1313,7 +1331,7 @@ int ExtractTracks(struct DataSource *source) {
 			len = read4high(source);
 
 			// Read 4 bytes of type
-			read(buf, 4, source);
+			copy(buf, 4, source);
 
 			// Not an XMID
 			if (memcmp(buf, "XMID", 4)) {
@@ -1338,7 +1356,7 @@ int ExtractTracks(struct DataSource *source) {
 		count = ExtractTracksFromXmi(source);
 
 		if (count != info.tracks) {
-			printf("Error: unable to extract all (%s) tracks specified from XMIDI. Only (%s)", info.tracks, count);
+			printf("Error: unable to extract all (%d) tracks specified from XMIDI. Only (%d)", info.tracks, count);
 
 			int i = 0;
 
@@ -1400,7 +1418,7 @@ int ExtractTracks(struct DataSource *source) {
 		len = read4(source);
 
 		// Read 4 bytes of type
-		read(buf, 4, source);
+		copy(buf, 4, source);
 
 		// Not an RMID
 		if (memcmp(buf, "RMID", 4)) {
@@ -1412,7 +1430,7 @@ int ExtractTracks(struct DataSource *source) {
 
 		for (i = 4; i < len; i++) {
 			// Read 4 bytes of type
-			read(buf, 4, source);
+			copy(buf, 4, source);
 
 			chunk_len = read4(source);
 

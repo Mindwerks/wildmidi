@@ -84,16 +84,7 @@ signed short *timing;
 struct midi_event *list;
 struct midi_event *current;
 
-bool bank127[16] = {0};
-int convert_type = 0;
 bool *fixed;
-
-int number_of_tracks() {
-	if (info.type != 1)
-		return (info.tracks);
-	else
-		return (1);
-}
 
 // Retrieve it to a data source
 int retrieve(unsigned int track, struct DataSource *source, struct DataSource *dest);
