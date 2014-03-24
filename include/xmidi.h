@@ -85,36 +85,20 @@ bool *fixed;
 // Retrieve it to a data source
 int retrieve(unsigned int track, DataSource *source, DataSource *dest);
 
-// External Event list functions
 void DeleteEventList(midi_event *mlist);
-
-// Not yet implemented
-// int apply_patch (int track, DataSource *source);
-
-
-// Private
-// List manipulation
-void CreateNewEvent(int time);
-
-// Variable length quantity
-int GetVLQ(DataSource *source, unsigned int *quant);
-int GetVLQ2(DataSource *source, unsigned int *quant);
-int PutVLQ(DataSource *dest, unsigned int value);
-
+void CreateNewEvent(int time); // List manipulation
+int GetVLQ(DataSource *source, unsigned int *quant); // Variable length quantity
+int GetVLQ2(DataSource *source, unsigned int *quant);// Variable length quantity
+int PutVLQ(DataSource *dest, unsigned int value);    // Variable length quantity
 void MovePatchVolAndPan(int channel);
 void DuplicateAndMerge(int num);
-
 int ConvertEvent(const int time, const unsigned char status,
 		DataSource *source, const int size);
 int ConvertSystemMessage(const int time, const unsigned char status,
 		DataSource *source);
-
 int ConvertFiletoList(DataSource *source, bool is_xmi);
 unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist);
-
 int ExtractTracksFromXmi(DataSource *source);
-int ExtractTracksFromMid(DataSource *source);
-
 int ExtractTracks(DataSource *source);
 
 #endif //RANDGEN_XMIDI_H

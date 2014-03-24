@@ -399,26 +399,10 @@ const char mt32asgs[256] = { 0, 0,	// 0	Piano 1
 int retrieve(unsigned int track, DataSource *in, DataSource *out) {
 	int len = 0;
 	ExtractTracks(in);
-	/*
+
 	if (!events) {
 		printf("No midi data in loaded.\n");
 		return (0);
-	}
-	*/
-
-	// Convert type 1 midi's to type 0
-	if (info.type == 1) {
-		DuplicateAndMerge(-1);
-
-		for (int i = 0; i < info.tracks; i++)
-			DeleteEventList(events[i]);
-
-		free(events);
-		events = malloc(sizeof(midi_event*));
-		events[0] = list;
-
-		info.tracks = 1;
-		info.type = 0;
 	}
 
 	if (track >= info.tracks) {
@@ -458,11 +442,10 @@ int retrieve(unsigned int track, DataSource *in, DataSource *out) {
 }
 
 void DeleteEventList(midi_event *mlist) {
-	midi_event *event;
+	midi_event *event = NULL;
 	midi_event *next;
 
 	next = mlist;
-	event = mlist;
 
 	while ((event = next)) {
 		next = event->next;
@@ -696,89 +679,6 @@ void MovePatchVolAndPan(int channel) {
 	pan->next = patch;
 	patch->next = list;
 	list = bank;
-}
-
-// DuplicateAndMerge
-void DuplicateAndMerge(int num) {
-	int i;
-	midi_event **track;
-	int time = 0;
-	int start = 0;
-	int end = 1;
-
-	if (info.type == 1) {
-		start = 0;
-		end = info.tracks;
-	} else if (num >= 0 && num < info.tracks) {
-		start += num;
-		end += num;
-	}
-
-	track = malloc(sizeof(midi_event*) * info.tracks);
-
-	for (i = 0; i < info.tracks; i++)
-		track[i] = events[i];
-
-	current = list = NULL;
-
-	while (1) {
-		int lowest = 1 << 30;
-		int selected = -1;
-		int num_na = end - start;
-
-		// Firstly we find the track with the lowest time
-		// for it's current event
-		for (i = start; i < end; i++) {
-			if (!track[i]) {
-				num_na--;
-				continue;
-			}
-			if (track[i]->time < lowest) {
-				selected = i;
-				lowest = track[i]->time;
-			}
-		}
-
-		// This is just so I don't have to type [selected] all the time
-		i = selected;
-
-		// None left to convert
-		if (!num_na)
-			break;
-
-		// Only need 1 end of track
-		// So take the last one and ignore the rest;
-		if ((num_na != 1) && (track[i]->status == 0xff)
-				&& (track[i]->data[0] == 0x2f)) {
-			track[i] = NULL;
-			continue;
-		}
-
-		if (current) {
-			current->next = malloc(sizeof(midi_event));
-			current = current->next;
-		} else
-			list = current = malloc(sizeof(midi_event));
-
-		current->next = NULL;
-
-		time = track[i]->time;
-		current->time = time;
-
-		current->status = track[i]->status;
-		current->data[0] = track[i]->data[0];
-		current->data[1] = track[i]->data[1];
-
-		current->len = track[i]->len;
-
-		if (current->len) {
-			current->buffer = malloc(sizeof(unsigned char)*current->len);
-			memcpy(current->buffer, track[i]->buffer, current->len);
-		} else
-			current->buffer = NULL;
-
-		track[i] = track[i]->next;
-	}
 }
 
 // Converts Events
@@ -1150,41 +1050,6 @@ int ExtractTracksFromXmi(DataSource *source) {
 	return (num);
 }
 
-int ExtractTracksFromMid(DataSource *source) {
-	int num = 0;
-	unsigned int len = 0;
-	char buf[32];
-
-	while (getPos(source) < getSize(source) && num != info.tracks) {
-		// Read first 4 bytes of name
-		copy(buf, 4, source);
-		len = read4high(source);
-
-		if (memcmp(buf, "MTrk", 4)) {
-			skip(len, source);
-			continue;
-		}
-
-		list = NULL;
-		int begin = getPos(source);
-
-		// Convert it
-		if (!ConvertFiletoList(source, false)) {
-			printf("Unable to convert data.\n");
-			break;
-		}
-
-		events[num] = list;
-
-		// Increment Counter
-		num++;
-		seek(begin + len,source);
-	}
-
-	// Return how many were converted
-	return (num);
-}
-
 int ExtractTracks(DataSource *source) {
 	unsigned int i = 0;
 	int start;
@@ -1265,7 +1130,7 @@ int ExtractTracks(DataSource *source) {
 			}
 
 			// Now read length of this track
-			len = read4high(source);
+			read4high(source);
 
 			// Read 4 bytes of type
 			copy(buf, 4, source);
@@ -1308,84 +1173,6 @@ int ExtractTracks(DataSource *source) {
 
 		return (1);
 
-	}			// Definately a Midi
-	else if (!memcmp(buf, "MThd", 4)) {
-		// Simple read length of header
-		len = read4high(source);
-
-		if (len < 6) {
-			printf("Not a valid MIDI\n");
-			return (0);
-		}
-
-		info.type = read2high(source);
-
-		info.tracks = read2high(source);
-
-		events = malloc(sizeof(midi_event*) *info.tracks);
-		timing = malloc(sizeof(signed short)*info.tracks);
-		fixed = malloc(sizeof(bool)*info.tracks);
-		timing[0] = read2high(source);
-		for (i = 0; i < info.tracks; i++) {
-			timing[i] = timing[0];
-			events[i] = NULL;
-			fixed[i] = false;
-		}
-
-		count = ExtractTracksFromMid(source);
-
-		if (count != info.tracks) {
-			printf("Error: unable to extract all (%d) tracks specified from MIDI. Only (%d)", info.tracks, count);
-
-			for (i = 0; i < info.tracks; i++)
-				DeleteEventList(events[i]);
-
-			free(events);
-			free(timing);
-
-			return (0);
-
-		}
-
-		return (1);
-
-	}// A RIFF Midi, just pass the source back to this function at the start of the midi file
-	else if (!memcmp(buf, "RIFF", 4)) {
-		// Read len
-		len = read4(source);
-
-		// Read 4 bytes of type
-		copy(buf, 4, source);
-
-		// Not an RMID
-		if (memcmp(buf, "RMID", 4)) {
-			printf("Invalid RMID\n");
-			return (0);
-		}
-
-		// Is a RMID
-
-		for (i = 4; i < len; i++) {
-			// Read 4 bytes of type
-			copy(buf, 4, source);
-
-			chunk_len = read4(source);
-
-			i += 8;
-
-			if (memcmp(buf, "data", 4)) {
-				// Must allign
-				skip((chunk_len + 1) & ~1, source);
-				i += (chunk_len + 1) & ~1;
-				continue;
-			}
-
-			return (ExtractTracks(source));
-
-		}
-
-		printf("Failed to find midi data in RIFF Midi\n");
-		return (0);
 	}
 
 	return (0);
