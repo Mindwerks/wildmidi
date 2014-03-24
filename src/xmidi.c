@@ -523,15 +523,15 @@ void CreateNewEvent(int time) {
 }
 
 // Conventional Variable Length Quantity
-int GetVLQ(struct DataSource *source, unsigned int quant) {
+int GetVLQ(struct DataSource *source, unsigned int *quant) {
 	int i;
-	quant = 0;
 	unsigned int data;
 
+	*quant = 0;
 	for (i = 0; i < 4; i++) {
 		data = read1(source);
-		quant <<= 7;
-		quant |= data & 0x7F;
+		*quant <<= 7;
+		*quant |= data & 0x7F;
 
 		if (!(data & 0x80)) {
 			i++;
@@ -543,18 +543,18 @@ int GetVLQ(struct DataSource *source, unsigned int quant) {
 }
 
 // XMIDI Delta Variable Length Quantity
-int GetVLQ2(struct DataSource *source, unsigned int quant) {
+int GetVLQ2(struct DataSource *source, unsigned int *quant) {
 	int i;
-	quant = 0;
 	int data = 0;
 
+	*quant = 0;
 	for (i = 0; i < 4; i++) {
 		data = read1(source);
 		if (data & 0x80) {
 			skip(-1, source);
 			break;
 		}
-		quant += data;
+		*quant += data;
 	}
 	return (i);
 }
@@ -823,37 +823,39 @@ int ConvertEvent(const int time, const unsigned char status,
 
 	// Handling for patch change mt32 conversion, probably should go elsewhere
 	if ((status >> 4)
-			== 0xC&& (status&0xF) != 9 && convert_type != XMIDI_CONVERT_NOCONVERSION) {if (convert_type == XMIDI_CONVERT_MT32_TO_GM)
+			== 0xC&& (status&0xF) != 9 && convert_type != XMIDI_CONVERT_NOCONVERSION)
 	{
-		data = mt32asgm[data];
-	}
-	else if ((convert_type == XMIDI_CONVERT_GS127_TO_GS && bank127[status&0xF]) ||
+		if (convert_type == XMIDI_CONVERT_MT32_TO_GM)
+		{
+			data = mt32asgm[data];
+		}
+		else if ((convert_type == XMIDI_CONVERT_GS127_TO_GS && bank127[status&0xF]) ||
 			convert_type == XMIDI_CONVERT_MT32_TO_GS ||
 			convert_type == XMIDI_CONVERT_MT32_TO_GS127DRUM)
-	{
-		CreateNewEvent (time);
-		current->status = 0xB0 | (status&0xF);
-		current->data[0] = 0;
-		current->data[1] = mt32asgs[data*2+1];
+		{
+			CreateNewEvent (time);
+			current->status = 0xB0 | (status&0xF);
+			current->data[0] = 0;
+			current->data[1] = mt32asgs[data*2+1];
 
-		data = mt32asgs[data*2];
-	}
-	else if (convert_type == XMIDI_CONVERT_MT32_TO_GS127)
+			data = mt32asgs[data*2];
+		}
+		else if (convert_type == XMIDI_CONVERT_MT32_TO_GS127)
+		{
+			CreateNewEvent (time);
+			current->status = 0xB0 | (status&0xF);
+			current->data[0] = 0;
+			current->data[1] = 127;
+		}
+	}	// Drum track handling
+	else if ((status >> 4) == 0xC && (status&0xF) == 9 &&
+		(convert_type == XMIDI_CONVERT_MT32_TO_GS127DRUM || convert_type == XMIDI_CONVERT_MT32_TO_GS127))
 	{
 		CreateNewEvent (time);
-		current->status = 0xB0 | (status&0xF);
+		current->status = 0xB9;
 		current->data[0] = 0;
 		current->data[1] = 127;
 	}
-}	// Drum track handling
-else if ((status >> 4) == 0xC && (status&0xF) == 9 &&
-		(convert_type == XMIDI_CONVERT_MT32_TO_GS127DRUM || convert_type == XMIDI_CONVERT_MT32_TO_GS127))
-{
-	CreateNewEvent (time);
-	current->status = 0xB9;
-	current->data[0] = 0;
-	current->data[1] = 127;
-}
 
 	CreateNewEvent(time);
 	current->status = status;
@@ -870,7 +872,7 @@ else if ((status >> 4) == 0xC && (status&0xF) == 9 &&
 
 	// XMI Note On handling
 	struct midi_event *prev = current;
-	int i = GetVLQ(source, delta);
+	int i = GetVLQ(source, &delta);
 	CreateNewEvent(time + delta * 3);
 
 	current->status = status;
@@ -895,7 +897,7 @@ int ConvertSystemMessage(const int time, const unsigned char status,
 		i++;
 	}
 
-	i += GetVLQ(source, current->len);
+	i += GetVLQ(source, &current->len);
 
 	if (!current->len)
 		return (i);
@@ -933,7 +935,7 @@ int ConvertFiletoList(struct DataSource *source, const bool is_xmi) {
 	while (!end && getPos(source) < file_size) {
 
 		if (!is_xmi) {
-			GetVLQ(source, data);
+			GetVLQ(source, &data);
 			time += data;
 
 			data = read1(source);
@@ -943,7 +945,7 @@ int ConvertFiletoList(struct DataSource *source, const bool is_xmi) {
 			} else
 				skip(-1,source);
 		} else {
-			GetVLQ2(source, data);
+			GetVLQ2(source, &data);
 			time += data * 3;
 
 			status = read1(source);
@@ -971,11 +973,11 @@ int ConvertFiletoList(struct DataSource *source, const bool is_xmi) {
 		case MIDI_STATUS_SYSEX:
 			if (status == 0xFF) {
 				int pos = getPos(source);
-				unsigned int data = read1(source);
+				unsigned int dat = read1(source);
 
-				if (data == 0x2F) // End
+				if (dat == 0x2F) // End
 					end = 1;
-				else if (data == 0x51 && !tempo_set) // Tempo. Need it for PPQN
+				else if (dat == 0x51 && !tempo_set) // Tempo. Need it for PPQN
 						{
 					skip(1,source);
 					tempo = read1(source) << 16;
@@ -983,10 +985,10 @@ int ConvertFiletoList(struct DataSource *source, const bool is_xmi) {
 					tempo += read1(source);
 					tempo *= 3;
 					tempo_set = 1;
-				} else if (data == 0x51 && tempo_set && is_xmi) // Skip any other tempo changes
+				} else if (dat == 0x51 && tempo_set && is_xmi) // Skip any other tempo changes
 						{
-					GetVLQ(source, data);
-					skip(data,source);
+					GetVLQ(source, &dat);
+					skip(dat,source);
 					break;
 				}
 

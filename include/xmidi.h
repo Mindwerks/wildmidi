@@ -101,8 +101,8 @@ void DeleteEventList(struct midi_event *mlist);
 void CreateNewEvent(int time);
 
 // Variable length quantity
-int GetVLQ(struct DataSource *source, unsigned int quant);
-int GetVLQ2(struct DataSource *source, unsigned int quant);
+int GetVLQ(struct DataSource *source, unsigned int *quant);
+int GetVLQ2(struct DataSource *source, unsigned int *quant);
 int PutVLQ(struct DataSource *dest, unsigned int value);
 
 void MovePatchVolAndPan(int channel);
