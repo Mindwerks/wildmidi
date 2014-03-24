@@ -32,14 +32,14 @@ int number_of_tracks() {
 		return (1);
 }
 
-unsigned int read1(struct DataSource *data)
+unsigned int read1(DataSource *data)
 {
 	unsigned char b0;
 	b0 = (unsigned char)*data->buf_ptr++;
 	return (b0);
 }
 
-unsigned int read2(struct DataSource *data)
+unsigned int read2(DataSource *data)
 {
 	unsigned char b0, b1;
 	b0 = (unsigned char)*data->buf_ptr++;
@@ -47,7 +47,7 @@ unsigned int read2(struct DataSource *data)
 	return (b0 + (b1 << 8));
 }
 
-unsigned int read2high(struct DataSource *data)
+unsigned int read2high(DataSource *data)
 {
 	unsigned char b0, b1;
 	b1 = (unsigned char)*data->buf_ptr++;
@@ -55,7 +55,7 @@ unsigned int read2high(struct DataSource *data)
 	return (b0 + (b1 << 8));
 }
 
-unsigned int read4(struct DataSource *data)
+unsigned int read4(DataSource *data)
 {
 	unsigned char b0, b1, b2, b3;
 	b0 = (unsigned char)*data->buf_ptr++;
@@ -65,7 +65,7 @@ unsigned int read4(struct DataSource *data)
 	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
 }
 
-unsigned int read4high(struct DataSource *data)
+unsigned int read4high(DataSource *data)
 {
 	unsigned char b0, b1, b2, b3;
 	b3 = (unsigned char)*data->buf_ptr++;
@@ -75,30 +75,30 @@ unsigned int read4high(struct DataSource *data)
 	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
 }
 
-void copy(char *b, int len, struct DataSource *data) {
+void copy(char *b, int len, DataSource *data) {
 	memcpy(b, data->buf_ptr, len);
 	data->buf_ptr += len;
 }
 
-void write1(unsigned int val, struct DataSource *data)
+void write1(unsigned int val, DataSource *data)
 {
 	*data->buf_ptr++ = val & 0xff;
 }
 
-void write2(unsigned int val, struct DataSource *data)
+void write2(unsigned int val, DataSource *data)
 {
 	*data->buf_ptr++ = val & 0xff;
 	*data->buf_ptr++ = (val>>8) & 0xff;
 }
 
-void write2high(unsigned int val, struct DataSource *data)
+void write2high(unsigned int val, DataSource *data)
 {
 	*data->buf_ptr++ = (val>>8) & 0xff;
 	*data->buf_ptr++ = val & 0xff;
 }
 
 
-void write4(unsigned int val, struct DataSource *data)
+void write4(unsigned int val, DataSource *data)
 {
 	*data->buf_ptr++ = val & 0xff;
 	*data->buf_ptr++ = (val>>8) & 0xff;
@@ -106,7 +106,7 @@ void write4(unsigned int val, struct DataSource *data)
 	*data->buf_ptr++ = (val>>24)&0xff;
 }
 
-void write4high(unsigned int val, struct DataSource *data)
+void write4high(unsigned int val, DataSource *data)
 {
 	*data->buf_ptr++ = (val>>24)&0xff;
 	*data->buf_ptr++ = (val>>16)&0xff;
@@ -114,15 +114,15 @@ void write4high(unsigned int val, struct DataSource *data)
 	*data->buf_ptr++ = val & 0xff;
 }
 
-void seek(unsigned int pos, struct DataSource *data) { data->buf_ptr = data->buf+pos; }
+void seek(unsigned int pos, DataSource *data) { data->buf_ptr = data->buf+pos; }
 
-void skip(int pos, struct DataSource *data) { data->buf_ptr += pos; }
+void skip(int pos, DataSource *data) { data->buf_ptr += pos; }
 
-unsigned int getSize(struct DataSource *data) { return (data->size); }
+unsigned int getSize(DataSource *data) { return (data->size); }
 
-unsigned int getPos(struct DataSource *data) { return (data->buf_ptr-data->buf); }
+unsigned int getPos(DataSource *data) { return (data->buf_ptr-data->buf); }
 
-unsigned char *getPtr(struct DataSource *data) { return (data->buf_ptr); }
+unsigned char *getPtr(DataSource *data) { return (data->buf_ptr); }
 
 // This is used to correct incorrect patch, vol and pan changes in midi files
 // The bias is just a value to used to work out if a vol and pan belong with a 
@@ -396,7 +396,7 @@ const char mt32asgs[256] = { 0, 0,	// 0	Piano 1
 		121, 0	// 127	Jungle Tune set to Breath Noise
 		};
 
-int retrieve(unsigned int track, struct DataSource *in, struct DataSource *out) {
+int retrieve(unsigned int track, DataSource *in, DataSource *out) {
 	int len = 0;
 	ExtractTracks(in);
 	/*
@@ -414,7 +414,7 @@ int retrieve(unsigned int track, struct DataSource *in, struct DataSource *out) 
 			DeleteEventList(events[i]);
 
 		free(events);
-		events = malloc(sizeof(struct midi_event));
+		events = malloc(sizeof(midi_event*));
 		events[0] = list;
 
 		info.tracks = 1;
@@ -457,9 +457,9 @@ int retrieve(unsigned int track, struct DataSource *in, struct DataSource *out) 
 	return (len + 14);
 }
 
-void DeleteEventList(struct midi_event *mlist) {
-	struct midi_event *event;
-	struct midi_event *next;
+void DeleteEventList(midi_event *mlist) {
+	midi_event *event;
+	midi_event *next;
 
 	next = mlist;
 	event = mlist;
@@ -473,9 +473,8 @@ void DeleteEventList(struct midi_event *mlist) {
 // Sets current to the new event and updates list
 void CreateNewEvent(int time) {
 	if (!list) {
-		list = current = malloc(sizeof(struct midi_event));
+		list = current = malloc(sizeof(midi_event));
 		current->next = NULL;
-		printf("time: %d\n\r",time);
 		if (time < 0)
 			current->time = 0;
 		else
@@ -486,7 +485,7 @@ void CreateNewEvent(int time) {
 	}
 
 	if (time < 0) {
-		struct midi_event *event = malloc(sizeof(struct midi_event));
+		midi_event *event = malloc(sizeof(midi_event));
 		event->next = list;
 		list = current = event;
 		current->time = 0;
@@ -500,7 +499,7 @@ void CreateNewEvent(int time) {
 
 	while (current->next) {
 		if (current->next->time > time) {
-			struct midi_event *event = malloc(sizeof(struct midi_event));
+			midi_event *event = malloc(sizeof(midi_event));
 
 			event->next = current->next;
 			current->next = event;
@@ -514,7 +513,7 @@ void CreateNewEvent(int time) {
 		current = current->next;
 	}
 
-	current->next = malloc(sizeof(struct midi_event));
+	current->next = malloc(sizeof(midi_event));
 	current = current->next;
 	current->next = NULL;
 	current->time = time;
@@ -523,7 +522,7 @@ void CreateNewEvent(int time) {
 }
 
 // Conventional Variable Length Quantity
-int GetVLQ(struct DataSource *source, unsigned int *quant) {
+int GetVLQ(DataSource *source, unsigned int *quant) {
 	int i;
 	unsigned int data;
 
@@ -543,7 +542,7 @@ int GetVLQ(struct DataSource *source, unsigned int *quant) {
 }
 
 // XMIDI Delta Variable Length Quantity
-int GetVLQ2(struct DataSource *source, unsigned int *quant) {
+int GetVLQ2(DataSource *source, unsigned int *quant) {
 	int i;
 	int data = 0;
 
@@ -559,7 +558,7 @@ int GetVLQ2(struct DataSource *source, unsigned int *quant) {
 	return (i);
 }
 
-int PutVLQ(struct DataSource *dest, unsigned int value) {
+int PutVLQ(DataSource *dest, unsigned int value) {
 	int buffer;
 	int i = 1;
 	buffer = value & 0x7F;
@@ -590,11 +589,11 @@ void MovePatchVolAndPan(int channel) {
 		return;
 	}
 
-	struct midi_event *patch = NULL;
-	struct midi_event *vol = NULL;
-	struct midi_event *pan = NULL;
-	struct midi_event *bank = NULL;
-	struct midi_event *temp;
+	midi_event *patch = NULL;
+	midi_event *vol = NULL;
+	midi_event *pan = NULL;
+	midi_event *bank = NULL;
+	midi_event *temp;
 
 	for (current = list; current;) {
 		if (!patch && (current->status >> 4) == 0xC
@@ -625,7 +624,7 @@ void MovePatchVolAndPan(int channel) {
 
 	// Copy Patch Change Event
 	temp = patch;
-	patch = malloc(sizeof(struct midi_event));
+	patch = malloc(sizeof(midi_event));
 	patch->time = temp->time;
 	patch->status = channel + 0xC0;
 	patch->len = 0;
@@ -639,7 +638,7 @@ void MovePatchVolAndPan(int channel) {
 		vol = NULL;
 
 	temp = vol;
-	vol = malloc(sizeof(struct midi_event));
+	vol = malloc(sizeof(midi_event));
 	vol->status = channel + 0xB0;
 	vol->data[0] = 7;
 	vol->len = 0;
@@ -658,7 +657,7 @@ void MovePatchVolAndPan(int channel) {
 
 	temp = bank;
 
-	bank = malloc(sizeof(struct midi_event));
+	bank = malloc(sizeof(midi_event));
 	bank->status = channel + 0xB0;
 	bank->data[0] = 0;
 	bank->len = 0;
@@ -676,7 +675,7 @@ void MovePatchVolAndPan(int channel) {
 		pan = NULL;
 
 	temp = pan;
-	pan = malloc(sizeof(struct midi_event));
+	pan = malloc(sizeof(midi_event));
 	pan->status = channel + 0xB0;
 	pan->data[0] = 10;
 	pan->len = 0;
@@ -702,7 +701,7 @@ void MovePatchVolAndPan(int channel) {
 // DuplicateAndMerge
 void DuplicateAndMerge(int num) {
 	int i;
-	struct midi_event **track;
+	midi_event **track;
 	int time = 0;
 	int start = 0;
 	int end = 1;
@@ -715,7 +714,7 @@ void DuplicateAndMerge(int num) {
 		end += num;
 	}
 
-	track = malloc(sizeof(struct midi_event) * info.tracks);
+	track = malloc(sizeof(midi_event*) * info.tracks);
 
 	for (i = 0; i < info.tracks; i++)
 		track[i] = events[i];
@@ -756,10 +755,10 @@ void DuplicateAndMerge(int num) {
 		}
 
 		if (current) {
-			current->next = malloc(sizeof(struct midi_event));
+			current->next = malloc(sizeof(midi_event));
 			current = current->next;
 		} else
-			list = current = malloc(sizeof(struct midi_event));
+			list = current = malloc(sizeof(midi_event));
 
 		current->next = NULL;
 
@@ -791,7 +790,7 @@ void DuplicateAndMerge(int num) {
 // Returns bytes converted
 
 int ConvertEvent(const int time, const unsigned char status,
-		struct DataSource *source, const int size) {
+		DataSource *source, const int size) {
 	unsigned int delta = 0;
 	int data;
 
@@ -871,7 +870,7 @@ int ConvertEvent(const int time, const unsigned char status,
 		return (2);
 
 	// XMI Note On handling
-	struct midi_event *prev = current;
+	midi_event *prev = current;
 	int i = GetVLQ(source, &delta);
 	CreateNewEvent(time + delta * 3);
 
@@ -885,7 +884,7 @@ int ConvertEvent(const int time, const unsigned char status,
 
 // Simple routine to convert system messages
 int ConvertSystemMessage(const int time, const unsigned char status,
-		struct DataSource *source) {
+		DataSource *source) {
 	int i = 0;
 
 	CreateNewEvent(time);
@@ -911,7 +910,7 @@ int ConvertSystemMessage(const int time, const unsigned char status,
 
 // XMIDI and Midi to List
 // Returns XMIDI PPQN
-int ConvertFiletoList(struct DataSource *source, const bool is_xmi) {
+int ConvertFiletoList(DataSource *source, const bool is_xmi) {
 	int time = 0;
 	unsigned int data;
 	int end = 0;
@@ -1008,9 +1007,9 @@ int ConvertFiletoList(struct DataSource *source, const bool is_xmi) {
 // Converts and event list to a MTrk
 // Returns bytes of the array
 // buf can be NULL
-unsigned int ConvertListToMTrk(struct DataSource *dest, struct midi_event *mlist) {
+unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist) {
 	int time = 0;
-	struct midi_event *event;
+	midi_event *event;
 	unsigned int delta;
 	unsigned char last_status = 0;
 	unsigned int i = 8;
@@ -1106,7 +1105,7 @@ unsigned int ConvertListToMTrk(struct DataSource *dest, struct midi_event *mlist
 }
 
 // Assumes correct xmidi
-int ExtractTracksFromXmi(struct DataSource *source) {
+int ExtractTracksFromXmi(DataSource *source) {
 	int num = 0;
 	signed short ppqn;
 	unsigned int len = 0;
@@ -1151,7 +1150,7 @@ int ExtractTracksFromXmi(struct DataSource *source) {
 	return (num);
 }
 
-int ExtractTracksFromMid(struct DataSource *source) {
+int ExtractTracksFromMid(DataSource *source) {
 	int num = 0;
 	unsigned int len = 0;
 	char buf[32];
@@ -1186,7 +1185,7 @@ int ExtractTracksFromMid(struct DataSource *source) {
 	return (num);
 }
 
-int ExtractTracks(struct DataSource *source) {
+int ExtractTracks(DataSource *source) {
 	unsigned int i = 0;
 	int start;
 	unsigned int len;
@@ -1281,7 +1280,7 @@ int ExtractTracks(struct DataSource *source) {
 
 		// Ok it's an XMID, so pass it to the ExtractCode
 
-		events = malloc(sizeof(struct midi_event) *info.tracks);
+		events = malloc(sizeof(midi_event*) *info.tracks);
 		timing = malloc(sizeof(signed short)*info.tracks);
 		fixed = malloc(sizeof(bool)*info.tracks);
 		info.type = 0;
@@ -1323,7 +1322,7 @@ int ExtractTracks(struct DataSource *source) {
 
 		info.tracks = read2high(source);
 
-		events = malloc(sizeof(struct midi_event) *info.tracks);
+		events = malloc(sizeof(midi_event*) *info.tracks);
 		timing = malloc(sizeof(signed short)*info.tracks);
 		fixed = malloc(sizeof(bool)*info.tracks);
 		timing[0] = read2high(source);

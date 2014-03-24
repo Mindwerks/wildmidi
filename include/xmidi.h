@@ -26,12 +26,6 @@
 #include <stddef.h>
 #include <string.h>
 
-struct DataSource{
-	unsigned char *buf, *buf_ptr;
-	unsigned int size;
-};
-
-
 // Conversion types for Midi files
 #define XMIDI_CONVERT_NOCONVERSION		0
 #define XMIDI_CONVERT_MT32_TO_GM		1
@@ -57,40 +51,42 @@ struct DataSource{
 // Maximum number of for loops we'll allow
 #define XMIDI_MAX_FOR_LOOP_COUNT	128
 
-struct midi_event {
+typedef struct {
+	unsigned char *buf, *buf_ptr;
+	unsigned int size;
+} DataSource;
+
+typedef struct midi_event midi_event;
+struct midi_event{
 	int time;
 	unsigned char status;
-
 	unsigned char data[2];
-
 	unsigned int len;
 	unsigned char *buffer;
-
-	struct midi_event *next;
+	midi_event *next;
 };
 
-
-struct midi_descriptor {
+typedef struct {
 	unsigned short type;
 	unsigned short tracks;
-};
+} midi_descriptor;
 
 
-struct midi_descriptor info;
+midi_descriptor info;
 
-struct midi_event **events;
+midi_event **events;
 signed short *timing;
 
-struct midi_event *list;
-struct midi_event *current;
+midi_event *list;
+midi_event *current;
 
 bool *fixed;
 
 // Retrieve it to a data source
-int retrieve(unsigned int track, struct DataSource *source, struct DataSource *dest);
+int retrieve(unsigned int track, DataSource *source, DataSource *dest);
 
 // External Event list functions
-void DeleteEventList(struct midi_event *mlist);
+void DeleteEventList(midi_event *mlist);
 
 // Not yet implemented
 // int apply_patch (int track, DataSource *source);
@@ -101,24 +97,24 @@ void DeleteEventList(struct midi_event *mlist);
 void CreateNewEvent(int time);
 
 // Variable length quantity
-int GetVLQ(struct DataSource *source, unsigned int *quant);
-int GetVLQ2(struct DataSource *source, unsigned int *quant);
-int PutVLQ(struct DataSource *dest, unsigned int value);
+int GetVLQ(DataSource *source, unsigned int *quant);
+int GetVLQ2(DataSource *source, unsigned int *quant);
+int PutVLQ(DataSource *dest, unsigned int value);
 
 void MovePatchVolAndPan(int channel);
 void DuplicateAndMerge(int num);
 
 int ConvertEvent(const int time, const unsigned char status,
-		struct DataSource *source, const int size);
+		DataSource *source, const int size);
 int ConvertSystemMessage(const int time, const unsigned char status,
-		struct DataSource *source);
+		DataSource *source);
 
-int ConvertFiletoList(struct DataSource *source, bool is_xmi);
-unsigned int ConvertListToMTrk(struct DataSource *dest, struct midi_event *mlist);
+int ConvertFiletoList(DataSource *source, bool is_xmi);
+unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist);
 
-int ExtractTracksFromXmi(struct DataSource *source);
-int ExtractTracksFromMid(struct DataSource *source);
+int ExtractTracksFromXmi(DataSource *source);
+int ExtractTracksFromMid(DataSource *source);
 
-int ExtractTracks(struct DataSource *source);
+int ExtractTracks(DataSource *source);
 
 #endif //RANDGEN_XMIDI_H
