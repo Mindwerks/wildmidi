@@ -17,88 +17,25 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-// XMIDI/MIDI Converter/Loader
-#ifndef RANDGEN_XMIDI_H
-#define RANDGEN_XMIDI_H
+/* XMIDI Converter */
 
-#include <stdbool.h> // C99
+#ifndef XMIDILIB_H
+#define XMIDILIB_H
 
-#include <stddef.h>
-#include <string.h>
-
-// Conversion types for Midi files
+/* Conversion types for Midi files */
 #define XMIDI_CONVERT_NOCONVERSION		0
 #define XMIDI_CONVERT_MT32_TO_GM		1
 #define XMIDI_CONVERT_MT32_TO_GS		2
-#define XMIDI_CONVERT_MT32_TO_GS127		3 // This one is broken so don't use
-#define XMIDI_CONVERT_MT32_TO_GS127DRUM	4 // This one is broken so don't use
+#define XMIDI_CONVERT_MT32_TO_GS127		3 /* This one is broken, don't use */
+#define XMIDI_CONVERT_MT32_TO_GS127DRUM		4 /* This one is broken, don't use */
 #define XMIDI_CONVERT_GS127_TO_GS		5
-
-// Midi Status Bytes
-#define MIDI_STATUS_NOTE_OFF		0x8
-#define MIDI_STATUS_NOTE_ON			0x9
-#define MIDI_STATUS_AFTERTOUCH		0xA
-#define MIDI_STATUS_CONTROLLER		0xB
-#define MIDI_STATUS_PROG_CHANGE		0xC
-#define MIDI_STATUS_PRESSURE		0xD
-#define MIDI_STATUS_PITCH_WHEEL		0xE
-#define MIDI_STATUS_SYSEX			0xF
-
-// XMIDI Controllers
-#define XMIDI_CONTROLLER_FOR_LOOP	116
-#define XMIDI_CONTROLLER_NEXT_BREAK	117
-
-// Maximum number of for loops we'll allow
-#define XMIDI_MAX_FOR_LOOP_COUNT	128
 
 typedef struct {
 	unsigned char *buf, *buf_ptr;
 	unsigned int size;
 } DataSource;
 
-typedef struct midi_event midi_event;
-struct midi_event{
-	int time;
-	unsigned char status;
-	unsigned char data[2];
-	unsigned int len;
-	unsigned char *buffer;
-	midi_event *next;
-};
-
-typedef struct {
-	unsigned short type;
-	unsigned short tracks;
-} midi_descriptor;
-
-
-midi_descriptor info;
-
-midi_event **events;
-signed short *timing;
-
-midi_event *list;
-midi_event *current;
-
-bool *fixed;
-
-// Retrieve it to a data source
+/* Retrieve it to a data source */
 int retrieve(unsigned int track, DataSource *source, DataSource *dest);
 
-void DeleteEventList(midi_event *mlist);
-void CreateNewEvent(int time); // List manipulation
-int GetVLQ(DataSource *source, unsigned int *quant); // Variable length quantity
-int GetVLQ2(DataSource *source, unsigned int *quant);// Variable length quantity
-int PutVLQ(DataSource *dest, unsigned int value);    // Variable length quantity
-void MovePatchVolAndPan(int channel);
-void DuplicateAndMerge(int num);
-int ConvertEvent(const int time, const unsigned char status,
-		DataSource *source, const int size);
-int ConvertSystemMessage(const int time, const unsigned char status,
-		DataSource *source);
-int ConvertFiletoList(DataSource *source);
-unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist);
-int ExtractTracksFromXmi(DataSource *source);
-int ExtractTracks(DataSource *source);
-
-#endif //RANDGEN_XMIDI_H
+#endif /* XMIDILIB_H */
