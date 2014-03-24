@@ -6,6 +6,7 @@ SET(wildmidi_library_SRCS
     wildmidi_lib.c
     reverb.c
     gus_pat.c
+    xmidi.c
 )
 
 # Headers:
