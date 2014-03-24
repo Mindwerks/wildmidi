@@ -2389,6 +2389,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		xin->buf_ptr = midi_data;
 		xin->size = midi_size;
 		midi_size = retrieve(0, xin, NULL);
+		xin->buf_ptr = midi_data;
 		xout = malloc(sizeof(DataSource));
 		xout->buf = malloc(midi_size);
 		xout->buf_ptr = xout->buf;
