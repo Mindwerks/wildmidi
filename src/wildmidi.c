@@ -1244,17 +1244,14 @@ int main(int argc, char **argv) {
 			if (!test_midi) {
 				const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
 
-				printf("Playing ");
-				if (real_file != NULL) {
-					printf("%s \r\n", (real_file + 1));
-				} else {
-					printf("%s \r\n", argv[optind]);
-				}
+				if (!real_file) real_file = argv[optind];
+				else real_file++;
+				printf("Playing %s \r\n", real_file);
 
 				midi_ptr = WildMidi_Open(argv[optind]);
 				optind++;
 				if (midi_ptr == NULL) {
-					fprintf(stderr, "\rSkipping %s\r\n", argv[optind]);
+					fprintf(stderr, "\rSkipping %s\r\n", real_file);
 					continue;
 				}
 			} else {
