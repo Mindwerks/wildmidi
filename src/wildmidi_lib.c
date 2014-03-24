@@ -2381,18 +2381,27 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint8_t *running_event;
 	uint32_t decay_samples = 0;
 
+	printf("size: %d\n\r", midi_size);
 	struct DataSource *xin;
-	xin->buf = midi_data;
-	xin->buf_ptr = midi_data;
-	xin->size = midi_size;
 	struct DataSource *xout;
-	xout = malloc(sizeof(struct DataSource));
 	if (!memcmp(midi_data, "FORM", 4)){ // detect possible xmi
+		xin = malloc(sizeof(struct DataSource));
+		xin->buf = midi_data;
+		xin->buf_ptr = midi_data;
+		xin->size = midi_size;
+		midi_size = retrieve(0, xin, NULL);
+		xout = malloc(sizeof(struct DataSource));
+		xout->buf = malloc(midi_size);
+		xout->buf_ptr = xout->buf;
 		retrieve(0, xin, xout);
-	}
+		//free(midi_data);
+		midi_data = xout->buf;
+		printf("size: %d\n\r", midi_size);
 
-	if (!memcmp(xout->buf, "MThd", 4)) {
-		printf("It is an XMID\n");
+		#include <stdio.h>
+		FILE * pFile = fopen ("eob.mid", "wb");
+		fwrite(midi_data, sizeof(uint8_t), midi_size, pFile);
+		fclose (pFile);
 	}
 
 	if (!memcmp(midi_data, "RIFF", 4)) {

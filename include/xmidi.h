@@ -90,7 +90,6 @@ bool *fixed;
 int retrieve(unsigned int track, struct DataSource *source, struct DataSource *dest);
 
 // External Event list functions
-int retrieveEventList(unsigned int track, struct midi_event **dest, int *ppqn);
 void DeleteEventList(struct midi_event *mlist);
 
 // Not yet implemented

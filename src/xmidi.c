@@ -23,10 +23,7 @@
 #include <stdlib.h>
 
 static bool bank127[16] = {0};
-static int convert_type = 0;
-
-static struct DataSource *dest;
-static struct DataSource *source;
+static int convert_type = XMIDI_CONVERT_MT32_TO_GS;
 
 int number_of_tracks() {
 	if (info.type != 1)
@@ -38,44 +35,43 @@ int number_of_tracks() {
 unsigned int read1(struct DataSource *data)
 {
 	unsigned char b0;
-	b0 = (unsigned char)data->buf_ptr++;
+	b0 = (unsigned char)*data->buf_ptr++;
 	return (b0);
 }
 
 unsigned int read2(struct DataSource *data)
 {
 	unsigned char b0, b1;
-	b0 = (unsigned char)data->buf_ptr++;
-	b1 = (unsigned char)data->buf_ptr++;
+	b0 = (unsigned char)*data->buf_ptr++;
+	b1 = (unsigned char)*data->buf_ptr++;
 	return (b0 + (b1 << 8));
 }
 
 unsigned int read2high(struct DataSource *data)
 {
 	unsigned char b0, b1;
-	b1 = (unsigned char)data->buf_ptr++;
-	b0 = (unsigned char)data->buf_ptr++;
+	b1 = (unsigned char)*data->buf_ptr++;
+	b0 = (unsigned char)*data->buf_ptr++;
 	return (b0 + (b1 << 8));
 }
 
 unsigned int read4(struct DataSource *data)
 {
 	unsigned char b0, b1, b2, b3;
-	b0 = (unsigned char)data->buf_ptr++;
-	b1 = (unsigned char)data->buf_ptr++;
-	b2 = (unsigned char)data->buf_ptr++;
-	b3 = (unsigned char)data->buf_ptr++;
+	b0 = (unsigned char)*data->buf_ptr++;
+	b1 = (unsigned char)*data->buf_ptr++;
+	b2 = (unsigned char)*data->buf_ptr++;
+	b3 = (unsigned char)*data->buf_ptr++;
 	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
 }
 
 unsigned int read4high(struct DataSource *data)
 {
 	unsigned char b0, b1, b2, b3;
-	b3 = (unsigned char)data->buf_ptr++;
-	b2 = (unsigned char)data->buf_ptr++;
-	b1 = (unsigned char)data->buf_ptr++;
-	b0 = (unsigned char)data->buf_ptr++;
-	printf("data %d\n\r", (b0 + (b1<<8) + (b2<<16) + (b3<<24)) );
+	b3 = (unsigned char)*data->buf_ptr++;
+	b2 = (unsigned char)*data->buf_ptr++;
+	b1 = (unsigned char)*data->buf_ptr++;
+	b0 = (unsigned char)*data->buf_ptr++;
 	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
 }
 
@@ -86,48 +82,36 @@ void copy(char *b, int len, struct DataSource *data) {
 
 void write1(unsigned int val, struct DataSource *data)
 {
-	data->buf_ptr = val & 0xff;
-	data->buf_ptr++;
+	*data->buf_ptr++ = val & 0xff;
 }
 
 void write2(unsigned int val, struct DataSource *data)
 {
-	data->buf_ptr = val & 0xff;
-	data->buf_ptr++;
-	data->buf_ptr = (val>>8) & 0xff;
-	data->buf_ptr++;
+	*data->buf_ptr++ = val & 0xff;
+	*data->buf_ptr++ = (val>>8) & 0xff;
 }
 
 void write2high(unsigned int val, struct DataSource *data)
 {
-	data->buf_ptr = (val>>8) & 0xff;
-	data->buf_ptr++;
-	data->buf_ptr = val & 0xff;
-	data->buf_ptr++;
+	*data->buf_ptr++ = (val>>8) & 0xff;
+	*data->buf_ptr++ = val & 0xff;
 }
 
 
 void write4(unsigned int val, struct DataSource *data)
 {
-	data->buf_ptr = val & 0xff;
-	data->buf_ptr++;
-	data->buf_ptr = (val>>8) & 0xff;
-	data->buf_ptr++;
-	data->buf_ptr = (val>>16)&0xff;
-	data->buf_ptr++;
-	data->buf_ptr = (val>>24)&0xff;
-	data->buf_ptr++;
+	*data->buf_ptr++ = val & 0xff;
+	*data->buf_ptr++ = (val>>8) & 0xff;
+	*data->buf_ptr++ = (val>>16)&0xff;
+	*data->buf_ptr++ = (val>>24)&0xff;
 }
 
 void write4high(unsigned int val, struct DataSource *data)
 {
-	data->buf_ptr = (val>>24)&0xff;
-	data->buf_ptr++;
-	data->buf_ptr = (val>>16)&0xff;
-	data->buf_ptr++;
-	data->buf_ptr = (val>>8) & 0xff;
-	data->buf_ptr++;
-	data->buf_ptr = val & 0xff;
+	*data->buf_ptr++ = (val>>24)&0xff;
+	*data->buf_ptr++ = (val>>16)&0xff;
+	*data->buf_ptr++ = (val>>8) & 0xff;
+	*data->buf_ptr++ = val & 0xff;
 }
 
 void seek(unsigned int pos, struct DataSource *data) { data->buf_ptr = data->buf+pos; }
@@ -412,36 +396,9 @@ const char mt32asgs[256] = { 0, 0,	// 0	Piano 1
 		121, 0	// 127	Jungle Tune set to Breath Noise
 		};
 
-
-// Constructor
-/*
-XMIDI(struct DataSource *source, int pconvert) :
-		events(NULL), timing(NULL), convert_type(pconvert), fixed(NULL) {
-	int i = 16;
-	while (i--)
-		bank127[i] = 0;
-
-	ExtractTracks(source);
-}
-
-~XMIDI() {
-	if (events) {
-		for (int i = 0; i < info.tracks; i++)
-			DeleteEventList(events[i]);
-		delete[] events;
-	}
-	if (timing)
-		delete[] timing;
-	if (fixed)
-		delete[] fixed;
-}
-*/
-
 int retrieve(unsigned int track, struct DataSource *in, struct DataSource *out) {
 	int len = 0;
-	source = in;
-	dest = out;
-	ExtractTracks(source);
+	ExtractTracks(in);
 	/*
 	if (!events) {
 		printf("No midi data in loaded.\n");
@@ -478,45 +435,26 @@ int retrieve(unsigned int track, struct DataSource *in, struct DataSource *out) 
 	}
 
 	// This is so if using buffer datasource, the caller can know how big to make the buffer
-	if (!dest) {
+	if (!out) {
 		// Header is 14 bytes long and add the rest as well
 		len = ConvertListToMTrk(NULL, events[track]);
 		return (14 + len);
 	}
 
-	write1('M', dest);
-	write1('T', dest);
-	write1('h', dest);
-	write1('d', dest);
+	write1('M', out);
+	write1('T', out);
+	write1('h', out);
+	write1('d', out);
 
-	write4high(6, dest);
+	write4high(6, out);
 
-	write2high(0, dest);
-	write2high(1, dest);
-	write2high(timing[track], dest);
+	write2high(0, out);
+	write2high(1, out);
+	write2high(timing[track], out);
 
-	len = ConvertListToMTrk(dest, events[track]);
+	len = ConvertListToMTrk(out, events[track]);
 
 	return (len + 14);
-}
-
-int retrieveEventList(unsigned int track, struct midi_event **dest, int *ppqn) {
-	if (!events) {
-		printf("No midi data in loaded.\n");
-		return (0);
-	}
-
-	if ((info.type == 1 && track != 0) || (track >= info.tracks)) {
-		printf("Can't retrieve MIDI data, track out of range.\n");
-		return (0);
-	}
-	DuplicateAndMerge(track);
-	MovePatchVolAndPan(-1);
-
-	*dest = list;
-	ppqn = timing[track];
-
-	return (1);
 }
 
 void DeleteEventList(struct midi_event *mlist) {
@@ -537,6 +475,7 @@ void CreateNewEvent(int time) {
 	if (!list) {
 		list = current = malloc(sizeof(struct midi_event));
 		current->next = NULL;
+		printf("time: %d\n\r",time);
 		if (time < 0)
 			current->time = 0;
 		else
@@ -1313,17 +1252,14 @@ int ExtractTracks(struct DataSource *source) {
 
 			// Ok now to start part 2
 			// Goto the right place
-			printf("source %s %d\n\r", source->buf_ptr, len);
-			printf("len %d %d\n\r", len, (len + 1) & ~1);
-			//seek(start + ((len + 1) & ~1), source);
-			printf("source %s - %d %d %d\n\r", source->buf_ptr, start, (len + 1),  ((len + 1) & ~1));
+			seek(start + ((len + 1) & ~1), source);
 
 			// Read 4 bytes of type
 			copy(buf, 4, source);
 
 			// Not an XMID
 			if (memcmp(buf, "CAT ", 4)) {
-				printf("Not a recognised XMID (%s%s%s%s) should be (CAT )\n", buf[0],buf[1],buf[2],buf[3]);
+				printf("Not a recognised XMID (%c%c%c%c) should be (CAT )\n", buf[0],buf[1],buf[2],buf[3]);
 				return (0);
 			}
 
@@ -1335,7 +1271,7 @@ int ExtractTracks(struct DataSource *source) {
 
 			// Not an XMID
 			if (memcmp(buf, "XMID", 4)) {
-				printf("Not a recognised XMID (%s%s%s%s) should be (XMID)\n", buf[0],buf[1],buf[2],buf[3]);
+				printf("Not a recognised XMID (%c%c%c%c) should be (XMID)\n", buf[0],buf[1],buf[2],buf[3]);
 				return (0);
 			}
 
@@ -1398,7 +1334,7 @@ int ExtractTracks(struct DataSource *source) {
 		count = ExtractTracksFromMid(source);
 
 		if (count != info.tracks) {
-			printf("Error: unable to extract all (%s) tracks specified from MIDI. Only (%s)", info.tracks, count);
+			printf("Error: unable to extract all (%d) tracks specified from MIDI. Only (%d)", info.tracks, count);
 
 			for (i = 0; i < info.tracks; i++)
 				DeleteEventList(events[i]);
