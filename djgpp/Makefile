@@ -43,7 +43,7 @@ endif
 
 # Objects
 LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
-PLAYER_OBJ= getopt_long.o wildmidi.o
+PLAYER_OBJ= getopt_long.o wm_tty.o wildmidi.o
 
 # Build targets
 TARGETS = libWildMidi.a wildmidi.exe

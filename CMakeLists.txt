@@ -62,7 +62,6 @@ ENDIF()
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(
-        -pedantic
         -Wall -W
         )
 

@@ -84,14 +84,10 @@ static int msleep(unsigned long millisec);
 #   include <al.h>
 #   include <alc.h>
 #endif
-#define _XOPEN_SOURCE 600 /* for ONLCR */
-#include <termios.h>
-#ifndef FNONBLOCK
-#define FNONBLOCK O_NONBLOCK
-#endif
 #endif /* !_WIN32, !__DJGPP__ (unix build) */
 
 #include "wildmidi_lib.h"
+#include "wm_tty.h"
 #include "filenames.h"
 
 static char *wm_strdup (const char *str);
@@ -926,20 +922,6 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample;
 	int inpause = 0;
 
-#if !defined(_WIN32) && !defined(__DJGPP__)
-	int my_tty;
-	struct termios _tty;
-	tcflag_t _res_oflg = 0;
-	tcflag_t _res_lflg = 0;
-
-#define raw() (_tty.c_lflag &= ~(ICANON | ICRNL | ISIG), \
-		_tty.c_oflag &= ~ONLCR, tcsetattr(my_tty, TCSANOW, &_tty))
-#define savetty() ((void) tcgetattr(my_tty, &_tty), \
-		_res_oflg = _tty.c_oflag, _res_lflg = _tty.c_lflag)
-#define resetty() (_tty.c_oflag = _res_oflg, _tty.c_lflag = _res_lflg,\
-		(void) tcsetattr(my_tty, TCSADRAIN, &_tty))
-#endif /* !_WIN32, !__DJGPP__ */
-
 	do_version();
 	while (1) {
 		i = getopt_long(argc, argv, "vho:lr:c:m:btk:p:ed:wn", long_options,
@@ -1050,14 +1032,7 @@ int main(int argc, char **argv) {
 			return (1);
 		}
 
-#if !defined(_WIN32) && !defined(__DJGPP__)
-		my_tty = fileno(stdin);
-		if (isatty(my_tty)) {
-			savetty();
-			raw();
-			fcntl(0, F_SETFL, FNONBLOCK);
-		}
-#endif
+		wm_inittty();
 
 		WildMidi_MasterVolume(master_volume);
 
@@ -1122,7 +1097,7 @@ int main(int argc, char **argv) {
 					putch(ch);
 				}
 #else
-				if (read(my_tty, &ch, 1) != 1)
+				if (read(STDIN_FILENO, &ch, 1) != 1)
 					ch = 0;
 #endif
 				if (ch) {
@@ -1261,10 +1236,7 @@ end2:		close_output();
 		free(config_file);
 		if (WildMidi_Shutdown() == -1)
 			fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
-#if !defined(_WIN32) && !defined(__DJGPP__)
-		if (isatty(my_tty))
-			resetty();
-#endif
+		wm_resetty();
 	} else {
 		fprintf(stderr, "ERROR: No midi file given\r\n");
 		free(config_file);
