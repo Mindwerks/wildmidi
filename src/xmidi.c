@@ -810,18 +810,14 @@ int ConvertSystemMessage(const int time, const unsigned char status,
 
 // XMIDI and Midi to List
 // Returns XMIDI PPQN
-int ConvertFiletoList(DataSource *source, const bool is_xmi) {
+int ConvertFiletoList(DataSource *source) {
 	int time = 0;
 	unsigned int data;
 	int end = 0;
 	int tempo = 500000;
 	int tempo_set = 0;
 	unsigned int status = 0;
-	int play_size = 2;
 	unsigned int file_size = getSize(source);
-
-	if (is_xmi)
-		play_size = 3;
 
 	// Set Drum track to correct setting if required
 	if (convert_type == XMIDI_CONVERT_MT32_TO_GS127) {
@@ -832,27 +828,14 @@ int ConvertFiletoList(DataSource *source, const bool is_xmi) {
 	}
 
 	while (!end && getPos(source) < file_size) {
+		GetVLQ2(source, &data);
+		time += data * 3;
 
-		if (!is_xmi) {
-			GetVLQ(source, &data);
-			time += data;
-
-			data = read1(source);
-
-			if (data >= 0x80) {
-				status = data;
-			} else
-				skip(-1,source);
-		} else {
-			GetVLQ2(source, &data);
-			time += data * 3;
-
-			status = read1(source);
-		}
+		status = read1(source);
 
 		switch (status >> 4) {
 		case MIDI_STATUS_NOTE_ON:
-			ConvertEvent(time, status, source, play_size);
+			ConvertEvent(time, status, source, 3);
 			break;
 
 			// 2 byte data
@@ -884,7 +867,7 @@ int ConvertFiletoList(DataSource *source, const bool is_xmi) {
 					tempo += read1(source);
 					tempo *= 3;
 					tempo_set = 1;
-				} else if (dat == 0x51 && tempo_set && is_xmi) // Skip any other tempo changes
+				} else if (dat == 0x51 && tempo_set) // Skip any other tempo changes
 						{
 					GetVLQ(source, &dat);
 					skip(dat,source);
@@ -1032,7 +1015,7 @@ int ExtractTracksFromXmi(DataSource *source) {
 		int begin = getPos(source);
 
 		// Convert it
-		if (!(ppqn = ConvertFiletoList(source, true))) {
+		if (!(ppqn = ConvertFiletoList(source))) {
 			printf("Unable to convert data\n");
 			break;
 		}
