@@ -93,7 +93,6 @@ static int msleep(unsigned long millisec);
 #include "wm_tty.h"
 #include "filenames.h"
 
-static char *wm_strdup (const char *str);
 
 struct _midi_test {
 	uint8_t *data;
@@ -651,7 +650,7 @@ static int open_sb_output(void)
 
 static int alsa_first_time = 1;
 static snd_pcm_t *pcm = NULL;
-static char *pcmname = NULL;
+static char pcmname[64];
 
 #define open_audio_output open_alsa_output
 static int write_alsa_output(int8_t *output_data, int output_size);
@@ -665,8 +664,8 @@ static int open_alsa_output(void) {
 	unsigned int alsa_period_time;
 	unsigned int r;
 
-	if (!pcmname) {
-		pcmname = wm_strdup("default");
+	if (!pcmname[0]) {
+		strcpy(pcmname, "default");
 	}
 
 	if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
@@ -738,7 +737,6 @@ static int open_alsa_output(void) {
 	close_output = close_alsa_output;
 	pause_output = pause_output_nop;
 	resume_output = resume_output_nop;
-	free(pcmname);
 	return (0);
 
 fail:	close_alsa_output();
@@ -791,7 +789,7 @@ static void close_alsa_output(void) {
 #define DEFAULT_FRAGSIZE 14
 #define DEFAULT_NUMFRAGS 16
 
-static char *pcmname = NULL;
+static char pcmname[64];
 
 #define open_audio_output open_oss_output
 static int write_oss_output(int8_t *output_data, int output_size);
@@ -805,8 +803,8 @@ static int open_oss_output(void) {
 	int tmp;
 	unsigned int r;
 
-	if (!pcmname) {
-		pcmname = wm_strdup("/dev/dsp");
+	if (!pcmname[0]) {
+		strcpy(pcmname, "/dev/dsp");
 	}
 
 	if ((audio_fd = open(pcmname, O_WRONLY)) < 0) {
@@ -849,7 +847,6 @@ static int open_oss_output(void) {
 	close_output = close_oss_output;
 	pause_output = pause_output_oss;
 	resume_output = resume_output_nop;
-	free(pcmname);
 	return (0);
 
 fail:	close_oss_output();
@@ -1068,12 +1065,13 @@ static void do_syntax(void) {
 	printf("Usage: wildmidi [options] filename.mid\n\n");
 }
 
+static char config_file[1024];
+
 int main(int argc, char **argv) {
 	struct _WM_Info *wm_info;
 	int i, res;
 	int option_index = 0;
 	uint32_t mixer_options = 0;
-	char *config_file = NULL;
 	void *midi_ptr;
 	uint8_t master_volume = 100;
 	int8_t *output_buffer;
@@ -1095,6 +1093,11 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample;
 	int inpause = 0;
 	long libraryver;
+
+#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+	pcmname[0] = 0;
+#endif
+	config_file[0] = 0;
 
 	do_version();
 	while (1) {
@@ -1124,10 +1127,6 @@ int main(int argc, char **argv) {
 			master_volume = (uint8_t) atoi(optarg);
 			break;
 		case 'o': /* Wav Output */
-#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
-			free(pcmname);	/* we won't output to the sound device */
-			pcmname = NULL;
-#endif
 			if (!*optarg) {
 				fprintf(stderr, "Error: empty wavfile name.\n");
 				return (1);
@@ -1135,7 +1134,8 @@ int main(int argc, char **argv) {
 			strcpy(wav_file, optarg);
 			break;
 		case 'c': /* Config File */
-			config_file = wm_strdup(optarg);
+			strncpy(config_file, optarg, sizeof(config_file));
+			config_file[sizeof(config_file) - 1] = 0;
 			break;
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 		case 'd': /* Output device */
@@ -1143,7 +1143,8 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "Error: empty device name.\n");
 				return (1);
 			}
-			pcmname = wm_strdup(optarg);
+			strncpy(pcmname, optarg, sizeof(pcmname));
+			pcmname[sizeof(pcmname) - 1] = 0;
 			break;
 #endif
 		case 'e': /* Enhanced Resampling */
@@ -1174,8 +1175,9 @@ int main(int argc, char **argv) {
 	}
 
 	if (optind < argc || test_midi) {
-		if (!config_file) {
-			config_file = wm_strdup(WILDMIDI_CFG);
+		if (!config_file[0]) {
+			strncpy(config_file, WILDMIDI_CFG, sizeof(config_file));
+			config_file[sizeof(config_file) - 1] = 0;
 		}
 
 		printf("Initializing Sound System\n");
@@ -1403,13 +1405,11 @@ end1:		memset(output_buffer, 0, 16384);
 		msleep(5);
 end2:		close_output();
 		free(output_buffer);
-		free(config_file);
 		if (WildMidi_Shutdown() == -1)
 			fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
 		wm_resetty();
 	} else {
 		fprintf(stderr, "ERROR: No midi file given\r\n");
-		free(config_file);
 		do_syntax();
 		return (1);
 	}
@@ -1432,13 +1432,3 @@ static int msleep(unsigned long milisec) {
 	return (1);
 }
 #endif
-
-static char *wm_strdup (const char *str) {
-	size_t l = strlen(str) + 1;
-	char *d = (char *) malloc(l * sizeof(char));
-	if (d) {
-		strcpy(d, str);
-		return d;
-	}
-	return NULL;
-}
