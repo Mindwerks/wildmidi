@@ -2381,21 +2381,20 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint8_t *running_event;
 	uint32_t decay_samples = 0;
 
-	DataSource *xin;
-	DataSource *xout;
-	if (!memcmp(midi_data, "FORM", 4)){ // detect possible xmi
-		xin = malloc(sizeof(DataSource));
-		xin->buf = midi_data;
-		xin->buf_ptr = midi_data;
-		xin->size = midi_size;
-		midi_size = retrieve(0, xin, NULL);
-		xin->buf_ptr = midi_data;
-		xout = malloc(sizeof(DataSource));
-		xout->buf = malloc(midi_size);
-		xout->buf_ptr = xout->buf;
-		retrieve(0, xin, xout);
-		//free(midi_data);
-		midi_data = xout->buf;
+	uint8_t *xmid_data = NULL;
+
+	if (!memcmp(midi_data, "FORM", 4)) { /* possibly xmi */
+		DataSource xin, xout;
+		xin.buf = midi_data;
+		xin.buf_ptr = midi_data;
+		xin.size = midi_size;
+		midi_size = retrieve(0, &xin, NULL);
+		xin.buf_ptr = midi_data;
+		xmid_data = malloc(midi_size);
+		xout.buf = xmid_data;
+		xout.buf_ptr = xmid_data;
+		retrieve(0, &xin, &xout);
+		midi_data = xout.buf;
 	}
 
 	if (!memcmp(midi_data, "RIFF", 4)) {
@@ -2404,6 +2403,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	}
 	if (memcmp(midi_data, "MThd", 4)) {
 		printf("Not a midi file\n");
+		if (xmid_data) free(xmid_data);
 		return NULL;
 	}
 	midi_data += 4;
@@ -2411,6 +2411,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 
 	if (midi_size < 10) {
 		printf("Midi File Too Short\n");
+		if (xmid_data) free(xmid_data);
 		return NULL;
 	}
 
@@ -2424,6 +2425,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 4;
 	if (tmp_val != 6) {
 		printf("Corrupt Midi Header\n");
+		if (xmid_data) free(xmid_data);
 		return NULL;
 	}
 
@@ -2435,6 +2437,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val > 1) {
 		printf("Midi Format Not Supported\n");
+		if (xmid_data) free(xmid_data);
 		return NULL;
 	}
 
@@ -2446,6 +2449,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val < 1) {
 		printf("Midi Contains No Tracks\n");
+		if (xmid_data) free(xmid_data);
 		return NULL;
 	}
 	no_tracks = tmp_val;
@@ -2458,6 +2462,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (divisions & 0x00008000) {
 		printf("Division Type Not Supported\n");
+		if (xmid_data) free(xmid_data);
 		return NULL;
 	}
 
@@ -2844,6 +2849,7 @@ _end:	if (sysex_store) free(sysex_store);
 	free(tracks);
 	if (mdi->reverb) return mdi;
 	if (mdi->events) free(mdi->events);
+	if (xmid_data) free(xmid_data);
 	free(mdi);
 	return NULL;
 }
