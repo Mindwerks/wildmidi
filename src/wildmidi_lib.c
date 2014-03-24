@@ -2843,13 +2843,13 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	WM_ResetToStart(mdi);
 
 _end:	if (sysex_store) free(sysex_store);
+	if (xmid_data) free(xmid_data);
 	free(track_end);
 	free(track_delta);
 	free(running_event);
 	free(tracks);
 	if (mdi->reverb) return mdi;
 	if (mdi->events) free(mdi->events);
-	if (xmid_data) free(xmid_data);
 	free(mdi);
 	return NULL;
 }
