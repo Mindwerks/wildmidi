@@ -50,8 +50,8 @@ typedef struct {
 	unsigned int size;
 } DataSource;
 
-DataSource *source;
-DataSource *dest;
+static DataSource *source;
+static DataSource *dest;
 
 typedef struct midi_event midi_event;
 struct midi_event{
