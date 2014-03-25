@@ -2384,6 +2384,9 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	if (!memcmp(midi_data, "FORM", 4) && initXMI(midi_data, midi_size)) { /* possibly xmi */
 		xmi2midi(0,0);
 		midi_data = getMidi();
+		midi_size = getMidiSize();
+	} else {
+		freeXMI();
 	}
 
 	if (!memcmp(midi_data, "RIFF", 4)) {

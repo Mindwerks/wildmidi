@@ -459,12 +459,20 @@ bool initXMI(uint8_t *xmidi_data, uint32_t xmidi_size){
 }
 
 void freeXMI(void){
-	if (source->buf)
-		free (source->buf);
+	free (source->buf);
+	free(source);
+	source = NULL;
+	free (dest->buf);
+	free(dest);
+	dest = NULL;
 }
 
 uint8_t * getMidi(void){
 	return dest->buf;
+}
+
+uint32_t getMidiSize(void){
+	return dest->size;
 }
 
 uint32_t xmi2midi(unsigned int track, bool findSize) {

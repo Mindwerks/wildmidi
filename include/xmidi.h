@@ -38,6 +38,7 @@ bool initXMI(uint8_t *midi_data, uint32_t midi_size);
 void freeXMI(void);
 uint32_t xmi2midi(unsigned int track, bool getSize);
 unsigned short getTracks(void);
-uint8_t *  getMidi(void);
+uint8_t * getMidi(void);
+uint32_t getMidiSize(void);
 
 #endif /* XMIDILIB_H */
