@@ -46,8 +46,8 @@
 #define XMIDI_MAX_FOR_LOOP_COUNT	128
 
 typedef struct {
-	unsigned char *buf, *buf_ptr;
-	unsigned int size;
+	uint8_t *buf, *buf_ptr;
+	uint32_t size;
 } DataSource;
 
 static DataSource *source;
@@ -55,17 +55,17 @@ static DataSource *dest;
 
 typedef struct midi_event midi_event;
 struct midi_event{
-	int time;
-	unsigned char status;
-	unsigned char data[2];
-	unsigned int len;
-	unsigned char *buffer;
+	int32_t time;
+	uint8_t status;
+	uint8_t data[2];
+	uint32_t len;
+	uint8_t *buffer;
 	midi_event *next;
 };
 
 typedef struct {
-	unsigned short type;
-	unsigned short tracks;
+	uint16_t type;
+	uint16_t tracks;
 } midi_descriptor;
 
 static midi_descriptor info;
@@ -76,48 +76,48 @@ static midi_event *current;
 
 static bool *fixed;
 static bool bank127[16] = {0};
-static int convert_type = XMIDI_CONVERT_MT32_TO_GS;
+static int32_t convert_type = XMIDI_CONVERT_MT32_TO_GS;
 
 /* forward declarations of private functions */
 static void DeleteEventList(midi_event *mlist);
-static void CreateNewEvent(int time); /* List manipulation */
-static int GetVLQ(DataSource *source, unsigned int *quant); /* Variable length quantity */
-static int GetVLQ2(DataSource *source, unsigned int *quant);/* Variable length quantity */
-static int PutVLQ(DataSource *dest, unsigned int value);    /* Variable length quantity */
-static void MovePatchVolAndPan(int channel);
-static int ConvertEvent(const int time, const unsigned char status,
-				DataSource *source, const int size);
-static int ConvertSystemMessage(const int time, const unsigned char status,
+static void CreateNewEvent(int32_t time); /* List manipulation */
+static int32_t GetVLQ(DataSource *source, uint32_t *quant); /* Variable length quantity */
+static int32_t GetVLQ2(DataSource *source, uint32_t *quant);/* Variable length quantity */
+static int32_t PutVLQ(DataSource *dest, uint32_t value);    /* Variable length quantity */
+static void MovePatchVolAndPan(int32_t channel);
+static int32_t ConvertEvent(const int32_t time, const uint8_t status,
+				DataSource *source, const int32_t size);
+static int32_t ConvertSystemMessage(const int32_t time, const uint8_t status,
 				DataSource *source);
-static int ConvertFiletoList(DataSource *source);
-static unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist);
-static int ExtractTracks(DataSource *source);
-static int ExtractTracksFromXmi(DataSource *source);
+static int32_t ConvertFiletoList(DataSource *source);
+static uint32_t ConvertListToMTrk(DataSource *dest, midi_event *mlist);
+static int32_t ExtractTracks(DataSource *source);
+static int32_t ExtractTracksFromXmi(DataSource *source);
 
 
-unsigned short getTracks(void)
+uint8_t getTracks(void)
 {
 	return (info.tracks);
 }
 
-static unsigned int read1(DataSource *data)
+static uint32_t read1(DataSource *data)
 {
-	unsigned char b0;
+	uint8_t b0;
 	b0 = *data->buf_ptr++;
 	return (b0);
 }
 
-static unsigned int read2(DataSource *data)
+static uint32_t read2(DataSource *data)
 {
-	unsigned char b0, b1;
+	uint8_t b0, b1;
 	b0 = *data->buf_ptr++;
 	b1 = *data->buf_ptr++;
 	return (b0 + (b1 << 8));
 }
 
-static unsigned int read4(DataSource *data)
+static uint32_t read4(DataSource *data)
 {
-	unsigned char b0, b1, b2, b3;
+	uint8_t b0, b1, b2, b3;
 	b3 = *data->buf_ptr++;
 	b2 = *data->buf_ptr++;
 	b1 = *data->buf_ptr++;
@@ -125,24 +125,24 @@ static unsigned int read4(DataSource *data)
 	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
 }
 
-static void copy(char *b, int len, DataSource *data)
+static void copy(char *b, int32_t len, DataSource *data)
 {
 	memcpy(b, data->buf_ptr, len);
 	data->buf_ptr += len;
 }
 
-static void write1(unsigned int val, DataSource *data)
+static void write1(uint32_t val, DataSource *data)
 {
 	*data->buf_ptr++ = val & 0xff;
 }
 
-static void write2(unsigned int val, DataSource *data)
+static void write2(uint32_t val, DataSource *data)
 {
 	*data->buf_ptr++ = (val>>8) & 0xff;
 	*data->buf_ptr++ = val & 0xff;
 }
 
-static void write4(unsigned int val, DataSource *data)
+static void write4(uint32_t val, DataSource *data)
 {
 	*data->buf_ptr++ = (val>>24)&0xff;
 	*data->buf_ptr++ = (val>>16)&0xff;
@@ -150,19 +150,19 @@ static void write4(unsigned int val, DataSource *data)
 	*data->buf_ptr++ = val & 0xff;
 }
 
-static void seek(unsigned int pos, DataSource *data) {
+static void seek(uint32_t pos, DataSource *data) {
 	data->buf_ptr = data->buf+pos;
 }
 
-static void skip(int pos, DataSource *data) {
+static void skip(int32_t pos, DataSource *data) {
 	data->buf_ptr += pos;
 }
 
-static unsigned int getSize(DataSource *data) {
+static uint32_t getSize(DataSource *data) {
 	return data->size;
 }
 
-static unsigned int getPos(DataSource *data) {
+static uint32_t getPos(DataSource *data) {
 	return (data->buf_ptr - data->buf);
 }
 
@@ -454,12 +454,12 @@ bool initXMI(uint8_t *xmidi_data, uint32_t xmidi_size){
 
 	dest = malloc(sizeof(DataSource));
 	dest->buf = malloc(midi_size);
+	source->buf_ptr = source->buf;
 	dest->buf_ptr = dest->buf;
 	return (true);
 }
 
 void freeXMI(void){
-	free (source->buf);
 	free(source);
 	source = NULL;
 	free (dest->buf);
@@ -475,8 +475,8 @@ uint32_t getMidiSize(void){
 	return dest->size;
 }
 
-uint32_t xmi2midi(unsigned int track, bool findSize) {
-	int len = 0;
+uint32_t xmi2midi(uint32_t track, bool findSize) {
+	int32_t len = 0;
 
 	ExtractTracks(source);
 	if (!events) {
@@ -532,7 +532,7 @@ static void DeleteEventList(midi_event *mlist) {
 }
 
 /* Sets current to the new event and updates list */
-static void CreateNewEvent(int time) {
+static void CreateNewEvent(int32_t time) {
 	if (!list) {
 		list = current = malloc(sizeof(midi_event));
 		current->next = NULL;
@@ -583,9 +583,9 @@ static void CreateNewEvent(int time) {
 }
 
 /* Conventional Variable Length Quantity */
-static int GetVLQ(DataSource *source, unsigned int *quant) {
-	int i;
-	unsigned int data;
+static int32_t GetVLQ(DataSource *source, uint32_t *quant) {
+	int32_t i;
+	uint32_t data;
 
 	*quant = 0;
 	for (i = 0; i < 4; i++) {
@@ -602,9 +602,9 @@ static int GetVLQ(DataSource *source, unsigned int *quant) {
 }
 
 /* XMIDI Delta Variable Length Quantity */
-static int GetVLQ2(DataSource *source, unsigned int *quant) {
-	int i;
-	int data = 0;
+static int32_t GetVLQ2(DataSource *source, uint32_t *quant) {
+	int32_t i;
+	int32_t data = 0;
 
 	*quant = 0;
 	for (i = 0; i < 4; i++) {
@@ -618,9 +618,9 @@ static int GetVLQ2(DataSource *source, unsigned int *quant) {
 	return (i);
 }
 
-static int PutVLQ(DataSource *dest, unsigned int value) {
-	int buffer;
-	int i = 1;
+static int32_t PutVLQ(DataSource *dest, uint32_t value) {
+	int32_t buffer;
+	int32_t i = 1;
 	buffer = value & 0x7F;
 	while (value >>= 7) {
 		buffer <<= 8;
@@ -629,7 +629,7 @@ static int PutVLQ(DataSource *dest, unsigned int value) {
 	}
 	if (!dest)
 		return (i);
-	for (int j = 0; j < i; j++) {
+	for (int32_t j = 0; j < i; j++) {
 		write1(buffer & 0xFF, dest);
 		buffer >>= 8;
 	}
@@ -641,9 +641,9 @@ static int PutVLQ(DataSource *dest, unsigned int value) {
  *
  * This little function attempts to correct errors in midi files
  * that relate to patch, volume and pan changing */
-static void MovePatchVolAndPan(int channel) {
+static void MovePatchVolAndPan(int32_t channel) {
 	if (channel == -1) {
-		for (int i = 0; i < 16; i++)
+		for (int32_t i = 0; i < 16; i++)
 			MovePatchVolAndPan(i);
 
 		return;
@@ -765,10 +765,10 @@ static void MovePatchVolAndPan(int channel) {
  * size 2 is dual data byte
  * size 3 is XMI Note on
  * Returns bytes converted  */
-static int ConvertEvent(const int time, const unsigned char status,
-			DataSource *source, const int size) {
-	unsigned int delta = 0;
-	int data;
+static int32_t ConvertEvent(const int32_t time, const uint8_t status,
+			DataSource *source, const int32_t size) {
+	uint32_t delta = 0;
+	int32_t data;
 
 	data = read1(source);
 
@@ -848,7 +848,7 @@ static int ConvertEvent(const int time, const unsigned char status,
 
 	/* XMI Note On handling */
 	midi_event *prev = current;
-	int i = GetVLQ(source, &delta);
+	int32_t i = GetVLQ(source, &delta);
 	CreateNewEvent(time + delta * 3);
 
 	current->status = status;
@@ -860,9 +860,9 @@ static int ConvertEvent(const int time, const unsigned char status,
 }
 
 /* Simple routine to convert system messages */
-static int ConvertSystemMessage(const int time, const unsigned char status,
+static int32_t ConvertSystemMessage(const int32_t time, const uint8_t status,
 				DataSource *source) {
-	int i = 0;
+	int32_t i = 0;
 
 	CreateNewEvent(time);
 	current->status = status;
@@ -878,7 +878,7 @@ static int ConvertSystemMessage(const int time, const unsigned char status,
 	if (!current->len)
 		return (i);
 
-	current->buffer = malloc(sizeof(unsigned char)*current->len);
+	current->buffer = malloc(sizeof(uint8_t)*current->len);
 
 	copy((char *) current->buffer, current->len, source);
 
@@ -887,14 +887,14 @@ static int ConvertSystemMessage(const int time, const unsigned char status,
 
 /* XMIDI and Midi to List
  * Returns XMIDI PPQN   */
-static int ConvertFiletoList(DataSource *source) {
-	int time = 0;
-	unsigned int data;
-	int end = 0;
-	int tempo = 500000;
-	int tempo_set = 0;
-	unsigned int status = 0;
-	unsigned int file_size = getSize(source);
+static int32_t ConvertFiletoList(DataSource *source) {
+	int32_t time = 0;
+	uint32_t data;
+	int32_t end = 0;
+	int32_t tempo = 500000;
+	int32_t tempo_set = 0;
+	uint32_t status = 0;
+	uint32_t file_size = getSize(source);
 
 	/* Set Drum track to correct setting if required */
 	if (convert_type == XMIDI_CONVERT_MT32_TO_GS127) {
@@ -931,8 +931,8 @@ static int ConvertFiletoList(DataSource *source) {
 
 		case MIDI_STATUS_SYSEX:
 			if (status == 0xFF) {
-				int pos = getPos(source);
-				unsigned int dat = read1(source);
+				int32_t pos = getPos(source);
+				uint32_t dat = read1(source);
 
 				if (dat == 0x2F) /* End */
 					end = 1;
@@ -967,14 +967,14 @@ static int ConvertFiletoList(DataSource *source) {
 /* Converts and event list to a MTrk
  * Returns bytes of the array
  * buf can be NULL */
-static unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist) {
-	int time = 0;
+static uint32_t ConvertListToMTrk(DataSource *dest, midi_event *mlist) {
+	int32_t time = 0;
 	midi_event *event;
-	unsigned int delta;
-	unsigned char last_status = 0;
-	unsigned int i = 8;
-	unsigned int j;
-	unsigned int size_pos = 0;
+	uint32_t delta;
+	uint8_t last_status = 0;
+	uint32_t i = 8;
+	uint32_t j;
+	uint32_t size_pos = 0;
 	bool end = false;
 
 	if (dest) {
@@ -1056,7 +1056,7 @@ static unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist) {
 	}
 
 	if (dest) {
-		int cur_pos = getPos(dest);
+		int32_t cur_pos = getPos(dest);
 		seek(size_pos, dest);
 		write4(i - 8, dest);
 		seek(cur_pos, dest);
@@ -1065,10 +1065,10 @@ static unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist) {
 }
 
 /* Assumes correct xmidi */
-static int ExtractTracksFromXmi(DataSource *source) {
-	int num = 0;
+static int32_t ExtractTracksFromXmi(DataSource *source) {
+	int32_t num = 0;
 	signed short ppqn;
-	unsigned int len = 0;
+	uint32_t len = 0;
 	char buf[32];
 
 	while (getPos(source) < getSize(source) && num != info.tracks) {
@@ -1089,7 +1089,7 @@ static int ExtractTracksFromXmi(DataSource *source) {
 		}
 
 		list = NULL;
-		int begin = getPos(source);
+		int32_t begin = getPos(source);
 
 		/* Convert it */
 		if (!(ppqn = ConvertFiletoList(source))) {
@@ -1110,12 +1110,12 @@ static int ExtractTracksFromXmi(DataSource *source) {
 	return (num);
 }
 
-static int ExtractTracks(DataSource *source) {
-	unsigned int i = 0;
-	int start;
-	unsigned int len;
-	unsigned int chunk_len;
-	int count;
+static int32_t ExtractTracks(DataSource *source) {
+	uint32_t i = 0;
+	int32_t start;
+	uint32_t len;
+	uint32_t chunk_len;
+	int32_t count;
 	char buf[32];
 
 	/* Read first 4 bytes of header */

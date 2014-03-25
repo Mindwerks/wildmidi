@@ -34,10 +34,10 @@
 #define XMIDI_CONVERT_GS127_TO_GS		5
 
 /* Retrieve it to a data source */
-bool initXMI(uint8_t *midi_data, uint32_t midi_size);
-void freeXMI(void);
+bool initXMI(uint8_t *midi_data, uint32_t xmidi_size);
 uint32_t xmi2midi(unsigned int track, bool getSize);
-unsigned short getTracks(void);
+void freeXMI(void);
+uint8_t getTracks(void);
 uint8_t * getMidi(void);
 uint32_t getMidiSize(void);
 
