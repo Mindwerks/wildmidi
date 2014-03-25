@@ -24,18 +24,19 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "xmidi.h"
 
 /* Midi Status Bytes */
 #define MIDI_STATUS_NOTE_OFF		0x8
-#define MIDI_STATUS_NOTE_ON		0x9
+#define MIDI_STATUS_NOTE_ON			0x9
 #define MIDI_STATUS_AFTERTOUCH		0xA
 #define MIDI_STATUS_CONTROLLER		0xB
 #define MIDI_STATUS_PROG_CHANGE		0xC
 #define MIDI_STATUS_PRESSURE		0xD
 #define MIDI_STATUS_PITCH_WHEEL		0xE
-#define MIDI_STATUS_SYSEX		0xF
+#define MIDI_STATUS_SYSEX			0xF
 
 /* XMIDI Controllers */
 #define XMIDI_CONTROLLER_FOR_LOOP	116
@@ -43,6 +44,14 @@
 
 /* Maximum number of for loops we'll allow */
 #define XMIDI_MAX_FOR_LOOP_COUNT	128
+
+typedef struct {
+	unsigned char *buf, *buf_ptr;
+	unsigned int size;
+} DataSource;
+
+DataSource *source;
+DataSource *dest;
 
 typedef struct midi_event midi_event;
 struct midi_event{
@@ -60,15 +69,12 @@ typedef struct {
 } midi_descriptor;
 
 static midi_descriptor info;
-
 static midi_event **events;
 static signed short *timing;
-
 static midi_event *list;
 static midi_event *current;
 
 static bool *fixed;
-
 static bool bank127[16] = {0};
 static int convert_type = XMIDI_CONVERT_MT32_TO_GS;
 
@@ -89,11 +95,9 @@ static int ExtractTracks(DataSource *source);
 static int ExtractTracksFromXmi(DataSource *source);
 
 
-static int number_of_tracks(void)
+unsigned short getTracks(void)
 {
-	if (info.type != 1)
-		return (info.tracks);
-	return (1);
+	return (info.tracks);
 }
 
 static unsigned int read1(DataSource *data)
@@ -111,25 +115,7 @@ static unsigned int read2(DataSource *data)
 	return (b0 + (b1 << 8));
 }
 
-static unsigned int read2high(DataSource *data)
-{
-	unsigned char b0, b1;
-	b1 = *data->buf_ptr++;
-	b0 = *data->buf_ptr++;
-	return (b0 + (b1 << 8));
-}
-
 static unsigned int read4(DataSource *data)
-{
-	unsigned char b0, b1, b2, b3;
-	b0 = *data->buf_ptr++;
-	b1 = *data->buf_ptr++;
-	b2 = *data->buf_ptr++;
-	b3 = *data->buf_ptr++;
-	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
-}
-
-static unsigned int read4high(DataSource *data)
 {
 	unsigned char b0, b1, b2, b3;
 	b3 = *data->buf_ptr++;
@@ -152,25 +138,11 @@ static void write1(unsigned int val, DataSource *data)
 
 static void write2(unsigned int val, DataSource *data)
 {
-	*data->buf_ptr++ = val & 0xff;
-	*data->buf_ptr++ = (val>>8) & 0xff;
-}
-
-static void write2high(unsigned int val, DataSource *data)
-{
 	*data->buf_ptr++ = (val>>8) & 0xff;
 	*data->buf_ptr++ = val & 0xff;
 }
 
 static void write4(unsigned int val, DataSource *data)
-{
-	*data->buf_ptr++ = val & 0xff;
-	*data->buf_ptr++ = (val>>8) & 0xff;
-	*data->buf_ptr++ = (val>>16)&0xff;
-	*data->buf_ptr++ = (val>>24)&0xff;
-}
-
-static void write4high(unsigned int val, DataSource *data)
 {
 	*data->buf_ptr++ = (val>>24)&0xff;
 	*data->buf_ptr++ = (val>>16)&0xff;
@@ -192,10 +164,6 @@ static unsigned int getSize(DataSource *data) {
 
 static unsigned int getPos(DataSource *data) {
 	return (data->buf_ptr - data->buf);
-}
-
-static unsigned char *getPtr(DataSource *data) {
-	return data->buf_ptr;
 }
 
 /* This is used to correct incorrect patch, vol and pan changes in midi files
@@ -472,17 +440,42 @@ static const char mt32asgs[256] = {
 	121, 0	/* 127 Jungle Tune set to Breath Noise */
 };
 
-int retrieve(unsigned int track, DataSource *in, DataSource *out) {
-	int len = 0;
-	ExtractTracks(in);
+bool initXMI(uint8_t *xmidi_data, uint32_t xmidi_size){
 
+	uint32_t midi_size = 0;
+	source->buf = xmidi_data;
+	source->buf_ptr = source->buf;
+
+	if (!memcmp(source->buf, "FORM", 4))
+		printf("FUCK\n\r");
+
+	source->size = xmidi_size;
+	midi_size = xmi2midi(0, true);
+	dest->buf = malloc(midi_size);
+	dest->buf_ptr = dest->buf;
+
+	ExtractTracks(source);
 	if (!events) {
 		printf("No midi data in loaded.\n");
-		return (0);
+		return (-1);
 	}
+	return (0);
+}
+
+void freeXMI(void){
+	if (source->buf)
+		free (source->buf);
+}
+
+uint8_t * getMidi(void){
+	return dest->buf;
+}
+
+uint32_t xmi2midi(unsigned int track, bool findSize) {
+	int len = 0;
 
 	if (track >= info.tracks) {
-		printf("Can't retrieve MIDI data, track out of range\n");
+		printf("Can't retrieve MIDI data, track out of range.\n");
 		return (0);
 	}
 
@@ -494,27 +487,28 @@ int retrieve(unsigned int track, DataSource *in, DataSource *out) {
 		events[track] = list;
 	}
 
+	printf("out HELP - %d\n\r", findSize);
 	/* This is so if using buffer datasource, the caller can know how big to make the buffer */
-	if (!out) {
+	if (findSize) {
 		/* Header is 14 bytes long and add the rest as well */
+		printf("in HELP\n\r");
 		len = ConvertListToMTrk(NULL, events[track]);
 		return (14 + len);
 	}
 
-	write1('M', out);
-	write1('T', out);
-	write1('h', out);
-	write1('d', out);
+	write1('M', dest);
+	write1('T', dest);
+	write1('h', dest);
+	write1('d', dest);
 
-	write4high(6, out);
+	write4(6, dest);
 
-	write2high(0, out);
-	write2high(1, out);
-	write2high(timing[track], out);
+	write2(0, dest);
+	write2(1, dest);
+	write2(timing[track], dest);
 
-	len = ConvertListToMTrk(out, events[track]);
-
-	return (len + 14);
+	len = ConvertListToMTrk(dest, events[track]);
+	return (14 + len);
 }
 
 static void DeleteEventList(midi_event *mlist) {
@@ -1056,7 +1050,7 @@ static unsigned int ConvertListToMTrk(DataSource *dest, midi_event *mlist) {
 	if (dest) {
 		int cur_pos = getPos(dest);
 		seek(size_pos, dest);
-		write4high(i - 8, dest);
+		write4(i - 8, dest);
 		seek(cur_pos, dest);
 	}
 	return (i);
@@ -1072,13 +1066,13 @@ static int ExtractTracksFromXmi(DataSource *source) {
 	while (getPos(source) < getSize(source) && num != info.tracks) {
 		/* Read first 4 bytes of name */
 		copy(buf, 4, source);
-		len = read4high(source);
+		len = read4(source);
 
 		/* Skip the FORM entries */
 		if (!memcmp(buf, "FORM", 4)) {
 			skip(4,source);
 			copy(buf, 4,source);
-			len = read4high(source);
+			len = read4(source);
 		}
 
 		if (memcmp(buf, "EVNT", 4)) {
@@ -1122,7 +1116,7 @@ static int ExtractTracks(DataSource *source) {
 	/* Could be XMIDI */
 	if (!memcmp(buf, "FORM", 4)) {
 		/* Read length of */
-		len = read4high(source);
+		len = read4(source);
 
 		start = getPos(source);
 
@@ -1150,7 +1144,7 @@ static int ExtractTracks(DataSource *source) {
 				copy(buf, 4, source);
 
 				/* Read length of chunk */
-				chunk_len = read4high(source);
+				chunk_len = read4(source);
 
 				/* Add eight bytes */
 				i += 8;
@@ -1190,7 +1184,7 @@ static int ExtractTracks(DataSource *source) {
 			}
 
 			/* Now read length of this track */
-			read4high(source);
+			read4(source);
 
 			/* Read 4 bytes of type */
 			copy(buf, 4, source);

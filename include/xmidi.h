@@ -22,20 +22,22 @@
 #ifndef XMIDILIB_H
 #define XMIDILIB_H
 
+#include <stdbool.h> /* C99 */
+#include <stdint.h>
+
 /* Conversion types for Midi files */
 #define XMIDI_CONVERT_NOCONVERSION		0
 #define XMIDI_CONVERT_MT32_TO_GM		1
 #define XMIDI_CONVERT_MT32_TO_GS		2
 #define XMIDI_CONVERT_MT32_TO_GS127		3 /* This one is broken, don't use */
-#define XMIDI_CONVERT_MT32_TO_GS127DRUM		4 /* This one is broken, don't use */
+#define XMIDI_CONVERT_MT32_TO_GS127DRUM	4 /* This one is broken, don't use */
 #define XMIDI_CONVERT_GS127_TO_GS		5
 
-typedef struct {
-	unsigned char *buf, *buf_ptr;
-	unsigned int size;
-} DataSource;
-
 /* Retrieve it to a data source */
-int retrieve(unsigned int track, DataSource *source, DataSource *dest);
+bool initXMI(uint8_t *midi_data, uint32_t midi_size);
+void freeXMI(void);
+uint32_t xmi2midi(unsigned int track, bool getSize);
+unsigned short getTracks(void);
+uint8_t *  getMidi(void);
 
 #endif /* XMIDILIB_H */
