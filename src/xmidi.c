@@ -441,25 +441,21 @@ static const char mt32asgs[256] = {
 };
 
 bool initXMI(uint8_t *xmidi_data, uint32_t xmidi_size){
-
 	uint32_t midi_size = 0;
+	source = malloc(sizeof(DataSource));
 	source->buf = xmidi_data;
 	source->buf_ptr = source->buf;
-
-	if (!memcmp(source->buf, "FORM", 4))
-		printf("FUCK\n\r");
-
 	source->size = xmidi_size;
-	midi_size = xmi2midi(0, true);
+
+	if ((midi_size = xmi2midi(0, true)) == 0){
+		printf("Error parsing XMI.\n");
+		return (false);
+	}
+
+	dest = malloc(sizeof(DataSource));
 	dest->buf = malloc(midi_size);
 	dest->buf_ptr = dest->buf;
-
-	ExtractTracks(source);
-	if (!events) {
-		printf("No midi data in loaded.\n");
-		return (-1);
-	}
-	return (0);
+	return (true);
 }
 
 void freeXMI(void){
@@ -474,6 +470,12 @@ uint8_t * getMidi(void){
 uint32_t xmi2midi(unsigned int track, bool findSize) {
 	int len = 0;
 
+	ExtractTracks(source);
+	if (!events) {
+		printf("No midi data in loaded.\n");
+		return (0);
+	}
+
 	if (track >= info.tracks) {
 		printf("Can't retrieve MIDI data, track out of range.\n");
 		return (0);
@@ -487,11 +489,9 @@ uint32_t xmi2midi(unsigned int track, bool findSize) {
 		events[track] = list;
 	}
 
-	printf("out HELP - %d\n\r", findSize);
 	/* This is so if using buffer datasource, the caller can know how big to make the buffer */
 	if (findSize) {
 		/* Header is 14 bytes long and add the rest as well */
-		printf("in HELP\n\r");
 		len = ConvertListToMTrk(NULL, events[track]);
 		return (14 + len);
 	}
