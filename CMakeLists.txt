@@ -45,10 +45,8 @@ ENDIF()
 
 # Platform specific defines
 IF(UNIX)
+    # allow 'large' files in 32 bit builds
     ADD_DEFINITIONS(
-        -D_POSIX_C_SOURCE=200809L
-        -D_BSD_SOURCE=1
-        -D_XOPEN_SOURCE=600
         -D_LARGEFILE_SOURCE
         -D_FILE_OFFSET_BITS=64
         -D_LARGE_FILES
@@ -65,23 +63,8 @@ ENDIF()
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(
-        -pedantic
         -Wall -W
         )
-
-    CHECK_C_COMPILER_FLAG("-std=gnu99" HAVE_STD_GNU99)
-    CHECK_C_COMPILER_FLAG("-std=c99" HAVE_STD_C99)
-    IF(HAVE_STD_GNU99)
-        ADD_DEFINITIONS(-std=gnu99)
-    ELSEIF(HAVE_STD_C99)
-        ADD_DEFINITIONS(-std=c99)
-    ENDIF()
-
-    IF(CMAKE_COMPILER_IS_MINGW)
-    # some mingw.org headers are overzealous with __STRICT_ANSI__
-    # and -std=c99 defines it
-        ADD_DEFINITIONS(-U__STRICT_ANSI__)
-    ENDIF()
 
     IF(NOT WIN32 AND NOT CYGWIN)
         SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")

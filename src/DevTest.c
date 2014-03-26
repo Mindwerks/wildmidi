@@ -299,7 +299,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			return -1;
 		}
 
-		//Slow but needed for accuracy
+		/* Slow but needed for accuracy */
 		beats_per_minute = 60000000.0 / (float) tempo;
 		microseconds_per_pulse = (float) tempo / (float) divisions;
 		pulses_per_second = 1000000.0 / microseconds_per_pulse;
@@ -365,9 +365,9 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			}
 			midi_size--;
 			delta_accum += delta;
-			// tempo microseconds per quarter note
-			// divisions pulses per quarter note
-			//if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));
+			/* tempo microseconds per quarter note
+			 * divisions pulses per quarter note */
+			/*if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));*/
 			if (verbose)
 				printf("Delta: %i, Accumilated Delta: %ld\n", delta,
 						delta_accum);
@@ -525,7 +525,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 								if (sysex_store[4] == 0x40) {
 									if (((sysex_store[5] & 0xF0) == 0x10)
 											&& (sysex_store[6] == 0x15)) {
-										// Roland Drum Track Setting
+										/* Roland Drum Track Setting */
 										unsigned char sysex_ch = 0x0F
 												& sysex_store[5];
 										if (sysex_ch == 0x00) {
@@ -539,7 +539,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 									} else if ((sysex_store[5] == 0x00)
 											&& (sysex_store[6] == 0x7F)
 											&& (sysex_store[7] == 0x00)) {
-										// Roland GS Reset
+										/* Roland GS Reset */
 										if (verbose)
 											printf("GS Reset\n");
 									} else {
@@ -801,12 +801,12 @@ int main(int argc, char ** argv) {
 		if (i == -1)
 			break;
 		switch (i) {
-		case 'd': // Verbose
+		case 'd': /* Verbose */
 			verbose = atoi(optarg);
 			break;
-		case 'v': // Version
+		case 'v': /* Version */
 			return 0;
-		case 'h': // help
+		case 'h': /* help */
 			do_help();
 			return 0;
 		default:
