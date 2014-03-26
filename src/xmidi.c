@@ -506,7 +506,7 @@ uint32_t getMidiSize(struct xmi_ctx *ctx) {
 	return ctx->dstsize;
 }
 
-uint32_t xmi2midi(struct xmi_ctx *ctx, uint32_t track, int findSize) {
+uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int findSize) {
 	uint32_t len = 0;
 
 	if (ExtractTracks(ctx) < 0) {
@@ -550,12 +550,12 @@ uint32_t xmi2midi(struct xmi_ctx *ctx, uint32_t track, int findSize) {
 }
 
 static void DeleteEventList(midi_event *mlist) {
-	midi_event *event = NULL;
+	midi_event *event;
 	midi_event *next;
 
 	next = mlist;
 
-	while ((event = next)) {
+	while ((event = next) != NULL) {
 		next = event->next;
 		free(event);
 	}
@@ -672,18 +672,23 @@ static int PutVLQ(struct xmi_ctx *ctx, uint32_t value) {
  * This little function attempts to correct errors in midi files
  * that relate to patch, volume and pan changing */
 static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel) {
-	if (channel == -1) {
-		for (int32_t i = 0; i < 16; i++)
-			MovePatchVolAndPan(ctx, i);
+	midi_event *patch;
+	midi_event *vol;
+	midi_event *pan;
+	midi_event *bank;
+	midi_event *temp;
+	int i;
 
+	if (channel == -1) {
+		for (i = 0; i < 16; i++)
+			MovePatchVolAndPan(ctx, i);
 		return;
 	}
 
-	midi_event *patch = NULL;
-	midi_event *vol = NULL;
-	midi_event *pan = NULL;
-	midi_event *bank = NULL;
-	midi_event *temp;
+	patch = NULL;
+	vol = NULL;
+	pan = NULL;
+	bank = NULL;
 
 	for (ctx->current = ctx->list; ctx->current;) {
 		if (!patch && (ctx->current->status >> 4) == 0xC
@@ -722,9 +727,9 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel) {
 	patch->data[0] = temp->data[0];
 
 	/* Copy Volume */
-	if (vol
-			&& (vol->time > patch->time + PATCH_VOL_PAN_BIAS
-					|| vol->time < patch->time - PATCH_VOL_PAN_BIAS))
+	if (vol &&
+			(vol->time > patch->time + PATCH_VOL_PAN_BIAS ||
+			 vol->time < patch->time - PATCH_VOL_PAN_BIAS) )
 		vol = NULL;
 
 	temp = vol;
@@ -740,9 +745,9 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel) {
 		vol->data[1] = temp->data[1];
 
 	/* Copy Bank */
-	if (bank
-			&& (bank->time > patch->time + PATCH_VOL_PAN_BIAS
-					|| bank->time < patch->time - PATCH_VOL_PAN_BIAS))
+	if (bank &&
+			(bank->time > patch->time + PATCH_VOL_PAN_BIAS ||
+			 bank->time < patch->time - PATCH_VOL_PAN_BIAS) )
 		bank = NULL;
 
 	temp = bank;
@@ -759,9 +764,9 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel) {
 		bank->data[1] = temp->data[1];
 
 	/* Copy Pan */
-	if (pan
-			&& (pan->time > patch->time + PATCH_VOL_PAN_BIAS
-					|| pan->time < patch->time - PATCH_VOL_PAN_BIAS))
+	if (pan &&
+			(pan->time > patch->time + PATCH_VOL_PAN_BIAS ||
+			 pan->time < patch->time - PATCH_VOL_PAN_BIAS) )
 		pan = NULL;
 
 	temp = pan;
@@ -810,11 +815,11 @@ static int ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
 
 		ctx->bank127[status & 0xF] = 0;
 
-		if (ctx->convert_type == XMIDI_CONVERT_MT32_TO_GM
-				|| ctx->convert_type == XMIDI_CONVERT_MT32_TO_GS
-				|| ctx->convert_type == XMIDI_CONVERT_MT32_TO_GS127
-				|| (ctx->convert_type == XMIDI_CONVERT_MT32_TO_GS127DRUM
-						&& (status & 0xF) == 9))
+		if ( ctx->convert_type == XMIDI_CONVERT_MT32_TO_GM ||
+		     ctx->convert_type == XMIDI_CONVERT_MT32_TO_GS ||
+		     ctx->convert_type == XMIDI_CONVERT_MT32_TO_GS127 ||
+		    (ctx->convert_type == XMIDI_CONVERT_MT32_TO_GS127DRUM
+					&& (status & 0xF) == 9) )
 			return (2);
 
 		CreateNewEvent(ctx, time);
@@ -1142,7 +1147,7 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 }
 
 static int ParseXMI(struct xmi_ctx *ctx) {
-	uint32_t i = 0;
+	uint32_t i;
 	int32_t start;
 	uint32_t len;
 	uint32_t chunk_len;
@@ -1241,7 +1246,7 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 }
 
 static int ExtractTracks(struct xmi_ctx *ctx) {
-	uint32_t i = 0;
+	uint32_t i;
 	uint32_t count;
 
 	/* since it is a two-pass crap'o'la, check before allocating */
