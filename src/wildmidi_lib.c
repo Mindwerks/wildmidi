@@ -29,7 +29,6 @@
 #define UNUSED(x) (void)(x)
 
 #include <stdint.h>
-#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
@@ -573,6 +572,10 @@ static char *wm_strdup (const char *str) {
 	return NULL;
 }
 
+static inline int wm_isdigit(int c) {
+	return (c >= '0' && c <= '9');
+}
+
 #define TOKEN_CNT_INC 8
 static char** WM_LC_Tokenize_Line(char *line_data) {
 	int line_length = strlen(line_data);
@@ -738,7 +741,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 						free(new_config);
 					} else if (strcasecmp(line_tokens[0], "bank") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
 									"(syntax error in bank line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -752,7 +755,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 						patchid = (atoi(line_tokens[1]) & 0xFF) << 8;
 					} else if (strcasecmp(line_tokens[0], "drumset") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
 									"(syntax error in drumset line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -767,7 +770,7 @@ static int WM_LoadConfig(const char *config_file) {
 						patchid = ((atoi(line_tokens[1]) & 0xFF) << 8) | 0x80;
 					} else if (strcasecmp(line_tokens[0], "reverb_room_width")
 							== 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_width line)",
 									0);
@@ -794,7 +797,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0], "reverb_room_length")
 							== 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_length line)",
 									0);
@@ -821,7 +824,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posx") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_listen_posx line)",
 									0);
@@ -844,7 +847,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posy") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_listen_posy line)",
 									0);
@@ -875,7 +878,7 @@ static int WM_LoadConfig(const char *config_file) {
 							== 0) {
 						auto_amp = 1;
 						auto_amp_with_amp = 1;
-					} else if (isdigit(line_tokens[0][0])) {
+					} else if (wm_isdigit(line_tokens[0][0])) {
 						patchid = (patchid & 0xFF80)
 								| (atoi(line_tokens[0]) & 0x7F);
 						if (patch[(patchid & 0x7F)] == NULL) {
@@ -1039,7 +1042,7 @@ static int WM_LoadConfig(const char *config_file) {
 						while (line_tokens[token_count]) {
 							if (strncasecmp(line_tokens[token_count], "amp=", 4)
 									== 0) {
-								if (!isdigit(line_tokens[token_count][4])) {
+								if (!wm_isdigit(line_tokens[token_count][4])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
 											"(syntax error in patch line)", 0);
@@ -1050,7 +1053,7 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							} else if (strncasecmp(line_tokens[token_count],
 									"note=", 5) == 0) {
-								if (!isdigit(line_tokens[token_count][5])) {
+								if (!wm_isdigit(line_tokens[token_count][5])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
 											"(syntax error in patch line)", 0);
@@ -1060,8 +1063,8 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							} else if (strncasecmp(line_tokens[token_count],
 									"env_time", 8) == 0) {
-								if ((!isdigit(line_tokens[token_count][8]))
-										|| (!isdigit(
+								if ((!wm_isdigit(line_tokens[token_count][8]))
+										|| (!wm_isdigit(
 												line_tokens[token_count][10]))
 										|| (line_tokens[token_count][9] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
@@ -1095,8 +1098,8 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							} else if (strncasecmp(line_tokens[token_count],
 									"env_level", 9) == 0) {
-								if ((!isdigit(line_tokens[token_count][9]))
-										|| (!isdigit(
+								if ((!wm_isdigit(line_tokens[token_count][9]))
+										|| (!wm_isdigit(
 												line_tokens[token_count][11]))
 										|| (line_tokens[token_count][10] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
