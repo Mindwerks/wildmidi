@@ -19,7 +19,6 @@
 
 /* XMIDI Converter */
 
-#include <stdbool.h> /* C99 */
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
@@ -67,30 +66,30 @@ struct xmi_ctx {
 	uint32_t dstsize;
 	int convert_type;
 	midi_descriptor info;
-	bool bank127[16];
+	int bank127[16];
 	midi_event **events;
 	signed short *timing;
 	midi_event *list;
 	midi_event *current;
-	bool *fixed;
+	int *fixed;
 };
 
 /* forward declarations of private functions */
 static void DeleteEventList(midi_event *mlist);
 static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time); /* List manipulation */
-static int32_t GetVLQ(struct xmi_ctx *ctx, uint32_t *quant); /* Variable length quantity */
-static int32_t GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant);/* Variable length quantity */
-static int32_t PutVLQ(struct xmi_ctx *ctx, uint32_t value);    /* Variable length quantity */
+static int GetVLQ(struct xmi_ctx *ctx, uint32_t *quant); /* Variable length quantity */
+static int GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant);/* Variable length quantity */
+static int PutVLQ(struct xmi_ctx *ctx, uint32_t value);  /* Variable length quantity */
 static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel);
-static int32_t ConvertEvent(struct xmi_ctx *ctx,
-				const int32_t time, const uint8_t status, const int32_t size);
+static int ConvertEvent(struct xmi_ctx *ctx,
+			const int32_t time, const uint8_t status, const int size);
 static int32_t ConvertSystemMessage(struct xmi_ctx *ctx,
 				const int32_t time, const uint8_t status);
 static int32_t ConvertFiletoList(struct xmi_ctx *ctx);
 static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist);
-static int32_t ParseXMI(struct xmi_ctx *ctx);
-static int32_t ExtractTracks(struct xmi_ctx *ctx);
-static int32_t ExtractTracksFromXmi(struct xmi_ctx *ctx);
+static int ParseXMI(struct xmi_ctx *ctx);
+static int ExtractTracks(struct xmi_ctx *ctx);
+static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx);
 
 #if 0
 static uint8_t getTracks(struct xmi_ctx *ctx)
@@ -467,12 +466,12 @@ struct xmi_ctx *initXMI(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_ty
 	ctx->srcsize = xmidi_size;
 	ctx->convert_type = convert_type;
 
-	if (!ParseXMI(ctx)) {
+	if (ParseXMI(ctx) < 0) {
 		printf("Error parsing XMI.\n");
 		freeXMI(ctx);
 		return NULL;
 	}
-	if ((midi_size = xmi2midi(ctx, 0, true)) == 0) {
+	if ((midi_size = xmi2midi(ctx, 0, 1)) == 0) {
 		printf("Error reading XMI.\n");
 		freeXMI(ctx);
 		return NULL;
@@ -507,10 +506,10 @@ uint32_t getMidiSize(struct xmi_ctx *ctx) {
 	return ctx->dstsize;
 }
 
-uint32_t xmi2midi(struct xmi_ctx *ctx, uint32_t track, bool findSize) {
-	int32_t len = 0;
+uint32_t xmi2midi(struct xmi_ctx *ctx, uint32_t track, int findSize) {
+	uint32_t len = 0;
 
-	if (!ExtractTracks(ctx)) {
+	if (ExtractTracks(ctx) < 0) {
 		printf("No midi data in loaded.\n");
 		return (0);
 	}
@@ -524,7 +523,7 @@ uint32_t xmi2midi(struct xmi_ctx *ctx, uint32_t track, bool findSize) {
 	if (!ctx->fixed[track]) {
 		ctx->list = ctx->events[track];
 		MovePatchVolAndPan(ctx, -1);
-		ctx->fixed[track] = true;
+		ctx->fixed[track] = 1;
 		ctx->events[track] = ctx->list;
 	}
 
@@ -614,8 +613,8 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
 }
 
 /* Conventional Variable Length Quantity */
-static int32_t GetVLQ(struct xmi_ctx *ctx, uint32_t *quant) {
-	int32_t i;
+static int GetVLQ(struct xmi_ctx *ctx, uint32_t *quant) {
+	int i;
 	uint32_t data;
 
 	*quant = 0;
@@ -633,8 +632,8 @@ static int32_t GetVLQ(struct xmi_ctx *ctx, uint32_t *quant) {
 }
 
 /* XMIDI Delta Variable Length Quantity */
-static int32_t GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant) {
-	int32_t i;
+static int GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant) {
+	int i;
 	int32_t data = 0;
 
 	*quant = 0;
@@ -649,9 +648,9 @@ static int32_t GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant) {
 	return (i);
 }
 
-static int32_t PutVLQ(struct xmi_ctx *ctx, uint32_t value) {
+static int PutVLQ(struct xmi_ctx *ctx, uint32_t value) {
 	int32_t buffer;
-	int32_t i = 1;
+	int i = 1, j;
 	buffer = value & 0x7F;
 	while (value >>= 7) {
 		buffer <<= 8;
@@ -660,7 +659,7 @@ static int32_t PutVLQ(struct xmi_ctx *ctx, uint32_t value) {
 	}
 	if (!ctx || !ctx->dst)
 		return (i);
-	for (int32_t j = 0; j < i; j++) {
+	for (j = 0; j < i; j++) {
 		write1(ctx, buffer & 0xFF);
 		buffer >>= 8;
 	}
@@ -796,10 +795,12 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel) {
  * size 2 is dual data byte
  * size 3 is XMI Note on
  * Returns bytes converted  */
-static int32_t ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
-			const uint8_t status, const int32_t size) {
+static int ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
+			const uint8_t status, const int size) {
 	uint32_t delta = 0;
 	int32_t data;
+	midi_event *prev;
+	int i;
 
 	data = read1(ctx);
 
@@ -807,7 +808,7 @@ static int32_t ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
 	if ((status >> 4) == 0xB && data == 0) {
 		data = read1(ctx);
 
-		ctx->bank127[status & 0xF] = false;
+		ctx->bank127[status & 0xF] = 0;
 
 		if (ctx->convert_type == XMIDI_CONVERT_MT32_TO_GM
 				|| ctx->convert_type == XMIDI_CONVERT_MT32_TO_GS
@@ -822,7 +823,7 @@ static int32_t ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
 		ctx->current->data[1] = data;
 
 		if (ctx->convert_type == XMIDI_CONVERT_GS127_TO_GS && data == 127)
-			ctx->bank127[status & 0xF] = true;
+			ctx->bank127[status & 0xF] = 1;
 
 		return (2);
 	}
@@ -878,8 +879,8 @@ static int32_t ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
 		return (2);
 
 	/* XMI Note On handling */
-	midi_event *prev = ctx->current;
-	int32_t i = GetVLQ(ctx, &delta);
+	prev = ctx->current;
+	i = GetVLQ(ctx, &delta);
 	CreateNewEvent(ctx, time + delta * 3);
 
 	ctx->current->status = status;
@@ -1005,7 +1006,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 	uint32_t i = 8;
 	uint32_t j;
 	uint32_t size_pos = 0;
-	bool end = false;
+	int end = 0;
 
 	if (ctx && ctx->dst) {
 		write1(ctx, 'M');
@@ -1060,7 +1061,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 		case 0xF:
 			if (event->status == 0xFF) {
 				if (event->data[0] == 0x2f)
-					end = true;
+					end = 1;
 				if (ctx && ctx->dst)
 					write1(ctx, event->data[0]);
 				i++;
@@ -1095,8 +1096,8 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 }
 
 /* Assumes correct xmidi */
-static int32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
-	int32_t num = 0;
+static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
+	uint32_t num = 0;
 	signed short ppqn;
 	uint32_t len = 0;
 	char buf[32];
@@ -1140,7 +1141,7 @@ static int32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 	return (num);
 }
 
-static int32_t ParseXMI(struct xmi_ctx *ctx) {
+static int ParseXMI(struct xmi_ctx *ctx) {
 	uint32_t i = 0;
 	int32_t start;
 	uint32_t len;
@@ -1164,12 +1165,11 @@ static int32_t ParseXMI(struct xmi_ctx *ctx) {
 		if (!memcmp(buf, "XMID", 4)) {
 			printf("Warning: XMIDI doesn't have XDIR.\n");
 			ctx->info.tracks = 1;
-
 		}
 		/* Not an XMIDI that we recognise */
 		else if (memcmp(buf, "XDIR", 4)) {
 			printf("Not a recognised XMID.\n");
-			return (0);
+			return (-1);
 		}
 		/* Seems Valid */
 		else {
@@ -1203,7 +1203,7 @@ static int32_t ParseXMI(struct xmi_ctx *ctx) {
 			/* Didn't get to fill the header */
 			if (ctx->info.tracks == 0) {
 				printf("Not a valid XMID.\n");
-				return (0);
+				return (-1);
 			}
 
 			/* Ok now to start part 2
@@ -1216,7 +1216,7 @@ static int32_t ParseXMI(struct xmi_ctx *ctx) {
 			/* Not an XMID */
 			if (memcmp(buf, "CAT ", 4)) {
 				printf("Not a recognised XMID (%c%c%c%c) should be (CAT )\n", buf[0],buf[1],buf[2],buf[3]);
-				return (0);
+				return (-1);
 			}
 
 			/* Now read length of this track */
@@ -1228,33 +1228,33 @@ static int32_t ParseXMI(struct xmi_ctx *ctx) {
 			/* Not an XMID */
 			if (memcmp(buf, "XMID", 4)) {
 				printf("Not a recognised XMID (%c%c%c%c) should be (XMID)\n", buf[0],buf[1],buf[2],buf[3]);
-				return (0);
+				return (-1);
 			}
 
 			/* Ok it's an XMID, so pass it to the ExtractCode */
 			ctx->datastart = getsrcpos(ctx);
-			return (1);
+			return (0);
 		}
 	}
 
-	return (0);
+	return (-1);
 }
 
-static int32_t ExtractTracks(struct xmi_ctx *ctx) {
+static int ExtractTracks(struct xmi_ctx *ctx) {
 	uint32_t i = 0;
-	int32_t count;
+	uint32_t count;
 
 	/* since it is a two-pass crap'o'la, check before allocating */
 	if (!ctx->fixed) {
 		ctx->events = malloc(sizeof(midi_event *) * ctx->info.tracks);
 		ctx->timing = malloc(sizeof(signed short) * ctx->info.tracks);
-		ctx->fixed = malloc(sizeof(bool) * ctx->info.tracks);
+		ctx->fixed = malloc(sizeof(int) * ctx->info.tracks);
 		ctx->info.type = 0;
 	}
 
 	for (i = 0; i < ctx->info.tracks; i++) {
 		ctx->events[i] = NULL;
-		ctx->fixed[i] = false;
+		ctx->fixed[i] = 0;
 	}
 
 	seeksrc(ctx, ctx->datastart);
@@ -1262,8 +1262,8 @@ static int32_t ExtractTracks(struct xmi_ctx *ctx) {
 
 	if (count != ctx->info.tracks) {
 		printf("Error: unable to extract all (%d) tracks specified from XMIDI. Only (%d)", ctx->info.tracks, count);
-		return (0);
+		return (-1);
 	}
 
-	return (1);
+	return (0);
 }

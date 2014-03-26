@@ -22,7 +22,6 @@
 #ifndef XMIDILIB_H
 #define XMIDILIB_H
 
-#include <stdbool.h> /* C99 */
 #include <stdint.h>
 
 /* Conversion types for Midi files */
@@ -35,9 +34,8 @@
 
 struct xmi_ctx;
 
-/* Retrieve it to a data source */
 struct xmi_ctx *initXMI(uint8_t *midi_data, uint32_t xmidi_size, int convert_type);
-uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, bool getSize);
+uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int getSize);
 void freeXMI(struct xmi_ctx *);
 uint8_t *getMidi(struct xmi_ctx *);
 uint32_t getMidiSize(struct xmi_ctx *);
