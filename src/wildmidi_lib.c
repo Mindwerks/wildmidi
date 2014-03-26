@@ -2381,12 +2381,20 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint8_t *running_event;
 	uint32_t decay_samples = 0;
 
-	if (!memcmp(midi_data, "FORM", 4) && initXMI(midi_data, midi_size)) { /* possibly xmi */
-		xmi2midi(0,0);
-		midi_data = getMidi();
-		midi_size = getMidiSize();
-	} else {
-		freeXMI();
+	struct xmi_ctx *ctx = NULL;
+
+	if (!memcmp(midi_data, "FORM", 4)) { /* possibly xmi */
+		ctx = initXMI(midi_data, midi_size, XMIDI_CONVERT_MT32_TO_GS);
+		if (ctx) {
+			xmi2midi(ctx, 0, 0);
+			midi_data = getMidi(ctx);
+			midi_size = getMidiSize(ctx);
+			if (!midi_data) {
+				printf("Not an xmidi file\n");
+				freeXMI(ctx);
+				return NULL;
+			}
+		}
 	}
 
 	if (!memcmp(midi_data, "RIFF", 4)) {
@@ -2395,7 +2403,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	}
 	if (memcmp(midi_data, "MThd", 4)) {
 		printf("Not a midi file\n");
-		freeXMI();
+		freeXMI(ctx);
 		return NULL;
 	}
 	midi_data += 4;
@@ -2403,7 +2411,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 
 	if (midi_size < 10) {
 		printf("Midi File Too Short\n");
-		freeXMI();
+		freeXMI(ctx);
 		return NULL;
 	}
 
@@ -2417,7 +2425,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 4;
 	if (tmp_val != 6) {
 		printf("Corrupt Midi Header\n");
-		freeXMI();
+		freeXMI(ctx);
 		return NULL;
 	}
 
@@ -2429,7 +2437,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val > 1) {
 		printf("Midi Format Not Supported\n");
-		freeXMI();
+		freeXMI(ctx);
 		return NULL;
 	}
 
@@ -2441,7 +2449,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val < 1) {
 		printf("Midi Contains No Tracks\n");
-		freeXMI();
+		freeXMI(ctx);
 		return NULL;
 	}
 	no_tracks = tmp_val;
@@ -2454,7 +2462,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (divisions & 0x00008000) {
 		printf("Division Type Not Supported\n");
-		freeXMI();
+		freeXMI(ctx);
 		return NULL;
 	}
 
@@ -2835,7 +2843,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	WM_ResetToStart(mdi);
 
 _end:	if (sysex_store) free(sysex_store);
-	freeXMI();
+	freeXMI(ctx);
 	free(track_end);
 	free(track_delta);
 	free(running_event);
