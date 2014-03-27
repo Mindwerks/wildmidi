@@ -26,6 +26,9 @@ Requirements:
 
 CHANGELOG
 
+0.3.6
+* Fix some portability issues.
+
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
 * OpenAL support: Fixed audio output on big-endian systems. Fixed audio
