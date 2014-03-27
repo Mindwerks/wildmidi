@@ -107,6 +107,7 @@ ENDIF(CMAKE_GENERATOR STREQUAL "Xcode")
 IF(WANT_PLAYER)
     SET(wildmidi_executable_SRCS
         ${GETOPT}
+        wm_tty.c
         wildmidi.c
     )
 

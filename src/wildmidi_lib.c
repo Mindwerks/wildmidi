@@ -29,7 +29,6 @@
 #define UNUSED(x) (void)(x)
 
 #include <stdint.h>
-#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
@@ -52,8 +51,6 @@
 #define strcasecmp _stricmp
 #undef strncasecmp
 #define strncasecmp _tcsnicmp
-#undef strdup
-#define strdup _strdup
 #endif
 
 #include "wm_error.h"
@@ -270,7 +267,7 @@ struct _hndl {
 
 struct _hndl * first_handle = NULL;
 
-//f: ( VOLUME / 127.0 ) * 1024.0
+/* f: ( VOLUME / 127.0 ) * 1024.0 */
 static int16_t lin_volume[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 72,
 		80, 88, 96, 104, 112, 120, 129, 137, 145, 153, 161, 169, 177, 185, 193,
 		201, 209, 217, 225, 233, 241, 249, 258, 266, 274, 282, 290, 298, 306,
@@ -282,7 +279,7 @@ static int16_t lin_volume[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 72,
 		878, 886, 894, 903, 911, 919, 927, 935, 943, 951, 959, 967, 975, 983,
 		991, 999, 1007, 1015, 1024 };
 
-//f: pow(( VOLUME / 127.0 ), 2.0 ) * 1024.0
+/* f: pow(( VOLUME / 127.0 ), 2.0 ) * 1024.0 */
 static int16_t sqr_volume[] = { 0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 9,
 		10, 12, 14, 16, 18, 20, 22, 25, 27, 30, 33, 36, 39, 42, 46, 49, 53, 57,
 		61, 65, 69, 73, 77, 82, 86, 91, 96, 101, 106, 111, 117, 122, 128, 134,
@@ -293,7 +290,7 @@ static int16_t sqr_volume[] = { 0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 9,
 		673, 686, 699, 713, 726, 740, 754, 768, 782, 796, 810, 825, 839, 854,
 		869, 884, 899, 914, 929, 944, 960, 976, 992, 1007, 1024 };
 
-//f: pow(( VOLUME / 127.0 ), 0.5 ) * 1024.0
+/* f: pow(( VOLUME / 127.0 ), 0.5 ) * 1024.0 */
 static int16_t pan_volume[] = { 0, 90, 128, 157, 181, 203, 222, 240,
 		257, 272, 287, 301, 314, 327, 339, 351, 363, 374, 385, 396, 406, 416,
 		426, 435, 445, 454, 463, 472, 480, 489, 497, 505, 514, 521, 529, 537,
@@ -566,6 +563,20 @@ static void WM_FreePatches(void) {
 	WM_Unlock(&patch_lock);
 }
 
+static char *wm_strdup (const char *str) {
+	size_t l = strlen(str) + 1;
+	char *d = (char *) malloc(l * sizeof(char));
+	if (d) {
+		strcpy(d, str);
+		return d;
+	}
+	return NULL;
+}
+
+static inline int wm_isdigit(int c) {
+	return (c >= '0' && c <= '9');
+}
+
 #define TOKEN_CNT_INC 8
 static char** WM_LC_Tokenize_Line(char *line_data) {
 	int line_length = strlen(line_data);
@@ -670,7 +681,7 @@ static int WM_LoadConfig(const char *config_file) {
 						if (config_dir) {
 							free(config_dir);
 						}
-						if (!line_tokens[1] || !(config_dir = strdup(line_tokens[1]))) {
+						if (!line_tokens[1] || !(config_dir = wm_strdup(line_tokens[1]))) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 									"to parse config", errno);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -731,7 +742,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 						free(new_config);
 					} else if (strcasecmp(line_tokens[0], "bank") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
 									"(syntax error in bank line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -745,7 +756,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 						patchid = (atoi(line_tokens[1]) & 0xFF) << 8;
 					} else if (strcasecmp(line_tokens[0], "drumset") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
 									"(syntax error in drumset line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
@@ -760,7 +771,7 @@ static int WM_LoadConfig(const char *config_file) {
 						patchid = ((atoi(line_tokens[1]) & 0xFF) << 8) | 0x80;
 					} else if (strcasecmp(line_tokens[0], "reverb_room_width")
 							== 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_width line)",
 									0);
@@ -787,7 +798,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0], "reverb_room_length")
 							== 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_length line)",
 									0);
@@ -814,7 +825,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posx") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_listen_posx line)",
 									0);
@@ -837,7 +848,7 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					} else if (strcasecmp(line_tokens[0],
 							"reverb_listener_posy") == 0) {
-						if (!line_tokens[1] || !isdigit(line_tokens[1][0])) {
+						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_listen_posy line)",
 									0);
@@ -868,7 +879,7 @@ static int WM_LoadConfig(const char *config_file) {
 							== 0) {
 						auto_amp = 1;
 						auto_amp_with_amp = 1;
-					} else if (isdigit(line_tokens[0][0])) {
+					} else if (wm_isdigit(line_tokens[0][0])) {
 						patchid = (patchid & 0xFF80)
 								| (atoi(line_tokens[0]) & 0x7F);
 						if (patch[(patchid & 0x7F)] == NULL) {
@@ -1032,7 +1043,7 @@ static int WM_LoadConfig(const char *config_file) {
 						while (line_tokens[token_count]) {
 							if (strncasecmp(line_tokens[token_count], "amp=", 4)
 									== 0) {
-								if (!isdigit(line_tokens[token_count][4])) {
+								if (!wm_isdigit(line_tokens[token_count][4])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
 											"(syntax error in patch line)", 0);
@@ -1043,7 +1054,7 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							} else if (strncasecmp(line_tokens[token_count],
 									"note=", 5) == 0) {
-								if (!isdigit(line_tokens[token_count][5])) {
+								if (!wm_isdigit(line_tokens[token_count][5])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
 											WM_ERR_INVALID,
 											"(syntax error in patch line)", 0);
@@ -1053,8 +1064,8 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							} else if (strncasecmp(line_tokens[token_count],
 									"env_time", 8) == 0) {
-								if ((!isdigit(line_tokens[token_count][8]))
-										|| (!isdigit(
+								if ((!wm_isdigit(line_tokens[token_count][8]))
+										|| (!wm_isdigit(
 												line_tokens[token_count][10]))
 										|| (line_tokens[token_count][9] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
@@ -1088,8 +1099,8 @@ static int WM_LoadConfig(const char *config_file) {
 								}
 							} else if (strncasecmp(line_tokens[token_count],
 									"env_level", 9) == 0) {
-								if ((!isdigit(line_tokens[token_count][9]))
-										|| (!isdigit(
+								if ((!wm_isdigit(line_tokens[token_count][9]))
+										|| (!wm_isdigit(
 												line_tokens[token_count][11]))
 										|| (line_tokens[token_count][10] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
@@ -1612,13 +1623,13 @@ static void do_pan_adjust(struct _mdi *mdi, uint8_t ch) {
 	}
 
 	pan_adjust += 64;
-//	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {
+/*	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {*/
 	left = (pan_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
 	right = (pan_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
-//	} else {
-//	left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
-//	right= (lin_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
-//	}
+/*	} else {
+	left = (lin_volume[127 - pan_adjust] * WM_MasterVolume * amp) / 1048576;
+	right= (lin_volume[pan_adjust] * WM_MasterVolume * amp) / 1048576;
+	}*/
 
 	mdi->channel[ch].left_adjust = left;
 	mdi->channel[ch].right_adjust = right;
@@ -1635,11 +1646,11 @@ static void do_control_data_entry_course(struct _mdi *mdi,
 	int data_tmp;
 
 	if ((mdi->channel[ch].reg_non == 0)
-			&& (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
+			&& (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
 		data_tmp = mdi->channel[ch].pitch_range % 100;
 		mdi->channel[ch].pitch_range = data->data * 100 + data_tmp;
-	//	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);
-	//	printf("Data Entry Course: data %li\n\r",data->data);
+	/*	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
+	/*	printf("Data Entry Course: data %li\n\r",data->data);*/
 	}
 }
 
@@ -1704,11 +1715,11 @@ static void do_control_data_entry_fine(struct _mdi *mdi,
 	int data_tmp;
 
 	if ((mdi->channel[ch].reg_non == 0)
-			&& (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
+			&& (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
 		data_tmp = mdi->channel[ch].pitch_range / 100;
 		mdi->channel[ch].pitch_range = (data_tmp * 100) + data->data;
-//		printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);
-//		printf("Data Entry Fine: data: %li\n\r", data->data);
+	/*	printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
+	/*	printf("Data Entry Fine: data: %li\n\r", data->data);*/
 	}
 
 }
@@ -1769,7 +1780,7 @@ static void do_control_data_increment(struct _mdi *mdi,
 	uint8_t ch = data->channel;
 
 	if ((mdi->channel[ch].reg_non == 0)
-			&& (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
+			&& (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
 		if (mdi->channel[ch].pitch_range < 0x3FFF)
 			mdi->channel[ch].pitch_range++;
 	}
@@ -1780,7 +1791,7 @@ static void do_control_data_decrement(struct _mdi *mdi,
 	uint8_t ch = data->channel;
 
 	if ((mdi->channel[ch].reg_non == 0)
-			&& (mdi->channel[ch].reg_data == 0x0000)) { // Pitch Bend Range
+			&& (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
 		if (mdi->channel[ch].pitch_range > 0)
 			mdi->channel[ch].pitch_range--;
 	}
@@ -2315,9 +2326,9 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 	if (patch == NULL)
 		return 0;
 
-	// first get the freq we need so we can check the right sample
+	/* first get the freq we need so we can check the right sample */
 	if (patch->patchid & 0x80) {
-		// is a drum patch
+		/* is a drum patch */
 		if (patch->note) {
 			freq = freq_table[(patch->note % 12) * 100]
 					>> (10 - (patch->note / 12));
@@ -2328,7 +2339,7 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 		freq = freq_table[(note % 12) * 100] >> (10 - (note / 12));
 	}
 
-	// get the sample
+	/* get the sample */
 	sample = get_sample_data(patch, (freq / 100));
 	if (sample == NULL)
 		return 0;
@@ -2337,15 +2348,15 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 		float sratedata = ((float) sample->rate / (float) WM_SampleRate)
 				* (float) (sample->data_length >> 10);
 		decay_samples = (uint32_t) sratedata;
-	//	printf("Drums (%i / %i) * %lu = %f\n", sample->rate, WM_SampleRate, (sample->data_length >> 10), sratedata);
+	/*	printf("Drums (%i / %i) * %lu = %f\n", sample->rate, WM_SampleRate, (sample->data_length >> 10), sratedata);*/
 	} else if (sample->modes & SAMPLE_CLAMPED) {
 		decay_samples = (4194303 / sample->env_rate[5]);
-	//	printf("clamped 4194303 / %lu = %lu\n", sample->env_rate[5], decay_samples);
+	/*	printf("clamped 4194303 / %lu = %lu\n", sample->env_rate[5], decay_samples);*/
 	} else {
 		decay_samples =
 				((4194303 - sample->env_target[4]) / sample->env_rate[4])
 						+ (sample->env_target[4] / sample->env_rate[5]);
-	//	printf("NOT clamped ((4194303 - %lu) / %lu) + (%lu / %lu)) = %lu\n", sample->env_target[4], sample->env_rate[4], sample->env_target[4], sample->env_rate[5], decay_samples);
+	/*	printf("NOT clamped ((4194303 - %lu) / %lu) + (%lu / %lu)) = %lu\n", sample->env_target[4], sample->env_rate[4], sample->env_target[4], sample->env_rate[5], decay_samples);*/
 	}
 	return decay_samples;
 }
@@ -2473,7 +2484,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		float bpm_fr = (float) (60000000 / tempo) + 0.5f;
 		tempo = 60000000 / (uint32_t) bpm_fr;
 	}
-	//Slow but needed for accuracy
+	/* Slow but needed for accuracy */
 	microseconds_per_pulse = (float) tempo / (float) divisions;
 	pulses_per_second = 1000000.0f / microseconds_per_pulse;
 	samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
@@ -2559,8 +2570,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 				case 0x8:
 					NOTEOFF: midi_setup_noteoff(mdi, current_event_ch,
 							tracks[i][0], tracks[i][1]);
-					// To better calculate samples needed after the end of midi,
-					// we calculate samples for decay for note off
+					/* To better calculate samples needed after the end of midi,
+					 * we calculate samples for decay for note off */
 					{
 						uint32_t tmp_decay_samples = 0;
 						struct _patch *tmp_patch = NULL;
@@ -2568,17 +2579,17 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 							tmp_patch = get_patch_data(mdi,
 									((mdi->channel[current_event_ch].bank << 8)
 											| tracks[i][0] | 0x80));
-						//	if (tmp_patch == NULL)
-						//		printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);
+						/*	if (tmp_patch == NULL)
+								printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);*/
 						} else {
 							tmp_patch = mdi->channel[current_event_ch].patch;
-						//	if (tmp_patch == NULL)
-						//		printf("Channel %i patch not loaded\n", current_event_ch);
+						/*	if (tmp_patch == NULL)
+								printf("Channel %i patch not loaded\n", current_event_ch);*/
 						}
 						tmp_decay_samples = get_decay_samples(tmp_patch,
 								tracks[i][0]);
-						// if the note off decay is more than the decay we currently tracking then
-						// we set it to new decay.
+						/* if the note off decay is more than the decay we currently tracking then
+						 * we set it to new decay. */
 						if (tmp_decay_samples > decay_samples) {
 							decay_samples = tmp_decay_samples;
 						}
@@ -2625,10 +2636,10 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
-				case 0xF: // Meta Event
+				case 0xF: /* Meta Event */
 					if (current_event == 0xFF) {
-						if (tracks[i][0] == 0x02) { // Copyright Event
-							// Get Length
+						if (tracks[i][0] == 0x02) { /* Copyright Event */
+							/* Get Length */
 							tmp_length = 0;
 							tracks[i]++;
 							while (*tracks[i] > 0x7f) {
@@ -2638,7 +2649,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 							}
 							tmp_length = (tmp_length << 7)
 									+ (*tracks[i] & 0x7f);
-							// Copy copyright info in the getinfo struct
+							/* Copy copyright info in the getinfo struct */
 							if (mdi->info.copyright) {
 								mdi->info.copyright = realloc(
 										mdi->info.copyright,
@@ -2661,13 +2672,13 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 							tracks[i] += tmp_length + 1;
 						} else if ((tracks[i][0] == 0x2F)
 								&& (tracks[i][1] == 0x00)) {
-							// End of Track
+							/* End of Track */
 							end_of_tracks++;
 							track_end[i] = 1;
 							goto NEXT_TRACK;
 						} else if ((tracks[i][0] == 0x51)
 								&& (tracks[i][1] == 0x03)) {
-							// Tempo
+							/* Tempo */
 							tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8)
 									+ tracks[i][4];
 							tracks[i] += 5;
@@ -2682,7 +2693,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 										+ 0.5f;
 								tempo = 60000000 / (uint32_t) bpm_fr;
 							}
-							//Slow but needed for accuracy
+							/* Slow but needed for accuracy */
 							microseconds_per_pulse = (float) tempo
 									/ (float) divisions;
 							pulses_per_second = 1000000.0f
@@ -2704,7 +2715,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 						}
 					} else if ((current_event == 0xF0)
 							|| (current_event == 0xF7)) {
-						// Roland Sysex Events
+						/* Roland Sysex Events */
 						uint32_t sysex_len = 0;
 						while (*tracks[i] > 0x7F) {
 							sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
@@ -2724,7 +2735,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 						if (sysex_store[sysex_store_len - 1] == 0xF7) {
 							uint8_t tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
 							if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
-								//checksum
+								/* checksum */
 								uint8_t sysex_cs = 0;
 								uint32_t sysex_ofs = 4;
 								do {
@@ -2735,13 +2746,13 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 									sysex_ofs++;
 								} while (sysex_store[sysex_ofs + 1] != 0xF7);
 								sysex_cs = 128 - sysex_cs;
-								// is roland sysex message valid
+								/* is roland sysex message valid */
 								if (sysex_cs == sysex_store[sysex_ofs]) {
-									// process roland sysex event
+									/* process roland sysex event */
 									if (sysex_store[4] == 0x40) {
 										if (((sysex_store[5] & 0xF0) == 0x10)
 												&& (sysex_store[6] == 0x15)) {
-											// Roland Drum Track Setting
+											/* Roland Drum Track Setting */
 											uint8_t sysex_ch = 0x0F
 													& sysex_store[5];
 											if (sysex_ch == 0x00) {
@@ -2755,7 +2766,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 										} else if ((sysex_store[5] == 0x00)
 												&& (sysex_store[6] == 0x7F)
 												&& (sysex_store[7] == 0x00)) {
-											// Roland GS Reset
+											/* Roland GS Reset */
 											midi_setup_sysex_roland_reset(mdi);
 										}
 									}
@@ -2806,7 +2817,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 			mdi->event_count++;
 		}
 		mdi->info.approx_total_samples += sample_count;
-		//printf("Decay Samples = %lu\n",decay_samples);
+		/* printf("Decay Samples = %lu\n",decay_samples);*/
 		if (decay_samples > sample_count) {
 			decay_samples -= sample_count;
 		} else {
@@ -2819,14 +2830,14 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 				mdi->events[mdi->event_count - 1].samples_to_next;
 		mdi->event_count--;
 	}
-	// Set total MIDI time to 1/1000's seconds
+	/* Set total MIDI time to 1/1000's seconds */
 	mdi->info.total_midi_time = (mdi->info.approx_total_samples * 1000)
 			/ WM_SampleRate;
-	//mdi->info.approx_total_samples += WM_SampleRate * 3;
+	/*mdi->info.approx_total_samples += WM_SampleRate * 3;*/
 
-	// Add additional samples needed for decay
+	/* Add additional samples needed for decay */
 	mdi->info.approx_total_samples += decay_samples;
-	//printf("decay_samples = %lu\n",decay_samples);
+	/*printf("decay_samples = %lu\n",decay_samples);*/
 
 	if ((mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width,
 			reverb_room_length, reverb_listen_posx, reverb_listen_posy))
@@ -2918,7 +2929,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 			}
 		}
 
-		// do mixing here
+		/* do mixing here */
 		count = real_samples_to_mix;
 		do {
 			note_data = mdi->note;
@@ -3028,7 +3039,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 						if (__builtin_expect((note_data->env_level == 0), 1)) {
 							goto KILL_NOTE;
 						}
-						// sample release
+						/* sample release */
 						if (note_data->modes & SAMPLE_LOOP)
 							note_data->modes ^= SAMPLE_LOOP;
 						note_data->env_inc = 0;
@@ -3226,7 +3237,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 			}
 		}
 
-		// do mixing here
+		/* do mixing here */
 		count = real_samples_to_mix;
 		do {
 			note_data = mdi->note;
@@ -3369,7 +3380,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 						if (__builtin_expect((note_data->env_level == 0), 1)) {
 							goto KILL_NOTE;
 						}
-						// sample release
+						/* sample release */
 						if (note_data->modes & SAMPLE_LOOP)
 							note_data->modes ^= SAMPLE_LOOP;
 						note_data->env_inc = 0;
@@ -3628,7 +3639,7 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 		for (i = 0; i < mdi->patch_count; i++) {
 			mdi->patches[i]->inuse_count--;
 			if (mdi->patches[i]->inuse_count == 0) {
-				//free samples here
+				/* free samples here */
 				if (mdi->patches[i]->first_sample) {
 					while (mdi->patches[i]->first_sample) {
 						tmp_sample = mdi->patches[i]->first_sample->next;
@@ -3752,31 +3763,31 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	WM_Lock(&mdi->lock);
 	event = mdi->current_event;
 
-	// make sure we havent asked for a positions beyond the end of the song.
+	/* make sure we havent asked for a positions beyond the end of the song. */
 	if (*sample_pos > mdi->info.approx_total_samples) {
-		// if so set the position to the end of the song
+		/* if so set the position to the end of the song */
 		*sample_pos = mdi->info.approx_total_samples;
 	}
 
-	// was end of song requested and are we are there?
+	/* was end of song requested and are we are there? */
 	if (*sample_pos == mdi->info.current_sample) {
-		// yes
+		/* yes */
 		WM_Unlock(&mdi->lock);
 		return 0;
 	}
 
-	// did we want to fast forward?
+	/* did we want to fast forward? */
 	if (mdi->info.current_sample < *sample_pos) {
-		// yes
+		/* yes */
 		count = *sample_pos - mdi->info.current_sample;
 	} else {
-		// no, reset values to start as the beginning
+		/* no, reset values to start as the beginning */
 		count = *sample_pos;
 		WM_ResetToStart(handle);
 		event = mdi->current_event;
 	}
 
-	// clear the reverb buffers since we not gonna be using them here
+	/* clear the reverb buffers since we not gonna be using them here */
 	reset_reverb(mdi->reverb);
 
 	do {
