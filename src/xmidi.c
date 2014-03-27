@@ -491,11 +491,16 @@ void freeXMI(struct xmi_ctx *ctx) {
 		for (i = 0; i < ctx->info.tracks; i++)
 			DeleteEventList(ctx->events[i]);
 		free(ctx->events);
+		ctx->events = NULL;
 	}
 	if (ctx->timing) free(ctx->timing);
+	ctx->timing = NULL;
 	if (ctx->fixed) free(ctx->fixed);
+	ctx->fixed = NULL;
 	if (ctx->dst) free(ctx->dst);
+	ctx->dst = NULL;
 	free(ctx);
+	ctx = NULL;
 }
 
 uint8_t *getMidi(struct xmi_ctx *ctx) {
@@ -508,7 +513,7 @@ uint32_t getMidiSize(struct xmi_ctx *ctx) {
 
 uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int findSize) {
 	uint32_t len = 0;
-
+	int i = 0;
 	if (ExtractTracks(ctx) < 0) {
 		printf("No midi data in loaded.\n");
 		return (0);
@@ -531,6 +536,18 @@ uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int findSize) {
 	if (findSize) {
 		/* Header is 14 bytes long and add the rest as well */
 		len = ConvertListToMTrk(NULL, ctx->events[track]);
+
+		if (ctx->events) {
+			for (i = 0; i < ctx->info.tracks; i++)
+				DeleteEventList(ctx->events[i]);
+			free(ctx->events);
+			ctx->events = NULL;
+		}
+		if (ctx->timing) free(ctx->timing);
+		ctx->timing = NULL;
+		if (ctx->fixed) free(ctx->fixed);
+		ctx->fixed = NULL;
+
 		return (14 + len);
 	}
 
@@ -558,6 +575,7 @@ static void DeleteEventList(midi_event *mlist) {
 	while ((event = next) != NULL) {
 		next = event->next;
 		free(event);
+		event = NULL;
 	}
 }
 
