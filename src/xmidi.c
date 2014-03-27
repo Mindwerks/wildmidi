@@ -1145,10 +1145,17 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 
 static int ParseXMI(struct xmi_ctx *ctx) {
 	uint32_t i;
-	int32_t start;
+	uint32_t start;
 	uint32_t len;
 	uint32_t chunk_len;
+	uint32_t file_size;
 	char buf[32];
+
+	file_size = getsrcsize(ctx);
+	if (getsrcpos(ctx) + 8 > file_size) {
+badfile:	printf("Not a valid XMID.\n");
+		return (-1);
+	}
 
 	/* Read first 4 bytes of header */
 	copy(ctx, buf, 4);
@@ -1159,6 +1166,8 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 		len = read4(ctx);
 
 		start = getsrcpos(ctx);
+		if (start + 4 > file_size)
+			goto badfile;
 
 		/* Read 4 bytes of type */
 		copy(ctx, buf, 4);
@@ -1170,13 +1179,16 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 		}
 		/* Not an XMIDI that we recognise */
 		else if (memcmp(buf, "XDIR", 4)) {
-			printf("Not a recognised XMID.\n");
-			return (-1);
+			goto badfile;
 		}
 		else { /* Seems Valid */
 			ctx->info.tracks = 0;
 
 			for (i = 4; i < len; i++) {
+				/* check too short files */
+				if (getsrcpos(ctx) + 10 > file_size)
+					break;
+
 				/* Read 4 bytes of type */
 				copy(ctx, buf, 4);
 
@@ -1203,13 +1215,14 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 
 			/* Didn't get to fill the header */
 			if (ctx->info.tracks == 0) {
-				printf("Not a valid XMID.\n");
-				return (-1);
+				goto badfile;
 			}
 
 			/* Ok now to start part 2
 			 * Goto the right place */
 			seeksrc(ctx, start + ((len + 1) & ~1));
+			if (getsrcpos(ctx) + 12 > file_size)
+				goto badfile;
 
 			/* Read 4 bytes of type */
 			copy(ctx, buf, 4);
