@@ -80,7 +80,7 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time); /* List manipulat
 static int GetVLQ(struct xmi_ctx *ctx, uint32_t *quant); /* Variable length quantity */
 static int GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant);/* Variable length quantity */
 static int PutVLQ(struct xmi_ctx *ctx, uint32_t value);  /* Variable length quantity */
-static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel);
+static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel);
 static int ConvertEvent(struct xmi_ctx *ctx,
 			const int32_t time, const uint8_t status, const int size);
 static int32_t ConvertSystemMessage(struct xmi_ctx *ctx,
@@ -668,7 +668,7 @@ static int PutVLQ(struct xmi_ctx *ctx, uint32_t value) {
  *
  * This little function attempts to correct errors in midi files
  * that relate to patch, volume and pan changing */
-static void MovePatchVolAndPan(struct xmi_ctx *ctx, int32_t channel) {
+static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel) {
 	midi_event *patch;
 	midi_event *vol;
 	midi_event *pan;
