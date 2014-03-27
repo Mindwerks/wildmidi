@@ -1244,15 +1244,10 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 
 	/* since it is a two-pass crap'o'la, check before allocating */
 	if (!ctx->fixed) {
-		ctx->events = malloc(sizeof(midi_event *) * ctx->info.tracks);
-		ctx->timing = malloc(sizeof(signed short) * ctx->info.tracks);
-		ctx->fixed = malloc(sizeof(int) * ctx->info.tracks);
+		ctx->events = calloc(ctx->info.tracks, sizeof(midi_event*));
+		ctx->timing = calloc(ctx->info.tracks, sizeof(int16_t));
+		ctx->fixed = calloc(ctx->info.tracks, sizeof(int32_t));
 		ctx->info.type = 0;
-	}
-
-	for (i = 0; i < ctx->info.tracks; i++) {
-		ctx->events[i] = NULL;
-		ctx->fixed[i] = 0;
 	}
 
 	seeksrc(ctx, ctx->datastart);
