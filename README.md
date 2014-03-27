@@ -39,13 +39,18 @@ CHANGELOG
 * API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
   to accept strictly 32bit size parameters, i.e. uint32_t, instead of
   unsigned long.
+* DOS (DJGPP) port, player: Support for Sound Blaster output.
 * Build requires cmake-2.8.11 or newer now.
+
+0.3.6
+* Fix some portability issues.
 
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
 * OpenAL support: Fixed audio output on big-endian systems. Fixed audio
   skips at song start.
-* OSS support: No longer uses mmap mode for better compatibility.
+* OSS support: No longer uses mmap mode for better compatibility. This
+  gains us NetBSD and OpenBSD support.
 * Worked around an invalid memory read found by valgrind when playing
   Beethoven's Fur Elise.rmi at 44100 Hz using the old MIDIA patch-set
   from 1994.
