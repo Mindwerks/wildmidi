@@ -574,6 +574,7 @@ static void DeleteEventList(midi_event *mlist) {
 
 	while ((event = next) != NULL) {
 		next = event->next;
+		if (event->buffer) free(event->buffer);
 		free(event);
 		event = NULL;
 	}
