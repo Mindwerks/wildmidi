@@ -29,13 +29,13 @@
 
 /* Midi Status Bytes */
 #define MIDI_STATUS_NOTE_OFF		0x8
-#define MIDI_STATUS_NOTE_ON			0x9
+#define MIDI_STATUS_NOTE_ON		0x9
 #define MIDI_STATUS_AFTERTOUCH		0xA
 #define MIDI_STATUS_CONTROLLER		0xB
 #define MIDI_STATUS_PROG_CHANGE		0xC
 #define MIDI_STATUS_PRESSURE		0xD
 #define MIDI_STATUS_PITCH_WHEEL		0xE
-#define MIDI_STATUS_SYSEX			0xF
+#define MIDI_STATUS_SYSEX		0xF
 
 /* XMIDI Controllers */
 #define XMIDI_CONTROLLER_FOR_LOOP	116
@@ -92,7 +92,7 @@ static int ExtractTracks(struct xmi_ctx *ctx);
 static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx);
 
 #if 0
-static uint8_t getTracks(struct xmi_ctx *ctx)
+static unsigned int getTracks(struct xmi_ctx *ctx)
 {
 	return (ctx->info.tracks);
 }
@@ -483,7 +483,7 @@ struct xmi_ctx *initXMI(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_ty
 }
 
 void freeXMI(struct xmi_ctx *ctx) {
-	int i;
+	unsigned int i;
 
 	if (!ctx) return;
 
@@ -566,10 +566,7 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
 	if (!ctx->list) {
 		ctx->list = ctx->current = malloc(sizeof(midi_event));
 		ctx->current->next = NULL;
-		if (time < 0)
-			ctx->current->time = 0;
-		else
-			ctx->current->time = time;
+		ctx->current->time = (time < 0)? 0 : time;
 		ctx->current->buffer = NULL;
 		ctx->current->len = 0;
 		return;
@@ -634,7 +631,7 @@ static int GetVLQ(struct xmi_ctx *ctx, uint32_t *quant) {
 /* XMIDI Delta Variable Length Quantity */
 static int GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant) {
 	int i;
-	int32_t data = 0;
+	int32_t data;
 
 	*quant = 0;
 	for (i = 0; i < 4; i++) {
@@ -916,7 +913,6 @@ static int32_t ConvertSystemMessage(struct xmi_ctx *ctx, const int32_t time,
 		return (i);
 
 	ctx->current->buffer = malloc(sizeof(uint8_t)*ctx->current->len);
-
 	copy(ctx, (char *) ctx->current->buffer, ctx->current->len);
 
 	return (i + ctx->current->len);
@@ -1105,6 +1101,7 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 	uint32_t num = 0;
 	signed short ppqn;
 	uint32_t len = 0;
+	int32_t begin;
 	char buf[32];
 
 	while (getsrcpos(ctx) < getsrcsize(ctx) && num != ctx->info.tracks) {
@@ -1125,7 +1122,7 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 		}
 
 		ctx->list = NULL;
-		int32_t begin = getsrcpos(ctx);
+		begin = getsrcpos(ctx);
 
 		/* Convert it */
 		if (!(ppqn = ConvertFiletoList(ctx))) {
@@ -1176,8 +1173,7 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 			printf("Not a recognised XMID.\n");
 			return (-1);
 		}
-		/* Seems Valid */
-		else {
+		else { /* Seems Valid */
 			ctx->info.tracks = 0;
 
 			for (i = 4; i < len; i++) {
@@ -1191,7 +1187,7 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 				i += 8;
 
 				if (memcmp(buf, "INFO", 4)) {
-					/* Must allign */
+					/* Must align */
 					skipsrc(ctx, (chunk_len + 1) & ~1);
 					i += (chunk_len + 1) & ~1;
 					continue;
@@ -1218,7 +1214,6 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 			/* Read 4 bytes of type */
 			copy(ctx, buf, 4);
 
-			/* Not an XMID */
 			if (memcmp(buf, "CAT ", 4)) {
 				printf("Not a recognised XMID (%c%c%c%c) should be (CAT )\n", buf[0],buf[1],buf[2],buf[3]);
 				return (-1);
@@ -1230,13 +1225,12 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 			/* Read 4 bytes of type */
 			copy(ctx, buf, 4);
 
-			/* Not an XMID */
 			if (memcmp(buf, "XMID", 4)) {
 				printf("Not a recognised XMID (%c%c%c%c) should be (XMID)\n", buf[0],buf[1],buf[2],buf[3]);
 				return (-1);
 			}
 
-			/* Ok it's an XMID, so pass it to the ExtractCode */
+			/* Valid XMID */
 			ctx->datastart = getsrcpos(ctx);
 			return (0);
 		}
@@ -1247,7 +1241,6 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 
 static int ExtractTracks(struct xmi_ctx *ctx) {
 	uint32_t i;
-	uint32_t count;
 
 	/* since it is a two-pass crap'o'la, check before allocating */
 	if (!ctx->fixed) {
@@ -1263,10 +1256,10 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 	}
 
 	seeksrc(ctx, ctx->datastart);
-	count = ExtractTracksFromXmi(ctx);
+	i = ExtractTracksFromXmi(ctx);
 
-	if (count != ctx->info.tracks) {
-		printf("Error: unable to extract all (%d) tracks specified from XMIDI. Only (%d)", ctx->info.tracks, count);
+	if (i != ctx->info.tracks) {
+		printf("Error: unable to extract all (%u) tracks specified from XMIDI. Only (%u)", ctx->info.tracks, i);
 		return (-1);
 	}
 
