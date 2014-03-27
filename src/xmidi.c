@@ -1246,7 +1246,7 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 	if (!ctx->fixed) {
 		ctx->events = calloc(ctx->info.tracks, sizeof(midi_event*));
 		ctx->timing = calloc(ctx->info.tracks, sizeof(int16_t));
-		ctx->fixed = calloc(ctx->info.tracks, sizeof(int32_t));
+		ctx->fixed = calloc(ctx->info.tracks, sizeof(int));
 		ctx->info.type = 0;
 	}
 
