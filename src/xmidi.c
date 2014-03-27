@@ -612,7 +612,6 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
 
 	ctx->current->next = calloc(1, sizeof(midi_event));
 	ctx->current = ctx->current->next;
-	ctx->current->next = NULL;
 	ctx->current->time = time;
 }
 
