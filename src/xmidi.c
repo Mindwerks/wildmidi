@@ -582,21 +582,15 @@ static void DeleteEventList(midi_event *mlist) {
 /* Sets current to the new event and updates list */
 static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
 	if (!ctx->list) {
-		ctx->list = ctx->current = malloc(sizeof(midi_event));
-		ctx->current->next = NULL;
+		ctx->list = ctx->current = calloc(1, sizeof(midi_event));
 		ctx->current->time = (time < 0)? 0 : time;
-		ctx->current->buffer = NULL;
-		ctx->current->len = 0;
 		return;
 	}
 
 	if (time < 0) {
-		midi_event *event = malloc(sizeof(midi_event));
+		midi_event *event = calloc(1, sizeof(midi_event));
 		event->next = ctx->list;
 		ctx->list = ctx->current = event;
-		ctx->current->time = 0;
-		ctx->current->buffer = NULL;
-		ctx->current->len = 0;
 		return;
 	}
 
@@ -605,26 +599,21 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
 
 	while (ctx->current->next) {
 		if (ctx->current->next->time > time) {
-			midi_event *event = malloc(sizeof(midi_event));
-
+			midi_event *event = calloc(1, sizeof(midi_event));
 			event->next = ctx->current->next;
 			ctx->current->next = event;
 			ctx->current = event;
 			ctx->current->time = time;
-			ctx->current->buffer = NULL;
-			ctx->current->len = 0;
 			return;
 		}
 
 		ctx->current = ctx->current->next;
 	}
 
-	ctx->current->next = malloc(sizeof(midi_event));
+	ctx->current->next = calloc(1, sizeof(midi_event));
 	ctx->current = ctx->current->next;
 	ctx->current->next = NULL;
 	ctx->current->time = time;
-	ctx->current->buffer = NULL;
-	ctx->current->len = 0;
 }
 
 /* Conventional Variable Length Quantity */
@@ -734,11 +723,9 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel) {
 
 	/* Copy Patch Change Event */
 	temp = patch;
-	patch = malloc(sizeof(midi_event));
+	patch = calloc(1, sizeof(midi_event));
 	patch->time = temp->time;
 	patch->status = channel + 0xC0;
-	patch->len = 0;
-	patch->buffer = NULL;
 	patch->data[0] = temp->data[0];
 
 	/* Copy Volume */
@@ -748,11 +735,9 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel) {
 		vol = NULL;
 
 	temp = vol;
-	vol = malloc(sizeof(midi_event));
+	vol = calloc(1, sizeof(midi_event));
 	vol->status = channel + 0xB0;
 	vol->data[0] = 7;
-	vol->len = 0;
-	vol->buffer = NULL;
 
 	if (!temp)
 		vol->data[1] = 64;
@@ -767,11 +752,8 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel) {
 
 	temp = bank;
 
-	bank = malloc(sizeof(midi_event));
+	bank = calloc(1, sizeof(midi_event));
 	bank->status = channel + 0xB0;
-	bank->data[0] = 0;
-	bank->len = 0;
-	bank->buffer = NULL;
 
 	if (!temp)
 		bank->data[1] = 0;
@@ -785,11 +767,9 @@ static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel) {
 		pan = NULL;
 
 	temp = pan;
-	pan = malloc(sizeof(midi_event));
+	pan = calloc(1, sizeof(midi_event));
 	pan->status = channel + 0xB0;
 	pan->data[0] = 10;
-	pan->len = 0;
-	pan->buffer = NULL;
 
 	if (!temp)
 		pan->data[1] = 64;
