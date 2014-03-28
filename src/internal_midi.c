@@ -44,9 +44,7 @@ struct _event_list {
 
 void free_event_list(struct _event_list *event_list) {
 	if (event_list) {
-		if (event_list->events) {
-			free(event_list->events);
-		}
+		free(event_list->events);
 		free(event_list);
 	}
 }
