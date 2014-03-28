@@ -44,6 +44,8 @@ CHANGELOG
 
 0.3.6
 * Fix some portability issues.
+* Fix a double-free issue during library shutdown when several midis
+  were alive.
 
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
