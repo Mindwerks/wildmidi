@@ -480,6 +480,7 @@ struct xmi_ctx *initXMI(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_ty
 	ctx->dst = malloc(midi_size);
 	ctx->dst_ptr = ctx->dst;
 	ctx->dstsize = midi_size;
+	printf("XMIDI - %u track(s)\n", ctx->info.tracks);
 	return ctx;
 }
 
