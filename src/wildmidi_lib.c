@@ -2406,6 +2406,10 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 				return NULL;
 			}
 		}
+		else {
+			printf("Not an xmidi file\n");
+			return NULL;
+		}
 	}
 
 	if (!memcmp(midi_data, "RIFF", 4)) {
