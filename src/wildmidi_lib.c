@@ -3916,8 +3916,10 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 		free(first_handle);
 		first_handle = tmp_hdle;
 	}
+	first_handle = NULL;
 	WM_FreePatches();
 	free_gauss();
 	WM_Initialized = 0;
+
 	return 0;
 }
