@@ -3935,19 +3935,14 @@ WildMidi_GetInfo(midi * handle) {
 }
 
 WM_SYMBOL int WildMidi_Shutdown(void) {
-	struct _hndl * tmp_hdle;
-
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return -1;
 	}
 	while (first_handle) {
-		tmp_hdle = first_handle->next;
+		/* closes open handle and rotates the handles list. */
 		WildMidi_Close((struct _mdi *) first_handle->handle);
-		free(first_handle);
-		first_handle = tmp_hdle;
 	}
-	first_handle = NULL;
 	WM_FreePatches();
 	free_gauss();
 	WM_Initialized = 0;
