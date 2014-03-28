@@ -492,16 +492,11 @@ void freeXMI(struct xmi_ctx *ctx) {
 		for (i = 0; i < ctx->info.tracks; i++)
 			DeleteEventList(ctx->events[i]);
 		free(ctx->events);
-		ctx->events = NULL;
 	}
 	if (ctx->timing) free(ctx->timing);
-	ctx->timing = NULL;
 	if (ctx->fixed) free(ctx->fixed);
-	ctx->fixed = NULL;
 	if (ctx->dst) free(ctx->dst);
-	ctx->dst = NULL;
 	free(ctx);
-	ctx = NULL;
 }
 
 uint8_t *getMidi(struct xmi_ctx *ctx) {
@@ -534,36 +529,35 @@ uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int findSize) {
 	}
 
 	/* This is so if using buffer datasource, the caller can know how big to make the buffer */
-	if (findSize) {
+	if (!findSize) {
 		/* Header is 14 bytes long and add the rest as well */
-		len = ConvertListToMTrk(NULL, ctx->events[track]);
+		write1(ctx, 'M');
+		write1(ctx, 'T');
+		write1(ctx, 'h');
+		write1(ctx, 'd');
 
-		if (ctx->events) {
-			for (i = 0; i < ctx->info.tracks; i++)
-				DeleteEventList(ctx->events[i]);
-			free(ctx->events);
-			ctx->events = NULL;
-		}
-		if (ctx->timing) free(ctx->timing);
-		ctx->timing = NULL;
-		if (ctx->fixed) free(ctx->fixed);
-		ctx->fixed = NULL;
+		write4(ctx, 6);
 
-		return (14 + len);
+		write2(ctx, 0);
+		write2(ctx, 1);
+		write2(ctx, ctx->timing[track]);
 	}
 
-	write1(ctx, 'M');
-	write1(ctx, 'T');
-	write1(ctx, 'h');
-	write1(ctx, 'd');
-
-	write4(ctx, 6);
-
-	write2(ctx, 0);
-	write2(ctx, 1);
-	write2(ctx, ctx->timing[track]);
-
 	len = ConvertListToMTrk(ctx, ctx->events[track]);
+
+	/* cleanup */
+	if (ctx->events) {
+		for (i = 0; i < ctx->info.tracks; i++)
+			DeleteEventList(ctx->events[i]);
+		free(ctx->events);
+	}
+	if (ctx->timing) free(ctx->timing);
+	if (ctx->fixed) free(ctx->fixed);
+	ctx->events = NULL;
+	ctx->list = ctx->current = NULL;
+	ctx->timing = NULL;
+	ctx->fixed = NULL;
+
 	return (14 + len);
 }
 
@@ -577,7 +571,6 @@ static void DeleteEventList(midi_event *mlist) {
 		next = event->next;
 		if (event->buffer) free(event->buffer);
 		free(event);
-		event = NULL;
 	}
 }
 
@@ -1254,13 +1247,10 @@ badfile:	printf("Not a valid XMID.\n");
 static int ExtractTracks(struct xmi_ctx *ctx) {
 	uint32_t i;
 
-	/* since it is a two-pass crap'o'la, check before allocating */
-	if (!ctx->fixed) {
-		ctx->events = calloc(ctx->info.tracks, sizeof(midi_event*));
-		ctx->timing = calloc(ctx->info.tracks, sizeof(int16_t));
-		ctx->fixed = calloc(ctx->info.tracks, sizeof(int));
-		ctx->info.type = 0;
-	}
+	ctx->events = calloc(ctx->info.tracks, sizeof(midi_event*));
+	ctx->timing = calloc(ctx->info.tracks, sizeof(int16_t));
+	ctx->fixed = calloc(ctx->info.tracks, sizeof(int));
+	ctx->info.type = 0;
 
 	seeksrc(ctx, ctx->datastart);
 	i = ExtractTracksFromXmi(ctx);
