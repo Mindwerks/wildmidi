@@ -487,15 +487,14 @@ void freeXMI(struct xmi_ctx *ctx) {
 	unsigned int i;
 
 	if (!ctx) return;
-
 	if (ctx->events) {
 		for (i = 0; i < ctx->info.tracks; i++)
 			DeleteEventList(ctx->events[i]);
 		free(ctx->events);
 	}
-	if (ctx->timing) free(ctx->timing);
-	if (ctx->fixed) free(ctx->fixed);
-	if (ctx->dst) free(ctx->dst);
+	free(ctx->timing);
+	free(ctx->fixed);
+	free(ctx->dst);
 	free(ctx);
 }
 
@@ -551,8 +550,8 @@ uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int findSize) {
 			DeleteEventList(ctx->events[i]);
 		free(ctx->events);
 	}
-	if (ctx->timing) free(ctx->timing);
-	if (ctx->fixed) free(ctx->fixed);
+	free(ctx->timing);
+	free(ctx->fixed);
 	ctx->events = NULL;
 	ctx->list = ctx->current = NULL;
 	ctx->timing = NULL;
@@ -569,7 +568,7 @@ static void DeleteEventList(midi_event *mlist) {
 
 	while ((event = next) != NULL) {
 		next = event->next;
-		if (event->buffer) free(event->buffer);
+		free(event->buffer);
 		free(event);
 	}
 }
