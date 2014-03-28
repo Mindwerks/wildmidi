@@ -71,7 +71,6 @@ void reset_reverb(struct _rvb *rvb) {
  The combined sounds are also sent to the reflective points on the opposite side.
 
  */
-
 struct _rvb *
 init_reverb(int rate, float room_x, float room_y, float listen_x,
 		float listen_y) {
@@ -310,6 +309,7 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
  free_reverb - free up memory used for reverb
  */
 void free_reverb(struct _rvb *rvb) {
+	if (!rvb) return;
 	free(rvb->l_buf);
 	free(rvb->r_buf);
 	free(rvb);

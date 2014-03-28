@@ -255,8 +255,10 @@ static void init_gauss(void) {
 }
 
 static void free_gauss(void) {
-	if (gauss_table) free(gauss_table);
+	WM_Lock(&gauss_lock);
+	free(gauss_table);
 	gauss_table = NULL;
+	WM_Unlock(&gauss_lock);
 }
 
 struct _hndl {
@@ -540,24 +542,17 @@ static void WM_FreePatches(void) {
 
 	WM_Lock(&patch_lock);
 	for (i = 0; i < 128; i++) {
-		if (patch[i] != NULL) {
-			while (patch[i] != NULL) {
-				if (patch[i]->filename != NULL) {
-					if (patch[i]->first_sample != NULL) {
-						while (patch[i]->first_sample != NULL) {
-							tmp_sample = patch[i]->first_sample->next;
-							if (patch[i]->first_sample->data != NULL)
-								free(patch[i]->first_sample->data);
-							free(patch[i]->first_sample);
-							patch[i]->first_sample = tmp_sample;
-						}
-					}
-					free(patch[i]->filename);
-				}
-				tmp_patch = patch[i]->next;
-				free(patch[i]);
-				patch[i] = tmp_patch;
+		while (patch[i]) {
+			while (patch[i]->first_sample) {
+				tmp_sample = patch[i]->first_sample->next;
+				free(patch[i]->first_sample->data);
+				free(patch[i]->first_sample);
+				patch[i]->first_sample = tmp_sample;
 			}
+			free(patch[i]->filename);
+			tmp_patch = patch[i]->next;
+			free(patch[i]);
+			patch[i] = tmp_patch;
 		}
 	}
 	WM_Unlock(&patch_lock);
@@ -678,9 +673,7 @@ static int WM_LoadConfig(const char *config_file) {
 				if ((line_tokens = WM_LC_Tokenize_Line(
 						&config_buffer[line_start_ptr])) != NULL) {
 					if (strcasecmp(line_tokens[0], "dir") == 0) {
-						if (config_dir) {
-							free(config_dir);
-						}
+						free(config_dir);
 						if (!line_tokens[1] || !(config_dir = wm_strdup(line_tokens[1]))) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 									"to parse config", errno);
@@ -734,8 +727,7 @@ static int WM_LoadConfig(const char *config_file) {
 							free(new_config);
 							free(line_tokens);
 							free(config_buffer);
-							if (config_dir != NULL)
-								free(config_dir);
+							free(config_dir);
 							return -1;
 						}
 						free(new_config);
@@ -746,8 +738,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
 							WM_FreePatches();
-							if (config_dir != NULL)
-								free(config_dir);
+							free(config_dir);
 							free(line_tokens);
 							free(config_buffer);
 							return -1;
@@ -760,8 +751,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
 							WM_FreePatches();
-							if (config_dir != NULL)
-								free(config_dir);
+							free(config_dir);
 							free(line_tokens);
 							free(config_buffer);
 							return -1;
@@ -776,8 +766,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
 							WM_FreePatches();
-							if (config_dir != NULL)
-								free(config_dir);
+							free(config_dir);
 							free(line_tokens);
 							free(config_buffer);
 							return -1;
@@ -803,8 +792,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
 							WM_FreePatches();
-							if (config_dir != NULL)
-								free(config_dir);
+							free(config_dir);
 							free(line_tokens);
 							free(config_buffer);
 							return -1;
@@ -830,8 +818,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
 							WM_FreePatches();
-							if (config_dir != NULL)
-								free(config_dir);
+							free(config_dir);
 							free(line_tokens);
 							free(config_buffer);
 							return -1;
@@ -853,8 +840,7 @@ static int WM_LoadConfig(const char *config_file) {
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
 							WM_FreePatches();
-							if (config_dir != NULL)
-								free(config_dir);
+							free(config_dir);
 							free(line_tokens);
 							free(config_buffer);
 							return -1;
@@ -889,8 +875,7 @@ static int WM_LoadConfig(const char *config_file) {
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 										config_file, 0);
 								WM_FreePatches();
-								if (config_dir != NULL)
-									free(config_dir);
+								free(config_dir);
 								free(line_tokens);
 								free(config_buffer);
 								return -1;
@@ -928,8 +913,7 @@ static int WM_LoadConfig(const char *config_file) {
 													WM_ERR_LOAD, config_file,
 													0);
 											WM_FreePatches();
-											if (config_dir != NULL)
-												free(config_dir);
+											free(config_dir);
 											free(line_tokens);
 											free(config_buffer);
 											return -1;
@@ -959,8 +943,7 @@ static int WM_LoadConfig(const char *config_file) {
 										WM_ERROR(__FUNCTION__, __LINE__,
 												WM_ERR_LOAD, config_file, 0);
 										WM_FreePatches();
-										if (config_dir != NULL)
-											free(config_dir);
+										free(config_dir);
 										free(line_tokens);
 										free(config_buffer);
 										return -1;
@@ -1001,8 +984,7 @@ static int WM_LoadConfig(const char *config_file) {
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 										config_file, 0);
 								WM_FreePatches();
-								if (config_dir)
-									free(config_dir);
+								free(config_dir);
 								free(line_tokens);
 								free(config_buffer);
 								return -1;
@@ -1020,8 +1002,7 @@ static int WM_LoadConfig(const char *config_file) {
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 										config_file, 0);
 								WM_FreePatches();
-								if (config_dir)
-									free(config_dir);
+								free(config_dir);
 								free(line_tokens);
 								free(config_buffer);
 								return -1;
@@ -1146,19 +1127,16 @@ static int WM_LoadConfig(const char *config_file) {
 						}
 					}
 				}
-				/*
-				 free up tokens
-				 */
+				/* free up tokens */
 				free(line_tokens);
 			}
 			line_start_ptr = config_ptr + 1;
 		}
 		config_ptr++;
 	}
-	free(config_buffer);
 
-	if (config_dir != NULL)
-		free(config_dir);
+	free(config_buffer);
+	free(config_dir);
 
 	return 0;
 }
@@ -2836,13 +2814,13 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 	WM_ResetToStart(mdi);
 
-_end:	if (sysex_store) free(sysex_store);
+_end:	free(sysex_store);
 	free(track_end);
 	free(track_delta);
 	free(running_event);
 	free(tracks);
 	if (mdi->reverb) return mdi;
-	if (mdi->events) free(mdi->events);
+	free(mdi->events);
 	free(mdi);
 	return NULL;
 }
@@ -3616,39 +3594,25 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 			mdi->patches[i]->inuse_count--;
 			if (mdi->patches[i]->inuse_count == 0) {
 				/* free samples here */
-				if (mdi->patches[i]->first_sample != NULL) {
-					while (mdi->patches[i]->first_sample != NULL) {
-						tmp_sample = mdi->patches[i]->first_sample->next;
-						if (mdi->patches[i]->first_sample->data)
-							free(mdi->patches[i]->first_sample->data);
-						free(mdi->patches[i]->first_sample);
-						mdi->patches[i]->first_sample = tmp_sample;
-					}
-					mdi->patches[i]->loaded = 0;
+				while (mdi->patches[i]->first_sample) {
+					tmp_sample = mdi->patches[i]->first_sample->next;
+					free(mdi->patches[i]->first_sample->data);
+					free(mdi->patches[i]->first_sample);
+					mdi->patches[i]->first_sample = tmp_sample;
 				}
+				mdi->patches[i]->loaded = 0;
 			}
 		}
 		WM_Unlock(&patch_lock);
 		free(mdi->patches);
 	}
 
-	if (mdi->events != NULL) {
-		free(mdi->events);
-	}
-
-	if (mdi->tmp_info != NULL) {
-		free(mdi->tmp_info);
-	}
-
-	if (mdi->reverb != NULL) {
-		free_reverb(mdi->reverb);
-	}
-
-	if (mdi->mix_buffer) {
-		free(mdi->mix_buffer);
-	}
-
+	free(mdi->events);
+	free(mdi->tmp_info);
+	free_reverb(mdi->reverb);
+	free(mdi->mix_buffer);
 	free(mdi);
+
 	return 0;
 }
 
@@ -3928,10 +3892,8 @@ WildMidi_GetInfo(midi * handle) {
 	mdi->tmp_info->current_sample = mdi->info.current_sample;
 	mdi->tmp_info->approx_total_samples = mdi->info.approx_total_samples;
 	mdi->tmp_info->mixer_options = mdi->info.mixer_options;
-	if (mdi->info.copyright != NULL) {
-		if (mdi->tmp_info->copyright != NULL) {
-			free(mdi->tmp_info->copyright);
-		}
+	if (mdi->info.copyright) {
+		free(mdi->tmp_info->copyright);
 		mdi->tmp_info->copyright = malloc(strlen(mdi->info.copyright) + 1);
 		strcpy(mdi->tmp_info->copyright, mdi->info.copyright);
 	} else {
@@ -3948,13 +3910,11 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return -1;
 	}
-	if (first_handle != NULL) {
-		while (first_handle != NULL) {
-			tmp_hdle = first_handle->next;
-			WildMidi_Close((struct _mdi *) first_handle->handle);
-			free(first_handle);
-			first_handle = tmp_hdle;
-		}
+	while (first_handle) {
+		tmp_hdle = first_handle->next;
+		WildMidi_Close((struct _mdi *) first_handle->handle);
+		free(first_handle);
+		first_handle = tmp_hdle;
 	}
 	WM_FreePatches();
 	free_gauss();
