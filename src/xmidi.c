@@ -458,7 +458,6 @@ static const char mt32asgs[256] = {
 
 struct xmi_ctx *initXMI(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_type) {
 	struct xmi_ctx *ctx;
-	uint32_t midi_size;
 
 	ctx = malloc(sizeof(struct xmi_ctx));
 	memset(ctx, 0, sizeof(struct xmi_ctx));
@@ -471,15 +470,14 @@ struct xmi_ctx *initXMI(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_ty
 		freeXMI(ctx);
 		return NULL;
 	}
-	if ((midi_size = xmi2midi(ctx, 0, 1)) == 0) {
+	if ((ctx->dstsize = xmi2midi(ctx, 0, 1)) == 0) {
 		printf("Error reading XMI.\n");
 		freeXMI(ctx);
 		return NULL;
 	}
 
-	ctx->dst = malloc(midi_size);
+	ctx->dst = malloc(ctx->dstsize);
 	ctx->dst_ptr = ctx->dst;
-	ctx->dstsize = midi_size;
 	printf("XMIDI - %u track(s)\n", ctx->info.tracks);
 	return ctx;
 }
@@ -508,8 +506,9 @@ uint32_t getMidiSize(struct xmi_ctx *ctx) {
 }
 
 uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int findSize) {
-	uint32_t len = 0;
-	int i = 0;
+	uint32_t len;
+	int i;
+
 	if (ExtractTracks(ctx) < 0) {
 		printf("No midi data in loaded.\n");
 		return (0);
@@ -823,8 +822,8 @@ static int ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
 	}
 
 	/* Handling for patch change mt32 conversion, probably should go elsewhere */
-	if ((status >> 4)
-			== 0xC&& (status&0xF) != 9 && ctx->convert_type != XMIDI_CONVERT_NOCONVERSION)
+	if ((status >> 4) == 0xC && (status&0xF) != 9
+			&& ctx->convert_type != XMIDI_CONVERT_NOCONVERSION)
 	{
 		if (ctx->convert_type == XMIDI_CONVERT_MT32_TO_GM)
 		{
@@ -1059,9 +1058,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 					write1(ctx, event->data[0]);
 				i++;
 			}
-
 			i += PutVLQ(ctx, event->len);
-
 			if (event->len) {
 				for (j = 0; j < event->len; j++) {
 					if (ctx && ctx->dst)
@@ -1069,7 +1066,6 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 					i++;
 				}
 			}
-
 			break;
 
 		/* Never occur */
