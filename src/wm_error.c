@@ -53,6 +53,7 @@ void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Library not Initialized",
 		"Invalid argument",
 		"Library Already Initialized",
+		"Not a midi file",
 		"Refusing to load unusually long file"
 	};
 

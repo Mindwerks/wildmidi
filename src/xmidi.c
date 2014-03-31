@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include "xmidi.h"
+#include "wm_error.h"
 
 /* Midi Status Bytes */
 #define MIDI_STATUS_NOTE_OFF		0x8
@@ -464,13 +465,13 @@ struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type) {
 	ctx->convert_type = convert_type;
 
 	if (ParseXMI(ctx) < 0) {
-		printf("Error parsing XMI.\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		xmi_free(ctx);
 		return NULL;
 	}
 
 	if (ExtractTracks(ctx) < 0) {
-		printf("No midi data in loaded.\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		xmi_free(ctx);
 		return NULL;
 	}
@@ -479,7 +480,6 @@ struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type) {
 	ctx->dst_ptr = ctx->dst;
 	ctx->dstsize = DST_CHUNK;
 	ctx->dstrem = DST_CHUNK;
-	printf("XMIDI - %u track(s)\n", ctx->info.tracks);
 
 	/* Header is 14 bytes long and add the rest as well */
 	write1(ctx, 'M');
@@ -928,7 +928,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 
 		/* Never occur */
 		default:
-			printf("Not supposed to see this.\n");
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
 			break;
 		}
 	}
@@ -971,7 +971,7 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 
 		/* Convert it */
 		if (!(ppqn = ConvertFiletoList(ctx))) {
-			printf("Unable to convert data\n");
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
 			break;
 		}
 		ctx->timing[num] = ppqn;
@@ -998,7 +998,7 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 
 	file_size = getsrcsize(ctx);
 	if (getsrcpos(ctx) + 8 > file_size) {
-badfile:	printf("Not a valid XMID.\n");
+badfile:	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 		return (-1);
 	}
 
@@ -1019,7 +1019,7 @@ badfile:	printf("Not a valid XMID.\n");
 
 		/* XDIRless XMIDI, we can handle them here. */
 		if (!memcmp(buf, "XMID", 4)) {
-			printf("Warning: XMIDI doesn't have XDIR.\n");
+			WM_ERROR_NEW("Warning: XMIDI without XDIR");
 			ctx->info.tracks = 1;
 		}
 		/* Not an XMIDI that we recognise */
@@ -1073,7 +1073,8 @@ badfile:	printf("Not a valid XMID.\n");
 			copy(ctx, buf, 4);
 
 			if (memcmp(buf, "CAT ", 4)) {
-				printf("Not a recognised XMID (%c%c%c%c) should be (CAT )\n", buf[0],buf[1],buf[2],buf[3]);
+				WM_ERROR_NEW("XMI error: expected \"CAT \", found \"%c%c%c%c\".",
+						buf[0], buf[1], buf[2], buf[3]);
 				return (-1);
 			}
 
@@ -1084,7 +1085,8 @@ badfile:	printf("Not a valid XMID.\n");
 			copy(ctx, buf, 4);
 
 			if (memcmp(buf, "XMID", 4)) {
-				printf("Not a recognised XMID (%c%c%c%c) should be (XMID)\n", buf[0],buf[1],buf[2],buf[3]);
+				WM_ERROR_NEW("XMI error: expected \"XMID\", found \"%c%c%c%c\".",
+						buf[0], buf[1], buf[2], buf[3]);
 				return (-1);
 			}
 
@@ -1109,7 +1111,8 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 	i = ExtractTracksFromXmi(ctx);
 
 	if (i != ctx->info.tracks) {
-		printf("Error: unable to extract all (%u) tracks specified from XMIDI. Only (%u)", ctx->info.tracks, i);
+		WM_ERROR_NEW("XMI error: extracted only %u out of %u tracks from XMIDI",
+				ctx->info.tracks, i);
 		return (-1);
 	}
 
