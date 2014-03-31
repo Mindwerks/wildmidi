@@ -52,7 +52,8 @@ void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"File corrupt",
 		"Library not Initialized",
 		"Invalid argument",
-		"Library Already Initialized"
+		"Library Already Initialized",
+		"Not a midi file"
 	};
 
 	if (wmfor != NULL) {

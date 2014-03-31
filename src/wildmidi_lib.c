@@ -979,7 +979,11 @@ static int WM_LoadConfig(const char *config_file) {
 							strcat(tmp_patch->filename, line_tokens[1]);
 						} else {
 							if (!line_tokens[1] || !(tmp_patch->filename = malloc(strlen(line_tokens[1]) + 1))) {
-								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
+								if (!line_tokens[1])
+									WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+										"(missing filename in patch line)", 0);
+								else
+									WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
 										NULL, 0);
 								WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 										config_file, 0);
@@ -2371,19 +2375,19 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	unsigned char *running_event;
 	unsigned long int decay_samples = 0;
 
-	if (strncmp((char *) midi_data, "RIFF", 4) == 0) {
+	if (memcmp(midi_data, "RIFF", 4) == 0) {
 		midi_data += 20;
 		midi_size -= 20;
 	}
-	if (strncmp((char *) midi_data, "MThd", 4) != 0) {
-		printf("Not a midi file\n");
+	if (memcmp(midi_data, "MThd", 4)) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		return NULL;
 	}
 	midi_data += 4;
 	midi_size -= 4;
 
 	if (midi_size < 10) {
-		printf("Midi File Too Short\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 		return NULL;
 	}
 
@@ -2396,7 +2400,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	tmp_val |= *midi_data++;
 	midi_size -= 4;
 	if (tmp_val != 6) {
-		printf("Corrupt Midi Header\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
 		return NULL;
 	}
 
@@ -2407,7 +2411,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	tmp_val |= *midi_data++;
 	midi_size -= 2;
 	if (tmp_val > 1) {
-		printf("Midi Format Not Supported\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
 		return NULL;
 	}
 
@@ -2418,7 +2422,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	tmp_val |= *midi_data++;
 	midi_size -= 2;
 	if (tmp_val < 1) {
-		printf("Midi Contains No Tracks\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
 		return NULL;
 	}
 	no_tracks = tmp_val;
@@ -2430,7 +2434,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	divisions |= *midi_data++;
 	midi_size -= 2;
 	if (divisions & 0x00008000) {
-		printf("Division Type Not Supported\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
 		return NULL;
 	}
 
@@ -2455,11 +2459,11 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 	for (i = 0; i < no_tracks; i++) {
 		if (midi_size < 8) {
-			printf("Midi File Too Short\n");
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 			goto _end;
 		}
-		if (strncmp((char *) midi_data, "MTrk", 4) != 0) {
-			printf("Expected Track Header\n");
+		if (memcmp(midi_data, "MTrk", 4) != 0) {
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing track header)", 0);
 			goto _end;
 		}
 		midi_data += 4;
@@ -2471,13 +2475,13 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		track_size |= *midi_data++;
 		midi_size -= 4;
 		if (midi_size < track_size) {
-			printf("Midi File Too Short\n");
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 			goto _end;
 		}
 		if ((midi_data[track_size - 3] != 0xFF)
 				|| (midi_data[track_size - 2] != 0x2F)
 				|| (midi_data[track_size - 1] != 0x00)) {
-			printf("Corrupt Midi, Expected EOT\n");
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing EOT)", 0);
 			goto _end;
 		}
 		tracks[i] = midi_data;
@@ -2518,7 +2522,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 				} else {
 					current_event = running_event[i];
 					if (running_event[i] < 0x80) {
-						printf("Invalid Data in Midi, Expected Event\n");
+						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
 						goto _end;
 					}
 				}
@@ -2694,8 +2698,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 						if (sysex_store[sysex_store_len - 1] == 0xF7) {
 							unsigned char tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
-							if (strncmp((const char *) tmpsysexdata,
-									(const char *) sysex_store, 4) == 0) {
+							if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
 								/* checksum */
 								unsigned char sysex_cs = 0;
 								unsigned int sysex_ofs = 4;
@@ -2739,12 +2742,12 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						}
 						tracks[i] += sysex_len;
 					} else {
-						printf("Um, WTF is this?\n");
+						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
 						goto _end;
 					}
 					break;
 				default:
-					printf("Should Never of Gotten Here\n");
+					WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
 					goto _end;
 				}
 				while (*tracks[i] > 0x7F) {
@@ -2803,7 +2806,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if ((mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width,
 			reverb_room_length, reverb_listen_posx, reverb_listen_posy))
 			== NULL) {
-		printf("Reverb Init Failed\n");
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
 		goto _end;
 	}
 

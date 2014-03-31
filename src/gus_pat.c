@@ -859,8 +859,7 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 						/ ((float) WM_SampleRate * env_time_table[env_rate]));
 				GUSPAT_INT_DEBUG("Envelope Rate",gus_sample->env_rate[i]); GUSPAT_INT_DEBUG("GUSPAT Rate",env_rate);
 				if (gus_sample->env_rate[i] == 0) {
-					fprintf(stderr,
-							"\rWarning: libWildMidi %s found invalid envelope(%lu) rate setting in %s. Using %f instead.\n",
+					WM_ERROR_NEW("%s: Warning: found invalid envelope(%lu) rate setting in %s. Using %f instead.",
 							__FUNCTION__, i, filename, env_time_table[63]);
 					gus_sample->env_rate[i] = (signed long int) (4194303.0
 							/ ((float) WM_SampleRate * env_time_table[63]));
