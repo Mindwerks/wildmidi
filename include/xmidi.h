@@ -29,14 +29,14 @@
 #define XMIDI_CONVERT_MT32_TO_GM		1
 #define XMIDI_CONVERT_MT32_TO_GS		2
 #define XMIDI_CONVERT_MT32_TO_GS127		3 /* This one is broken, don't use */
-#define XMIDI_CONVERT_MT32_TO_GS127DRUM	4 /* This one is broken, don't use */
+#define XMIDI_CONVERT_MT32_TO_GS127DRUM		4 /* This one is broken, don't use */
 #define XMIDI_CONVERT_GS127_TO_GS		5
 
 struct xmi_ctx;
 
-struct xmi_ctx *xmi2midi(uint8_t *midi_data, uint32_t xmidi_size, int convert_type);
-void freeXMI(struct xmi_ctx *);
-uint8_t *getMidi(struct xmi_ctx *);
-uint32_t getMidiSize(struct xmi_ctx *);
+struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type);
+uint8_t *xmi_getmididata(struct xmi_ctx *);
+uint32_t xmi_getmidisize(struct xmi_ctx *);
+void xmi_free(struct xmi_ctx *);
 
 #endif /* XMIDILIB_H */

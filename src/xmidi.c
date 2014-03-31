@@ -20,10 +20,10 @@
 /* XMIDI Converter */
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 
 #include "xmidi.h"
 
@@ -36,13 +36,6 @@
 #define MIDI_STATUS_PRESSURE		0xD
 #define MIDI_STATUS_PITCH_WHEEL		0xE
 #define MIDI_STATUS_SYSEX		0xF
-
-/* XMIDI Controllers */
-#define XMIDI_CONTROLLER_FOR_LOOP	116
-#define XMIDI_CONTROLLER_NEXT_BREAK	117
-
-/* Maximum number of for loops we'll allow */
-#define XMIDI_MAX_FOR_LOOP_COUNT	128
 
 typedef struct _midi_event {
 	int32_t time;
@@ -88,13 +81,6 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist);
 static int ParseXMI(struct xmi_ctx *ctx);
 static int ExtractTracks(struct xmi_ctx *ctx);
 static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx);
-
-#if 0
-static unsigned int getTracks(struct xmi_ctx *ctx)
-{
-	return (ctx->info.tracks);
-}
-#endif
 
 static uint32_t read1(struct xmi_ctx *ctx)
 {
@@ -200,14 +186,8 @@ static uint32_t getdstpos(struct xmi_ctx *ctx) {
 	return (ctx->dst_ptr - ctx->dst);
 }
 
-/* This is used to correct incorrect patch, vol and pan changes in midi files
- * The bias is just a value to used to work out if a vol and pan belong with a 
- * patch change. This is to ensure that the default state of a midi file is with
- * the tracks centred, unless the first patch change says otherwise. */
-#define PATCH_VOL_PAN_BIAS	5
-
 /* This is a default set of patches to convert from MT32 to GM
- * The index is the MT32 Patch nubmer and the value is the GM Patch
+ * The index is the MT32 Patch number and the value is the GM Patch
  * This is only suitable for music that doesn't do timbre changes
  * XMIDIs that contain Timbre changes will not convert properly. */
 static const char mt32asgm[128] = {
@@ -474,25 +454,24 @@ static const char mt32asgs[256] = {
 	121, 0	/* 127 Jungle Tune set to Breath Noise */
 };
 
-struct xmi_ctx *xmi2midi(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_type) {
+struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type) {
 	struct xmi_ctx *ctx;
 	int i;
 
-	ctx = malloc(sizeof(struct xmi_ctx));
-	memset(ctx, 0, sizeof(struct xmi_ctx));
-	ctx->src = ctx->src_ptr = xmidi_data;
-	ctx->srcsize = xmidi_size;
+	ctx = calloc(1, sizeof(struct xmi_ctx));
+	ctx->src = ctx->src_ptr = data;
+	ctx->srcsize = size;
 	ctx->convert_type = convert_type;
 
 	if (ParseXMI(ctx) < 0) {
 		printf("Error parsing XMI.\n");
-		freeXMI(ctx);
+		xmi_free(ctx);
 		return NULL;
 	}
 
 	if (ExtractTracks(ctx) < 0) {
 		printf("No midi data in loaded.\n");
-		freeXMI(ctx);
+		xmi_free(ctx);
 		return NULL;
 	}
 
@@ -510,13 +489,19 @@ struct xmi_ctx *xmi2midi(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_t
 
 	write4(ctx, 6);
 
-	/* output type-2 for multi-tracks, type-0 otherwise */
-	write2(ctx, (ctx->info.tracks > 1)? 2 : 0);
+	write2(ctx, ctx->info.type);
 	write2(ctx, ctx->info.tracks);
 	write2(ctx, ctx->timing[0]);/* write divisions from track0 */
 
 	for (i = 0; i < ctx->info.tracks; i++)
 		ConvertListToMTrk(ctx, ctx->events[i]);
+#if 0
+	if (ctx->dst) {
+		FILE *out = fopen("out.mid", "wb");
+		fwrite(ctx->dst, ctx->dstsize - ctx->dstrem, 1, out);
+		fclose(out);
+	}
+#endif
 
 	/* cleanup */
 	if (ctx->events) {
@@ -529,22 +514,13 @@ struct xmi_ctx *xmi2midi(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_t
 	ctx->list = ctx->current = NULL;
 	ctx->timing = NULL;
 
-#if 0
-	if (ctx->dst) {
-		FILE *out = fopen("out.mid", "wb");
-		fwrite(ctx->dst, ctx->dstsize - ctx->dstrem, 1, out);
-		fclose(out);
-	}
-#endif
-
 	return ctx;
 }
 
-void freeXMI(struct xmi_ctx *ctx) {
-	unsigned int i;
-
+void xmi_free(struct xmi_ctx *ctx) {
 	if (!ctx) return;
 	if (ctx->events) {
+		unsigned int i;
 		for (i = 0; i < ctx->info.tracks; i++)
 			DeleteEventList(ctx->events[i]);
 		free(ctx->events);
@@ -554,11 +530,18 @@ void freeXMI(struct xmi_ctx *ctx) {
 	free(ctx);
 }
 
-uint8_t *getMidi(struct xmi_ctx *ctx) {
+#if 0
+static unsigned int xmi_gettracks(struct xmi_ctx *ctx)
+{
+	return ctx->info.tracks;
+}
+#endif
+
+uint8_t *xmi_getmididata(struct xmi_ctx *ctx) {
 	return ctx->dst;
 }
 
-uint32_t getMidiSize(struct xmi_ctx *ctx) {
+uint32_t xmi_getmidisize(struct xmi_ctx *ctx) {
 	return ctx->dstsize - ctx->dstrem;
 }
 
@@ -1119,7 +1102,8 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 
 	ctx->events = calloc(ctx->info.tracks, sizeof(midi_event*));
 	ctx->timing = calloc(ctx->info.tracks, sizeof(int16_t));
-	ctx->info.type = 0;
+	/* type-2 for multi-tracks, type-0 otherwise */
+	ctx->info.type = (ctx->info.tracks > 1)? 2 : 0;
 
 	seeksrc(ctx, ctx->datastart);
 	i = ExtractTracksFromXmi(ctx);
