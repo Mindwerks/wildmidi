@@ -2373,12 +2373,11 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	struct xmi_ctx *ctx = NULL;
 
 	if (!memcmp(midi_data, "FORM", 4)) { /* possibly xmi */
-		ctx = initXMI(midi_data, midi_size, XMIDI_CONVERT_MT32_TO_GS);
+		ctx = xmi2midi(midi_data, midi_size, XMIDI_CONVERT_MT32_TO_GS);
 		if (ctx) {
-			xmi2midi(ctx, 0, 0);
 			midi_data = getMidi(ctx);
 			midi_size = getMidiSize(ctx);
-			if (!midi_data) {
+			if (!midi_data || !midi_size) {
 				printf("Not an xmidi file\n");
 				freeXMI(ctx);
 				return NULL;

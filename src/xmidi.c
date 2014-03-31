@@ -63,7 +63,7 @@ struct xmi_ctx {
 	uint32_t srcsize;
 	uint32_t datastart;
 	uint8_t *dst, *dst_ptr;
-	uint32_t dstsize;
+	uint32_t dstsize, dstrem;
 	int convert_type;
 	midi_descriptor info;
 	int bank127[16];
@@ -71,7 +71,6 @@ struct xmi_ctx {
 	signed short *timing;
 	midi_event *list;
 	midi_event *current;
-	int *fixed;
 };
 
 /* forward declarations of private functions */
@@ -80,7 +79,6 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time); /* List manipulat
 static int GetVLQ(struct xmi_ctx *ctx, uint32_t *quant); /* Variable length quantity */
 static int GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant);/* Variable length quantity */
 static int PutVLQ(struct xmi_ctx *ctx, uint32_t value);  /* Variable length quantity */
-static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel);
 static int ConvertEvent(struct xmi_ctx *ctx,
 			const int32_t time, const uint8_t status, const int size);
 static int32_t ConvertSystemMessage(struct xmi_ctx *ctx,
@@ -123,29 +121,47 @@ static uint32_t read4(struct xmi_ctx *ctx)
 	return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
 }
 
-static void copy(struct xmi_ctx *ctx, char *b, int32_t len)
+static void copy(struct xmi_ctx *ctx, char *b, uint32_t len)
 {
 	memcpy(b, ctx->src_ptr, len);
 	ctx->src_ptr += len;
 }
 
+#define DST_CHUNK 8192
+static void resize_dst(struct xmi_ctx *ctx) {
+	uint32_t pos = ctx->dst_ptr - ctx->dst;
+	ctx->dst = realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
+	ctx->dstsize += DST_CHUNK;
+	ctx->dstrem += DST_CHUNK;
+	ctx->dst_ptr = ctx->dst + pos;
+}
+
 static void write1(struct xmi_ctx *ctx, uint32_t val)
 {
+	if (ctx->dstrem < 1)
+		resize_dst(ctx);
 	*ctx->dst_ptr++ = val & 0xff;
+	ctx->dstrem--;
 }
 
 static void write2(struct xmi_ctx *ctx, uint32_t val)
 {
+	if (ctx->dstrem < 2)
+		resize_dst(ctx);
 	*ctx->dst_ptr++ = (val>>8) & 0xff;
 	*ctx->dst_ptr++ = val & 0xff;
+	ctx->dstrem -= 2;
 }
 
 static void write4(struct xmi_ctx *ctx, uint32_t val)
 {
+	if (ctx->dstrem < 4)
+		resize_dst(ctx);
 	*ctx->dst_ptr++ = (val>>24)&0xff;
 	*ctx->dst_ptr++ = (val>>16)&0xff;
 	*ctx->dst_ptr++ = (val>>8) & 0xff;
 	*ctx->dst_ptr++ = val & 0xff;
+	ctx->dstrem -= 4;
 }
 
 static void seeksrc(struct xmi_ctx *ctx, uint32_t pos) {
@@ -154,6 +170,9 @@ static void seeksrc(struct xmi_ctx *ctx, uint32_t pos) {
 
 static void seekdst(struct xmi_ctx *ctx, uint32_t pos) {
 	ctx->dst_ptr = ctx->dst + pos;
+	while (ctx->dstsize < pos)
+		resize_dst(ctx);
+	ctx->dstrem = ctx->dstsize - pos;
 }
 
 static void skipsrc(struct xmi_ctx *ctx, int32_t pos) {
@@ -161,18 +180,17 @@ static void skipsrc(struct xmi_ctx *ctx, int32_t pos) {
 }
 
 static void skipdst(struct xmi_ctx *ctx, int32_t pos) {
+	size_t newpos;
 	ctx->dst_ptr += pos;
+	newpos = ctx->dst_ptr - ctx->dst;
+	while (ctx->dstsize < newpos)
+		resize_dst(ctx);
+	ctx->dstrem = ctx->dstsize - newpos;
 }
 
 static uint32_t getsrcsize(struct xmi_ctx *ctx) {
 	return ctx->srcsize;
 }
-
-#if 0
-static uint32_t getdstsize(struct xmi_ctx *ctx) {
-	return ctx->dstsize;
-}
-#endif
 
 static uint32_t getsrcpos(struct xmi_ctx *ctx) {
 	return (ctx->src_ptr - ctx->src);
@@ -456,8 +474,9 @@ static const char mt32asgs[256] = {
 	121, 0	/* 127 Jungle Tune set to Breath Noise */
 };
 
-struct xmi_ctx *initXMI(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_type) {
+struct xmi_ctx *xmi2midi(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_type) {
 	struct xmi_ctx *ctx;
+	int i;
 
 	ctx = malloc(sizeof(struct xmi_ctx));
 	memset(ctx, 0, sizeof(struct xmi_ctx));
@@ -470,15 +489,54 @@ struct xmi_ctx *initXMI(uint8_t *xmidi_data, uint32_t xmidi_size, int convert_ty
 		freeXMI(ctx);
 		return NULL;
 	}
-	if ((ctx->dstsize = xmi2midi(ctx, 0, 1)) == 0) {
-		printf("Error reading XMI.\n");
+
+	if (ExtractTracks(ctx) < 0) {
+		printf("No midi data in loaded.\n");
 		freeXMI(ctx);
 		return NULL;
 	}
 
-	ctx->dst = malloc(ctx->dstsize);
+	ctx->dst = malloc(DST_CHUNK);
 	ctx->dst_ptr = ctx->dst;
+	ctx->dstsize = DST_CHUNK;
+	ctx->dstrem = DST_CHUNK;
 	printf("XMIDI - %u track(s)\n", ctx->info.tracks);
+
+	/* Header is 14 bytes long and add the rest as well */
+	write1(ctx, 'M');
+	write1(ctx, 'T');
+	write1(ctx, 'h');
+	write1(ctx, 'd');
+
+	write4(ctx, 6);
+
+	/* output type-2 for multi-tracks, type-0 otherwise */
+	write2(ctx, (ctx->info.tracks > 1)? 2 : 0);
+	write2(ctx, ctx->info.tracks);
+	write2(ctx, ctx->timing[0]);/* write divisions from track0 */
+
+	for (i = 0; i < ctx->info.tracks; i++)
+		ConvertListToMTrk(ctx, ctx->events[i]);
+
+	/* cleanup */
+	if (ctx->events) {
+		for (i = 0; i < ctx->info.tracks; i++)
+			DeleteEventList(ctx->events[i]);
+		free(ctx->events);
+	}
+	free(ctx->timing);
+	ctx->events = NULL;
+	ctx->list = ctx->current = NULL;
+	ctx->timing = NULL;
+
+#if 0
+	if (ctx->dst) {
+		FILE *out = fopen("out.mid", "wb");
+		fwrite(ctx->dst, ctx->dstsize - ctx->dstrem, 1, out);
+		fclose(out);
+	}
+#endif
+
 	return ctx;
 }
 
@@ -492,7 +550,6 @@ void freeXMI(struct xmi_ctx *ctx) {
 		free(ctx->events);
 	}
 	free(ctx->timing);
-	free(ctx->fixed);
 	free(ctx->dst);
 	free(ctx);
 }
@@ -502,62 +559,7 @@ uint8_t *getMidi(struct xmi_ctx *ctx) {
 }
 
 uint32_t getMidiSize(struct xmi_ctx *ctx) {
-	return ctx->dstsize;
-}
-
-uint32_t xmi2midi(struct xmi_ctx *ctx, unsigned int track, int findSize) {
-	uint32_t len;
-	int i;
-
-	if (ExtractTracks(ctx) < 0) {
-		printf("No midi data in loaded.\n");
-		return (0);
-	}
-
-	if (track >= ctx->info.tracks) {
-		printf("Can't retrieve MIDI data, track out of range.\n");
-		return (0);
-	}
-
-	/* And fix the midis if they are broken */
-	if (!ctx->fixed[track]) {
-		ctx->list = ctx->events[track];
-		MovePatchVolAndPan(ctx, -1);
-		ctx->fixed[track] = 1;
-		ctx->events[track] = ctx->list;
-	}
-
-	/* This is so if using buffer datasource, the caller can know how big to make the buffer */
-	if (!findSize) {
-		/* Header is 14 bytes long and add the rest as well */
-		write1(ctx, 'M');
-		write1(ctx, 'T');
-		write1(ctx, 'h');
-		write1(ctx, 'd');
-
-		write4(ctx, 6);
-
-		write2(ctx, 0);
-		write2(ctx, 1);
-		write2(ctx, ctx->timing[track]);
-	}
-
-	len = ConvertListToMTrk(ctx, ctx->events[track]);
-
-	/* cleanup */
-	if (ctx->events) {
-		for (i = 0; i < ctx->info.tracks; i++)
-			DeleteEventList(ctx->events[i]);
-		free(ctx->events);
-	}
-	free(ctx->timing);
-	free(ctx->fixed);
-	ctx->events = NULL;
-	ctx->list = ctx->current = NULL;
-	ctx->timing = NULL;
-	ctx->fixed = NULL;
-
-	return (14 + len);
+	return ctx->dstsize - ctx->dstrem;
 }
 
 static void DeleteEventList(midi_event *mlist) {
@@ -654,131 +656,12 @@ static int PutVLQ(struct xmi_ctx *ctx, uint32_t value) {
 		buffer |= ((value & 0x7F) | 0x80);
 		i++;
 	}
-	if (!ctx || !ctx->dst)
-		return (i);
 	for (j = 0; j < i; j++) {
 		write1(ctx, buffer & 0xFF);
 		buffer >>= 8;
 	}
 
 	return (i);
-}
-
-/* MovePatchVolAndPan
- *
- * This little function attempts to correct errors in midi files
- * that relate to patch, volume and pan changing */
-static void MovePatchVolAndPan(struct xmi_ctx *ctx, int channel) {
-	midi_event *patch;
-	midi_event *vol;
-	midi_event *pan;
-	midi_event *bank;
-	midi_event *temp;
-	int i;
-
-	if (channel == -1) {
-		for (i = 0; i < 16; i++)
-			MovePatchVolAndPan(ctx, i);
-		return;
-	}
-
-	patch = NULL;
-	vol = NULL;
-	pan = NULL;
-	bank = NULL;
-
-	for (ctx->current = ctx->list; ctx->current;) {
-		if (!patch && (ctx->current->status >> 4) == 0xC
-				&& (ctx->current->status & 0xF) == channel)
-			patch = ctx->current;
-		else if (!vol && (ctx->current->status >> 4) == 0xB && ctx->current->data[0] == 7
-				&& (ctx->current->status & 0xF) == channel)
-			vol = ctx->current;
-		else if (!pan && (ctx->current->status >> 4) == 0xB && ctx->current->data[0] == 10
-				&& (ctx->current->status & 0xF) == channel)
-			pan = ctx->current;
-		else if (!bank && (ctx->current->status >> 4) == 0xB && ctx->current->data[0] == 0
-				&& (ctx->current->status & 0xF) == channel)
-			bank = ctx->current;
-
-		if (pan && vol && patch)
-			break;
-
-		if (ctx->current)
-			ctx->current = ctx->current->next;
-		else
-			ctx->current = ctx->list;
-	}
-
-	/* Got no patch change, return and don't try fixing it */
-	if (!patch)
-		return;
-
-	/* Copy Patch Change Event */
-	temp = patch;
-	patch = calloc(1, sizeof(midi_event));
-	patch->time = temp->time;
-	patch->status = channel + 0xC0;
-	patch->data[0] = temp->data[0];
-
-	/* Copy Volume */
-	if (vol &&
-			(vol->time > patch->time + PATCH_VOL_PAN_BIAS ||
-			 vol->time < patch->time - PATCH_VOL_PAN_BIAS) )
-		vol = NULL;
-
-	temp = vol;
-	vol = calloc(1, sizeof(midi_event));
-	vol->status = channel + 0xB0;
-	vol->data[0] = 7;
-
-	if (!temp)
-		vol->data[1] = 64;
-	else
-		vol->data[1] = temp->data[1];
-
-	/* Copy Bank */
-	if (bank &&
-			(bank->time > patch->time + PATCH_VOL_PAN_BIAS ||
-			 bank->time < patch->time - PATCH_VOL_PAN_BIAS) )
-		bank = NULL;
-
-	temp = bank;
-
-	bank = calloc(1, sizeof(midi_event));
-	bank->status = channel + 0xB0;
-
-	if (!temp)
-		bank->data[1] = 0;
-	else
-		bank->data[1] = temp->data[1];
-
-	/* Copy Pan */
-	if (pan &&
-			(pan->time > patch->time + PATCH_VOL_PAN_BIAS ||
-			 pan->time < patch->time - PATCH_VOL_PAN_BIAS) )
-		pan = NULL;
-
-	temp = pan;
-	pan = calloc(1, sizeof(midi_event));
-	pan->status = channel + 0xB0;
-	pan->data[0] = 10;
-
-	if (!temp)
-		pan->data[1] = 64;
-	else
-		pan->data[1] = temp->data[1];
-
-	vol->time = 0;
-	pan->time = 0;
-	patch->time = 0;
-	bank->time = 0;
-
-	bank->next = vol;
-	vol->next = pan;
-	pan->next = patch;
-	patch->next = ctx->list;
-	ctx->list = bank;
 }
 
 /* Converts Events
@@ -997,18 +880,16 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 	uint8_t last_status = 0;
 	uint32_t i = 8;
 	uint32_t j;
-	uint32_t size_pos = 0;
+	uint32_t size_pos, cur_pos;
 	int end = 0;
 
-	if (ctx && ctx->dst) {
-		write1(ctx, 'M');
-		write1(ctx, 'T');
-		write1(ctx, 'r');
-		write1(ctx, 'k');
+	write1(ctx, 'M');
+	write1(ctx, 'T');
+	write1(ctx, 'r');
+	write1(ctx, 'k');
 
-		size_pos = getdstpos(ctx);
-		skipdst(ctx, 4);
-	}
+	size_pos = getdstpos(ctx);
+	skipdst(ctx, 4);
 
 	for (event = mlist; event && !end; event = event->next) {
 		delta = (event->time - time);
@@ -1017,8 +898,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 		i += PutVLQ(ctx, delta);
 
 		if ((event->status != last_status) || (event->status >= 0xF0)) {
-			if (ctx && ctx->dst)
-				write1(ctx, event->status);
+			write1(ctx, event->status);
 			i++;
 		}
 
@@ -1032,10 +912,8 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 		case 0xA:
 		case 0xB:
 		case 0xE:
-			if (ctx && ctx->dst) {
-				write1(ctx, event->data[0]);
-				write1(ctx, event->data[1]);
-			}
+			write1(ctx, event->data[0]);
+			write1(ctx, event->data[1]);
 			i += 2;
 			break;
 
@@ -1043,8 +921,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 		 * Program Change and Channel Pressure */
 		case 0xC:
 		case 0xD:
-			if (ctx && ctx->dst)
-				write1(ctx, event->data[0]);
+			write1(ctx, event->data[0]);
 			i++;
 			break;
 
@@ -1054,15 +931,13 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 			if (event->status == 0xFF) {
 				if (event->data[0] == 0x2f)
 					end = 1;
-				if (ctx && ctx->dst)
-					write1(ctx, event->data[0]);
+				write1(ctx, event->data[0]);
 				i++;
 			}
 			i += PutVLQ(ctx, event->len);
 			if (event->len) {
 				for (j = 0; j < event->len; j++) {
-					if (ctx && ctx->dst)
-						write1(ctx, event->buffer[j]);
+					write1(ctx, event->buffer[j]);
 					i++;
 				}
 			}
@@ -1075,12 +950,11 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 		}
 	}
 
-	if (ctx && ctx->dst) {
-		int32_t cur_pos = getdstpos(ctx);
-		seekdst(ctx, size_pos);
-		write4(ctx, i - 8);
-		seekdst(ctx, cur_pos);
-	}
+	cur_pos = getdstpos(ctx);
+	seekdst(ctx, size_pos);
+	write4(ctx, i - 8);
+	seekdst(ctx, cur_pos);
+
 	return (i);
 }
 
@@ -1245,7 +1119,6 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 
 	ctx->events = calloc(ctx->info.tracks, sizeof(midi_event*));
 	ctx->timing = calloc(ctx->info.tracks, sizeof(int16_t));
-	ctx->fixed = calloc(ctx->info.tracks, sizeof(int));
 	ctx->info.type = 0;
 
 	seeksrc(ctx, ctx->datastart);
