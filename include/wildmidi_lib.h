@@ -38,7 +38,7 @@
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
 #define WM_MO_WHOLETEMPO	0x8000
-#define WM_MO_ROUNDTEMPO	0xA000
+#define WM_MO_ROUNDTEMPO	0x2000
 
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
