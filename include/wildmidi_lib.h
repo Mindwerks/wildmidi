@@ -88,9 +88,6 @@ WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
 
-/* NOTE: Not Yet Implemented Or Tested Properly */
-/*int WildMidi_Live (midi * handle, unsigned long int midi_event);*/
-
 #if defined(__cplusplus)
 }
 #endif
