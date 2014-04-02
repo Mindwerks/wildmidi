@@ -137,6 +137,13 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 	*size = buffer_stat.st_size;
 #endif
 
+	if (__builtin_expect((*size > WM_MAXFILESIZE), 0)) {
+		/* don't bother loading suspiciously long files */
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LONGFIL, filename, 0);
+		free(buffer_file);
+		return NULL;
+	}
+
 	data = malloc(*size);
 	if (data == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);

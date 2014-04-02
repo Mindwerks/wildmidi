@@ -3665,6 +3665,11 @@ WildMidi_OpenBuffer(unsigned char *midibuffer, unsigned long int size) {
 				"(NULL midi data buffer)", 0);
 		return NULL;
 	}
+	if (size > WM_MAXFILESIZE) {
+		/* don't bother loading suspiciously long files */
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LONGFIL, NULL, 0);
+		return NULL;
+	}
 	ret = (void *) WM_ParseNewMidi(midibuffer, size);
 
 	if (ret != NULL) {

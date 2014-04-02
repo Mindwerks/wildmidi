@@ -27,6 +27,7 @@
 #ifndef __FILE_IO_H
 #define __FILE_IO_H
 
+#define WM_MAXFILESIZE 0x1fffffff
  extern unsigned char * WM_BufferFile (const char *filename, unsigned long int *size);
 
 #endif /* __FILE_IO_H */

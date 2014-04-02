@@ -30,6 +30,7 @@ CHANGELOG
 * Fix some portability issues.
 * Fix a double-free issue during library shutdown when several midis
   were alive.
+* Refuse loading suspiciously long files.
 
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
