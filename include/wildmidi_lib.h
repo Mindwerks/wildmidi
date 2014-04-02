@@ -24,6 +24,9 @@
     <http://www.gnu.org/licenses/>.
 */
 
+#ifndef WILDMIDI_LIB_H
+#define WILDMIDI_LIB_H
+
 #define WM_MO_LOG_VOLUME	0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
@@ -91,3 +94,6 @@ WM_SYMBOL int WildMidi_Shutdown (void);
 #if defined(__cplusplus)
 }
 #endif
+
+#endif /* WILDMIDI_LIB_H */
+
