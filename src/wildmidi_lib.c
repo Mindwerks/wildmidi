@@ -3494,7 +3494,7 @@ WM_SYMBOL int WildMidi_Init(const char * config_file, unsigned short int rate,
 		return -1;
 	}
 
-	if (options & 0x7FD8) {
+	if (options & 0x5FF8) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
 				0);
 		WM_FreePatches();
