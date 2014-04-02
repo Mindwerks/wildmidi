@@ -39,6 +39,7 @@ CHANGELOG
 * API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
   to accept strictly 32bit size parameters, i.e. uint32_t, instead of
   unsigned long.
+* Support for loading XMI (XMIDI format) files.
 * DOS (DJGPP) port, player: Support for Sound Blaster output.
 * Build requires cmake-2.8.11 or newer now.
 
@@ -46,6 +47,7 @@ CHANGELOG
 * Fix some portability issues.
 * Fix a double-free issue during library shutdown when several midis
   were alive.
+* Refuse loading suspiciously long files.
 
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
