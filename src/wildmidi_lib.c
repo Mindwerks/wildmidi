@@ -3780,9 +3780,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	return 0;
 }
 
-WM_SYMBOL int WildMidi_GetOutput(midi * handle, char * buffer, unsigned long int size) {
-	struct _mdi *mdi = (struct _mdi *) handle;
-
+WM_SYMBOL int WildMidi_GetOutput(midi * handle, char *buffer, unsigned long int size) {
 	if (__builtin_expect((!WM_Initialized), 0)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return -1;
@@ -3797,22 +3795,19 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, char * buffer, unsigned long int
 				"(NULL buffer pointer)", 0);
 		return -1;
 	}
-
 	if (__builtin_expect((size == 0), 0)) {
 		return 0;
 	}
-
-	if (__builtin_expect((size % 4), 0)) {
+	if (__builtin_expect((!!(size % 4)), 0)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 				"(size not a multiple of 4)", 0);
 		return -1;
 	}
-	if (mdi->info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
+	if (((struct _mdi *) handle)->info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 		if (!gauss_table) init_gauss();
 		return WM_GetOutput_Gauss(handle, buffer, size);
-	} else {
-		return WM_GetOutput_Linear(handle, buffer, size);
 	}
+	return WM_GetOutput_Linear(handle, buffer, size);
 }
 
 WM_SYMBOL int WildMidi_SetOption(midi * handle, unsigned short int options,
