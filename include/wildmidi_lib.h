@@ -24,6 +24,9 @@
     <http://www.gnu.org/licenses/>.
 */
 
+#ifndef WILDMIDI_LIB_H
+#define WILDMIDI_LIB_H
+
 /* library version number */
 #define LIBWILDMIDI_VER_MAJOR 0L
 #define LIBWILDMIDI_VER_MINOR 4L
@@ -104,3 +107,6 @@ WM_SYMBOL int WildMidi_Shutdown (void);
 #if defined(__cplusplus)
 }
 #endif
+
+#endif /* WILDMIDI_LIB_H */
+
