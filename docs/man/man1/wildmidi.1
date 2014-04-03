@@ -6,10 +6,10 @@ wildmidi \- example player for libWildMidi
 .B libWildMidi
 .PP
 .SH FILES
-.B /etc/wildmidi.cfg
+.B /etc/wildmidi/wildmidi.cfg
 .PP
 .SH SYNOPSIS
-.B wildmidi [-behlv] [-c \fIconfig-file\fB] [-d \fIdevice\fB] [-m \fIvolume-level\fB] [-o \fIwav-file\fB] \fImidifile ...
+.B wildmidi [\-behlv] [\-c \fIconfig\-file\fB] [\-d \fIaudio\-device\fB] [\-m \fIvolume\-level\fB] [\-o \fIwav\-file\fB] \fImidifile ...
 .PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
@@ -22,11 +22,11 @@ You can have more than one \fImidifile\fB on the command line and \fBwildmidi\fP
 .IP "\fB\-b\fP | \fB\-\-reverb\fP"
 Turns on an 8 point reverb engine that adds depth to the final mix.
 .P
-.IP "\fB\-c\fP \fIconfig-file\fP | \fB\-\-config_file\fP \fIconfig\-file\fP"
+.IP "\fB\-c\fP \fIconfig\-file\fP | \fB\-\-config_file\fP \fIconfig\-file\fP"
 Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmidi.cfg
 .PP
-.IP "\fB\-d\fP \fIdevice\fP | \fB\-\-auddev=\fIdevice\fP"
-Send the audio to \fIdevice\fP instead of the default. ALSA defaults to the system "default" while OSS defaults to "/dev/dsp". Win32 environments ignore this option.
+.IP "\fB\-d\fP \fIaudio\-device\fP | \fB\-\-device=\fIaudio\-device\fP"
+Send the audio to \fIaudio\-device\fP instead of the default. ALSA defaults to the system "default" while OSS defaults to "/dev/dsp". Other environments do not support this option.
 .PP
 .IP "\fB\-e\fP | \fB\-\-enhanced_resample\fP"
 Switches to a gauss based resampling algorithm which can improve the shape of the sound.
