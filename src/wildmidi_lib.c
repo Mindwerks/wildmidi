@@ -670,9 +670,9 @@ static int WM_LoadConfig(const char *config_file) {
 	config_buffer[config_size] = '\n';
 
 	while (config_ptr <= config_size) {
-		if (config_buffer[config_ptr] == '\r') {
-			config_buffer[config_ptr] = ' ';
-		} else if (config_buffer[config_ptr] == '\n') {
+		if (config_buffer[config_ptr] == '\r' ||
+		    config_buffer[config_ptr] == '\n')
+		{
 			config_buffer[config_ptr] = '\0';
 
 			if (config_ptr != line_start_ptr) {
