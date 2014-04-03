@@ -50,6 +50,7 @@ CHANGELOG
 * Fix the invalid option checking in WildMidi_Init().
 * Fix the roundtempo option which had been broken since its invention
   in 0.2.3.5 (WM_MO_ROUNDTEMPO: was 0xA000 instead of 0x2000.)
+* Fix cfg files without a newline at the end weren't parsed correctly.
 * Refuse loading suspiciously long files.
 
 0.3.5

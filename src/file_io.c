@@ -65,7 +65,7 @@
 
 void *WM_BufferFile(const char *filename, uint32_t *size) {
 	int buffer_fd;
-	void *data;
+	uint8_t *data;
 #ifdef __DJGPP__
 	struct ffblk f;
 #else
@@ -144,7 +144,8 @@ void *WM_BufferFile(const char *filename, uint32_t *size) {
 		return NULL;
 	}
 
-	data = malloc(*size);
+	/* +1 needed for parsing text files without a newline at the end */
+	data = (uint8_t *) malloc(*size + 1);
 	if (data == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
@@ -165,6 +166,7 @@ void *WM_BufferFile(const char *filename, uint32_t *size) {
 		close(buffer_fd);
 		return NULL;
 	}
+	data[*size] = '\0';
 
 	close(buffer_fd);
 	free(buffer_file);
