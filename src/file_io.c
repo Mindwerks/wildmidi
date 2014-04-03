@@ -62,8 +62,7 @@
 #include "wm_error.h"
 #include "file_io.h"
 
-unsigned char *
-WM_BufferFile(const char *filename, unsigned long int *size) {
+unsigned char *WM_BufferFile(const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	unsigned char *data;
 #ifdef __DJGPP__
@@ -144,7 +143,8 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 		return NULL;
 	}
 
-	data = malloc(*size);
+	/* +1 needed for parsing text files without a newline at the end */
+	data = (unsigned char *) malloc(*size + 1);
 	if (data == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
@@ -165,6 +165,7 @@ WM_BufferFile(const char *filename, unsigned long int *size) {
 		close(buffer_fd);
 		return NULL;
 	}
+	data[*size] = '\0';
 
 	close(buffer_fd);
 	free(buffer_file);
