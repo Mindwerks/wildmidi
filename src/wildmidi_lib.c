@@ -647,11 +647,6 @@ static int WM_LoadConfig(const char *config_file) {
 		return -1;
 	}
 
-	/* handle files without a newline at the end: this relies on
-	 * WM_BufferFile() allocating the buffer with one extra byte */
-	config_buffer[config_size] = '\n';
-	config_size++;
-
 	dir_end = FIND_LAST_DIRSEP(config_file);
 	if (dir_end != NULL) {
 		config_dir = malloc((dir_end - config_file + 2));
@@ -670,7 +665,11 @@ static int WM_LoadConfig(const char *config_file) {
 	config_ptr = 0;
 	line_start_ptr = 0;
 
-	while (config_ptr < config_size) {
+	/* handle files without a newline at the end: this relies on
+	 * WM_BufferFile() allocating the buffer with one extra byte */
+	config_buffer[config_size] = '\n';
+
+	while (config_ptr <= config_size) {
 		if (config_buffer[config_ptr] == '\r') {
 			config_buffer[config_ptr] = ' ';
 		} else if (config_buffer[config_ptr] == '\n') {
