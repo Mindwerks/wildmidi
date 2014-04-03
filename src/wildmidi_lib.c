@@ -753,7 +753,7 @@ static int WM_LoadConfig(const char *config_file) {
 						free(new_config);
 					} else if (strcasecmp(line_tokens[0], "bank") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
-							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
+							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in bank line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
@@ -766,7 +766,7 @@ static int WM_LoadConfig(const char *config_file) {
 						patchid = (atoi(line_tokens[1]) & 0xFF) << 8;
 					} else if (strcasecmp(line_tokens[0], "drumset") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
-							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID,
+							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in drumset line)", 0);
 							WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
@@ -1037,7 +1037,7 @@ static int WM_LoadConfig(const char *config_file) {
 									== 0) {
 								if (!wm_isdigit(line_tokens[token_count][4])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID,
+											WM_ERR_INVALID_ARG,
 											"(syntax error in patch line)", 0);
 								} else {
 									tmp_patch->amp = (atoi(
@@ -1048,7 +1048,7 @@ static int WM_LoadConfig(const char *config_file) {
 									"note=", 5) == 0) {
 								if (!wm_isdigit(line_tokens[token_count][5])) {
 									WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID,
+											WM_ERR_INVALID_ARG,
 											"(syntax error in patch line)", 0);
 								} else {
 									tmp_patch->note = atoi(
@@ -1061,14 +1061,14 @@ static int WM_LoadConfig(const char *config_file) {
 												line_tokens[token_count][10]))
 										|| (line_tokens[token_count][9] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID,
+											WM_ERR_INVALID_ARG,
 											"(syntax error in patch line)", 0);
 								} else {
 									unsigned int env_no = atoi(
 											&line_tokens[token_count][8]);
 									if (env_no > 5) {
 										WM_ERROR(__FUNCTION__, __LINE__,
-												WM_ERR_INVALID,
+												WM_ERR_INVALID_ARG,
 												"(syntax error in patch line)",
 												0);
 									} else {
@@ -1080,7 +1080,7 @@ static int WM_LoadConfig(const char *config_file) {
 												|| (tmp_patch->env[env_no].time
 														< 1.47f)) {
 											WM_ERROR(__FUNCTION__, __LINE__,
-													WM_ERR_INVALID,
+													WM_ERR_INVALID_ARG,
 													"(range error in patch line)",
 													0);
 											tmp_patch->env[env_no].set &= 0xFE;
@@ -1096,14 +1096,14 @@ static int WM_LoadConfig(const char *config_file) {
 												line_tokens[token_count][11]))
 										|| (line_tokens[token_count][10] != '=')) {
 									WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID,
+											WM_ERR_INVALID_ARG,
 											"(syntax error in patch line)", 0);
 								} else {
 									unsigned int env_no = atoi(
 											&line_tokens[token_count][9]);
 									if (env_no > 5) {
 										WM_ERROR(__FUNCTION__, __LINE__,
-												WM_ERR_INVALID,
+												WM_ERR_INVALID_ARG,
 												"(syntax error in patch line)",
 												0);
 									} else {
@@ -1114,7 +1114,7 @@ static int WM_LoadConfig(const char *config_file) {
 												|| (tmp_patch->env[env_no].level
 														< 0.0f)) {
 											WM_ERROR(__FUNCTION__, __LINE__,
-													WM_ERR_INVALID,
+													WM_ERR_INVALID_ARG,
 													"(range error in patch line)",
 													0);
 											tmp_patch->env[env_no].set &= 0xFD;
