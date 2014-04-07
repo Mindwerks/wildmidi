@@ -54,7 +54,7 @@ typedef struct MUSheader {
 	char		ID[4];          // identifier "MUS" 0x1A
 	uint16_t    scoreLen;
 	uint16_t    scoreStart;
-	uint16_t    channels;	// count of primary channels
+	uint16_t    channels;		// count of primary channels
 	uint16_t    sec_channels;	// count of secondary channels
 	uint16_t    instrCnt;
 	uint16_t    dummy;
@@ -159,9 +159,9 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	int channelMap[MIDI_MAXCHANNELS], currentChannel = 0;
 	uint8_t last_status = 0;
 
-	// read the mus header
-	memcpy(&header, cur, sizeof(header));
-	cur += sizeof(header);
+	/* read the MUS header and set our location */
+	memcpy(&header, ctx->src_ptr, sizeof(header));
+	ctx->src_ptr += sizeof(header);
 
 	// TODO: data is stored in little-endian, do we need to convert?
 
