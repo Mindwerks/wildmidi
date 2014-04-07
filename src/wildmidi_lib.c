@@ -2353,7 +2353,8 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 static struct _mdi *
 WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	struct _mdi *mdi;
-	struct xmi_ctx *ctx = NULL;
+	struct xmi_ctx *ctx_xmi = NULL;
+	struct mus_ctx *ctx_mus = NULL;
 
 	uint32_t tmp_val;
 	uint32_t track_size;
@@ -2384,14 +2385,30 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t decay_samples = 0;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		ctx = xmi2midi(midi_data, midi_size, XMIDI_CONVERT_MT32_TO_GS);
-		if (ctx) {
-			midi_data = xmi_getmididata(ctx);
-			midi_size = xmi_getmidisize(ctx);
+		ctx_xmi = xmi2midi(midi_data, midi_size, XMIDI_CONVERT_MT32_TO_GS);
+		if (ctx_xmi) {
+			midi_data = xmi_getmididata(ctx_xmi);
+			midi_size = xmi_getmidisize(ctx_xmi);
 			if (!midi_data || !midi_size) {
 			/* shouldn't happen */
 				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no data from XMI)", 0);
-				xmi_free(ctx);
+				xmi_free(ctx_xmi);
+				return NULL;
+			}
+		}
+		else {
+			return NULL;
+		}
+	}
+	else if (!memcmp(midi_data, "MUS", 3)) {
+		ctx_mus = mus2midi(midi_data, midi_size);
+		if (ctx_mus) {
+			midi_data = xmi_getmididata(ctx_mus);
+			midi_size = xmi_getmidisize(ctx_mus);
+			if (!midi_data || !midi_size) {
+			/* shouldn't happen */
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no data from MUS)", 0);
+				mus_free(ctx_mus);
 				return NULL;
 			}
 		}
@@ -2406,7 +2423,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 
 	if (memcmp(midi_data, "MThd", 4)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
-		xmi_free(ctx);
+		xmi_free(ctx_xmi);
+		mus_free(ctx_mus);
 		return NULL;
 	}
 	midi_data += 4;
@@ -2414,7 +2432,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 
 	if (midi_size < 10) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-		xmi_free(ctx);
+		xmi_free(ctx_xmi);
+		mus_free(ctx_mus);
 		return NULL;
 	}
 
@@ -2428,7 +2447,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 4;
 	if (tmp_val != 6) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
-		xmi_free(ctx);
+		xmi_free(ctx_xmi);
+		mus_free(ctx_mus);
 		return NULL;
 	}
 
@@ -2440,7 +2460,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val > 1) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
-		xmi_free(ctx);
+		xmi_free(ctx_xmi);
+		mus_free(ctx_mus);
 		return NULL;
 	}
 
@@ -2452,7 +2473,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (tmp_val < 1) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
-		xmi_free(ctx);
+		xmi_free(ctx_xmi);
+		mus_free(ctx_mus);
 		return NULL;
 	}
 	no_tracks = tmp_val;
@@ -2465,7 +2487,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	midi_size -= 2;
 	if (divisions & 0x00008000) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
-		xmi_free(ctx);
+		xmi_free(ctx_xmi);
+		mus_free(ctx_mus);
 		return NULL;
 	}
 
@@ -2846,7 +2869,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	WM_ResetToStart(mdi);
 
 _end:	free(sysex_store);
-	xmi_free(ctx);
+	xmi_free(ctx_xmi);
+	mus_free(ctx_mus);
 	free(track_end);
 	free(track_delta);
 	free(running_event);
