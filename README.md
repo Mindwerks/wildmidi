@@ -39,7 +39,8 @@ CHANGELOG
 * API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
   to accept strictly 32bit size parameters, i.e. uint32_t, instead of
   unsigned long.
-* Support for loading XMI (XMIDI format) files.
+* Support for loading XMI (XMIDI format) files, thanks Ryan Nunn for
+  releasing his code under the LGPL.
 * DOS (DJGPP) port, player: Support for Sound Blaster output.
 * Build requires cmake-2.8.11 or newer now.
 
