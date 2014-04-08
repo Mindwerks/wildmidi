@@ -44,6 +44,9 @@ CHANGELOG
 * DOS (DJGPP) port, player: Support for Sound Blaster output.
 * Build requires cmake-2.8.11 or newer now.
 
+0.3.7
+* Plug a memory leak in case of broken midis.
+
 0.3.6
 * Fix some portability issues.
 * Fix a double-free issue during library shutdown when several midis
