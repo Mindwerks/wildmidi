@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.3.6
+Version: 0.3.7
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -25,6 +25,9 @@ Requirements:
 * GCC / Xcode / VisualStudio / MinGW
 
 CHANGELOG
+
+0.3.7
+* Plug a memory leak in case of broken midis.
 
 0.3.6
 * Fix some portability issues.

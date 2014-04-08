@@ -2309,6 +2309,36 @@ Init_MDI(void) {
 	return mdi;
 }
 
+static void freeMDI(struct _mdi *mdi) {
+	struct _sample *tmp_sample;
+	unsigned long int i;
+
+	if (mdi->patch_count != 0) {
+		WM_Lock(&patch_lock);
+		for (i = 0; i < mdi->patch_count; i++) {
+			mdi->patches[i]->inuse_count--;
+			if (mdi->patches[i]->inuse_count == 0) {
+				/* free samples here */
+				while (mdi->patches[i]->first_sample) {
+					tmp_sample = mdi->patches[i]->first_sample->next;
+					free(mdi->patches[i]->first_sample->data);
+					free(mdi->patches[i]->first_sample);
+					mdi->patches[i]->first_sample = tmp_sample;
+				}
+				mdi->patches[i]->loaded = 0;
+			}
+		}
+		WM_Unlock(&patch_lock);
+		free(mdi->patches);
+	}
+
+	free(mdi->events);
+	free(mdi->tmp_info);
+	free_reverb(mdi->reverb);
+	free(mdi->mix_buffer);
+	free(mdi);
+}
+
 static unsigned long int get_decay_samples(struct _patch *patch, unsigned char note) {
 
 	struct _sample *sample = NULL;
@@ -2832,8 +2862,7 @@ _end:	free(sysex_store);
 	free(running_event);
 	free(tracks);
 	if (mdi->reverb) return mdi;
-	free(mdi->events);
-	free(mdi);
+	freeMDI(mdi);
 	return NULL;
 }
 
@@ -3559,8 +3588,6 @@ WM_SYMBOL int WildMidi_MasterVolume(unsigned char master_volume) {
 WM_SYMBOL int WildMidi_Close(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 	struct _hndl * tmp_handle;
-	struct _sample *tmp_sample;
-	unsigned long int i;
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
@@ -3600,30 +3627,7 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 		}
 	}
 
-	if (mdi->patch_count != 0) {
-		WM_Lock(&patch_lock);
-		for (i = 0; i < mdi->patch_count; i++) {
-			mdi->patches[i]->inuse_count--;
-			if (mdi->patches[i]->inuse_count == 0) {
-				/* free samples here */
-				while (mdi->patches[i]->first_sample) {
-					tmp_sample = mdi->patches[i]->first_sample->next;
-					free(mdi->patches[i]->first_sample->data);
-					free(mdi->patches[i]->first_sample);
-					mdi->patches[i]->first_sample = tmp_sample;
-				}
-				mdi->patches[i]->loaded = 0;
-			}
-		}
-		WM_Unlock(&patch_lock);
-		free(mdi->patches);
-	}
-
-	free(mdi->events);
-	free(mdi->tmp_info);
-	free_reverb(mdi->reverb);
-	free(mdi->mix_buffer);
-	free(mdi);
+	freeMDI(mdi);
 
 	return 0;
 }
