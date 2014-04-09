@@ -62,6 +62,7 @@
 #include "wildmidi_lib.h"
 #include "filenames.h"
 #include "xmidi.h"
+#include "mus.h"
 
 /*
  * =========================
@@ -2433,8 +2434,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	else if (!memcmp(midi_data, "MUS", 3)) {
 		ctx_mus = mus2midi(midi_data, midi_size);
 		if (ctx_mus) {
-			midi_data = xmi_getmididata(ctx_mus);
-			midi_size = xmi_getmidisize(ctx_mus);
+			midi_data = mus_getmididata(ctx_mus);
+			midi_size = mus_getmidisize(ctx_mus);
 			if (!midi_data || !midi_size) {
 			/* shouldn't happen */
 				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no data from MUS)", 0);

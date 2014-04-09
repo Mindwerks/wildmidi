@@ -50,7 +50,7 @@ endif
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 # Objects
-LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o xmidi.o
+LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o xmidi.o mus.o
 PLAYER_OBJ= $(SB_OBJ) getopt_long.o wm_tty.o wildmidi.o
 
 # Build targets
