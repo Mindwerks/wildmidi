@@ -27,7 +27,7 @@ INCLUDE = -I. -I../include/stdint -I../include
 CFLAGS = $(INCLUDE) -Wall -W
 ARFLAGS = cr
 
-# SB output support (comment out if not wanted.)
+# SB output support (comment out if not wanted)
 CFLAGS+= -DAUDIODRV_DOSSB
 SB_OBJ = dosirq.o dosdma.o dossb.o
 

@@ -529,7 +529,7 @@ static int write_sb_output(int8_t *data, unsigned int siz) {
 }
 
 static int write_sb_s16stereo(int8_t *data, int siz) {
-/* libWildMidi sint16 stereo -> SB16 int16 stereo */
+/* libWildMidi sint16 stereo -> SB16 sint16 stereo */
 	int i;
 	while (1) {
 		i = write_sb_output(data, siz);
