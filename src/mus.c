@@ -33,8 +33,8 @@
 
 uint8_t midimap[] =
 {//	MIDI	Number	Description
-	0,		//0		// prog change
-	0,		//1		// bank sel
+	0,		//0		// program change
+	0,		//1		// bank selection
 	0x01,	//2		// Modulation pot (frequency vibrato depth)
 	0x07,	//3		// Volume: 0-silent, ~100-normal, 127-loud
 	0x0A,	//4		// Pan (balance) pot: 0-left, 64-center (default), 127-right
@@ -120,6 +120,38 @@ static void write4(struct mus_ctx *ctx, uint32_t val)
 	ctx->dstrem -= 4;
 }
 
+static void seeksrc(struct mus_ctx *ctx, uint32_t pos) {
+	ctx->src_ptr = ctx->src + pos;
+}
+
+static void seekdst(struct mus_ctx *ctx, uint32_t pos) {
+	ctx->dst_ptr = ctx->dst + pos;
+	while (ctx->dstsize < pos)
+		resize_dst(ctx);
+	ctx->dstrem = ctx->dstsize - pos;
+}
+
+static void skipdst(struct mus_ctx *ctx, int32_t pos) {
+	size_t newpos;
+	ctx->dst_ptr += pos;
+	newpos = ctx->dst_ptr - ctx->dst;
+	while (ctx->dstsize < newpos)
+		resize_dst(ctx);
+	ctx->dstrem = ctx->dstsize - newpos;
+}
+
+static uint32_t getsrcsize(struct mus_ctx *ctx) {
+	return ctx->srcsize;
+}
+
+static uint32_t getsrcpos(struct mus_ctx *ctx) {
+	return (ctx->src_ptr - ctx->src);
+}
+
+static uint32_t getdstpos(struct mus_ctx *ctx) {
+	return (ctx->dst_ptr - ctx->dst);
+}
+
 uint8_t *mus_getmididata(struct mus_ctx *ctx){
 	return ctx->dst;
 }
@@ -147,9 +179,8 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 
 	MUSheader header;
 	unsigned char* cur = data,* end;
-	MidiHeaderChunk midiHeader;		// set to midi format 0
-	MidiTrackChunk midiTrackHeader;	// 1 midi track
-	uint8_t* midiTrackHeaderOut;	// position of header
+
+	uint32_t track_size_pos, current_pos;
 
 	// Delta time for midi event
 	int delta_time = 0;
@@ -189,17 +220,18 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	write2(ctx, 1);			// number of tracks
 	write2(ctx, 0x0059);	// devision
 
-	// Store this position, for later filling in the midiTrackHeader
-	/*
-	Midi_UpdateBytesWritten(&bytes_written, sizeof(midiTrackHeader), ctx->dstsize);
-	midiTrackHeaderOut = ctx->dst;
-	ctx->dst_ptr += sizeof(midiTrackHeader);
- 	 */
+	/* Write out track header and track length position for later */
+	write1(ctx, 'M');
+	write1(ctx, 'T');
+	write1(ctx, 'r');
+	write1(ctx, 'k');
+	track_size_pos = getdstpos(ctx);
+	skipdst(ctx, 4);
 
 	/* write tempo: microseconds per quarter note */
-	write1(ctx, 0x00);	// delta time
-	write1(ctx, 0xff);	// sys command
-	write2(ctx, 0x5103); // command - set tempo
+	write1(ctx, 0x00);		// delta time
+	write1(ctx, 0xff);		// sys command
+	write2(ctx, 0x5103); 	// command - set tempo
 	write1(ctx, TEMPO & 0x000000ff);
 	write1(ctx, (TEMPO & 0x0000ff00) >> 8);
 	write1(ctx, (TEMPO & 0x00ff0000) >> 16);
@@ -210,22 +242,24 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	write1(ctx, 0x07);
 	write1(ctx, 127);
 
-	// Write out track header
-	/*
-	WriteInt(midiTrackHeader.name, 'MTrk');
-	WriteInt(&midiTrackHeader.length, ctx->dst_ptr - midiTrackHeaderOut - sizeof(midiTrackHeader));
-	memcpy(midiTrackHeaderOut, &midiTrackHeader, sizeof(midiTrackHeader));
-	*/
-
 	// main loop
 
-	// Store length written
-	ctx->dstsize = bytes_written;
-	/*{
-		FILE* file = f o pen("d:\\test.midi", "wb");
+	/* write our end of track */
+	write1(ctx, 0xFF);
+	write1(ctx, 0x2F);
+	write1(ctx, 0x00);
+
+	/* write out track length */
+	current_pos = getdstpos(ctx);
+	seekdst(ctx, track_size_pos);
+	write4(ctx, ctx->dst_ptr - ctx->dst - sizeof(MidiTrackChunk)); // when track begins
+	seekdst(ctx, current_pos);
+
+	/*
+		FILE* file = fopen("/tmp/test.mid", "wb");
 		fwrite(midiTrackHeaderOut - sizeof(MidiHeaderChunk_t), bytes_written, 1, file);
 		fclose(file);
-	}*/
+	*/
 
 	return ctx;
 }
