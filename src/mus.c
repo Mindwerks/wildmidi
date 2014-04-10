@@ -26,10 +26,17 @@
 #include "mus.h"
 #include "wm_error.h"
 
-#define DST_CHUNK 			8192
-#define MIDI_MAXCHANNELS	16
-#define MIDIHEADERSIZE		14
-#define TEMPO				0x001aa309
+#define DST_CHUNK 					8192
+#define TEMPO						0x001aa309
+#define MUSEVENT_KEYOFF				0
+#define MUSEVENT_KEYON				1
+#define MUSEVENT_PITCHWHEEL			2
+#define MUSEVENT_CHANNELMODE		3
+#define MUSEVENT_CONTROLLERCHANGE	4
+#define MUSEVENT_END				6
+#define MIDI_MAXCHANNELS			16
+#define MIDIHEADERSIZE				14
+
 
 uint8_t midimap[] =
 {//	MIDI	Number	Description
@@ -120,10 +127,6 @@ static void write4(struct mus_ctx *ctx, uint32_t val)
 	ctx->dstrem -= 4;
 }
 
-static void seeksrc(struct mus_ctx *ctx, uint32_t pos) {
-	ctx->src_ptr = ctx->src + pos;
-}
-
 static void seekdst(struct mus_ctx *ctx, uint32_t pos) {
 	ctx->dst_ptr = ctx->dst + pos;
 	while (ctx->dstsize < pos)
@@ -138,14 +141,6 @@ static void skipdst(struct mus_ctx *ctx, int32_t pos) {
 	while (ctx->dstsize < newpos)
 		resize_dst(ctx);
 	ctx->dstrem = ctx->dstsize - newpos;
-}
-
-static uint32_t getsrcsize(struct mus_ctx *ctx) {
-	return ctx->srcsize;
-}
-
-static uint32_t getsrcpos(struct mus_ctx *ctx) {
-	return (ctx->src_ptr - ctx->src);
 }
 
 static uint32_t getdstpos(struct mus_ctx *ctx) {
@@ -166,13 +161,38 @@ void mus_free(struct mus_ctx *ctx){
 	free(ctx);
 }
 
+/* writes a variable length integer to a buffer, and returns bytes written */
+int WriteVarLen( long value, uint8_t* out )
+{
+	long buffer, count = 0;
+
+	buffer = value & 0x7f;
+	while ((value >>= 7) > 0) {
+		buffer <<= 8;
+		buffer += 0x80;
+		buffer += (value & 0x7f);
+	}
+
+	while (1) {
+		++count;
+		*out = (uint8_t)buffer;
+		++out;
+		if (buffer & 0x80)
+			buffer >>= 8;
+		else
+			break;
+	}
+	return count;
+}
+
+
 struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	struct mus_ctx *ctx;
 	ctx = calloc(1, sizeof(struct mus_ctx));
 	ctx->src = ctx->src_ptr = data;
 	ctx->srcsize = size;
 
-	ctx->dst = malloc(DST_CHUNK);
+	ctx->dst = calloc(DST_CHUNK, sizeof(uint8_t));
 	ctx->dst_ptr = ctx->dst;
 	ctx->dstsize = DST_CHUNK;
 	ctx->dstrem = DST_CHUNK;
@@ -180,15 +200,13 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	MUSheader header;
 	unsigned char* cur = data,* end;
 
-	uint32_t track_size_pos, current_pos;
+	uint32_t track_size_pos, begin_track_pos, current_pos;
 
 	// Delta time for midi event
 	int delta_time = 0;
 	int temp;
 	int channel_volume[MIDI_MAXCHANNELS] = {0};
-	int bytes_written = 0;
 	int channelMap[MIDI_MAXCHANNELS], currentChannel = 0;
-	uint8_t last_status = 0;
 
 	/* read the MUS header and set our location */
 	memcpy(&header, ctx->src_ptr, sizeof(header));
@@ -206,10 +224,6 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	}
 	channelMap[15] = 9;
 
-	// Get current position, and end of position
-	cur = data + header.scoreStart;
-	end = cur + header.scoreLen;
-
 	/* Header is 14 bytes long and add the rest as well */
 	write1(ctx, 'M');
 	write1(ctx, 'T');
@@ -217,10 +231,11 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	write1(ctx, 'd');
 	write4(ctx, 6);			// length of header
 	write2(ctx, 0);			// MIDI type (always 0)
-	write2(ctx, 1);			// number of tracks
+	write2(ctx, 1);			// MUS files only have 1 track
 	write2(ctx, 0x0059);	// devision
 
 	/* Write out track header and track length position for later */
+	begin_track_pos = getdstpos(ctx);
 	write1(ctx, 'M');
 	write1(ctx, 'T');
 	write1(ctx, 'r');
@@ -236,30 +251,147 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	write1(ctx, (TEMPO & 0x0000ff00) >> 8);
 	write1(ctx, (TEMPO & 0x00ff0000) >> 16);
 
-	// Percussions channel starts out at full volume
+	/* Percussions channel starts out at full volume */
 	write1(ctx, 0x00);
 	write1(ctx, 0xB9);
 	write1(ctx, 0x07);
 	write1(ctx, 127);
 
-	// main loop
+	/* get current position in source, and end of position */
+	cur = data + header.scoreStart;
+	end = cur + header.scoreLen;
 
-	/* write our end of track */
-	write1(ctx, 0xFF);
-	write1(ctx, 0x2F);
-	write1(ctx, 0x00);
+	// main loop
+	while(cur < end){
+		//printf("LOOP DEBUG: %d\r\n",iterator++);
+		uint8_t channel;
+		uint8_t event;
+		uint8_t temp_buffer[32];	// temp buffer for current iterator
+		uint8_t *out_local = temp_buffer;
+		uint8_t status, bit1, bit2, bitc = 2;
+
+		/* read in current bit */
+		event		= *cur++;
+		channel		= (event & 15);		// current channel
+
+		/* write variable length delta time */
+		out_local += WriteVarLen(delta_time, out_local);
+
+		/* set all channels to 127 (max) volume */
+		if (channelMap[channel] < 0) {
+			*out_local++ = 0xB0 + currentChannel;
+			*out_local++ = 0x07;
+			*out_local++ = 127;
+			*out_local++ = 0x00;
+			channelMap[channel] = currentChannel++;
+			if (currentChannel == 9)
+				++currentChannel;
+		}
+		status = channelMap[channel];
+
+		/* handle events */
+		switch ((event & 122) >> 4){
+			default:
+				// we shouldn't be here...
+				break;
+			case MUSEVENT_KEYOFF:
+				status |=  0x80;
+				bit1 = *cur++;
+				bit2 = 0x40;
+				break;
+			case MUSEVENT_KEYON:
+				status |= 0x90;
+				bit1 = *cur & 127;
+				if (*cur++ & 128)	// volume bit?
+					channel_volume[channelMap[channel]] = *cur++;
+				bit2 = channel_volume[channelMap[channel]];
+				break;
+			case MUSEVENT_PITCHWHEEL:
+				status |= 0xE0;
+				bit1 = (*cur & 1) >> 6;
+				bit2 = (*cur++ >> 1) & 127;
+				break;
+			case MUSEVENT_CHANNELMODE:
+				status |= 0xB0;
+				if (! (*cur < sizeof(midimap) / sizeof(midimap[0])))
+					printf("Not good.\r\n");
+				bit1 = midimap[*cur++];
+				bit2 = (*cur++ == 12) ? header.channels + 1 : 0x00;
+				break;
+			case MUSEVENT_CONTROLLERCHANGE:
+				if (*cur == 0) {
+					cur++;
+					status |= 0xC0;
+					bit1 = *cur++;
+					bitc = 1;
+				} else {
+					status |= 0xB0;
+					if (! (*cur < sizeof(midimap) / sizeof(midimap[0])))
+						printf("Not good.\r\n");
+					bit1 = midimap[*cur++];
+					bit2 = *cur++;
+				}
+				break;
+			case 5:	// Unknown
+				// we shouldn't be here
+				break;
+			case MUSEVENT_END:	// End
+				status = 0xff;
+				bit1 = 0x2f;
+				bit2 = 0x00;
+				if (! (cur == end))
+					printf("Not good.'r'n");
+				break;
+			case 7:	// Unknown
+				// we shouldn't be here
+				break;
+		}
+
+		/* write it out */
+		*out_local++ = status;
+		*out_local++ = bit1;
+		if (bitc == 2)
+			*out_local++ = bit2;
+
+		/* write out our temp buffer */
+		if (out_local != temp_buffer)
+		{
+			if (ctx->dstrem < sizeof(temp_buffer)*32)
+				resize_dst(ctx);
+
+			memcpy(ctx->dst_ptr, temp_buffer, out_local - temp_buffer);
+			ctx->dst_ptr += out_local - temp_buffer;
+			ctx->dstsize += out_local - temp_buffer;
+			ctx->dstrem -= out_local - temp_buffer;
+
+		}
+
+		if (event & 128) {
+			delta_time = 0;
+			do {
+				delta_time = delta_time * 128 + (*cur & 127);
+			} while ((*cur++ & 128));
+		} else {
+			delta_time = 0;
+		}
+
+
+	}
 
 	/* write out track length */
 	current_pos = getdstpos(ctx);
 	seekdst(ctx, track_size_pos);
-	write4(ctx, ctx->dst_ptr - ctx->dst - sizeof(MidiTrackChunk)); // when track begins
+	write4(ctx, current_pos - begin_track_pos - sizeof(MidiTrackChunk)); // when track begins
 	seekdst(ctx, current_pos);
 
-	/*
-		FILE* file = fopen("/tmp/test.mid", "wb");
-		fwrite(midiTrackHeaderOut - sizeof(MidiHeaderChunk_t), bytes_written, 1, file);
-		fclose(file);
-	*/
+	/* correct our midi size */
+	ctx->dstsize = ctx->dst_ptr - ctx->dst;
+	//ctx->dstrem = 0;
+
+	FILE* file = fopen("/tmp/test.mid", "wb");
+	fwrite(ctx->dst, ctx->dstsize, 1, file);
+	fclose(file);
+
 
 	return ctx;
 }
