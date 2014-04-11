@@ -37,8 +37,9 @@
 #define MIDI_MAXCHANNELS			16
 #define MIDIHEADERSIZE				14
 
+static char MUS_ID[] = { 'M', 'U', 'S', 0x1A };
 
-uint8_t midimap[] =
+static uint8_t midimap[] =
 {//	MIDI	Number	Description
 	0,		//0		// program change
 	0,		//1		// bank selection
@@ -64,10 +65,6 @@ typedef struct MUSheader {
 	uint16_t    channels;		// count of primary channels
 	uint16_t    sec_channels;	// count of secondary channels
 	uint16_t    instrCnt;
-	uint16_t    dummy;
-	/*  variable-length part starts here
-	uint16_t	instruments[];
-	*/
 } MUSheader ;
 
 typedef struct MidiHeaderChunk {
@@ -185,9 +182,46 @@ int WriteVarLen( long value, uint8_t* out )
 	return count;
 }
 
+#define READ_INT16(b) ((b)[0] | ((b)[1] << 8))
+#define READ_INT32(b) ((b)[0] | ((b)[1] << 8) | ((b)[2] << 16) | ((b)[3] << 24))
 
 struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	struct mus_ctx *ctx;
+	MUSheader header;
+	uint8_t *cur, *end;
+	uint32_t track_size_pos, begin_track_pos, current_pos;
+	int delta_time;/* Delta time for midi event */
+	int temp;
+	int channel_volume[MIDI_MAXCHANNELS];
+	int channelMap[MIDI_MAXCHANNELS], currentChannel;
+
+	if (size < sizeof(header)) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+		return NULL;
+	}
+
+	/* read the MUS header and set our location */
+	memcpy(header.ID, data, 4);
+	header.scoreLen = READ_INT16(&data[4]);
+	header.scoreStart = READ_INT16(&data[6]);
+	header.channels = READ_INT16(&data[8]);
+	header.sec_channels = READ_INT16(&data[10]);
+	header.instrCnt = READ_INT16(&data[12]);
+
+	if (memcmp(header.ID, MUS_ID, 4)) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+		return NULL;
+	}
+	if (size < (uint32_t)header.scoreLen + (uint32_t)header.scoreStart) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+		return NULL;
+	}
+	/* channel #15 should be excluded in the numchannels field: */
+	if (header.channels > MIDI_MAXCHANNELS - 1) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
+		return NULL;
+	}
+
 	ctx = calloc(1, sizeof(struct mus_ctx));
 	ctx->src = ctx->src_ptr = data;
 	ctx->srcsize = size;
@@ -196,26 +230,6 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	ctx->dst_ptr = ctx->dst;
 	ctx->dstsize = DST_CHUNK;
 	ctx->dstrem = DST_CHUNK;
-
-	MUSheader header;
-	unsigned char* cur = data,* end;
-
-	uint32_t track_size_pos, begin_track_pos, current_pos;
-
-	// Delta time for midi event
-	int delta_time = 0;
-	int temp;
-	int channel_volume[MIDI_MAXCHANNELS] = {0};
-	int channelMap[MIDI_MAXCHANNELS], currentChannel = 0;
-
-	/* read the MUS header and set our location */
-	memcpy(&header, ctx->src_ptr, sizeof(header));
-	ctx->src_ptr += sizeof(header);
-
-	// TODO: data is stored in little-endian, do we need to convert?
-
-	// we only support 15 channels
-	if (header.channels > MIDI_MAXCHANNELS - 1) return NULL;
 
 	// Map channel 15 to 9(percussions)
 	for (temp = 0; temp < MIDI_MAXCHANNELS; ++temp) {
@@ -261,6 +275,9 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	cur = data + header.scoreStart;
 	end = cur + header.scoreLen;
 
+	currentChannel = 0;
+	delta_time = 0;
+
 	// main loop
 	while(cur < end){
 		//printf("LOOP DEBUG: %d\r\n",iterator++);
@@ -291,9 +308,6 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 
 		/* handle events */
 		switch ((event & 122) >> 4){
-			default:
-				// we shouldn't be here...
-				break;
 			case MUSEVENT_KEYOFF:
 				status |=  0x80;
 				bit1 = *cur++;
@@ -332,9 +346,6 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 					bit2 = *cur++;
 				}
 				break;
-			case 5:	// Unknown
-				// we shouldn't be here
-				break;
 			case MUSEVENT_END:	// End
 				status = 0xff;
 				bit1 = 0x2f;
@@ -342,9 +353,12 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 				if (! (cur == end))
 					printf("Not good.'r'n");
 				break;
-			case 7:	// Unknown
-				// we shouldn't be here
-				break;
+			case 5:/* Unknown */
+			case 7:/* Unknown */
+			default:/* shouldn't happen */
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
+				mus_free(ctx);
+				return NULL;
 		}
 
 		/* write it out */
@@ -363,7 +377,6 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 			ctx->dst_ptr += out_local - temp_buffer;
 			ctx->dstsize += out_local - temp_buffer;
 			ctx->dstrem -= out_local - temp_buffer;
-
 		}
 
 		if (event & 128) {
@@ -374,8 +387,6 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 		} else {
 			delta_time = 0;
 		}
-
-
 	}
 
 	/* write out track length */
@@ -391,7 +402,6 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	FILE* file = fopen("/tmp/test.mid", "wb");
 	fwrite(ctx->dst, ctx->dstsize, 1, file);
 	fclose(file);
-
 
 	return ctx;
 }
