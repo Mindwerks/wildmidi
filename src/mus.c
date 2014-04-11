@@ -327,8 +327,12 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 				break;
 			case MUSEVENT_CHANNELMODE:
 				status |= 0xB0;
-				if (! (*cur < sizeof(midimap) / sizeof(midimap[0])))
-					printf("Not good.\r\n");
+				if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
+					WM_ERROR_NEW("%s:%i: can't map %u to midi",
+							__FUNCTION__, __LINE__, *cur);
+					mus_free(ctx);
+					return NULL;
+				}
 				bit1 = midimap[*cur++];
 				bit2 = (*cur++ == 12) ? header.channels + 1 : 0x00;
 				break;
@@ -340,8 +344,12 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 					bitc = 1;
 				} else {
 					status |= 0xB0;
-					if (! (*cur < sizeof(midimap) / sizeof(midimap[0])))
-						printf("Not good.\r\n");
+					if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
+						WM_ERROR_NEW("%s:%i: can't map %u to midi",
+								__FUNCTION__, __LINE__, *cur);
+						mus_free(ctx);
+						return NULL;
+					}
 					bit1 = midimap[*cur++];
 					bit2 = *cur++;
 				}
@@ -356,7 +364,8 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 			case 5:/* Unknown */
 			case 7:/* Unknown */
 			default:/* shouldn't happen */
-				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
+				WM_ERROR_NEW("%s:%i: unrecognized event (%u)",
+						__FUNCTION__, __LINE__, event);
 				mus_free(ctx);
 				return NULL;
 		}
