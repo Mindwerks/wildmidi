@@ -40,40 +40,40 @@
 static char MUS_ID[] = { 'M', 'U', 'S', 0x1A };
 
 static uint8_t midimap[] =
-{//	MIDI	Number	Description
-	0,		//0		// program change
-	0,		//1		// bank selection
-	0x01,	//2		// Modulation pot (frequency vibrato depth)
-	0x07,	//3		// Volume: 0-silent, ~100-normal, 127-loud
-	0x0A,	//4		// Pan (balance) pot: 0-left, 64-center (default), 127-right
-	0x0B,	//5		// Expression pot
-	0x5B,	//6		// Reverb depth
-	0x5D,	//7		// Chorus depth
-	0x40,	//8		// Sustain pedal
-	0x43,	//9		// Soft pedal
-	0x78,	//10	// All sounds off
-	0x7B,	//11	// All notes off
-	0x7E,	//12	// Mono (use numchannels + 1)
-	0x7F,	//13	// Poly
-	0x79,	//14	// reset all controllers
+{/*	MIDI	Number	Description */
+	0,	/* 0	program change */
+	0,	/* 1	bank selection */
+	0x01,	/* 2	Modulation pot (frequency vibrato depth) */
+	0x07,	/* 3	Volume: 0-silent, ~100-normal, 127-loud */
+	0x0A,	/* 4	Pan (balance) pot: 0-left, 64-center (default), 127-right */
+	0x0B,	/* 5	Expression pot */
+	0x5B,	/* 6	Reverb depth */
+	0x5D,	/* 7	Chorus depth */
+	0x40,	/* 8	Sustain pedal */
+	0x43,	/* 9	Soft pedal */
+	0x78,	/* 10	All sounds off */
+	0x7B,	/* 11	All notes off */
+	0x7E,	/* 12	Mono (use numchannels + 1) */
+	0x7F,	/* 13	Poly */
+	0x79,	/* 14	reset all controllers */
 };
 
 typedef struct MUSHeader {
-	char		ID[4];          // identifier "MUS" 0x1A
-	uint16_t    scoreLen;
-	uint16_t    scoreStart;
-	uint16_t    channels;		// count of primary channels
-	uint16_t    sec_channels;	// count of secondary channels
-	uint16_t    instrCnt;
+	char ID[4];		/* identifier: "MUS" 0x1A */
+	uint16_t scoreLen;
+	uint16_t scoreStart;
+	uint16_t channels;	/* count of primary channels */
+	uint16_t sec_channels;	/* count of secondary channels */
+	uint16_t instrCnt;
 } MUSHeader ;
 #define MUS_HEADERSIZE 14
 
 typedef struct MidiHeaderChunk {
 	char name[4];
-	int32_t	length;
-	int16_t	format;		// make 0
-	int16_t	ntracks;	// make 1
-	int16_t	division;	// 0xe250??
+	int32_t length;
+	int16_t format; /* make 0 */
+	int16_t ntracks;/* make 1 */
+	int16_t division; /* 0xe250 ?? */
 } MidiHeaderChunk;
 #define MIDI_HEADERSIZE 14
 
@@ -235,7 +235,7 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	ctx->dstsize = DST_CHUNK;
 	ctx->dstrem = DST_CHUNK;
 
-	// Map channel 15 to 9(percussions)
+	/* Map channel 15 to 9 (percussions) */
 	for (temp = 0; temp < MIDI_MAXCHANNELS; ++temp) {
 		channelMap[temp] = -1;
 		channel_volume[temp] = 0x40;
@@ -247,10 +247,10 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	write1(ctx, 'T');
 	write1(ctx, 'h');
 	write1(ctx, 'd');
-	write4(ctx, 6);			// length of header
-	write2(ctx, 0);			// MIDI type (always 0)
-	write2(ctx, 1);			// MUS files only have 1 track
-	write2(ctx, 0x0059);	// devision
+	write4(ctx, 6);			/* length of header */
+	write2(ctx, 0);			/* MIDI type (always 0) */
+	write2(ctx, 1);			/* MUS files only have 1 track */
+	write2(ctx, 0x0059);	/* division */
 
 	/* Write out track header and track length position for later */
 	begin_track_pos = getdstpos(ctx);
@@ -262,9 +262,9 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	skipdst(ctx, 4);
 
 	/* write tempo: microseconds per quarter note */
-	write1(ctx, 0x00);		// delta time
-	write1(ctx, 0xff);		// sys command
-	write2(ctx, 0x5103); 	// command - set tempo
+	write1(ctx, 0x00);		/* delta time */
+	write1(ctx, 0xff);		/* sys command */
+	write2(ctx, 0x5103);	/* command - set tempo */
 	write1(ctx, TEMPO & 0x000000ff);
 	write1(ctx, (TEMPO & 0x0000ff00) >> 8);
 	write1(ctx, (TEMPO & 0x00ff0000) >> 16);
@@ -282,18 +282,18 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	currentChannel = 0;
 	delta_time = 0;
 
-	// main loop
+	/* main loop */
 	while(cur < end){
-		//printf("LOOP DEBUG: %d\r\n",iterator++);
+		/*printf("LOOP DEBUG: %d\r\n",iterator++);*/
 		uint8_t channel;
 		uint8_t event;
-		uint8_t temp_buffer[32];	// temp buffer for current iterator
+		uint8_t temp_buffer[32];	/* temp buffer for current iterator */
 		uint8_t *out_local = temp_buffer;
 		uint8_t status, bit1, bit2, bitc = 2;
 
 		/* read in current bit */
-		event		= *cur++;
-		channel		= (event & 15);		// current channel
+		event = *cur++;
+		channel = (event & 15);		/* current channel */
 
 		/* write variable length delta time */
 		out_local += writevarlen(delta_time, out_local);
@@ -320,7 +320,7 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 			case MUSEVENT_KEYON:
 				status |= 0x90;
 				bit1 = *cur & 127;
-				if (*cur++ & 128)	// volume bit?
+				if (*cur++ & 128)	/* volume bit? */
 					channel_volume[channelMap[channel]] = *cur++;
 				bit2 = channel_volume[channelMap[channel]];
 				break;
@@ -358,12 +358,14 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 					bit2 = *cur++;
 				}
 				break;
-			case MUSEVENT_END:	// End
+			case MUSEVENT_END:	/* End */
 				status = 0xff;
 				bit1 = 0x2f;
 				bit2 = 0x00;
-				if (! (cur == end))
-					printf("Not good.'r'n");
+				if (cur != end) { /* should we error here or report-only? */
+					WM_ERROR_NEW("%s:%i: MUS buffer off by %ld bytes",
+						__FUNCTION__, __LINE__, (long)(cur - end));
+				}
 				break;
 			case 5:/* Unknown */
 			case 7:/* Unknown */
