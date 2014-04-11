@@ -26,16 +26,16 @@
 #include "mus.h"
 #include "wm_error.h"
 
-#define DST_CHUNK 					8192
 #define TEMPO						0x001aa309
+
 #define MUSEVENT_KEYOFF				0
 #define MUSEVENT_KEYON				1
 #define MUSEVENT_PITCHWHEEL			2
 #define MUSEVENT_CHANNELMODE		3
 #define MUSEVENT_CONTROLLERCHANGE	4
 #define MUSEVENT_END				6
+
 #define MIDI_MAXCHANNELS			16
-#define MIDIHEADERSIZE				14
 
 static char MUS_ID[] = { 'M', 'U', 'S', 0x1A };
 
@@ -66,6 +66,7 @@ typedef struct MUSheader {
 	uint16_t    sec_channels;	// count of secondary channels
 	uint16_t    instrCnt;
 } MUSheader ;
+#define MUS_HEADERSIZE 14
 
 typedef struct MidiHeaderChunk {
 	char name[4];
@@ -74,11 +75,13 @@ typedef struct MidiHeaderChunk {
 	int16_t	ntracks;	// make 1
 	int16_t	division;	// 0xe250??
 } MidiHeaderChunk;
+#define MIDI_HEADERSIZE 14
 
 typedef struct MidiTrackChunk {
 	char name[4];
 	int32_t	length;
 } MidiTrackChunk;
+#define TRK_CHUNKSIZE 8
 
 struct mus_ctx {
 	uint8_t *src, *src_ptr;
@@ -88,6 +91,7 @@ struct mus_ctx {
 	uint32_t dstsize, dstrem;
 };
 
+#define DST_CHUNK 8192
 static void resize_dst(struct mus_ctx *ctx) {
 	uint32_t pos = ctx->dst_ptr - ctx->dst;
 	ctx->dst = realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
@@ -159,9 +163,9 @@ void mus_free(struct mus_ctx *ctx){
 }
 
 /* writes a variable length integer to a buffer, and returns bytes written */
-int WriteVarLen( long value, uint8_t* out )
+static int32_t WriteVarLen(int32_t value, uint8_t *out)
 {
-	long buffer, count = 0;
+	int32_t buffer, count = 0;
 
 	buffer = value & 0x7f;
 	while ((value >>= 7) > 0) {
@@ -190,12 +194,12 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	MUSheader header;
 	uint8_t *cur, *end;
 	uint32_t track_size_pos, begin_track_pos, current_pos;
-	int delta_time;/* Delta time for midi event */
+	int32_t delta_time;/* Delta time for midi event */
 	int temp;
 	int channel_volume[MIDI_MAXCHANNELS];
 	int channelMap[MIDI_MAXCHANNELS], currentChannel;
 
-	if (size < sizeof(header)) {
+	if (size < MUS_HEADERSIZE) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 		return NULL;
 	}
@@ -379,12 +383,11 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 		/* write out our temp buffer */
 		if (out_local != temp_buffer)
 		{
-			if (ctx->dstrem < sizeof(temp_buffer)*32)
+			if (ctx->dstrem < sizeof(temp_buffer))
 				resize_dst(ctx);
 
 			memcpy(ctx->dst_ptr, temp_buffer, out_local - temp_buffer);
 			ctx->dst_ptr += out_local - temp_buffer;
-			ctx->dstsize += out_local - temp_buffer;
 			ctx->dstrem -= out_local - temp_buffer;
 		}
 
@@ -401,15 +404,11 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	/* write out track length */
 	current_pos = getdstpos(ctx);
 	seekdst(ctx, track_size_pos);
-	write4(ctx, current_pos - begin_track_pos - sizeof(MidiTrackChunk)); // when track begins
-	seekdst(ctx, current_pos);
-
-	/* correct our midi size */
-	ctx->dstsize = ctx->dst_ptr - ctx->dst;
-	//ctx->dstrem = 0;
+	write4(ctx, current_pos - begin_track_pos - TRK_CHUNKSIZE);
+	seekdst(ctx, current_pos);	/* reseek to end position */
 
 	FILE* file = fopen("/tmp/test.mid", "wb");
-	fwrite(ctx->dst, ctx->dstsize, 1, file);
+	fwrite(ctx->dst, ctx->dstsize - ctx->dstrem, 1, file);
 	fclose(file);
 
 	return ctx;
