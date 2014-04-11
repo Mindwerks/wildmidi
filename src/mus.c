@@ -58,14 +58,14 @@ static uint8_t midimap[] =
 	0x79,	//14	// reset all controllers
 };
 
-typedef struct MUSheader {
+typedef struct MUSHeader {
 	char		ID[4];          // identifier "MUS" 0x1A
 	uint16_t    scoreLen;
 	uint16_t    scoreStart;
 	uint16_t    channels;		// count of primary channels
 	uint16_t    sec_channels;	// count of secondary channels
 	uint16_t    instrCnt;
-} MUSheader ;
+} MUSHeader ;
 #define MUS_HEADERSIZE 14
 
 typedef struct MidiHeaderChunk {
@@ -163,7 +163,7 @@ void mus_free(struct mus_ctx *ctx){
 }
 
 /* writes a variable length integer to a buffer, and returns bytes written */
-static int32_t WriteVarLen(int32_t value, uint8_t *out)
+static int32_t writevarlen(int32_t value, uint8_t *out)
 {
 	int32_t buffer, count = 0;
 
@@ -191,7 +191,7 @@ static int32_t WriteVarLen(int32_t value, uint8_t *out)
 
 struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	struct mus_ctx *ctx;
-	MUSheader header;
+	MUSHeader header;
 	uint8_t *cur, *end;
 	uint32_t track_size_pos, begin_track_pos, current_pos;
 	int32_t delta_time;/* Delta time for midi event */
@@ -296,7 +296,7 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 		channel		= (event & 15);		// current channel
 
 		/* write variable length delta time */
-		out_local += WriteVarLen(delta_time, out_local);
+		out_local += writevarlen(delta_time, out_local);
 
 		/* set all channels to 127 (max) volume */
 		if (channelMap[channel] < 0) {
@@ -407,9 +407,11 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	write4(ctx, current_pos - begin_track_pos - TRK_CHUNKSIZE);
 	seekdst(ctx, current_pos);	/* reseek to end position */
 
+	/*
 	FILE* file = fopen("/tmp/test.mid", "wb");
 	fwrite(ctx->dst, ctx->dstsize - ctx->dstrem, 1, file);
 	fclose(file);
+	*/
 
 	return ctx;
 }
