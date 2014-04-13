@@ -149,11 +149,11 @@ static uint32_t getdstpos(struct mus_ctx *ctx) {
 }
 
 uint8_t *mus_getmididata(struct mus_ctx *ctx){
-	return ctx->dst;
+	return (ctx->dst);
 }
 
 uint32_t mus_getmidisize(struct mus_ctx *ctx){
-	return ctx->dstsize - ctx->dstrem;
+	return (ctx->dstsize - ctx->dstrem);
 }
 
 void mus_free(struct mus_ctx *ctx){
@@ -183,7 +183,7 @@ static int32_t writevarlen(int32_t value, uint8_t *out)
 		else
 			break;
 	}
-	return count;
+	return (count);
 }
 
 #define READ_INT16(b) ((b)[0] | ((b)[1] << 8))
@@ -415,5 +415,5 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	fclose(file);
 	*/
 
-	return ctx;
+	return (ctx);
 }
