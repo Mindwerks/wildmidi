@@ -220,6 +220,38 @@ static void resume_output_nop(void) {
 }
 
 /*
+ MIDI Output Functions
+ */
+static char midi_file[1024] = "\0";
+
+static int write_midi_output(uint8_t *output_data, int output_size){
+	if (midi_file[0] == '\0')
+		return (-1);
+
+#if defined(_WIN32) || defined(__DJGPP__)
+	if ((audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0666)) < 0) {
+#else
+	if ((audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC),
+			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
+#endif
+		fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
+		return (-1);
+	}
+
+	printf("test: %s %d\r\n",midi_file, output_size);
+	printf("test: %c %c %c %c\r\n", output_data[0],output_data[1],output_data[2],output_data[3]);
+
+	if (write(audio_fd, output_data, output_size) < 0) {
+		fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(errno));
+		close(audio_fd);
+		audio_fd = -1;
+		return (-1);
+	}
+
+	return (0);
+}
+
+/*
  Wav Output Functions
  */
 
@@ -249,6 +281,7 @@ static int open_wav_output(void) {
 
 	if (wav_file[0] == '\0')
 		return (-1);
+
 #if defined(_WIN32) || defined(__DJGPP__)
 	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0666)) < 0) {
 #else
@@ -1017,6 +1050,7 @@ static struct option const long_options[] = {
 	{ "mastervol", 1, 0, 'm' },
 	{ "config", 1, 0, 'c' },
 	{ "wavout", 1, 0, 'o' },
+	{ "convert", 1, 0, 'x' },
 	{ "log_vol", 0, 0, 'l' },
 	{ "reverb", 0, 0, 'b' },
 	{ "test_midi", 0, 0, 't' },
@@ -1040,6 +1074,9 @@ static void do_help(void) {
 	printf("MIDI Options:\n");
 	printf("  -w    --wholetempo  Round down tempo to whole number\n");
 	printf("  -n    --roundtempo  Round tempo to nearest whole number\n");
+	printf("  -t    --test        Listen to test MIDI\n");
+	printf("Non-MIDI Options:\n");
+	printf("  -x    --convert     Convert file to midi and save to file\n");
 	printf("Software Wavetable Options:\n");
 	printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 	printf("  -l    --log_vol     Use log volume adjustments\n");
@@ -1101,7 +1138,7 @@ int main(int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "vho:lr:c:m:btk:p:ed:wn", long_options,
+		i = getopt_long(argc, argv, "vho:tx:lr:c:m:btk:p:ed:wn", long_options,
 				&option_index);
 		if (i == -1)
 			break;
@@ -1132,6 +1169,13 @@ int main(int argc, char **argv) {
 				return (1);
 			}
 			strcpy(wav_file, optarg);
+			break;
+		case 'x': /* MIDI Output */
+			if (!*optarg) {
+				fprintf(stderr, "Error: empty midi name.\n");
+			    return (1);
+			}
+			strcpy(midi_file, optarg);
 			break;
 		case 'c': /* Config File */
 			strncpy(config_file, optarg, sizeof(config_file));
@@ -1172,6 +1216,24 @@ int main(int argc, char **argv) {
 			do_syntax();
 			return (1);
 		}
+	}
+
+	/* check if we only need to convert file MIDI */
+	if (midi_file[0] != '\0'){
+
+		const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
+		uint32_t size = 0;
+		uint8_t *data = NULL;
+
+		printf("Converting %s \r\n", real_file);
+		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size);
+
+		printf("Size: %d\r\n", size);
+		printf("test: %c %c %c %c\r\n", data[0],data[1],data[2],data[3]);
+
+		write_midi_output(data, size);
+		free(data);
+		return (0);
 	}
 
 	if (optind < argc || test_midi) {

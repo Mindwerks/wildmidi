@@ -96,6 +96,7 @@ WM_SYMBOL midi * WildMidi_Open (const char *midifile);
 WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
 WM_SYMBOL int WildMidi_GetOutput (midi *handle, int8_t *buffer, uint32_t size);
 WM_SYMBOL int WildMidi_SetOption (midi *handle, uint16_t options, uint16_t setting);
+WM_SYMBOL void * WildMidi_ConvertToMidi (const char *file, uint32_t *size);
 WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
 WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);

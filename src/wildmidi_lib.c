@@ -2381,6 +2381,73 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 	return decay_samples;
 }
 
+WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size){
+	struct xmi_ctx *ctx_xmi = NULL;
+	struct mus_ctx *ctx_mus = NULL;
+	uint8_t *file_buffer = NULL;
+	uint8_t *midi_buffer = NULL;
+
+	/* pull in file data */
+	if (file == NULL) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)",
+				0);
+		return (NULL);
+	}
+
+	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
+		free(file_buffer);
+		return (NULL);
+	}
+
+	/* determine data contents */
+	if (!memcmp(file_buffer, "FORM", 4)) {
+		ctx_xmi = xmi2midi(file_buffer, *size, XMIDI_CONVERT_MT32_TO_GS);
+		if (ctx_xmi) {
+			midi_buffer = xmi_getmididata(ctx_xmi);
+			*size = xmi_getmidisize(ctx_xmi);
+			if (!midi_buffer || !size) {
+			/* shouldn't happen */
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no data from XMI)", 0);
+				free(file_buffer);
+				xmi_free(ctx_xmi);
+				return (NULL);
+			}
+		}
+		else {
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(failed to convert XMI)", 0);
+			free(file_buffer);
+			return (NULL);
+		}
+	}
+	else if (!memcmp(file_buffer, "MUS", 3)) {
+		ctx_mus = mus2midi(file_buffer, *size);
+		if (ctx_mus) {
+			midi_buffer = mus_getmididata(ctx_mus);
+			*size = mus_getmidisize(ctx_mus);
+			if (!midi_buffer || !size) {
+			/* shouldn't happen */
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no data from MUS)", 0);
+				free(file_buffer);
+				mus_free(ctx_mus);
+				return (NULL);
+			}
+		}
+		else {
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(failed to convert MUS)", 0);
+			free(file_buffer);
+			return (NULL);
+		}
+	}
+	else {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(Unsupported file format)", 0);
+		free(file_buffer);
+		return (NULL);
+	}
+
+	free(file_buffer);
+	return (midi_buffer);
+}
+
 static struct _mdi *
 WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	struct _mdi *mdi;
