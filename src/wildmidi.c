@@ -842,7 +842,7 @@ static int open_oss_output(void) {
 
 	if ((audio_fd = open(pcmname, O_WRONLY)) < 0) {
 		fprintf(stderr, "ERROR: Unable to open dsp (%s)\r\n", strerror(errno));
-		return -1;
+		return (-1);
 	}
 	if (ioctl(audio_fd, SNDCTL_DSP_RESET, 0) < 0) {
 		fprintf(stderr, "ERROR: Unable to reset dsp\r\n");
@@ -883,7 +883,7 @@ static int open_oss_output(void) {
 	return (0);
 
 fail:	close_oss_output();
-	return -1;
+	return (-1);
 }
 
 static int write_oss_output(int8_t *output_data, int output_size) {
@@ -896,7 +896,7 @@ static int write_oss_output(int8_t *output_data, int output_size) {
 		} else {
 			fprintf(stderr, "\nOSS: write failure to dsp: %s.\r\n",
 				strerror(errno));
-			return -1;
+			return (-1);
 		}
 	}
 	return (0);

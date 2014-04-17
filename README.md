@@ -10,12 +10,20 @@ Version: 0.4.0
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
-PLATFORMS:
+PLAYER AND LIB PLATFORMS:
 
 * Hurd: Debian
 * kFreeBSD: Debian, FreeBSD
 * Linux: Arch, Debian, Fedora, Ubuntu
 * Windows: x32 and x64
+* DOS: djgpp
+
+PLAYER SOUND SYSTEMS:
+
+* ALSA
+* OSS
+* OpenAL
+* SB16 (DOS)
 
 BUILD FROM SOURCE:
 
@@ -41,6 +49,7 @@ CHANGELOG
   unsigned long.
 * Support for loading XMI (XMIDI format) files, thanks Ryan Nunn for
   releasing his code under the LGPL.
+* support for loading MUS (MUS Id format) files, such as from Doom.
 * DOS (DJGPP) port, player: Support for Sound Blaster output.
 * Build requires cmake-2.8.11 or newer now.
 

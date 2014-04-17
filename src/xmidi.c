@@ -179,7 +179,7 @@ static void skipdst(struct xmi_ctx *ctx, int32_t pos) {
 }
 
 static uint32_t getsrcsize(struct xmi_ctx *ctx) {
-	return ctx->srcsize;
+	return (ctx->srcsize);
 }
 
 static uint32_t getsrcpos(struct xmi_ctx *ctx) {
@@ -470,13 +470,13 @@ struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type) {
 	if (ParseXMI(ctx) < 0) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		xmi_free(ctx);
-		return NULL;
+		return (NULL);
 	}
 
 	if (ExtractTracks(ctx) < 0) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		xmi_free(ctx);
-		return NULL;
+		return (NULL);
 	}
 
 	ctx->dst = malloc(DST_CHUNK);
@@ -517,7 +517,7 @@ struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type) {
 	ctx->list = ctx->current = NULL;
 	ctx->timing = NULL;
 
-	return ctx;
+	return (ctx);
 }
 
 void xmi_free(struct xmi_ctx *ctx) {
@@ -536,16 +536,16 @@ void xmi_free(struct xmi_ctx *ctx) {
 #if 0
 static unsigned int xmi_gettracks(struct xmi_ctx *ctx)
 {
-	return ctx->info.tracks;
+	return (ctx->info.tracks);
 }
 #endif
 
 uint8_t *xmi_getmididata(struct xmi_ctx *ctx) {
-	return ctx->dst;
+	return (ctx->dst);
 }
 
 uint32_t xmi_getmidisize(struct xmi_ctx *ctx) {
-	return ctx->dstsize - ctx->dstrem;
+	return (ctx->dstsize - ctx->dstrem);
 }
 
 static void DeleteEventList(midi_event *mlist) {
