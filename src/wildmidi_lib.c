@@ -2384,15 +2384,14 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size){
 	uint8_t *file_buffer = NULL;
 	uint8_t *midi_buffer = NULL;
 
-	/* pull in file data */
 	if (file == NULL) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)",
 				0);
 		return (NULL);
 	}
 
+	/* pull in file data */
 	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
-		free(file_buffer);
 		return (NULL);
 	}
 

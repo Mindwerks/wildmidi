@@ -238,9 +238,6 @@ static int write_midi_output(uint8_t *output_data, int output_size){
 		return (-1);
 	}
 
-	printf("test: %s %d\r\n",midi_file, output_size);
-	printf("test: %c %c %c %c\r\n", output_data[0],output_data[1],output_data[2],output_data[3]);
-
 	if (write(audio_fd, output_data, output_size) < 0) {
 		fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(errno));
 		close(audio_fd);
@@ -248,6 +245,8 @@ static int write_midi_output(uint8_t *output_data, int output_size){
 		return (-1);
 	}
 
+	close(audio_fd);
+	audio_fd = -1;
 	return (0);
 }
 
@@ -1220,17 +1219,19 @@ int main(int argc, char **argv) {
 
 	/* check if we only need to convert file MIDI */
 	if (midi_file[0] != '\0'){
-
 		const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
 		uint32_t size = 0;
 		uint8_t *data = NULL;
 
-		printf("Converting %s \r\n", real_file);
+		if (!real_file) real_file = argv[optind];
+		printf("Converting %s\r\n", real_file);
 		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size);
+		if (!data) {
+			fprintf(stderr, "Convertion failed.\r\n");
+			return (1);
+		}
 
-		printf("Size: %d\r\n", size);
-		printf("test: %c %c %c %c\r\n", data[0],data[1],data[2],data[3]);
-
+		printf("Writing %s: %u bytes.\r\n", midi_file, size);
 		write_midi_output(data, size);
 		free(data);
 		return (0);
