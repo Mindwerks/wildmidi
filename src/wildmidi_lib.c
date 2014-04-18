@@ -2386,7 +2386,6 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 				0);
 		return (NULL);
 	}
-
 	/* pull in file data */
 	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
 		return (NULL);
@@ -2395,20 +2394,23 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
 		if (xmi2midi(file_buffer, *size, &midi_buffer, size, XMIDI_CONVERT_MT32_TO_GS) < 0) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(failed to convert XMI)", 0);
 			free(file_buffer);
 			return (NULL);
 		}
 	}
 	else if (!memcmp(file_buffer, "MUS", 3)) {
 		if (mus2midi(file_buffer, *size, &midi_buffer, size) < 0) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(failed to convert MUS)", 0);
 			free(file_buffer);
 			return (NULL);
 		}
 	}
+	else if (!memcmp(file_buffer, "MThd", 4)) {
+		WM_ERROR_NEW("%s:%i: %s is already a midi file.", __FUNCTION__, __LINE__, file);
+		free(file_buffer);
+		return (NULL);
+	}
 	else {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(Unsupported file format)", 0);
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
 		free(file_buffer);
 		return (NULL);
 	}
