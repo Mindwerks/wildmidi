@@ -251,11 +251,12 @@ static int open_wav_output(void) {
 	if (wav_file[0] == '\0')
 		return (-1);
 #if defined(_WIN32) || defined(__DJGPP__)
-	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0666)) < 0) {
+	audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
 #else
-	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
-			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
+	audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
+			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
 #endif
+	if (audio_fd < 0) {
 		fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
 		return (-1);
 	} else {
@@ -898,7 +899,7 @@ int main(int argc, char **argv) {
 	struct _WM_Info *wm_info;
 	int i, res;
 	int option_index = 0;
-	unsigned long int mixer_options = 0;
+	unsigned short mixer_options = 0;
 	void *midi_ptr;
 	unsigned char master_volume = 100;
 	char *output_buffer;
