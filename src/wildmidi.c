@@ -1074,7 +1074,7 @@ static void do_help(void) {
 	printf("MIDI Options:\n");
 	printf("  -w    --wholetempo  Round down tempo to whole number\n");
 	printf("  -n    --roundtempo  Round tempo to nearest whole number\n");
-	printf("  -t    --test        Listen to test MIDI\n");
+	printf("  -t    --test_midi   Listen to test MIDI\n");
 	printf("Non-MIDI Options:\n");
 	printf("  -x    --convert     Convert file to midi and save to file\n");
 	printf("Software Wavetable Options:\n");
@@ -1226,16 +1226,25 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (optind >= argc && !test_midi) {
+		fprintf(stderr, "ERROR: No midi file given\r\n");
+		do_syntax();
+		return (1);
+	}
+
+	if (test_midi) {
+		if (midi_file[0] != '\0') {
+			fprintf(stderr, "--test_midi and --convert cannot be used together.\n");
+			return (1);
+		}
+	}
+
 	/* check if we only need to convert file MIDI */
 	if (midi_file[0] != '\0') {
-		const char *real_file;
+		const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
 		uint32_t size;
 		uint8_t *data;
 
-		if (optind >= argc) /* missing file argument */
-			return (1);
-
-		real_file = FIND_LAST_DIRSEP(argv[optind]);
 		if (!real_file) real_file = argv[optind];
 		else real_file++;
 
@@ -1252,242 +1261,236 @@ int main(int argc, char **argv) {
 		return (0);
 	}
 
-	if (optind < argc || test_midi) {
-		if (!config_file[0]) {
-			strncpy(config_file, WILDMIDI_CFG, sizeof(config_file));
-			config_file[sizeof(config_file) - 1] = 0;
-		}
+	if (!config_file[0]) {
+		strncpy(config_file, WILDMIDI_CFG, sizeof(config_file));
+		config_file[sizeof(config_file) - 1] = 0;
+	}
 
-		printf("Initializing Sound System\n");
-		if (wav_file[0] != '\0') {
-			if (open_wav_output() == -1) {
-				return (1);
+	printf("Initializing Sound System\n");
+	if (wav_file[0] != '\0') {
+		if (open_wav_output() == -1) {
+			return (1);
+		}
+	} else {
+		if (open_audio_output() == -1) {
+			return (1);
+		}
+	}
+
+	libraryver = WildMidi_GetVersion();
+	printf("Initializing libWildMidi %ld.%ld.%ld\n\n",
+						(libraryver>>16) & 255,
+						(libraryver>> 8) & 255,
+						(libraryver    ) & 255);
+	if (WildMidi_Init(config_file, rate, mixer_options) == -1) {
+		return (1);
+	}
+
+	printf(" +  Volume up        e  Better resampling    n  Next Midi\n");
+	printf(" -  Volume down      l  Log volume           q  Quit\n");
+	printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
+	printf("                     p  Pause On/Off\n\n");
+
+	output_buffer = malloc(16384);
+	if (output_buffer == NULL) {
+		fprintf(stderr, "Not enough memory, exiting\n");
+		WildMidi_Shutdown();
+		return (1);
+	}
+
+	wm_inittty();
+
+	WildMidi_MasterVolume(master_volume);
+
+	while (optind < argc || test_midi) {
+		if (!test_midi) {
+			const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
+
+			if (!real_file) real_file = argv[optind];
+			else real_file++;
+			printf("Playing %s \r\n", real_file);
+
+			midi_ptr = WildMidi_Open(argv[optind]);
+			optind++;
+			if (midi_ptr == NULL) {
+				fprintf(stderr, "\rSkipping %s\r\n", real_file);
+				continue;
 			}
 		} else {
-			if (open_audio_output() == -1) {
-				return (1);
+			if (test_count == midi_test_max) {
+				break;
 			}
-		}
-
-		libraryver = WildMidi_GetVersion();
-		printf("Initializing libWildMidi %ld.%ld.%ld\n\n",
-							(libraryver>>16) & 255,
-							(libraryver>> 8) & 255,
-							(libraryver    ) & 255);
-		if (WildMidi_Init(config_file, rate, mixer_options) == -1) {
-			return (1);
-		}
-
-		printf(" +  Volume up        e  Better resampling    n  Next Midi\n");
-		printf(" -  Volume down      l  Log volume           q  Quit\n");
-		printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
-		printf("                     p  Pause On/Off\n\n");
-
-		output_buffer = malloc(16384);
-		if (output_buffer == NULL) {
-			fprintf(stderr, "Not enough memory, exiting\n");
-			WildMidi_Shutdown();
-			return (1);
-		}
-
-		wm_inittty();
-
-		WildMidi_MasterVolume(master_volume);
-
-		while (optind < argc || test_midi) {
-			if (!test_midi) {
-				const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
-
-				if (!real_file) real_file = argv[optind];
-				else real_file++;
-				printf("Playing %s \r\n", real_file);
-
-				midi_ptr = WildMidi_Open(argv[optind]);
-				optind++;
-				if (midi_ptr == NULL) {
-					fprintf(stderr, "\rSkipping %s\r\n", real_file);
-					continue;
-				}
-			} else {
-				if (test_count == midi_test_max) {
-					break;
-				}
-				test_data = malloc(midi_test[test_count].size);
-				memcpy(test_data, midi_test[test_count].data,
-						midi_test[test_count].size);
-				test_data[25] = test_bank;
-				test_data[28] = test_patch;
-				midi_ptr = WildMidi_OpenBuffer(test_data, 633);
-				test_count++;
-				if (midi_ptr == NULL) {
-					fprintf(stderr, "\rFailed loading test midi no. %i\r\n", test_count);
-					continue;
-				}
-				printf("Playing test midi no. %i\r\n", test_count);
+			test_data = malloc(midi_test[test_count].size);
+			memcpy(test_data, midi_test[test_count].data,
+					midi_test[test_count].size);
+			test_data[25] = test_bank;
+			test_data[28] = test_patch;
+			midi_ptr = WildMidi_OpenBuffer(test_data, 633);
+			test_count++;
+			if (midi_ptr == NULL) {
+				fprintf(stderr, "\rFailed loading test midi no. %i\r\n", test_count);
+				continue;
 			}
+			printf("Playing test midi no. %i\r\n", test_count);
+		}
 
-			wm_info = WildMidi_GetInfo(midi_ptr);
-			apr_mins = wm_info->approx_total_samples / (rate * 60);
-			apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
-			mixer_options = wm_info->mixer_options;
-			modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
-			modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
-			modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
-			modes[3] = '\0';
-			fprintf(stderr, "\r");
+		wm_info = WildMidi_GetInfo(midi_ptr);
+		apr_mins = wm_info->approx_total_samples / (rate * 60);
+		apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
+		mixer_options = wm_info->mixer_options;
+		modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
+		modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
+		modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
+		modes[3] = '\0';
+		fprintf(stderr, "\r");
 
-			while (1) {
-				count_diff = wm_info->approx_total_samples
+		while (1) {
+			count_diff = wm_info->approx_total_samples
 						- wm_info->current_sample;
 
-				if (count_diff == 0)
-					break;
+			if (count_diff == 0)
+				break;
 
-				ch = 0;
+			ch = 0;
 #ifdef _WIN32
-				if (_kbhit()) {
-					ch = _getch();
-					_putch(ch);
-				}
+			if (_kbhit()) {
+				ch = _getch();
+				_putch(ch);
+			}
 #elif defined(__DJGPP__)
-				if (kbhit()) {
-					ch = getch();
-					putch(ch);
-				}
+			if (kbhit()) {
+				ch = getch();
+				putch(ch);
+			}
 #else
-				if (read(STDIN_FILENO, &ch, 1) != 1)
-					ch = 0;
+			if (read(STDIN_FILENO, &ch, 1) != 1)
+				ch = 0;
 #endif
-				if (ch) {
-					switch (ch) {
-					case 'l':
-						WildMidi_SetOption(midi_ptr, WM_MO_LOG_VOLUME,
-								((mixer_options & WM_MO_LOG_VOLUME)
-										^ WM_MO_LOG_VOLUME));
-						mixer_options ^= WM_MO_LOG_VOLUME;
-						modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
-						break;
-					case 'r':
-						WildMidi_SetOption(midi_ptr, WM_MO_REVERB,
-								((mixer_options & WM_MO_REVERB) ^ WM_MO_REVERB));
-						mixer_options ^= WM_MO_REVERB;
-						modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
-						break;
-					case 'e':
-						WildMidi_SetOption(midi_ptr, WM_MO_ENHANCED_RESAMPLING,
-								((mixer_options & WM_MO_ENHANCED_RESAMPLING)
-										^ WM_MO_ENHANCED_RESAMPLING));
-						mixer_options ^= WM_MO_ENHANCED_RESAMPLING;
-						modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
-						break;
-					case 'n':
-						goto NEXTMIDI;
-					case 'p':
-						if (inpause) {
-							inpause = 0;
-							fprintf(stderr, "       \r");
-							resume_output();
-						} else {
-							inpause = 1;
-							fprintf(stderr, "Paused \r");
-							pause_output();
-							continue;
-						}
-						break;
-					case 'q':
-						printf("\r\n");
-						if (inpause) goto end2;
-						goto end1;
-					case '-':
-						if (master_volume > 0) {
-							master_volume--;
-							WildMidi_MasterVolume(master_volume);
-						}
-						break;
-					case '+':
-						if (master_volume < 127) {
-							master_volume++;
-							WildMidi_MasterVolume(master_volume);
-						}
-						break;
-					case ',': /* fast seek backwards */
-						if (wm_info->current_sample < rate) {
-							seek_to_sample = 0;
-						} else {
-							seek_to_sample = wm_info->current_sample - rate;
-						}
-						WildMidi_FastSeek(midi_ptr, &seek_to_sample);
-						break;
-					case '.': /* fast seek forwards */
-						if ((wm_info->approx_total_samples
-								- wm_info->current_sample) < rate) {
-							seek_to_sample = wm_info->approx_total_samples;
-						} else {
-							seek_to_sample = wm_info->current_sample + rate;
-						}
-						WildMidi_FastSeek(midi_ptr, &seek_to_sample);
-						break;
-					default:
-						break;
-					}
-				}
-
-				if (inpause) {
-					wm_info = WildMidi_GetInfo(midi_ptr);
-					perc_play = (wm_info->current_sample * 100)
-							/ wm_info->approx_total_samples;
-					pro_mins = wm_info->current_sample / (rate * 60);
-					pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
-					fprintf(stderr,
-						"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] 0  \r",
-						apr_mins, apr_secs, modes, master_volume, pro_mins,
-						pro_secs, perc_play);
-
-					msleep(5);
-					continue;
-				}
-
-				res = WildMidi_GetOutput(midi_ptr, output_buffer,
-							 (count_diff >= 4096)? 16384 : (count_diff * 4));
-				if (res <= 0)
+			if (ch) {
+				switch (ch) {
+				case 'l':
+					WildMidi_SetOption(midi_ptr, WM_MO_LOG_VOLUME,
+							((mixer_options & WM_MO_LOG_VOLUME)
+									^ WM_MO_LOG_VOLUME));
+					mixer_options ^= WM_MO_LOG_VOLUME;
+					modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
 					break;
+				case 'r':
+					WildMidi_SetOption(midi_ptr, WM_MO_REVERB,
+							((mixer_options & WM_MO_REVERB) ^ WM_MO_REVERB));
+					mixer_options ^= WM_MO_REVERB;
+					modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
+					break;
+				case 'e':
+					WildMidi_SetOption(midi_ptr, WM_MO_ENHANCED_RESAMPLING,
+							((mixer_options & WM_MO_ENHANCED_RESAMPLING)
+									^ WM_MO_ENHANCED_RESAMPLING));
+					mixer_options ^= WM_MO_ENHANCED_RESAMPLING;
+					modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
+					break;
+				case 'n':
+					goto NEXTMIDI;
+				case 'p':
+					if (inpause) {
+						inpause = 0;
+						fprintf(stderr, "       \r");
+						resume_output();
+					} else {
+						inpause = 1;
+						fprintf(stderr, "Paused \r");
+						pause_output();
+						continue;
+					}
+					break;
+				case 'q':
+					printf("\r\n");
+					if (inpause) goto end2;
+					goto end1;
+				case '-':
+					if (master_volume > 0) {
+						master_volume--;
+						WildMidi_MasterVolume(master_volume);
+					}
+					break;
+				case '+':
+					if (master_volume < 127) {
+						master_volume++;
+						WildMidi_MasterVolume(master_volume);
+					}
+					break;
+				case ',': /* fast seek backwards */
+					if (wm_info->current_sample < rate) {
+						seek_to_sample = 0;
+					} else {
+						seek_to_sample = wm_info->current_sample - rate;
+					}
+					WildMidi_FastSeek(midi_ptr, &seek_to_sample);
+					break;
+				case '.': /* fast seek forwards */
+					if ((wm_info->approx_total_samples
+							- wm_info->current_sample) < rate) {
+						seek_to_sample = wm_info->approx_total_samples;
+					} else {
+						seek_to_sample = wm_info->current_sample + rate;
+					}
+					WildMidi_FastSeek(midi_ptr, &seek_to_sample);
+					break;
+				default:
+					break;
+				}
+			}
 
+			if (inpause) {
 				wm_info = WildMidi_GetInfo(midi_ptr);
 				perc_play = (wm_info->current_sample * 100)
 						/ wm_info->approx_total_samples;
 				pro_mins = wm_info->current_sample / (rate * 60);
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 				fprintf(stderr,
-						"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
-						apr_mins, apr_secs, modes, master_volume, pro_mins,
-						pro_secs, perc_play, spinner[spinpoint++ % 4]);
+					"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] 0  \r",
+					apr_mins, apr_secs, modes, master_volume, pro_mins,
+					pro_secs, perc_play);
 
-				if (send_output(output_buffer, res) < 0) {
-				/* driver prints an error message already. */
-					printf("\r");
-					goto end2;
-				}
+				msleep(5);
+				continue;
 			}
-			NEXTMIDI: fprintf(stderr, "\r\n");
-			if (WildMidi_Close(midi_ptr) == -1) {
-				fprintf(stderr, "OOPS: failed closing midi handle!\r\n");
+
+			res = WildMidi_GetOutput(midi_ptr, output_buffer,
+						 (count_diff >= 4096)? 16384 : (count_diff * 4));
+			if (res <= 0)
+				break;
+
+			wm_info = WildMidi_GetInfo(midi_ptr);
+			perc_play = (wm_info->current_sample * 100)
+						/ wm_info->approx_total_samples;
+			pro_mins = wm_info->current_sample / (rate * 60);
+			pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
+			fprintf(stderr,
+				"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
+				apr_mins, apr_secs, modes, master_volume, pro_mins,
+				pro_secs, perc_play, spinner[spinpoint++ % 4]);
+
+			if (send_output(output_buffer, res) < 0) {
+			/* driver prints an error message already. */
+				printf("\r");
+				goto end2;
 			}
-			memset(output_buffer, 0, 16384);
-			send_output(output_buffer, 16384);
 		}
-end1:		memset(output_buffer, 0, 16384);
+		NEXTMIDI: fprintf(stderr, "\r\n");
+		if (WildMidi_Close(midi_ptr) == -1) {
+			fprintf(stderr, "OOPS: failed closing midi handle!\r\n");
+		}
+		memset(output_buffer, 0, 16384);
 		send_output(output_buffer, 16384);
-		msleep(5);
-end2:		close_output();
-		free(output_buffer);
-		if (WildMidi_Shutdown() == -1)
-			fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
-		wm_resetty();
-	} else {
-		fprintf(stderr, "ERROR: No midi file given\r\n");
-		do_syntax();
-		return (1);
 	}
+end1:	memset(output_buffer, 0, 16384);
+	send_output(output_buffer, 16384);
+	msleep(5);
+end2:	close_output();
+	free(output_buffer);
+	if (WildMidi_Shutdown() == -1)
+		fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
+	wm_resetty();
 
 	printf("\r\n");
 	return (0);
