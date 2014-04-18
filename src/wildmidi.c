@@ -1108,7 +1108,7 @@ int main(int argc, char **argv) {
 	struct _WM_Info *wm_info;
 	int i, res;
 	int option_index = 0;
-	uint32_t mixer_options = 0;
+	uint16_t mixer_options = 0;
 	void *midi_ptr;
 	uint8_t master_volume = 100;
 	int8_t *output_buffer;
