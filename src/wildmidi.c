@@ -229,11 +229,12 @@ static int write_midi_output(void *output_data, int output_size) {
 		return (-1);
 
 #if defined(_WIN32) || defined(__DJGPP__)
-	if ((audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0666)) < 0) {
+	audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
 #else
-	if ((audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC),
-			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
+	audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC),
+			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
 #endif
+	if (audio_fd < 0) {
 		fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
 		return (-1);
 	}
@@ -261,7 +262,6 @@ static int write_wav_output(int8_t *output_data, int output_size);
 static void close_wav_output(void);
 
 static int open_wav_output(void) {
-
 	uint8_t wav_hdr[] = {
 		0x52, 0x49, 0x46, 0x46, /* "RIFF"  */
 		0x00, 0x00, 0x00, 0x00, /* riffsize: pcm size + 36 (filled when closing.) */
@@ -282,11 +282,12 @@ static int open_wav_output(void) {
 		return (-1);
 
 #if defined(_WIN32) || defined(__DJGPP__)
-	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0666)) < 0) {
+	audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
 #else
-	if ((audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
-			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) < 0) {
+	audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
+			(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
 #endif
+	if (audio_fd < 0) {
 		fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
 		return (-1);
 	} else {
