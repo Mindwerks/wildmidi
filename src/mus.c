@@ -233,9 +233,9 @@ int mus2midi(uint8_t *in, uint32_t insize,
 	write1(&ctx, 'T');
 	write1(&ctx, 'h');
 	write1(&ctx, 'd');
-	write4(&ctx, 6);			/* length of header */
-	write2(&ctx, 0);			/* MIDI type (always 0) */
-	write2(&ctx, 1);			/* MUS files only have 1 track */
+	write4(&ctx, 6);	/* length of header */
+	write2(&ctx, 0);	/* MIDI type (always 0) */
+	write2(&ctx, 1);	/* MUS files only have 1 track */
 	write2(&ctx, 0x0059);	/* division */
 
 	/* Write out track header and track length position for later */
@@ -248,8 +248,8 @@ int mus2midi(uint8_t *in, uint32_t insize,
 	skipdst(&ctx, 4);
 
 	/* write tempo: microseconds per quarter note */
-	write1(&ctx, 0x00);		/* delta time */
-	write1(&ctx, 0xff);		/* sys command */
+	write1(&ctx, 0x00);	/* delta time */
+	write1(&ctx, 0xff);	/* sys command */
 	write2(&ctx, 0x5103);	/* command - set tempo */
 	write1(&ctx, TEMPO & 0x000000ff);
 	write1(&ctx, (TEMPO & 0x0000ff00) >> 8);
@@ -330,6 +330,7 @@ int mus2midi(uint8_t *in, uint32_t insize,
 					cur++;
 					status |= 0xC0;
 					bit1 = *cur++;
+					bit2 = 0;/* silence bogus warnings */
 					bitc = 1;
 				} else {
 					status |= 0xB0;
