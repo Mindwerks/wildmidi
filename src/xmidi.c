@@ -460,7 +460,7 @@ static const char mt32asgs[256] = {
 
 struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type) {
 	struct xmi_ctx *ctx;
-	int i;
+	unsigned int i;
 
 	ctx = calloc(1, sizeof(struct xmi_ctx));
 	ctx->src = ctx->src_ptr = data;
