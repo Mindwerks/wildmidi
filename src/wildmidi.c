@@ -1226,16 +1226,22 @@ int main(int argc, char **argv) {
 	}
 
 	/* check if we only need to convert file MIDI */
-	if (midi_file[0] != '\0'){
-		const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
-		uint32_t size = 0;
-		uint8_t *data = NULL;
+	if (midi_file[0] != '\0') {
+		const char *real_file;
+		uint32_t size;
+		uint8_t *data;
 
+		if (optind >= argc) /* missing file argument */
+			return (1);
+
+		real_file = FIND_LAST_DIRSEP(argv[optind]);
 		if (!real_file) real_file = argv[optind];
+		else real_file++;
+
 		printf("Converting %s\r\n", real_file);
 		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size);
 		if (!data) {
-			fprintf(stderr, "Convertion failed.\r\n");
+			fprintf(stderr, "Conversion failed.\r\n");
 			return (1);
 		}
 
