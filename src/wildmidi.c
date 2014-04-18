@@ -222,7 +222,7 @@ static void resume_output_nop(void) {
 /*
  MIDI Output Functions
  */
-static char midi_file[1024] = "\0";
+static char midi_file[1024];
 
 static int write_midi_output(uint8_t *output_data, int output_size){
 	if (midi_file[0] == '\0')
@@ -254,7 +254,7 @@ static int write_midi_output(uint8_t *output_data, int output_size){
  Wav Output Functions
  */
 
-static char wav_file[1024] = "\0";
+static char wav_file[1024];
 static uint32_t wav_size;
 
 static int write_wav_output(int8_t *output_data, int output_size);
@@ -1134,6 +1134,8 @@ int main(int argc, char **argv) {
 	pcmname[0] = 0;
 #endif
 	config_file[0] = 0;
+	wav_file[0] = 0;
+	midi_file[0] = 0;
 
 	do_version();
 	while (1) {
@@ -1167,16 +1169,22 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "Error: empty wavfile name.\n");
 				return (1);
 			}
-			strcpy(wav_file, optarg);
+			strncpy(wav_file, optarg, sizeof(wav_file));
+			wav_file[sizeof(wav_file) - 1] = 0;
 			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {
 				fprintf(stderr, "Error: empty midi name.\n");
 			    return (1);
 			}
-			strcpy(midi_file, optarg);
+			strncpy(midi_file, optarg, sizeof(midi_file));
+			midi_file[sizeof(midi_file) - 1] = 0;
 			break;
 		case 'c': /* Config File */
+			if (!*optarg) {
+				fprintf(stderr, "Error: empty config name.\n");
+				return (1);
+			}
 			strncpy(config_file, optarg, sizeof(config_file));
 			config_file[sizeof(config_file) - 1] = 0;
 			break;
