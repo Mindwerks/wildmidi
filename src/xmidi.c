@@ -25,7 +25,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "xmidi.h"
@@ -502,13 +501,6 @@ int xmi2midi(uint8_t *in, uint32_t insize,
 	*out = ctx.dst;
 	*outsize = ctx.dstsize - ctx.dstrem;
 	ret = 0;
-#if 0
-	if (ctx.dst) {
-		FILE *f = fopen("out.mid", "wb");
-		fwrite(ctx.dst, ctx.dstsize - ctx.dstrem, 1, f);
-		fclose(f);
-	}
-#endif
 
 _end:	/* cleanup */
 	if (ret < 0) {

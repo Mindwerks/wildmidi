@@ -22,7 +22,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include "mus.h"
 #include "wm_error.h"
 
@@ -396,12 +395,6 @@ int mus2midi(uint8_t *in, uint32_t insize,
 	*out = ctx.dst;
 	*outsize = ctx.dstsize - ctx.dstrem;
 	ret = 0;
-
-	/*
-	FILE* file = fopen("/tmp/test.mid", "wb");
-	fwrite(ctx.dst, ctx.dstsize - ctx.dstrem, 1, file);
-	fclose(file);
-	*/
 
 _end:	/* cleanup */
 	if (ret < 0) {
