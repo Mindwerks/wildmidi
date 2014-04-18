@@ -224,7 +224,7 @@ static void resume_output_nop(void) {
  */
 static char midi_file[1024];
 
-static int write_midi_output(uint8_t *output_data, int output_size){
+static int write_midi_output(void *output_data, int output_size) {
 	if (midi_file[0] == '\0')
 		return (-1);
 
