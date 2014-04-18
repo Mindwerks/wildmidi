@@ -220,7 +220,7 @@ static void resume_output_nop(void) {
  Wav Output Functions
  */
 
-static char wav_file[1024] = "\0";
+static char wav_file[1024];
 #if (INT_MAX == 2147483647)
 static unsigned int wav_size;
 #else
@@ -924,6 +924,7 @@ int main(int argc, char **argv) {
 	pcmname[0] = 0;
 #endif
 	config_file[0] = 0;
+	wav_file[0] = 0;
 
 	do_version();
 	while (1) {
@@ -957,9 +958,14 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "Error: empty wavfile name.\n");
 				return (1);
 			}
-			strcpy(wav_file, optarg);
+			strncpy(wav_file, optarg, sizeof(wav_file));
+			wav_file[sizeof(wav_file) - 1] = 0;
 			break;
 		case 'c': /* Config File */
+			if (!*optarg) {
+				fprintf(stderr, "Error: empty config name.\n");
+				return (1);
+			}
 			strncpy(config_file, optarg, sizeof(config_file));
 			config_file[sizeof(config_file) - 1] = 0;
 			break;
