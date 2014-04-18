@@ -458,94 +458,72 @@ static const char mt32asgs[256] = {
 	121, 0	/* 127 Jungle Tune set to Breath Noise */
 };
 
-struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type) {
-	struct xmi_ctx *ctx;
+int xmi2midi(uint8_t *in, uint32_t insize,
+	     uint8_t **out, uint32_t *outsize,
+	     int convert_type) {
+	struct xmi_ctx ctx;
 	unsigned int i;
+	int ret = -1;
 
-	ctx = calloc(1, sizeof(struct xmi_ctx));
-	ctx->src = ctx->src_ptr = data;
-	ctx->srcsize = size;
-	ctx->convert_type = convert_type;
+	memset(&ctx, 0, sizeof(struct xmi_ctx));
+	ctx.src = ctx.src_ptr = in;
+	ctx.srcsize = insize;
+	ctx.convert_type = convert_type;
 
-	if (ParseXMI(ctx) < 0) {
+	if (ParseXMI(&ctx) < 0) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
-		xmi_free(ctx);
-		return (NULL);
+		goto _end;
 	}
 
-	if (ExtractTracks(ctx) < 0) {
+	if (ExtractTracks(&ctx) < 0) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
-		xmi_free(ctx);
-		return (NULL);
+		goto _end;
 	}
 
-	ctx->dst = malloc(DST_CHUNK);
-	ctx->dst_ptr = ctx->dst;
-	ctx->dstsize = DST_CHUNK;
-	ctx->dstrem = DST_CHUNK;
+	ctx.dst = malloc(DST_CHUNK);
+	ctx.dst_ptr = ctx.dst;
+	ctx.dstsize = DST_CHUNK;
+	ctx.dstrem = DST_CHUNK;
 
 	/* Header is 14 bytes long and add the rest as well */
-	write1(ctx, 'M');
-	write1(ctx, 'T');
-	write1(ctx, 'h');
-	write1(ctx, 'd');
+	write1(&ctx, 'M');
+	write1(&ctx, 'T');
+	write1(&ctx, 'h');
+	write1(&ctx, 'd');
 
-	write4(ctx, 6);
+	write4(&ctx, 6);
 
-	write2(ctx, ctx->info.type);
-	write2(ctx, ctx->info.tracks);
-	write2(ctx, ctx->timing[0]);/* write divisions from track0 */
+	write2(&ctx, ctx.info.type);
+	write2(&ctx, ctx.info.tracks);
+	write2(&ctx, ctx.timing[0]);/* write divisions from track0 */
 
-	for (i = 0; i < ctx->info.tracks; i++)
-		ConvertListToMTrk(ctx, ctx->events[i]);
+	for (i = 0; i < ctx.info.tracks; i++)
+		ConvertListToMTrk(&ctx, ctx.events[i]);
+	*out = ctx.dst;
+	*outsize = ctx.dstsize - ctx.dstrem;
+	ret = 0;
 #if 0
-	if (ctx->dst) {
-		FILE *out = fopen("out.mid", "wb");
-		fwrite(ctx->dst, ctx->dstsize - ctx->dstrem, 1, out);
-		fclose(out);
+	if (ctx.dst) {
+		FILE *f = fopen("out.mid", "wb");
+		fwrite(ctx.dst, ctx.dstsize - ctx.dstrem, 1, f);
+		fclose(f);
 	}
 #endif
 
-	/* cleanup */
-	if (ctx->events) {
-		for (i = 0; i < ctx->info.tracks; i++)
-			DeleteEventList(ctx->events[i]);
-		free(ctx->events);
+_end:	/* cleanup */
+	if (ret < 0) {
+		free(ctx.dst);
+		*out = NULL;
+		*outsize = 0;
 	}
-	free(ctx->timing);
-	ctx->events = NULL;
-	ctx->list = ctx->current = NULL;
-	ctx->timing = NULL;
-
-	return (ctx);
-}
-
-void xmi_free(struct xmi_ctx *ctx) {
-	if (!ctx) return;
-	if (ctx->events) {
-		unsigned int i;
-		for (i = 0; i < ctx->info.tracks; i++)
-			DeleteEventList(ctx->events[i]);
-		free(ctx->events);
+	if (ctx.events) {
+		for (i = 0; i < ctx.info.tracks; i++)
+			DeleteEventList(ctx.events[i]);
+		free(ctx.events);
 	}
-	free(ctx->timing);
-	free(ctx->dst);
-	free(ctx);
-}
+	free(ctx.timing);
 
-#if 0
-static unsigned int xmi_gettracks(struct xmi_ctx *ctx)
-{
-	return (ctx->info.tracks);
-}
-#endif
-
-uint8_t *xmi_getmididata(struct xmi_ctx *ctx) {
-	return (ctx->dst);
-}
-
-uint32_t xmi_getmidisize(struct xmi_ctx *ctx) {
-	return (ctx->dstsize - ctx->dstrem);
+	return (ret);
 }
 
 static void DeleteEventList(midi_event *mlist) {

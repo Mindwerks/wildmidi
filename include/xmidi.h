@@ -35,11 +35,8 @@
 #define XMIDI_CONVERT_MT32_TO_GS127DRUM		4 /* This one is broken, don't use */
 #define XMIDI_CONVERT_GS127_TO_GS		5
 
-struct xmi_ctx;
-
-struct xmi_ctx *xmi2midi(uint8_t *data, uint32_t size, int convert_type);
-uint8_t *xmi_getmididata(struct xmi_ctx *);
-uint32_t xmi_getmidisize(struct xmi_ctx *);
-void xmi_free(struct xmi_ctx *);
+int xmi2midi(uint8_t *in, uint32_t insize,
+	 uint8_t **out, uint32_t *outsize,
+	 int convert_type);
 
 #endif /* XMIDILIB_H */

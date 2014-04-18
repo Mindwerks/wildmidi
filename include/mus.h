@@ -24,11 +24,7 @@
 
 #include <stdint.h>
 
-struct mus_ctx;
-
-struct mus_ctx *mus2midi(uint8_t *data, uint32_t size);
-uint8_t *mus_getmididata(struct mus_ctx *);
-uint32_t mus_getmidisize(struct mus_ctx *);
-void mus_free(struct mus_ctx *);
+int mus2midi(uint8_t *in, uint32_t insize,
+	 uint8_t **out, uint32_t *outsize);
 
 #endif /* MUSLIB_H */

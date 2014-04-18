@@ -148,20 +148,6 @@ static uint32_t getdstpos(struct mus_ctx *ctx) {
 	return (ctx->dst_ptr - ctx->dst);
 }
 
-uint8_t *mus_getmididata(struct mus_ctx *ctx){
-	return (ctx->dst);
-}
-
-uint32_t mus_getmidisize(struct mus_ctx *ctx){
-	return (ctx->dstsize - ctx->dstrem);
-}
-
-void mus_free(struct mus_ctx *ctx){
-	if (!ctx) return;
-	free(ctx->dst);
-	free(ctx);
-}
-
 /* writes a variable length integer to a buffer, and returns bytes written */
 static int32_t writevarlen(int32_t value, uint8_t *out)
 {
@@ -189,51 +175,52 @@ static int32_t writevarlen(int32_t value, uint8_t *out)
 #define READ_INT16(b) ((b)[0] | ((b)[1] << 8))
 #define READ_INT32(b) ((b)[0] | ((b)[1] << 8) | ((b)[2] << 16) | ((b)[3] << 24))
 
-struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
-	struct mus_ctx *ctx;
+int mus2midi(uint8_t *in, uint32_t insize,
+	     uint8_t **out, uint32_t *outsize) {
+	struct mus_ctx ctx;
 	MUSHeader header;
 	uint8_t *cur, *end;
 	uint32_t track_size_pos, begin_track_pos, current_pos;
 	int32_t delta_time;/* Delta time for midi event */
-	int temp;
+	int temp, ret = -1;
 	int channel_volume[MIDI_MAXCHANNELS];
 	int channelMap[MIDI_MAXCHANNELS], currentChannel;
 
-	if (size < MUS_HEADERSIZE) {
+	if (insize < MUS_HEADERSIZE) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-		return NULL;
+		return (-1);
 	}
 
 	/* read the MUS header and set our location */
-	memcpy(header.ID, data, 4);
-	header.scoreLen = READ_INT16(&data[4]);
-	header.scoreStart = READ_INT16(&data[6]);
-	header.channels = READ_INT16(&data[8]);
-	header.sec_channels = READ_INT16(&data[10]);
-	header.instrCnt = READ_INT16(&data[12]);
+	memcpy(header.ID, in, 4);
+	header.scoreLen = READ_INT16(&in[4]);
+	header.scoreStart = READ_INT16(&in[6]);
+	header.channels = READ_INT16(&in[8]);
+	header.sec_channels = READ_INT16(&in[10]);
+	header.instrCnt = READ_INT16(&in[12]);
 
 	if (memcmp(header.ID, MUS_ID, 4)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
-		return NULL;
+		return (-1);
 	}
-	if (size < (uint32_t)header.scoreLen + (uint32_t)header.scoreStart) {
+	if (insize < (uint32_t)header.scoreLen + (uint32_t)header.scoreStart) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-		return NULL;
+		return (-1);
 	}
 	/* channel #15 should be excluded in the numchannels field: */
 	if (header.channels > MIDI_MAXCHANNELS - 1) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
-		return NULL;
+		return (-1);
 	}
 
-	ctx = calloc(1, sizeof(struct mus_ctx));
-	ctx->src = ctx->src_ptr = data;
-	ctx->srcsize = size;
+	memset(&ctx, 0, sizeof(struct mus_ctx));
+	ctx.src = ctx.src_ptr = in;
+	ctx.srcsize = insize;
 
-	ctx->dst = calloc(DST_CHUNK, sizeof(uint8_t));
-	ctx->dst_ptr = ctx->dst;
-	ctx->dstsize = DST_CHUNK;
-	ctx->dstrem = DST_CHUNK;
+	ctx.dst = calloc(DST_CHUNK, sizeof(uint8_t));
+	ctx.dst_ptr = ctx.dst;
+	ctx.dstsize = DST_CHUNK;
+	ctx.dstrem = DST_CHUNK;
 
 	/* Map channel 15 to 9 (percussions) */
 	for (temp = 0; temp < MIDI_MAXCHANNELS; ++temp) {
@@ -243,40 +230,40 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	channelMap[15] = 9;
 
 	/* Header is 14 bytes long and add the rest as well */
-	write1(ctx, 'M');
-	write1(ctx, 'T');
-	write1(ctx, 'h');
-	write1(ctx, 'd');
-	write4(ctx, 6);			/* length of header */
-	write2(ctx, 0);			/* MIDI type (always 0) */
-	write2(ctx, 1);			/* MUS files only have 1 track */
-	write2(ctx, 0x0059);	/* division */
+	write1(&ctx, 'M');
+	write1(&ctx, 'T');
+	write1(&ctx, 'h');
+	write1(&ctx, 'd');
+	write4(&ctx, 6);			/* length of header */
+	write2(&ctx, 0);			/* MIDI type (always 0) */
+	write2(&ctx, 1);			/* MUS files only have 1 track */
+	write2(&ctx, 0x0059);	/* division */
 
 	/* Write out track header and track length position for later */
-	begin_track_pos = getdstpos(ctx);
-	write1(ctx, 'M');
-	write1(ctx, 'T');
-	write1(ctx, 'r');
-	write1(ctx, 'k');
-	track_size_pos = getdstpos(ctx);
-	skipdst(ctx, 4);
+	begin_track_pos = getdstpos(&ctx);
+	write1(&ctx, 'M');
+	write1(&ctx, 'T');
+	write1(&ctx, 'r');
+	write1(&ctx, 'k');
+	track_size_pos = getdstpos(&ctx);
+	skipdst(&ctx, 4);
 
 	/* write tempo: microseconds per quarter note */
-	write1(ctx, 0x00);		/* delta time */
-	write1(ctx, 0xff);		/* sys command */
-	write2(ctx, 0x5103);	/* command - set tempo */
-	write1(ctx, TEMPO & 0x000000ff);
-	write1(ctx, (TEMPO & 0x0000ff00) >> 8);
-	write1(ctx, (TEMPO & 0x00ff0000) >> 16);
+	write1(&ctx, 0x00);		/* delta time */
+	write1(&ctx, 0xff);		/* sys command */
+	write2(&ctx, 0x5103);	/* command - set tempo */
+	write1(&ctx, TEMPO & 0x000000ff);
+	write1(&ctx, (TEMPO & 0x0000ff00) >> 8);
+	write1(&ctx, (TEMPO & 0x00ff0000) >> 16);
 
 	/* Percussions channel starts out at full volume */
-	write1(ctx, 0x00);
-	write1(ctx, 0xB9);
-	write1(ctx, 0x07);
-	write1(ctx, 127);
+	write1(&ctx, 0x00);
+	write1(&ctx, 0xB9);
+	write1(&ctx, 0x07);
+	write1(&ctx, 127);
 
 	/* get current position in source, and end of position */
-	cur = data + header.scoreStart;
+	cur = in + header.scoreStart;
 	end = cur + header.scoreLen;
 
 	currentChannel = 0;
@@ -334,8 +321,7 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 				if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
 					WM_ERROR_NEW("%s:%i: can't map %u to midi",
 							__FUNCTION__, __LINE__, *cur);
-					mus_free(ctx);
-					return NULL;
+					goto _end;
 				}
 				bit1 = midimap[*cur++];
 				bit2 = (*cur++ == 12) ? header.channels + 1 : 0x00;
@@ -351,8 +337,7 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 					if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
 						WM_ERROR_NEW("%s:%i: can't map %u to midi",
 								__FUNCTION__, __LINE__, *cur);
-						mus_free(ctx);
-						return NULL;
+						goto _end;
 					}
 					bit1 = midimap[*cur++];
 					bit2 = *cur++;
@@ -372,8 +357,7 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 			default:/* shouldn't happen */
 				WM_ERROR_NEW("%s:%i: unrecognized event (%u)",
 						__FUNCTION__, __LINE__, event);
-				mus_free(ctx);
-				return NULL;
+				goto _end;
 		}
 
 		/* write it out */
@@ -385,12 +369,12 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 		/* write out our temp buffer */
 		if (out_local != temp_buffer)
 		{
-			if (ctx->dstrem < sizeof(temp_buffer))
-				resize_dst(ctx);
+			if (ctx.dstrem < sizeof(temp_buffer))
+				resize_dst(&ctx);
 
-			memcpy(ctx->dst_ptr, temp_buffer, out_local - temp_buffer);
-			ctx->dst_ptr += out_local - temp_buffer;
-			ctx->dstrem -= out_local - temp_buffer;
+			memcpy(ctx.dst_ptr, temp_buffer, out_local - temp_buffer);
+			ctx.dst_ptr += out_local - temp_buffer;
+			ctx.dstrem -= out_local - temp_buffer;
 		}
 
 		if (event & 128) {
@@ -404,16 +388,27 @@ struct mus_ctx *mus2midi(uint8_t *data, uint32_t size){
 	}
 
 	/* write out track length */
-	current_pos = getdstpos(ctx);
-	seekdst(ctx, track_size_pos);
-	write4(ctx, current_pos - begin_track_pos - TRK_CHUNKSIZE);
-	seekdst(ctx, current_pos);	/* reseek to end position */
+	current_pos = getdstpos(&ctx);
+	seekdst(&ctx, track_size_pos);
+	write4(&ctx, current_pos - begin_track_pos - TRK_CHUNKSIZE);
+	seekdst(&ctx, current_pos);	/* reseek to end position */
+
+	*out = ctx.dst;
+	*outsize = ctx.dstsize - ctx.dstrem;
+	ret = 0;
 
 	/*
 	FILE* file = fopen("/tmp/test.mid", "wb");
-	fwrite(ctx->dst, ctx->dstsize - ctx->dstrem, 1, file);
+	fwrite(ctx.dst, ctx.dstsize - ctx.dstrem, 1, file);
 	fclose(file);
 	*/
 
-	return (ctx);
+_end:	/* cleanup */
+	if (ret < 0) {
+		free(ctx.dst);
+		*out = NULL;
+		*outsize = 0;
+	}
+
+	return (ret);
 }
