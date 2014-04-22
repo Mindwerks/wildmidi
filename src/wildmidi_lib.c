@@ -75,6 +75,7 @@
 static int WM_Initialized = 0;
 static int16_t WM_MasterVolume = 948;
 static uint16_t WM_MixerOptions = 0;
+static uint16_t WM_XMIOptions = 0;
 
 uint16_t WM_SampleRate;
 
@@ -2393,7 +2394,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, XMIDI_CONVERT_MT32_TO_GS) < 0) {
+		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_XMIOptions) < 0) {
 			free(file_buffer);
 			return (NULL);
 		}
@@ -2456,7 +2457,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, XMIDI_CONVERT_MT32_TO_GS) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_XMIOptions) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -3913,12 +3914,16 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t opt
 		return (-1);
 	}
 
+	WM_XMIOptions = options & 0x0030;	// only allow 0, 1 and 2
+	options = options ^ WM_XMIOptions;	// reset our options
+
 	if (options & 0x5FF8) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
 				0);
 		WM_FreePatches();
 		return (-1);
 	}
+
 	WM_MixerOptions = options;
 
 	if (rate < 11025) {

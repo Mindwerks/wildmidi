@@ -93,6 +93,8 @@ static int msleep(unsigned long millisec);
 #include "wm_tty.h"
 #include "filenames.h"
 
+/* format options */
+#include "xmidi.h"
 
 struct _midi_test {
 	uint8_t *data;
@@ -1050,7 +1052,8 @@ static struct option const long_options[] = {
 	{ "mastervol", 1, 0, 'm' },
 	{ "config", 1, 0, 'c' },
 	{ "wavout", 1, 0, 'o' },
-	{ "convert", 1, 0, 'x' },
+	{ "tomidi", 1, 0, 'x' },
+	{ "convert", 1, 0, 'g' },
 	{ "log_vol", 0, 0, 'l' },
 	{ "reverb", 0, 0, 'b' },
 	{ "test_midi", 0, 0, 't' },
@@ -1076,7 +1079,10 @@ static void do_help(void) {
 	printf("  -n    --roundtempo  Round tempo to nearest whole number\n");
 	printf("  -t    --test_midi   Listen to test MIDI\n");
 	printf("Non-MIDI Options:\n");
-	printf("  -x    --convert     Convert file to midi and save to file\n");
+	printf("  -x    --tomidi     Convert file to midi and save to file\n");
+	printf("  -g    --convert    Convert XMI: 1 - No Conversion\n");
+	printf("                                  2 - MT32 to GM\n");
+	printf("                        (default) 0 - MT32 to GS\n");
 	printf("Software Wavetable Options:\n");
 	printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 	printf("  -l    --log_vol     Use log volume adjustments\n");
@@ -1140,7 +1146,7 @@ int main(int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "vho:tx:lr:c:m:btk:p:ed:wn", long_options,
+		i = getopt_long(argc, argv, "vho:tx:g:lr:c:m:btk:p:ed:wn", long_options,
 				&option_index);
 		if (i == -1)
 			break;
@@ -1172,6 +1178,14 @@ int main(int argc, char **argv) {
 			}
 			strncpy(wav_file, optarg, sizeof(wav_file));
 			wav_file[sizeof(wav_file) - 1] = 0;
+			break;
+		case 'g': /* XMIDI Conversion */
+			if (atoi(optarg) == 1)
+				mixer_options ^= XMIDI_CONVERT_NOCONVERSION;
+			else if (atoi(optarg) == 2)
+				mixer_options ^= XMIDI_CONVERT_MT32_TO_GM;
+			else
+				mixer_options ^= XMIDI_CONVERT_MT32_TO_GS;
 			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {

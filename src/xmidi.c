@@ -60,7 +60,7 @@ struct xmi_ctx {
 	uint32_t datastart;
 	uint8_t *dst, *dst_ptr;
 	uint32_t dstsize, dstrem;
-	int convert_type;
+	uint32_t convert_type;
 	midi_descriptor info;
 	int bank127[16];
 	midi_event **events;
@@ -459,7 +459,7 @@ static const char mt32asgs[256] = {
 
 int xmi2midi(uint8_t *in, uint32_t insize,
 	     uint8_t **out, uint32_t *outsize,
-	     int convert_type) {
+	     uint32_t convert_type) {
 	struct xmi_ctx ctx;
 	unsigned int i;
 	int ret = -1;
