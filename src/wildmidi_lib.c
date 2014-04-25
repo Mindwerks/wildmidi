@@ -75,7 +75,10 @@
 static int WM_Initialized = 0;
 static int16_t WM_MasterVolume = 948;
 static uint16_t WM_MixerOptions = 0;
-static uint16_t WM_XMIOptions = 0;
+
+/* when converting files to midi */
+static uint8_t WM_ConvertType = XMIDI_CONVERT_MT32_TO_GS;
+static uint16_t WM_Freq = 0;
 
 uint16_t WM_SampleRate;
 
@@ -2394,7 +2397,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_XMIOptions) < 0) {
+		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_ConvertType) < 0) {
 			free(file_buffer);
 			return (NULL);
 		}
@@ -2418,6 +2421,17 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 
 	free(file_buffer);
 	return (midi_buffer);
+}
+
+WM_SYMBOL int WildMidi_SetConversionOptions (uint8_t convert_type, uint16_t freq){
+	if (convert_type >= 0 && convert_type <= 3)
+		WM_ConvertType = convert_type;
+	else {
+		WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, convert_type);
+		return (0);
+	}
+	WM_Freq = freq;
+	return 1;
 }
 
 static struct _mdi *
@@ -2457,7 +2471,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_XMIOptions) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_ConvertType) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -3898,7 +3912,7 @@ WM_SYMBOL long WildMidi_GetVersion (void) {
 	return (LIBWILDMIDI_VERSION);
 }
 
-WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t options) {
+WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mixer_options) {
 	if (WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_ALR_INIT, NULL, 0);
 		return (-1);
@@ -3914,17 +3928,14 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t opt
 		return (-1);
 	}
 
-	WM_XMIOptions = options & 0x0030;	// only allow 0, 1 and 2
-	options = options ^ WM_XMIOptions;	// reset our options
-
-	if (options & 0x5FF8) {
+	if (mixer_options & 0x5FF8) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
 				0);
 		WM_FreePatches();
 		return (-1);
 	}
 
-	WM_MixerOptions = options;
+	WM_MixerOptions = mixer_options;
 
 	if (rate < 11025) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,

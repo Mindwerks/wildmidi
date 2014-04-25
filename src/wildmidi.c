@@ -1080,9 +1080,9 @@ static void do_help(void) {
 	printf("  -t    --test_midi   Listen to test MIDI\n");
 	printf("Non-MIDI Options:\n");
 	printf("  -x    --tomidi     Convert file to midi and save to file\n");
-	printf("  -g    --convert    Convert XMI: 1 - No Conversion\n");
-	printf("                                  2 - MT32 to GM\n");
-	printf("                        (default) 0 - MT32 to GS\n");
+	printf("  -g    --convert    Convert XMI: 0 - No Conversion\n");
+	printf("                                  1 - MT32 to GM\n");
+	printf("                        (default) 2 - MT32 to GS\n");
 	printf("Software Wavetable Options:\n");
 	printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 	printf("  -l    --log_vol     Use log volume adjustments\n");
@@ -1180,12 +1180,8 @@ int main(int argc, char **argv) {
 			wav_file[sizeof(wav_file) - 1] = 0;
 			break;
 		case 'g': /* XMIDI Conversion */
-			if (atoi(optarg) == 1)
-				mixer_options ^= XMIDI_CONVERT_NOCONVERSION;
-			else if (atoi(optarg) == 2)
-				mixer_options ^= XMIDI_CONVERT_MT32_TO_GM;
-			else
-				mixer_options ^= XMIDI_CONVERT_MT32_TO_GS;
+			if (!WildMidi_SetConversionOptions(atoi(optarg), 0))
+				return (1);
 			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {
