@@ -76,10 +76,6 @@ static int WM_Initialized = 0;
 static int16_t WM_MasterVolume = 948;
 static uint16_t WM_MixerOptions = 0;
 
-/* when converting files to midi */
-static uint8_t WM_ConvertType = XMIDI_CONVERT_MT32_TO_GS;
-static uint16_t WM_Freq = 0;
-
 uint16_t WM_SampleRate;
 
 static struct _patch *patch[128];
@@ -185,6 +181,15 @@ struct _event {
 	uint32_t samples_to_next;
 	uint32_t samples_to_next_fixed;
 };
+
+/* when converting files to midi */
+typedef struct _convert_options {
+	uint8_t convert_type;
+	uint16_t frequency;
+} _convert_options;
+
+static _convert_options WM_ConvertOptions = {XMIDI_CONVERT_MT32_TO_GS, 0};
+
 
 #define FPBITS 10
 #define FPMASK ((1L<<FPBITS)-1L)
@@ -2397,7 +2402,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_ConvertType) < 0) {
+		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_ConvertOptions.convert_type) < 0) {
 			free(file_buffer);
 			return (NULL);
 		}
@@ -2423,15 +2428,22 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 	return (midi_buffer);
 }
 
-WM_SYMBOL int WildMidi_SetConversionOptions (uint8_t convert_type, uint16_t freq){
-	if (convert_type >= 0 && convert_type <= 3)
-		WM_ConvertType = convert_type;
-	else {
-		WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, convert_type);
+WM_SYMBOL int WildMidi_SetConversionOptions (uint8_t option, uint16_t value){
+	switch (option) {
+	case WM_CO_CONVERTTYPE:
+		if (value <= XMIDI_CONVERT_MT32_TO_GS)
+			WM_ConvertOptions.convert_type = value;
+		else {
+			WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, value);
+			return (0);
+		}
+		break;
+	default:
+		WM_ERROR_NEW("%s:%i:  %d is an invalid conversion option.", __FUNCTION__, __LINE__, option);
 		return (0);
 	}
-	WM_Freq = freq;
-	return 1;
+
+	return (1);
 }
 
 static struct _mdi *
@@ -2471,7 +2483,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_ConvertType) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_ConvertOptions.convert_type) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;

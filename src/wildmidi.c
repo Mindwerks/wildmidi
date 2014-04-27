@@ -93,9 +93,6 @@ static int msleep(unsigned long millisec);
 #include "wm_tty.h"
 #include "filenames.h"
 
-/* format options */
-#include "xmidi.h"
-
 struct _midi_test {
 	uint8_t *data;
 	uint32_t size;
@@ -1180,7 +1177,7 @@ int main(int argc, char **argv) {
 			wav_file[sizeof(wav_file) - 1] = 0;
 			break;
 		case 'g': /* XMIDI Conversion */
-			if (!WildMidi_SetConversionOptions(atoi(optarg), 0))
+			if (!WildMidi_SetConversionOptions(WM_CO_CONVERTTYPE, atoi(optarg)))
 				return (1);
 			break;
 		case 'x': /* MIDI Output */
