@@ -3,7 +3,7 @@
 
  Midi Wavetable Processing library
 
- Copyright (C) Chris Ison  2001-2011
+ Copyright (C) Chris Ison  2001-2014
  Copyright (C) Bret Curtis 2013-2014
 
  This file is part of WildMIDI.
@@ -2424,7 +2424,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	struct _mdi *mdi;
 
 	uint32_t tmp_val;
-	uint32_t track_size;
+	uint32_t midi_type;
+    uint32_t track_size;
 	uint8_t **tracks;
 	uint32_t end_of_tracks = 0;
 	uint32_t no_tracks;
@@ -2502,17 +2503,19 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	}
 
 	/*
-	 * Get Midi Format - we only support 0 and 1
+	 * Get Midi Format - we only support 0, 1 & 2
 	 */
 	tmp_val = *midi_data++ << 8;
 	tmp_val |= *midi_data++;
 	midi_size -= 2;
-	if (tmp_val > 1) {
+	if (tmp_val > 2) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
 		free(cvt);
 		return (NULL);
 	}
 
+    midi_type = tmp_val;
+    
 	/*
 	 * Get No. of Tracks
 	 */
@@ -2524,8 +2527,17 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		free(cvt);
 		return (NULL);
 	}
-	no_tracks = tmp_val;
+    no_tracks = tmp_val;
 
+    /*
+     * Check that type 0 midi file has only 1 track
+     */
+    if ((midi_type == 0) && (no_tracks > 1)) {
+        WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(expected 1 track for type 0 midi file, found more)", 0);
+        free(cvt);
+		return (NULL);
+    }
+	   
 	/*
 	 * Get Divisions
 	 */
@@ -2628,224 +2640,225 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 				}
 				current_event_ch = current_event & 0x0F;
 				switch (current_event >> 4) {
-				case 0x8:
-					NOTEOFF: midi_setup_noteoff(mdi, current_event_ch,
-							tracks[i][0], tracks[i][1]);
-					/* To better calculate samples needed after the end of midi,
-					 * we calculate samples for decay for note off */
-					{
-						uint32_t tmp_decay_samples = 0;
-						struct _patch *tmp_patch = NULL;
-						if (mdi->channel[current_event_ch].isdrum) {
-							tmp_patch = get_patch_data(mdi,
-									((mdi->channel[current_event_ch].bank << 8)
-											| tracks[i][0] | 0x80));
-						/*	if (tmp_patch == NULL)
-								printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);*/
-						} else {
-							tmp_patch = mdi->channel[current_event_ch].patch;
-						/*	if (tmp_patch == NULL)
-								printf("Channel %i patch not loaded\n", current_event_ch);*/
-						}
-						tmp_decay_samples = get_decay_samples(tmp_patch,
-								tracks[i][0]);
-						/* if the note off decay is more than the decay we currently tracking then
-						 * we set it to new decay. */
-						if (tmp_decay_samples > decay_samples) {
-							decay_samples = tmp_decay_samples;
-						}
-					}
+                    case 0x8:
+                        NOTEOFF: midi_setup_noteoff(mdi, current_event_ch,
+                                tracks[i][0], tracks[i][1]);
+                        /* To better calculate samples needed after the end of midi,
+                        * we calculate samples for decay for note off */
+                        {
+                            uint32_t tmp_decay_samples = 0;
+                            struct _patch *tmp_patch = NULL;
+                            
+                            if (mdi->channel[current_event_ch].isdrum) {
+                                tmp_patch = get_patch_data(mdi,
+                                        ((mdi->channel[current_event_ch].bank << 8)
+                                        | tracks[i][0] | 0x80));
+                            /*	if (tmp_patch == NULL)
+                                    printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);*/
+                            } else {
+                                tmp_patch = mdi->channel[current_event_ch].patch;
+                            /*	if (tmp_patch == NULL)
+                                    printf("Channel %i patch not loaded\n", current_event_ch);*/
+                            }
+                            tmp_decay_samples = get_decay_samples(tmp_patch,
+                                    tracks[i][0]);
+                            /* if the note off decay is more than the decay we currently tracking then
+                            * we set it to new decay. */
+                            if (tmp_decay_samples > decay_samples) {
+                                decay_samples = tmp_decay_samples;
+                            }
+                        }
 
-					tracks[i] += 2;
-					running_event[i] = current_event;
-					break;
-				case 0x9:
-					if (tracks[i][1] == 0) {
-						goto NOTEOFF;
-					}
-					midi_setup_noteon(mdi, (current_event & 0x0F), tracks[i][0],
-							tracks[i][1]);
-					tracks[i] += 2;
-					running_event[i] = current_event;
-					break;
-				case 0xA:
-					midi_setup_aftertouch(mdi, (current_event & 0x0F),
-							tracks[i][0], tracks[i][1]);
-					tracks[i] += 2;
-					running_event[i] = current_event;
-					break;
-				case 0xB:
-					midi_setup_control(mdi, (current_event & 0x0F),
-							tracks[i][0], tracks[i][1]);
-					tracks[i] += 2;
-					running_event[i] = current_event;
-					break;
-				case 0xC:
-					midi_setup_patch(mdi, (current_event & 0x0F), *tracks[i]);
-					tracks[i]++;
-					running_event[i] = current_event;
-					break;
-				case 0xD:
-					midi_setup_channel_pressure(mdi, (current_event & 0x0F),
-							*tracks[i]);
-					tracks[i]++;
-					running_event[i] = current_event;
-					break;
-				case 0xE:
-					midi_setup_pitch(mdi, (current_event & 0x0F),
-							((tracks[i][1] << 7) | (tracks[i][0] & 0x7F)));
-					tracks[i] += 2;
-					running_event[i] = current_event;
-					break;
-				case 0xF: /* Meta Event */
-					if (current_event == 0xFF) {
-						if (tracks[i][0] == 0x02) { /* Copyright Event */
-							/* Get Length */
-							tmp_length = 0;
-							tracks[i]++;
-							while (*tracks[i] > 0x7f) {
-								tmp_length = (tmp_length << 7)
-										+ (*tracks[i] & 0x7f);
-								tracks[i]++;
-							}
-							tmp_length = (tmp_length << 7)
-									+ (*tracks[i] & 0x7f);
-							/* Copy copyright info in the getinfo struct */
-							if (mdi->info.copyright) {
-								mdi->info.copyright = realloc(
-										mdi->info.copyright,
-										(strlen(mdi->info.copyright) + 1
-												+ tmp_length + 1));
-								strncpy(
-										&mdi->info.copyright[strlen(
-												mdi->info.copyright) + 1],
-										(char *) tracks[i], tmp_length);
-								mdi->info.copyright[strlen(mdi->info.copyright)
-										+ 1 + tmp_length] = '\0';
-								mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
+                        tracks[i] += 2;
+                        running_event[i] = current_event;
+                        break;
+                    case 0x9:
+                        if (tracks[i][1] == 0) {
+                            goto NOTEOFF;
+                        }
+                        midi_setup_noteon(mdi, (current_event & 0x0F), tracks[i][0],
+                                tracks[i][1]);
+                        tracks[i] += 2;
+                        running_event[i] = current_event;
+                        break;
+                    case 0xA:
+                        midi_setup_aftertouch(mdi, (current_event & 0x0F),
+                                tracks[i][0], tracks[i][1]);
+                        tracks[i] += 2;
+                        running_event[i] = current_event;
+                        break;
+                    case 0xB:
+                        midi_setup_control(mdi, (current_event & 0x0F),
+                                tracks[i][0], tracks[i][1]);
+                        tracks[i] += 2;
+                        running_event[i] = current_event;
+                        break;
+                    case 0xC:
+                        midi_setup_patch(mdi, (current_event & 0x0F), *tracks[i]);
+                        tracks[i]++;
+                        running_event[i] = current_event;
+                        break;
+                    case 0xD:
+                        midi_setup_channel_pressure(mdi, (current_event & 0x0F),
+                                *tracks[i]);
+                        tracks[i]++;
+                        running_event[i] = current_event;
+                        break;
+                    case 0xE:
+                        midi_setup_pitch(mdi, (current_event & 0x0F),
+                                ((tracks[i][1] << 7) | (tracks[i][0] & 0x7F)));
+                        tracks[i] += 2;
+                        running_event[i] = current_event;
+                        break;
+                    case 0xF: /* Meta Event */
+                        if (current_event == 0xFF) {
+                            if (tracks[i][0] == 0x02) { /* Copyright Event */
+                                /* Get Length */
+                                tmp_length = 0;
+                                tracks[i]++;
+                                while (*tracks[i] > 0x7f) {
+                                    tmp_length = (tmp_length << 7)
+                                            + (*tracks[i] & 0x7f);
+                                    tracks[i]++;
+                                }
+                                tmp_length = (tmp_length << 7)
+                                        + (*tracks[i] & 0x7f);
+                                /* Copy copyright info in the getinfo struct */
+                                if (mdi->info.copyright) {
+                                    mdi->info.copyright = realloc(
+                                            mdi->info.copyright,
+                                            (strlen(mdi->info.copyright) + 1
+                                            + tmp_length + 1));
+                                    strncpy(
+                                            &mdi->info.copyright[strlen(
+                                            mdi->info.copyright) + 1],
+                                            (char *) tracks[i], tmp_length);
+                                    mdi->info.copyright[strlen(mdi->info.copyright)
+                                            + 1 + tmp_length] = '\0';
+                                    mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
 
-							} else {
-								mdi->info.copyright = malloc(tmp_length + 1);
-								strncpy(mdi->info.copyright, (char *) tracks[i],
-										tmp_length);
-								mdi->info.copyright[tmp_length] = '\0';
-							}
-							tracks[i] += tmp_length + 1;
-						} else if ((tracks[i][0] == 0x2F)
-								&& (tracks[i][1] == 0x00)) {
-							/* End of Track */
-							end_of_tracks++;
-							track_end[i] = 1;
-							goto NEXT_TRACK;
-						} else if ((tracks[i][0] == 0x51)
-								&& (tracks[i][1] == 0x03)) {
-							/* Tempo */
-							tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8)
-									+ tracks[i][4];
-							tracks[i] += 5;
-							if (!tempo)
-								tempo = 500000;
+                                } else {
+                                    mdi->info.copyright = malloc(tmp_length + 1);
+                                    strncpy(mdi->info.copyright, (char *) tracks[i],
+                                            tmp_length);
+                                    mdi->info.copyright[tmp_length] = '\0';
+                                }
+                                tracks[i] += tmp_length + 1;
+                            } else if ((tracks[i][0] == 0x2F)
+                                   && (tracks[i][1] == 0x00)) {
+                                /* End of Track */
+                                end_of_tracks++;
+                                track_end[i] = 1;
+                                goto NEXT_TRACK;
+                            } else if ((tracks[i][0] == 0x51)
+                                   && (tracks[i][1] == 0x03)) {
+                                /* Tempo */
+                                tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8)
+                                        + tracks[i][4];
+                                tracks[i] += 5;
+                                if (!tempo)
+                                    tempo = 500000;
 
-							if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
-								float bpm_f = (float) (60000000 / tempo);
-								tempo = 60000000 / (uint32_t) bpm_f;
-							} else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-								float bpm_fr = (float) (60000000 / tempo)
-										+ 0.5f;
-								tempo = 60000000 / (uint32_t) bpm_fr;
-							}
-							/* Slow but needed for accuracy */
-							microseconds_per_pulse = (float) tempo
-									/ (float) divisions;
-							pulses_per_second = 1000000.0f
-									/ microseconds_per_pulse;
-							samples_per_delta_f = (float) WM_SampleRate
-									/ pulses_per_second;
+                                if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
+                                    float bpm_f = (float) (60000000 / tempo);
+                                    tempo = 60000000 / (uint32_t) bpm_f;
+                                } else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+                                    float bpm_fr = (float) (60000000 / tempo)
+                                            + 0.5f;
+                                    tempo = 60000000 / (uint32_t) bpm_fr;
+                                }
+                                /* Slow but needed for accuracy */
+                                microseconds_per_pulse = (float) tempo
+                                        / (float) divisions;
+                                pulses_per_second = 1000000.0f
+                                        / microseconds_per_pulse;
+                                samples_per_delta_f = (float) WM_SampleRate
+                                        / pulses_per_second;
 
-						} else {
-							tmp_length = 0;
-							tracks[i]++;
-							while (*tracks[i] > 0x7f) {
-								tmp_length = (tmp_length << 7)
-										+ (*tracks[i] & 0x7f);
-								tracks[i]++;
-							}
-							tmp_length = (tmp_length << 7)
-									+ (*tracks[i] & 0x7f);
-							tracks[i] += tmp_length + 1;
-						}
-					} else if ((current_event == 0xF0)
-							|| (current_event == 0xF7)) {
-						/* Roland Sysex Events */
-						uint32_t sysex_len = 0;
-						while (*tracks[i] > 0x7F) {
-							sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
-							tracks[i]++;
-						}
-						sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
-						tracks[i]++;
+                            } else {
+                                tmp_length = 0;
+                                tracks[i]++;
+                                while (*tracks[i] > 0x7f) {
+                                    tmp_length = (tmp_length << 7)
+                                            + (*tracks[i] & 0x7f);
+                                    tracks[i]++;
+                                }
+                                tmp_length = (tmp_length << 7)
+                                        + (*tracks[i] & 0x7f);
+                                tracks[i] += tmp_length + 1;
+                            }
+                        } else if ((current_event == 0xF0)
+                               || (current_event == 0xF7)) {
+                            /* Roland Sysex Events */
+                            uint32_t sysex_len = 0;
+                            while (*tracks[i] > 0x7F) {
+                                sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
+                                tracks[i]++;
+                            }
+                            sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
+                            tracks[i]++;
 
-						running_event[i] = 0;
+                            running_event[i] = 0;
 
-						sysex_store = realloc(sysex_store,
-								sizeof(uint8_t) * (sysex_store_len + sysex_len));
-						memcpy(&sysex_store[sysex_store_len], tracks[i],
-								sysex_len);
-						sysex_store_len += sysex_len;
+                            sysex_store = realloc(sysex_store,
+                                    sizeof(uint8_t) * (sysex_store_len + sysex_len));
+                            memcpy(&sysex_store[sysex_store_len], tracks[i],
+                                    sysex_len);
+                            sysex_store_len += sysex_len;
 
-						if (sysex_store[sysex_store_len - 1] == 0xF7) {
-							uint8_t tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
-							if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
-								/* checksum */
-								uint8_t sysex_cs = 0;
-								uint32_t sysex_ofs = 4;
-								do {
-									sysex_cs += sysex_store[sysex_ofs];
-									if (sysex_cs > 0x7F) {
-										sysex_cs -= 0x80;
-									}
-									sysex_ofs++;
-								} while (sysex_store[sysex_ofs + 1] != 0xF7);
-								sysex_cs = 128 - sysex_cs;
-								/* is roland sysex message valid */
-								if (sysex_cs == sysex_store[sysex_ofs]) {
-									/* process roland sysex event */
-									if (sysex_store[4] == 0x40) {
-										if (((sysex_store[5] & 0xF0) == 0x10)
-												&& (sysex_store[6] == 0x15)) {
-											/* Roland Drum Track Setting */
-											uint8_t sysex_ch = 0x0F
-													& sysex_store[5];
-											if (sysex_ch == 0x00) {
-												sysex_ch = 0x09;
-											} else if (sysex_ch <= 0x09) {
-												sysex_ch -= 1;
-											}
-											midi_setup_sysex_roland_drum_track(
+                            if (sysex_store[sysex_store_len - 1] == 0xF7) {
+                                uint8_t tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
+                                if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
+                                    /* checksum */
+                                    uint8_t sysex_cs = 0;
+                                    uint32_t sysex_ofs = 4;
+                                    do {
+                                        sysex_cs += sysex_store[sysex_ofs];
+                                        if (sysex_cs > 0x7F) {
+                                            sysex_cs -= 0x80;
+                                        }
+                                        sysex_ofs++;
+                                    } while (sysex_store[sysex_ofs + 1] != 0xF7);
+                                    sysex_cs = 128 - sysex_cs;
+                                    /* is roland sysex message valid */
+                                    if (sysex_cs == sysex_store[sysex_ofs]) {
+                                        /* process roland sysex event */
+                                        if (sysex_store[4] == 0x40) {
+                                            if (((sysex_store[5] & 0xF0) == 0x10)
+                                                    && (sysex_store[6] == 0x15)) {
+                                                /* Roland Drum Track Setting */
+                                                uint8_t sysex_ch = 0x0F
+                                                        & sysex_store[5];
+                                                if (sysex_ch == 0x00) {
+                                                    sysex_ch = 0x09;
+                                                } else if (sysex_ch <= 0x09) {
+                                                    sysex_ch -= 1;
+                                                }
+                                                midi_setup_sysex_roland_drum_track(
 													mdi, sysex_ch,
-													sysex_store[7]);
-										} else if ((sysex_store[5] == 0x00)
-												&& (sysex_store[6] == 0x7F)
-												&& (sysex_store[7] == 0x00)) {
-											/* Roland GS Reset */
-											midi_setup_sysex_roland_reset(mdi);
-										}
-									}
-								}
-							}
-							free(sysex_store);
-							sysex_store = NULL;
-							sysex_store_len = 0;
-						}
-						tracks[i] += sysex_len;
-					} else {
-						WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
-						goto _end;
-					}
-					break;
-				default:
-					WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
-					goto _end;
+                                                    sysex_store[7]);
+                                            } else if ((sysex_store[5] == 0x00)
+                                                   && (sysex_store[6] == 0x7F)
+                                                   && (sysex_store[7] == 0x00)) {
+                                                /* Roland GS Reset */
+                                                midi_setup_sysex_roland_reset(mdi);
+                                            }
+                                        }
+                                    }
+                                }
+                                free(sysex_store);
+                                sysex_store = NULL;
+                                sysex_store_len = 0;
+                            }
+                            tracks[i] += sysex_len;
+                        } else {
+                            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
+                            goto _end;
+                        }
+                        break;
+                    default:
+                        WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
+                        goto _end;
 				}
 				while (*tracks[i] > 0x7F) {
 					track_delta[i] = (track_delta[i] << 7)
