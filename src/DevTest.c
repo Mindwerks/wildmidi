@@ -1,9 +1,7 @@
 /*
- DevTest.c
-
- Display Information about the Gravis Ultrasound patch file.
-
+ DevTest.c: Display Information about the Gravis Ultrasound patch file.
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
+ COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
  Copyright (C) Chris Ison  2001-2011
  Copyright (C) Bret Curtis 2013-2014
@@ -41,70 +39,62 @@
 # include <pwd.h>
 #endif
 
-static struct option const long_options[] = { { "debug-level", 1, 0, 'd' }, {
-		"version", 0, 0, 'v' }, { "help", 0, 0, 'h' }, { NULL, 0, NULL, 0 } };
+static struct option const long_options[] = {
+	{ "debug-level", 1, 0, 'd' },
+	{ "version", 0, 0, 'v' },
+	{ "help", 0, 0, 'h' },
+	{ NULL, 0, NULL, 0 }
+};
 
-static float env_time_table[] = { 0.0, 0.091728000, 0.045864000, 0.030576000,
-		0.022932000, 0.018345600, 0.015288000, 0.013104000, 0.011466000,
-		0.010192000, 0.009172800, 0.008338909, 0.007644000, 0.007056000,
-		0.006552000, 0.006115200, 0.005733000, 0.005395765, 0.005096000,
-		0.004827789, 0.004586400, 0.004368000, 0.004169455, 0.003988174,
-		0.003822000, 0.003669120, 0.003528000, 0.003397333, 0.003276000,
-		0.003163034, 0.003057600, 0.002958968, 0.002866500, 0.002779636,
-		0.002697882, 0.002620800, 0.002548000, 0.002479135, 0.002413895,
-		0.002352000, 0.002293200, 0.002237268, 0.002184000, 0.002133209,
-		0.002084727, 0.002038400, 0.001994087, 0.001951660, 0.001911000,
-		0.001872000, 0.001834560, 0.001798588, 0.001764000, 0.001730717,
-		0.001698667, 0.001667782, 0.001638000, 0.001609263, 0.001581517,
-		0.001554712, 0.001528800, 0.001503738, 0.001479484, 0.001456000, 0.0,
-		0.733824000, 0.366912000, 0.244608000, 0.183456000, 0.146764800,
-		0.122304000, 0.104832000, 0.091728000, 0.081536000, 0.073382400,
-		0.066711273, 0.061152000, 0.056448000, 0.052416000, 0.048921600,
-		0.045864000, 0.043166118, 0.040768000, 0.038622316, 0.036691200,
-		0.034944000, 0.033355636, 0.031905391, 0.030576000, 0.029352960,
-		0.028224000, 0.027178667, 0.026208000, 0.025304276, 0.024460800,
-		0.023671742, 0.022932000, 0.022237091, 0.021583059, 0.020966400,
-		0.020384000, 0.019833081, 0.019311158, 0.018816000, 0.018345600,
-		0.017898146, 0.017472000, 0.017065674, 0.016677818, 0.016307200,
-		0.015952696, 0.015613277, 0.015288000, 0.014976000, 0.014676480,
-		0.014388706, 0.014112000, 0.013845736, 0.013589333, 0.013342255,
-		0.013104000, 0.012874105, 0.012652138, 0.012437695, 0.012230400,
-		0.012029902, 0.011835871, 0.011648000, 0.0, 5.870592000, 2.935296000,
-		1.956864000, 1.467648000, 1.174118400, 0.978432000, 0.838656000,
-		0.733824000, 0.652288000, 0.587059200, 0.533690182, 0.489216000,
-		0.451584000, 0.419328000, 0.391372800, 0.366912000, 0.345328941,
-		0.326144000, 0.308978526, 0.293529600, 0.279552000, 0.266845091,
-		0.255243130, 0.244608000, 0.234823680, 0.225792000, 0.217429333,
-		0.209664000, 0.202434207, 0.195686400, 0.189373935, 0.183456000,
-		0.177896727, 0.172664471, 0.167731200, 0.163072000, 0.158664649,
-		0.154489263, 0.150528000, 0.146764800, 0.143185171, 0.139776000,
-		0.136525395, 0.133422545, 0.130457600, 0.127621565, 0.124906213,
-		0.122304000, 0.119808000, 0.117411840, 0.115109647, 0.112896000,
-		0.110765887, 0.108714667, 0.106738036, 0.104832000, 0.102992842,
-		0.101217103, 0.099501559, 0.097843200, 0.096239213, 0.094686968,
-		0.093184000, 0.0, 46.964736000, 23.482368000, 15.654912000,
-		11.741184000, 9.392947200, 7.827456000, 6.709248000, 5.870592000,
-		5.218304000, 4.696473600, 4.269521455, 3.913728000, 3.612672000,
-		3.354624000, 3.130982400, 2.935296000, 2.762631529, 2.609152000,
-		2.471828211, 2.348236800, 2.236416000, 2.134760727, 2.041945043,
-		1.956864000, 1.878589440, 1.806336000, 1.739434667, 1.677312000,
-		1.619473655, 1.565491200, 1.514991484, 1.467648000, 1.423173818,
-		1.381315765, 1.341849600, 1.304576000, 1.269317189, 1.235914105,
-		1.204224000, 1.174118400, 1.145481366, 1.118208000, 1.092203163,
-		1.067380364, 1.043660800, 1.020972522, 0.999249702, 0.978432000,
-		0.958464000, 0.939294720, 0.920877176, 0.903168000, 0.886127094,
-		0.869717333, 0.853904291, 0.838656000, 0.823942737, 0.809736828,
-		0.796012475, 0.782745600, 0.769913705, 0.757495742, 0.745472000 };
+static float env_time_table[] = {
+	0.0f,         0.091728000f, 0.045864000f, 0.030576000f, 0.022932000f, 0.018345600f, 0.015288000f, 0.013104000f,
+	0.011466000f, 0.010192000f, 0.009172800f, 0.008338909f, 0.007644000f, 0.007056000f, 0.006552000f, 0.006115200f,
+	0.005733000f, 0.005395765f, 0.005096000f, 0.004827789f, 0.004586400f, 0.004368000f, 0.004169455f, 0.003988174f,
+	0.003822000f, 0.003669120f, 0.003528000f, 0.003397333f, 0.003276000f, 0.003163034f, 0.003057600f, 0.002958968f,
+	0.002866500f, 0.002779636f, 0.002697882f, 0.002620800f, 0.002548000f, 0.002479135f, 0.002413895f, 0.002352000f,
+	0.002293200f, 0.002237268f, 0.002184000f, 0.002133209f, 0.002084727f, 0.002038400f, 0.001994087f, 0.001951660f,
+	0.001911000f, 0.001872000f, 0.001834560f, 0.001798588f, 0.001764000f, 0.001730717f, 0.001698667f, 0.001667782f,
+	0.001638000f, 0.001609263f, 0.001581517f, 0.001554712f, 0.001528800f, 0.001503738f, 0.001479484f, 0.001456000f,
+
+	0.0f,         0.733824000f, 0.366912000f, 0.244608000f, 0.183456000f, 0.146764800f, 0.122304000f, 0.104832000f,
+	0.091728000f, 0.081536000f, 0.073382400f, 0.066711273f, 0.061152000f, 0.056448000f, 0.052416000f, 0.048921600f,
+	0.045864000f, 0.043166118f, 0.040768000f, 0.038622316f, 0.036691200f, 0.034944000f, 0.033355636f, 0.031905391f,
+	0.030576000f, 0.029352960f, 0.028224000f, 0.027178667f, 0.026208000f, 0.025304276f, 0.024460800f, 0.023671742f,
+	0.022932000f, 0.022237091f, 0.021583059f, 0.020966400f, 0.020384000f, 0.019833081f, 0.019311158f, 0.018816000f,
+	0.018345600f, 0.017898146f, 0.017472000f, 0.017065674f, 0.016677818f, 0.016307200f, 0.015952696f, 0.015613277f,
+	0.015288000f, 0.014976000f, 0.014676480f, 0.014388706f, 0.014112000f, 0.013845736f, 0.013589333f, 0.013342255f,
+	0.013104000f, 0.012874105f, 0.012652138f, 0.012437695f, 0.012230400f, 0.012029902f, 0.011835871f, 0.011648000f,
+
+	0.0f,         5.870592000f, 2.935296000f, 1.956864000f, 1.467648000f, 1.174118400f, 0.978432000f, 0.838656000f,
+	0.733824000f, 0.652288000f, 0.587059200f, 0.533690182f, 0.489216000f, 0.451584000f, 0.419328000f, 0.391372800f,
+	0.366912000f, 0.345328941f, 0.326144000f, 0.308978526f, 0.293529600f, 0.279552000f, 0.266845091f, 0.255243130f,
+	0.244608000f, 0.234823680f, 0.225792000f, 0.217429333f, 0.209664000f, 0.202434207f, 0.195686400f, 0.189373935f,
+	0.183456000f, 0.177896727f, 0.172664471f, 0.167731200f, 0.163072000f, 0.158664649f, 0.154489263f, 0.150528000f,
+	0.146764800f, 0.143185171f, 0.139776000f, 0.136525395f, 0.133422545f, 0.130457600f, 0.127621565f, 0.124906213f,
+	0.122304000f, 0.119808000f, 0.117411840f, 0.115109647f, 0.112896000f, 0.110765887f, 0.108714667f, 0.106738036f,
+	0.104832000f, 0.102992842f, 0.101217103f, 0.099501559f, 0.097843200f, 0.096239213f, 0.094686968f, 0.093184000f,
+
+	0.0f,        46.964736000f,23.482368000f,15.654912000f,11.741184000f, 9.392947200f, 7.827456000f, 6.709248000f,
+	5.870592000f, 5.218304000f, 4.696473600f, 4.269521455f, 3.913728000f, 3.612672000f, 3.354624000f, 3.130982400f,
+	2.935296000f, 2.762631529f, 2.609152000f, 2.471828211f, 2.348236800f, 2.236416000f, 2.134760727f, 2.041945043f,
+	1.956864000f, 1.878589440f, 1.806336000f, 1.739434667f, 1.677312000f, 1.619473655f, 1.565491200f, 1.514991484f,
+	1.467648000f, 1.423173818f, 1.381315765f, 1.341849600f, 1.304576000f, 1.269317189f, 1.235914105f, 1.204224000f,
+	1.174118400f, 1.145481366f, 1.118208000f, 1.092203163f, 1.067380364f, 1.043660800f, 1.020972522f, 0.999249702f,
+	0.978432000f, 0.958464000f, 0.939294720f, 0.920877176f, 0.903168000f, 0.886127094f, 0.869717333f, 0.853904291f,
+	0.838656000f, 0.823942737f, 0.809736828f, 0.796012475f, 0.782745600f, 0.769913705f, 0.757495742f, 0.745472000f
+};
+
+/* the following hardcoded to avoid the need for a config.h : */
+static const char *PACKAGE_URL = "http://www.mindwerks.net/projects/wildmidi/";
+static const char *PACKAGE_BUGREPORT = "https://github.com/Mindwerks/wildmidi/issues";
+static const char *PACKAGE_VERSION = "0.3";
 
 void do_version(void) {
-	printf("DevTest for WildMIDI %s - For testing purposes only\n\n",
-			PACKAGE_VERSION);
-	printf(
-			"Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
+	printf("DevTest for WildMIDI %s - For testing purposes only\n\n", PACKAGE_VERSION);
+	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
 	printf("DevTest comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
-	printf(
-			"under the terms and conditions of the GNU General Public License version 3.\n");
+	printf("under the terms and conditions of the GNU General Public License version 3.\n");
 	printf("For more information see COPYING\n\n");
 	printf("Report bugs to %s\n", PACKAGE_BUGREPORT);
 	printf("WildMIDI homepage at %s\n", PACKAGE_URL);
@@ -125,70 +115,67 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 	char *ret_data = NULL;
 	struct stat buffer_stat;
 #ifndef _WIN32
-	char *home = NULL;
+	const char *home = NULL;
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
 #endif
 
-	char *buffer_file = malloc(strlen(filename) + 1);
+	char *buffer_file = NULL;
 
-	if (buffer_file == NULL) {
-		printf("Unable to get ram to expand %s: %s\n", filename,
-				strerror(errno));
-		return NULL ;
-	}
-
-	strcpy(buffer_file, filename);
 #ifndef _WIN32
-	if (strncmp(buffer_file, "~/", 2) == 0) {
+	if (strncmp(filename, "~/", 2) == 0) {
 		if ((pwd_ent = getpwuid(getuid()))) {
 			home = pwd_ent->pw_dir;
 		} else {
 			home = getenv("HOME");
 		}
 		if (home) {
-			buffer_file = realloc(buffer_file,
-					(strlen(buffer_file) + strlen(home) + 1));
+			buffer_file = malloc(strlen(filename) + strlen(home) + 1);
 			if (buffer_file == NULL) {
 				printf("Unable to get ram to expand %s: %s\n", filename,
 						strerror(errno));
-				free(buffer_file);
-				return NULL ;
+				return NULL;
 			}
-			memmove((buffer_file + strlen(home)), (buffer_file + 1),
-					(strlen(buffer_file)));
-			strncpy(buffer_file, home, strlen(home));
+			strcpy(buffer_file, home);
+			strcat(buffer_file, filename + 1);
 		}
-	} else if (buffer_file[0] != '/') {
+	} else if (filename[0] != '/') {
 		ret_data = getcwd(buffer_dir, 1024);
-		if (buffer_dir[strlen(buffer_dir) - 1] != '/') {
-			buffer_dir[strlen(buffer_dir) + 1] = '\0';
-			buffer_dir[strlen(buffer_dir)] = '/';
+		if (ret_data != NULL)
+			buffer_file = malloc(strlen(filename) + strlen(buffer_dir) + 2);
+		if (buffer_file == NULL || ret_data == NULL) {
+			printf("Unable to get ram to expand %s: %s\n", filename,
+					strerror(errno));
+			return NULL;
 		}
-		buffer_file = realloc(buffer_file,
-				(strlen(buffer_file) + strlen(buffer_dir) + 1));
+		strcpy(buffer_file, buffer_dir);
+		if (buffer_dir[strlen(buffer_dir) - 1] != '/')
+			strcat(buffer_file, "/");
+		strcat(buffer_file, filename);
+	}
+#endif
+
+	if (buffer_file == NULL) {
+		buffer_file = malloc(strlen(filename) + 1);
 		if (buffer_file == NULL) {
 			printf("Unable to get ram to expand %s: %s\n", filename,
 					strerror(errno));
-			free(buffer_file);
-			return NULL ;
+			return NULL;
 		}
-		memmove((buffer_file + strlen(buffer_dir)), buffer_file,
-				strlen(buffer_file) + 1);
-		strncpy(buffer_file, buffer_dir, strlen(buffer_dir));
+		strcpy(buffer_file, filename);
 	}
-#endif
+
 	if (stat(buffer_file, &buffer_stat)) {
 		printf("Unable to stat %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
-		return NULL ;
+		return NULL;
 	}
 	*size = buffer_stat.st_size;
 	data = malloc(*size);
 	if (data == NULL) {
 		printf("Unable to get ram for %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
-		return NULL ;
+		return NULL;
 	}
 #ifdef _WIN32
 	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
@@ -198,14 +185,14 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 		printf("Unable to open %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
 		free(data);
-		return NULL ;
+		return NULL;
 	}
 	if (read(buffer_fd, data, *size) != buffer_stat.st_size) {
 		printf("Unable to read %s: %s\n", filename, strerror(errno));
 		free(buffer_file);
 		free(data);
 		close(buffer_fd);
-		return NULL ;
+		return NULL;
 	}
 	close(buffer_fd);
 	free(buffer_file);
@@ -213,7 +200,7 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 }
 
 int test_midi(unsigned char * midi_data, unsigned long int midi_size,
-		unsigned int verbose) {
+		int verbose) {
 	unsigned int tmp_val;
 	unsigned int track_size;
 	unsigned char *next_track;
@@ -312,7 +299,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			return -1;
 		}
 
-		//Slow but needed for accuracy
+		/* Slow but needed for accuracy */
 		beats_per_minute = 60000000.0 / (float) tempo;
 		microseconds_per_pulse = (float) tempo / (float) divisions;
 		pulses_per_second = 1000000.0 / microseconds_per_pulse;
@@ -320,7 +307,6 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 		if (verbose)
 			printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
 					samples_per_delta_f);
-
 	}
 	for (i = 0; i < no_tracks; i++) {
 		if (midi_size < 8) {
@@ -379,11 +365,11 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			}
 			midi_size--;
 			delta_accum += delta;
-			// tempo microseconds per quarter note
-			// divisions pulses per quarter note
-			//if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));
+			/* tempo microseconds per quarter note
+			 * divisions pulses per quarter note */
+			/*if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));*/
 			if (verbose)
-				printf("Delta: %i, Accumilated Delta: %i\n", delta,
+				printf("Delta: %i, Accumilated Delta: %ld\n", delta,
 						delta_accum);
 
 			if (*midi_data < 0x80) {
@@ -539,7 +525,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 								if (sysex_store[4] == 0x40) {
 									if (((sysex_store[5] & 0xF0) == 0x10)
 											&& (sysex_store[6] == 0x15)) {
-										// Roland Drum Track Setting
+										/* Roland Drum Track Setting */
 										unsigned char sysex_ch = 0x0F
 												& sysex_store[5];
 										if (sysex_ch == 0x00) {
@@ -548,13 +534,12 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 											sysex_ch -= 1;
 										}
 										if (verbose)
-											printf(
-													"Additional Drum Channel(0x%02x) Setting: 0x%02x\n",
+											printf("Additional Drum Channel(0x%02x) Setting: 0x%02x\n",
 													sysex_ch, sysex_store[7]);
 									} else if ((sysex_store[5] == 0x00)
 											&& (sysex_store[6] == 0x7F)
 											&& (sysex_store[7] == 0x00)) {
-										// Roland GS Reset
+										/* Roland GS Reset */
 										if (verbose)
 											printf("GS Reset\n");
 									} else {
@@ -630,7 +615,6 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 						if (verbose)
 							printf("BPM: %f, SPD @ 44100: %f\n",
 									beats_per_minute, samples_per_delta_f);
-
 					} else {
 						if (verbose)
 							printf("Meta Event: Unsupported (%i)\n",
@@ -644,8 +628,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 						meta_length = (meta_length << 7) | (*midi_data & 0x7F);
 						midi_data++;
 						if (midi_size == 0) {
-							printf(
-									"Corrupt Midi, Missing or Corrupt Track Data\n");
+							printf("Corrupt Midi, Missing or Corrupt Track Data\n");
 							return -1;
 						}
 						midi_size--;
@@ -667,8 +650,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 				break;
 			}
 			if (midi_data > next_track) {
-				printf(
-						"Corrupt Midi, Track Data went beyond track boundries.\n");
+				printf("Corrupt Midi, Track Data went beyond track boundries.\n");
 				return -1;
 			}
 		}
@@ -677,15 +659,9 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 }
 
 int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
-		unsigned int verbose) {
+		int verbose) {
 	unsigned long int gus_ptr = 0;
 	unsigned char no_of_samples = 0;
-
-	unsigned long int tmp_lint = 0;
-	unsigned short int tmp_sint = 0;
-	unsigned char tmp_char = 0;
-
-	unsigned int i = 0;
 
 	if (filesize < 239) {
 		printf("File too short\n");
@@ -759,8 +735,7 @@ int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 			printf("Sustain Level: %i, Sustain Time: %fsecs\n",
 					gus_patch[gus_ptr + 45],
 					env_time_table[gus_patch[gus_ptr + 39]]);
-			printf(
-					"Sustained Release Level: %i, Sustained Release Time: %fsecs\n",
+			printf("Sustained Release Level: %i, Sustained Release Time: %fsecs\n",
 					gus_patch[gus_ptr + 46],
 					env_time_table[gus_patch[gus_ptr + 40]]);
 			printf("Normal Release Level: %i, Normal Release Time: %fsecs\n",
@@ -769,17 +744,13 @@ int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 			printf("Clamped Release Level: %i, Clamped Release Time: %fsecs\n",
 					gus_patch[gus_ptr + 48],
 					env_time_table[gus_patch[gus_ptr + 42]]);
-
 		}
 
 		if (env_time_table[gus_patch[gus_ptr + 40]]
 				< env_time_table[gus_patch[gus_ptr + 41]]) {
-			printf(
-					"WARNING!! Normal release envelope longer than sustained release envelope\n");
-			printf(
-					"          Caused by patch editor not following the file format set by Gravis\n");
-			printf(
-					"          Add guspat_editor_author_cant_read_so_fix_release_time_for_me to top of wildmidi.cfg\n");
+			printf("WARNING!! Normal release envelope longer than sustained release envelope\n");
+			printf("          Caused by patch editor not following the file format set by Gravis\n");
+			printf("          Add guspat_editor_author_cant_read_so_fix_release_time_for_me to top of wildmidi.cfg\n");
 		}
 
 		if (verbose) {
@@ -811,13 +782,14 @@ int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 								| (gus_patch[gus_ptr + 9] << 8)
 								| gus_patch[gus_ptr + 8]);
 	} while (--no_of_samples);
+
 	return 0;
 }
 
 int main(int argc, char ** argv) {
 	int i;
 	int option_index = 0;
-	unsigned int verbose = 0;
+	int verbose = 0;
 	int testret = 0;
 
 	unsigned char *filebuffer = NULL;
@@ -829,12 +801,12 @@ int main(int argc, char ** argv) {
 		if (i == -1)
 			break;
 		switch (i) {
-		case 'd': // Verbose
+		case 'd': /* Verbose */
 			verbose = atoi(optarg);
 			break;
-		case 'v': // Version
+		case 'v': /* Version */
 			return 0;
-		case 'h': // help
+		case 'h': /* help */
 			do_help();
 			return 0;
 		default:

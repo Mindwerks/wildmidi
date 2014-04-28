@@ -1,0 +1,331 @@
+                              MUS File Format
+                              ═══════════════
+
+Written by: Vladimir Arnost, QA-Software
+Updated:    March 9, 1996
+Version:    1.31
+Internet:   xarnos00@dcse.fee.vutbr.cz
+FIDO:       2:423/36.2
+
+
+1. General Description
+──────────────────────
+
+   A .MUS file is a simple clone of .MID file. It uses the same instruments,
+   similar commands and the same principle: a list of sound events.
+   It consists of two parts: header and body.
+
+   NOTE: All numerical values mentioned in this document are zero-based.
+         If not specified otherwise, all numbers are given in decimal. 
+         Hexadecimal numbers are suffixed by 'h' (e.g. 5Ch). Bits are 
+         numbered in this fashion: LSB (right-most) = 0, MSB (left-most) = 7.
+
+
+2. MUS File Header
+──────────────────
+
+   The MUS header has the following structure:
+
+        struct MUSheader {
+                char    ID[4];          // identifier "MUS" 0x1A
+                WORD    scoreLen;
+                WORD    scoreStart;
+                WORD    channels;	// count of primary channels
+                WORD    sec_channels;	// count of secondary channels
+                WORD    instrCnt;
+                WORD    dummy;
+        // variable-length part starts here
+                WORD    instruments[];
+        };
+
+   NOTE: WORD is a 16-bit unsigned integer (little-endian)
+
+   The header has two parts: the fixed-length and the variable-length part.
+   The former contains file identifier, score start and length, number of
+   channels and number of used instruments. The latter part is actually
+   a list of used instruments. The instruments are stored as numbers which
+   are arranged in this fashion:
+
+    Instrument Number      Meaning
+        0 - 127           standard MIDI instruments
+      135 - 181           standard MIDI percussions (notes 35 - 81)
+
+   `scoreStart' is the absolute file position of the score and `scoreLen' is
+   its length in bytes. Usage of a 16-bit number as length limits .MUS file
+   size to 64KB.
+
+   `channels' tells you how many channels are utilized in the song. The
+   channel number 15 (percussions) is not included in the sum.
+
+
+3. MUS File Body
+────────────────
+
+   Unlike MID files, MUS body contains only one track. File body is
+   a sequence of sound events and time records. A sound event consists of
+   one or more bytes encoded as follows:
+
+   1st byte -- event descriptor:
+         ╓──7─┬──6─┬──5─┬──4─┬──3─┬──2─┬──1─┬──0─╖
+         ║Last│  Event type  │  Channel number   ║
+         ╙────┴────┴────┴────┴────┴────┴────┴────╜
+
+             `Event type' is one of these:
+               0 - release note
+               1 - play note
+               2 - pitch wheel (bender)
+               3 - system event (valueless controller)
+               4 - change controller
+               5 - ???
+               6 - score end
+               7 - ???
+
+             `Channel number' determines which channel this event refers to.
+             Channels provide only logical score division. Every channel
+             carries its own settings (instrument #, panning, volume) and the
+             channel number specifies only which settings to use. In general,
+             the channel number itself is almost irrelevant and may be chosen
+             arbitrarily within the interval 0 to 14. The only exception is
+             the channel number 15, which is dedicated ONLY to percussions.
+
+             `Last' - if set, the event is followed by time information. This
+             means that this is the last event in a group of events which
+             occur at the same time. The time information is a number of
+             ticks to wait before processing next event. One tick is usually
+             1/140 sec (in Doom I, II and Heretic; Raptor uses 1/70 sec).
+
+             Time information can be read in this way:
+               1. time = 0
+               2. READ a byte
+               3. time = time * 128 + byte AND 127
+               4. IF (byte AND 128) GO TO 2
+               5. RETURN time
+             The time info is a series of 7-bit chunks. The bit #7 is set
+             until the last byte whose bit 7 is zero. This scheme allows
+             small numbers occupy less space than large ones.
+
+   Event  Type
+   ────────────────────
+     0    Release note
+          ╓─7─┬─6─┬─5─┬─4─┬─3─┬─2─┬─1─┬─0─╖
+          ║ 0 │    Note number 0 - 127    ║
+          ╙───┴───┴───┴───┴───┴───┴───┴───╜
+
+     1    Play note
+          ╓─7─┬─6─┬─5─┬─4─┬─3─┬─2─┬─1─┬─0─╖  ╓─7─┬─6─┬─5─┬─4─┬─3─┬─2─┬─1─┬─0─╖
+          ║Vol│    Note number 0 - 127    ║  ║ 0 │    Note volume 0 - 127    ║
+          ╙───┴───┴───┴───┴───┴───┴───┴───╜  ╙───┴───┴───┴───┴───┴───┴───┴───╜
+
+          `Note volume' is present only if `Vol' bit is set. Otherwise the
+          previous value is used and the second byte is not present.
+          NOTE: Each channel keeps track of its own last volume value.
+                More than one note can be played at once in one channel.
+          Channel 15 is dedicated to drums and percussions. `Note number'
+          acts as an instrument selector there. See Appendix C
+
+     2    Pitch wheel
+          ╓─7─┬─6─┬─5─┬─4─┬─3─┬─2─┬─1─┬─0─╖
+          ║       Pitch wheel value       ║
+          ╙───┴───┴───┴───┴───┴───┴───┴───╜
+
+          Sets pitch wheel (bender) value of a channel. Some handy values are
+          shown in the table (all values in the range 0-255 can be used):
+
+          ┌───────┬───────────────────────┐
+          │ Value │  Pitch change         │
+          ├───────┼───────────────────────┤
+          │    0  │  two half-tones down  │
+          │   64  │  one half-tone down   │
+          │  128  │  normal (default)     │
+          │  192  │  one half-tone up     │
+          │  255  │  two half-tones up    │
+          └───────┴───────────────────────┘
+
+     3    System event (Valueless controller)
+          ╓─7─┬─6─┬─5─┬─4─┬─3─┬─2─┬─1─┬─0─╖
+          ║ 0 │          Number           ║
+          ╙───┴───┴───┴───┴───┴───┴───┴───╜
+
+          Number  MIDI ctrl   Description
+            10    120 (78h)   All sounds off
+            11    123 (7Bh)   All notes off
+            12    126 (7Eh)   Mono
+            13    127 (7Fh)   Poly
+            14    121 (79h)   Reset all controllers
+
+          NOTE: The second column (MIDI ctrl) lists the corresponding MIDI
+                controller number. It is not needed unless you want to
+                convert MUS file data to MIDI.
+
+     4    Change controller
+          ╓─7─┬─6─┬─5─┬─4─┬─3─┬─2─┬─1─┬─0─╖  ╓─7─┬─6─┬─5─┬─4─┬─3─┬─2─┬─1─┬─0─╖
+          ║ 0 │     Controller number     ║  ║ 0 │      Controller value     ║
+          ╙───┴───┴───┴───┴───┴───┴───┴───╜  ╙───┴───┴───┴───┴───┴───┴───┴───╜
+
+          Number  MIDI ctrl   Description
+            0       N/A       Instrument (patch, program) number
+            1      0 or 32    Bank select: 0 by default
+            2      1 (01h)    Modulation pot (frequency vibrato depth)
+            3      7 (07h)    Volume: 0-silent, ~100-normal, 127-loud
+            4     10 (0Ah)    Pan (balance) pot: 0-left, 64-center (default),
+                              127-right
+            5     11 (0Bh)    Expression pot
+            6     91 (5Bh)    Reverb depth
+            7     93 (5Dh)    Chorus depth
+            8     64 (40h)    Sustain pedal (hold)
+            9     67 (43h)    Soft pedal
+
+          NOTE: MUS controller 0 has no equivalent MIDI controller, but
+                is encoded as MIDI event 0Cxh--patch change (`x' is the
+                channel number)
+
+     5    Unknown
+          Not known what data (if any) this command takes.
+
+     6    Score end
+          No data.
+
+          Marks the end of score. Must be present at the end, otherwise the
+          player may go off the rails. In DOOM this command restarts playing.
+
+     7    Unknown
+          Not known what data (if any) this command takes.
+
+
+APPENDIX A - Note numbers
+─────────────────────────
+
+   ╔════════╦═════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╗
+   ║ Octave ║  C  │ C# │ D  │ D# │ E  │ F  │ F# │ G  │ G# │ A  │ A# │ B  ║
+   ╠════════╬═════╪════╪════╪════╪════╪════╪════╪════╪════╪════╪════╪════╣
+   ║    0   ║   0 │  1 │  2 │  3 │  4 │  5 │  6 │  7 │  8 │  9 │ 10 │ 11 ║
+   ║    1   ║  12 │ 13 │ 14 │ 15 │ 16 │ 17 │ 18 │ 19 │ 20 │ 21 │ 22 │ 23 ║
+   ║    2   ║  24 │ 25 │ 26 │ 27 │ 28 │ 29 │ 30 │ 31 │ 32 │ 33 │ 34 │ 35 ║
+   ║    3   ║  36 │ 37 │ 38 │ 39 │ 40 │ 41 │ 42 │ 43 │ 44 │ 45 │ 46 │ 47 ║
+   ║    4   ║  48 │ 49 │ 50 │ 51 │ 52 │ 53 │ 54 │ 55 │ 56 │ 57 │ 58 │ 59 ║
+   ║    5   ║  60 │ 61 │ 62 │ 63 │ 64 │ 65 │ 66 │ 67 │ 68 │ 69 │ 70 │ 71 ║
+   ║    6   ║  72 │ 73 │ 74 │ 75 │ 76 │ 77 │ 78 │ 79 │ 80 │ 81 │ 82 │ 83 ║
+   ║    7   ║  84 │ 85 │ 86 │ 87 │ 88 │ 89 │ 90 │ 91 │ 92 │ 93 │ 94 │ 95 ║
+   ║    8   ║  96 │ 97 │ 98 │ 99 │100 │101 │102 │103 │104 │105 │106 │107 ║
+   ║    9   ║ 108 │109 │110 │111 │112 │113 │114 │115 │116 │117 │118 │119 ║
+   ║   10   ║ 120 │121 │122 │123 │124 │125 │126 │127 │    │    │    │    ║
+   ╚════════╩═════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╝
+
+
+APPENDIX B - Instrument Patch Map
+─────────────────────────────────
+
+   Block 0-7  PIANO                    Block 8-15  CHROM PERCUSSION
+     0  Acoustic Grand Piano             8  Celesta
+     1  Bright Acoustic Piano            9  Glockenspiel
+     2  Electric Grand Piano            10  Music Box
+     3  Honky-tonk Piano                11  Vibraphone
+     4  Rhodes Paino                    12  Marimba
+     5  Chorused Piano                  13  Xylophone
+     6  Harpsichord                     14  Tubular-bell
+     7  Clavinet                        15  Dulcimer
+
+   Block 16-23  ORGAN                  Block 24-31  GUITAR
+    16  Hammond Organ                   24  Acoustic Guitar (nylon)
+    17  Percussive Organ                25  Acoustic Guitar (steel)
+    18  Rock Organ                      26  Electric Guitar (jazz)
+    19  Church Organ                    27  Electric Guitar (clean)
+    20  Reed Organ                      28  Electric Guitar (muted)
+    21  Accordion                       29  Overdriven Guitar
+    22  Harmonica                       30  Distortion Guitar
+    23  Tango Accordion                 31  Guitar Harmonics
+
+   Block 32-39  BASS                   Block 40-47  STRINGS
+    32  Acoustic Bass                   40  Violin
+    33  Electric Bass (finger)          41  Viola
+    34  Electric Bass (pick)            42  Cello
+    35  Fretless Bass                   43  Contrabass
+    36  Slap Bass 1                     44  Tremolo Strings
+    37  Slap Bass 2                     45  Pizzicato Strings
+    38  Synth Bass 1                    46  Orchestral Harp
+    39  Synth Bass 2                    47  Timpani
+
+   Block 48-55  ENSEMBLE               Block 56-63  BRASS
+    48  String Ensemble 1               56  Trumpet
+    49  String Ensemble 2               57  Trombone
+    50  Synth Strings 1                 58  Tuba
+    51  Synth Strings 2                 59  Muted Trumpet
+    52  Choir Aahs                      60  French Horn
+    53  Voice Oohs                      61  Brass Section
+    54  Synth Voice                     62  Synth Brass 1
+    55  Orchestra Hit                   63  Synth Bass 2
+
+   Block 64-71  REED                   Block 72-79  PIPE
+    64  Soprano Sax                     72  Piccolo
+    65  Alto Sax                        73  Flute
+    66  Tenor Sax                       74  Recorder
+    67  Baritone Sax                    75  Pan Flute
+    68  Oboe                            76  Bottle Blow
+    69  English Horn                    77  Shakuhachi
+    70  Bassoon                         78  Whistle
+    71  Clarinet                        79  Ocarina
+
+   Block 80-87  SYNTH LEAD             Block 88-95  SYNTH PAD
+    80  Lead 1 (square)                 88  Pad 1 (new age)
+    81  Lead 2 (sawtooth)               89  Pad 2 (warm)
+    82  Lead 3 (calliope)               90  Pad 3 (polysynth)
+    83  Lead 4 (chiffer)                91  Pad 4 (choir)
+    84  Lead 5 (charang)                92  Pad 5 (bowed glass)
+    85  Lead 6 (voice)                  93  Pad 6 (metal)
+    86  Lead 7 (5th sawtooth)           94  Pad 7 (halo)
+    87  Lead 8 (bass & lead)            95  Pad 8 (sweep)
+
+   Block 96-103  SYNTH EFFECTS         Block 104-111  ETHNIC
+    96  FX 1 (rain)                    104  Sitar
+    97  FX 2 (soundtrack)              105  Banjo
+    98  FX 3 (crystal)                 106  Shamisen
+    99  FX 4 (atmosphere)              107  Koto
+   100  FX 5 (brightness)              108  Kalimba
+   101  FX 6 (goblin)                  109  Bag Pipe
+   102  FX 7 (echo drops)              110  Fiddle
+   103  FX 8 (star-theme)              111  Shanai
+
+   Block 112-119  PERCUSSIVE           Block 120-127  SOUND EFFECTS
+   112  Tinkle Bell                    120  Guitar Fret Noise
+   113  Agogo                          121  Breath Noise
+   114  Steel Drums                    122  Seashore
+   115  Woodblock                      123  Bird Tweet
+   116  Taiko Drum                     124  Telephone Ring
+   117  Melodic Tom                    125  Helicopter
+   118  Synth Drum                     126  Applause
+   119  Reverse Cymbal                 127  Gun Shot
+
+
+APPENDIX C - Percussion Key Map
+───────────────────────────────
+
+   In channel #15, the note number does not affect the pitch but
+   the instrument type. The default pitch for percussions is 60 (C-5).
+
+   Note Instrument                     Note Instrument
+
+    35  Acoustic Bass Drum              59  Ride Cymbal 2
+    36  Bass Drum                       60  High Bongo
+    37  Slide Stick                     61  Low Bango
+    38  Acoustic Snare                  62  Mute High Conga
+    39  Hand Clap                       63  Open High Conga
+    40  Electric Snare                  64  Low Conga
+    41  Low Floor Tom                   65  High Timbale
+    42  Closed High-Hat                 66  Low Timbale
+    43  High Floor Tom                  67  High Agogo
+    44  Pedal High Hat                  68  Low Agogo
+    45  Low Tom                         69  Cabasa
+    46  Open High Hat                   70  Maracas
+    47  Low-Mid Tom                     71  Short Whistle
+    48  High-Mid Tom                    72  Long Whistle
+    49  Crash Cymbal 1                  73  Short Guiro
+    50  High Tom                        74  Long Guiro
+    51  Ride Cymbal 1                   75  Claves
+    52  Chinses Cymbal                  76  High Wood Block
+    53  Ride Bell                       77  Low Wood Block
+    54  Tambourine                      78  Mute Cuica
+    55  Splash Cymbal                   79  Open Cuica
+    56  Cowbell                         80  Mute Triangle
+    57  Crash Cymbal 2                  81  Open Triangle
+    58  Vibraslap
+

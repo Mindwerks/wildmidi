@@ -42,7 +42,8 @@ void WM_ERROR_NEW(const char * wmfmt, ...) {
 void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		const char * wmfor, int error) {
 
-	static const char *errors[] = {
+	static const char *errors[WM_ERR_MAX+1] = {
+		"No error",
 		"Unable to obtain memory",
 		"Unable to stat",
 		"Unable to load",
@@ -53,8 +54,14 @@ void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Library not Initialized",
 		"Invalid argument",
 		"Library Already Initialized",
-		"Refusing to load unusually long file"
+		"Not a midi file",
+		"Refusing to load unusually long file",
+
+		"Invalid error code"
 	};
+
+	if (wmerno < 0 || wmerno > WM_ERR_MAX)
+		wmerno = WM_ERR_MAX;
 
 	if (wmfor != NULL) {
 		if (error != 0) {

@@ -10,3 +10,7 @@
 #if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR >= 96)
 #define HAVE___BUILTIN_EXPECT
 #endif
+#ifndef HAVE___BUILTIN_EXPECT
+#define __builtin_expect(x,c) x
+#endif
+

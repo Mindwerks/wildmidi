@@ -35,7 +35,7 @@ OPTION(WANT_PLAYER      "Build WildMIDI player in addition to the libraries" ON)
 OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OFF)
 OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
-OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
+#OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
 OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
 IF(UNIX AND NOT APPLE)
 SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
@@ -43,31 +43,28 @@ ELSE()
 SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
 ENDIF()
 
+# Platform specific defines
+IF(UNIX)
+    # allow 'large' files in 32 bit builds
+    ADD_DEFINITIONS(
+        -D_LARGEFILE_SOURCE
+        -D_FILE_OFFSET_BITS=64
+        -D_LARGE_FILES
+        )
+ENDIF()
+
+IF(WIN32)
+    ADD_DEFINITIONS(
+        -DWIN32_LEAN_AND_MEAN
+        -D_CRT_SECURE_NO_WARNINGS
+        )
+ENDIF()
+
 # Compiler specific settings
 IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(
-        -D_POSIX_C_SOURCE=200809L
-        -D_BSD_SOURCE=1
-        -D_LARGEFILE_SOURCE 
-        -D_FILE_OFFSET_BITS=64 
-        -D_LARGE_FILES
-        -pedantic
         -Wall -W
         )
-
-    CHECK_C_COMPILER_FLAG("-std=gnu99" HAVE_STD_GNU99)
-    CHECK_C_COMPILER_FLAG("-std=c99" HAVE_STD_C99)
-    IF(HAVE_STD_GNU99)
-        ADD_DEFINITIONS(-std=gnu99)
-    ELSEIF(HAVE_STD_C99)
-        ADD_DEFINITIONS(-std=c99)
-    ENDIF()
-
-    IF(CMAKE_COMPILER_IS_MINGW)
-    # some mingw.org headers are overzealous with __STRICT_ANSI__
-    # and -std=c99 (not gnu99) defines it
-        ADD_DEFINITIONS(-U__STRICT_ANSI__)
-    ENDIF()
 
     IF(NOT WIN32 AND NOT CYGWIN)
         SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
@@ -122,14 +119,12 @@ SET(AUDIODRV_OPENAL)
 
 # UNIX-like environments
 IF(UNIX AND NOT APPLE)
-    SET(AUDIO_LIBRARY "")
 
     # Go looking for available sound packages for WildMIDI player
     IF(WANT_PLAYER) # Set our preferred output
-
         FIND_PACKAGE(ALSA)
+        FIND_PACKAGE(OpenAL)
         FIND_PACKAGE(OSS)
-        INCLUDE(FindOpenAL)
 
         IF(WANT_ALSA)
             IF(NOT ALSA_FOUND)
@@ -137,19 +132,21 @@ IF(UNIX AND NOT APPLE)
             ENDIF()
             SET(AUDIODRV_ALSA 1)
             SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
+
         ELSEIF(WANT_OSS)
             IF(NOT OSS_FOUND)
                 MESSAGE(FATAL_ERROR "OSS required but not found.")
             ENDIF()
+            # no special header paths
             SET(AUDIODRV_OSS 1)
             SET(AUDIO_LIBRARY ${OSS_LIBRARY})
+
         ELSEIF(WANT_OPENAL)
             IF(NOT OPENAL_FOUND)
                 MESSAGE(FATAL_ERROR "OpenAL required but not found.")
             ENDIF()
             SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-            INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
         ELSE() # Try to auto-detect
 
@@ -158,6 +155,7 @@ IF(UNIX AND NOT APPLE)
                 SET(AUDIODRV_ALSA 1)
 
             ELSEIF(OSS_FOUND)
+                # no special header paths
                 SET(AUDIO_LIBRARY ${OSS_LIBRARY})
                 SET(AUDIODRV_OSS 1)
 
@@ -167,6 +165,7 @@ IF(UNIX AND NOT APPLE)
 
             ELSE()
                 MESSAGE(WARNING "Could not find an audio sub-system!")
+                SET(AUDIO_LIBRARY "")
             ENDIF()
 
         ENDIF()
@@ -184,7 +183,7 @@ IF(UNIX AND NOT APPLE)
 ENDIF(UNIX AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
-    INCLUDE(FindOpenAL)
+    FIND_PACKAGE(OpenAL)
 
     IF(WANT_OPENAL)
         IF(NOT OPENAL_FOUND)
@@ -199,6 +198,7 @@ IF (APPLE AND WANT_PLAYER)
 
         ELSE()
             MESSAGE(WARNING "Could not find an audio sub-system!")
+            SET(AUDIO_LIBRARY "")
         ENDIF()
 
     ENDIF()

@@ -27,21 +27,27 @@
 #ifndef __WM_ERROR_H
 #define __WM_ERROR_H
 
-#define WM_ERR_MEM		0
-#define WM_ERR_STAT		1
-#define WM_ERR_LOAD		2
-#define WM_ERR_OPEN		3
-#define WM_ERR_READ		4
-#define WM_ERR_INVALID		5
-#define WM_ERR_CORUPT		6
-#define WM_ERR_NOT_INIT		7
-#define WM_ERR_INVALID_ARG	8
-#define WM_ERR_ALR_INIT		9
-#define WM_ERR_LONGFIL		10
+enum {
+	WM_ERR_NONE = 0,
+	WM_ERR_MEM,
+	WM_ERR_STAT,
+	WM_ERR_LOAD,
+	WM_ERR_OPEN,
+	WM_ERR_READ,
+	WM_ERR_INVALID,
+	WM_ERR_CORUPT,
+	WM_ERR_NOT_INIT,
+	WM_ERR_INVALID_ARG,
+	WM_ERR_ALR_INIT,
+	WM_ERR_NOT_MIDI,
+	WM_ERR_LONGFIL,
+
+	WM_ERR_MAX
+};
 
  extern void WM_ERROR_NEW(const char * wmfmt, ...)
 #ifdef __GNUC__
-		__attribute__((format(printf, 1, 2))) /* for tracking down formatting issues */
+		__attribute__((format(printf, 1, 2)))
 #endif
 		;
  extern void WM_ERROR(const char * func, unsigned int lne, int wmerno,

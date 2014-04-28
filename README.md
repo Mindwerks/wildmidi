@@ -10,12 +10,20 @@ Version: 0.4.0
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
-PLATFORMS:
+PLAYER AND LIB PLATFORMS:
 
 * Hurd: Debian
 * kFreeBSD: Debian, FreeBSD
 * Linux: Arch, Debian, Fedora, Ubuntu
 * Windows: x32 and x64
+* DOS: djgpp
+
+PLAYER SOUND SYSTEMS:
+
+* ALSA
+* OSS
+* OpenAL
+* SB16 (DOS)
 
 BUILD FROM SOURCE:
 
@@ -39,11 +47,32 @@ CHANGELOG
 * API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
   to accept strictly 32bit size parameters, i.e. uint32_t, instead of
   unsigned long.
+* Support for loading XMI (XMIDI format) files, thanks Ryan Nunn for
+  releasing his code under the LGPL.
+* support for loading MUS (MUS Id format) files, such as from Doom.
+* DOS (DJGPP) port, player: Support for Sound Blaster output.
 * Build requires cmake-2.8.11 or newer now.
+
+0.3.7
+* Plug a memory leak in case of broken midis.
+
+0.3.6
+* Fix some portability issues.
+* Fix a double-free issue during library shutdown when several midis
+  were alive.
+* Fix the invalid option checking in WildMidi_Init().
+* Fix the roundtempo option which had been broken since its invention
+  in 0.2.3.5 (WM_MO_ROUNDTEMPO: was 0xA000 instead of 0x2000.)
+* Fix cfg files without a newline at the end weren't parsed correctly.
+* Handle cfg files with mac line-endings.
+* Refuse loading suspiciously long files.
 
 0.3.5
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
-* OpenAL support: Fixed audio output on big-endian systems.
+* OpenAL support: Fixed audio output on big-endian systems. Fixed audio
+  skips at song start.
+* OSS support: No longer uses mmap mode for better compatibility. This
+  gains us NetBSD and OpenBSD support.
 * Worked around an invalid memory read found by valgrind when playing
   Beethoven's Fur Elise.rmi at 44100 Hz using the old MIDIA patch-set
   from 1994.

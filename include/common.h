@@ -55,8 +55,8 @@ struct _sample {
 	uint32_t freq_high;
 	uint32_t freq_root;
 	uint8_t  modes;
-	uint32_t env_rate[7];
-	uint32_t env_target[7];
+	int32_t env_rate[7];
+	int32_t env_target[7];
 	uint32_t inc_div;
 	int16_t *data;
 	struct _sample *next;
@@ -89,11 +89,6 @@ struct _patch {
 
 #ifndef M_LN2
 #define M_LN2 0.69314718055994530942
-#endif
-
-/* Define this if the GCC __builtin_expect keyword is available */
-#ifndef HAVE___BUILTIN_EXPECT
-#define __builtin_expect(x,c) x
 #endif
 
 #endif /* __COMMON_H */

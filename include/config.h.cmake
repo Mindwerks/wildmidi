@@ -45,6 +45,9 @@
 
 /* Define if the compiler has the `__builtin_expect' built-in function */
 #cmakedefine HAVE___BUILTIN_EXPECT
+#ifndef HAVE___BUILTIN_EXPECT
+#define __builtin_expect(x,c) x
+#endif
 
 /* define this if you are running a bigendian system (motorola, sparc, etc) */
 #cmakedefine WORDS_BIGENDIAN 1
@@ -59,10 +62,8 @@
 #cmakedefine HAVE_LINUX_SOUNDCARD_H
 #cmakedefine HAVE_SYS_SOUNDCARD_H
 #cmakedefine HAVE_MACHINE_SOUNDCARD_H
+#cmakedefine HAVE_SOUNDCARD_H
+
 #cmakedefine AUDIODRV_ALSA
 #cmakedefine AUDIODRV_OSS
 #cmakedefine AUDIODRV_OPENAL
-
-/* set some windows magic */
-#define WIN32_LEAN_AND_MEAN
-

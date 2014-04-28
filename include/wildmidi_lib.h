@@ -24,6 +24,9 @@
     <http://www.gnu.org/licenses/>.
 */
 
+#ifndef WILDMIDI_LIB_H
+#define WILDMIDI_LIB_H
+
 /* library version number */
 #define LIBWILDMIDI_VER_MAJOR 0L
 #define LIBWILDMIDI_VER_MINOR 4L
@@ -38,7 +41,7 @@
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
 #define WM_MO_WHOLETEMPO	0x8000
-#define WM_MO_ROUNDTEMPO	0xA000
+#define WM_MO_ROUNDTEMPO	0x2000
 
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
@@ -93,6 +96,7 @@ WM_SYMBOL midi * WildMidi_Open (const char *midifile);
 WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
 WM_SYMBOL int WildMidi_GetOutput (midi *handle, int8_t *buffer, uint32_t size);
 WM_SYMBOL int WildMidi_SetOption (midi *handle, uint16_t options, uint16_t setting);
+WM_SYMBOL void * WildMidi_ConvertToMidi (const char *file, uint32_t *size);
 WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
 WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
@@ -104,3 +108,6 @@ WM_SYMBOL int WildMidi_Shutdown (void);
 #if defined(__cplusplus)
 }
 #endif
+
+#endif /* WILDMIDI_LIB_H */
+

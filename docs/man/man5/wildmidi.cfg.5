@@ -46,7 +46,7 @@ The patches following this setting belong to MIDI instrument bank \fIN\fP.
 .IP "\fBdrumset\fP \fIN\fP"
 The patches following this setting belong to MIDI drum bank \fIN\fP.
 .PP
-.IP "\fIpatchno\fP \fIpatchfile\fP [\fBamp=\fP\fIvolume\fP] [\fBnote=\fP\fImiodinte\fP] [\fBkeep=loop\fP] [\fBkeep=env\fP] [\fBremove=sustain\fP] [\fBremove=clamped\fP] [\fBenv_level\fP[\fI0-5\fP]\fB=\fP\fIlevel\fP] [\fBenv_time\fP[\fI0-5\fP]\fB=\fP\fItime\fP]"
+.IP "\fIpatchno\fP \fIpatchfile\fP [\fBamp=\fP\fIvolume\fP] [\fBnote=\fP\fImiodinte\fP] [\fBkeep=loop\fP] [\fBkeep=env\fP] [\fBremove=sustain\fP] [\fBremove=clamped\fP] [\fBenv_level\fP[\fI0\-5\fP]\fB=\fP\fIlevel\fP] [\fBenv_time\fP[\fI0\-5\fP]\fB=\fP\fItime\fP]"
 .PP
 Example: 0 acpiano.pat amp=110
 .PP
@@ -75,12 +75,12 @@ Do note hold the note after the 3rd envelope until note off, which is what happe
 .IP "\fBremove=clamped\fP"
 Do not jump to 6th envelope on note off, which is what happens if the clamped bit is set in the patch file.
 .PP
-.IP "\fBenv_level\fP[\fI0-5\fP]\fB=\fP\fIlevel\fP"
+.IP "\fBenv_level\fP[\fI0\-5\fP]\fB=\fP\fIlevel\fP"
 Set the envelope level to \fIlevel\fP with 1.0 being maximum, and 0.0 being minimum.
 .IP
-Example: set 5th envelope level to 10% \- \fBenv_level[0-5]=\fP0.1
+Example: set 5th envelope level to 10% \- \fBenv_level[0\-5]=\fP0.1
 .PP
-.IP "\fBenv_time\fP[\fI0-5\fP]\fB=\fP\fItime\fP"
+.IP "\fBenv_time\fP[\fI0\-5\fP]\fB=\fP\fItime\fP"
 Set the envelope time to \fItime\fP with a resolution of 1/1000th of a second. This setting is the time it should take for the envelope to reach maximum level.
 .IP
 Example: set 1st envelope time to 1sec \- \fBenv_time0=\fP1000
@@ -89,12 +89,12 @@ Example: set 3rd envelope time to 0.5secs \- \fBenv_time2=\fP500
 .RE
 .PP
 .IP "\fBreverb_room_width\fP \fIfval\fP"
-Set the room width for the reverb engine in meters. \fIfval\fP is a float value in meters. Minimum setting is 1.0 meters, maximum setting is 100.0 meters, and default is 15.0 meters.
+Set the room width for the reverb engine in meters. \fIfval\fP is a float value in meters. Minimum setting is 1.0 meter, maximum setting is 100.0 meters, and default is 15.0 meters.
 .IP
 Example: set room width to 30 meters \- \fBreverb_room_width 30\fP
 .PP
 .IP "\fBreverb_room_length\fP \fIfval\fP"
-Set the room length for the reverb engine in meters. \fIfval\fP is a float value in meters. . Minimum setting is 1.0 meters, maximum setting is 100.0 meters, and default is 20.0 meters.
+Set the room length for the reverb engine in meters. \fIfval\fP is a float value in meters. Minimum setting is 1.0 meter, maximum setting is 100.0 meters, and default is 20.0 meters.
 .IP
 Example: set room length to 40 meters \- \fBreverb_room_length 40\fP
 .PP

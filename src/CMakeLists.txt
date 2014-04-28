@@ -6,6 +6,8 @@ SET(wildmidi_library_SRCS
     wildmidi_lib.c
     reverb.c
     gus_pat.c
+    xmidi.c
+    mus.c
 )
 
 # Headers:
@@ -84,9 +86,9 @@ ENDIF()
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
 
-# MS Visual Studio 
+# MS Visual Studio
 IF(MSVC)
-    SET(GETOPT getopt.c getopt_long.c)
+    SET(GETOPT getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
 ENDIF(MSVC)
 
@@ -106,6 +108,7 @@ ENDIF(CMAKE_GENERATOR STREQUAL "Xcode")
 IF(WANT_PLAYER)
     SET(wildmidi_executable_SRCS
         ${GETOPT}
+        wm_tty.c
         wildmidi.c
     )
 
@@ -123,6 +126,8 @@ IF(WANT_PLAYER)
       TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
         ${ALSA_INCLUDE_DIR}
         )
+    ELSEIF(AUDIODRV_OSS)
+     # no special header paths
     ENDIF()
 
     TARGET_LINK_LIBRARIES(wildmidi
@@ -136,9 +141,9 @@ ENDIF(WANT_PLAYER)
 IF(UNIX AND NOT APPLE)
     # install our libraries
     IF(WANT_STATIC)
-        INSTALL(TARGETS wildmidi_static DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
+        INSTALL(TARGETS wildmidi_static DESTINATION "lib${LIB_SUFFIX}/${CMAKE_LIBRARY_ARCHITECTURE}")
     ENDIF(WANT_STATIC)
-    INSTALL(TARGETS wildmidi_dynamic DESTINATION "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
+    INSTALL(TARGETS wildmidi_dynamic DESTINATION "lib${LIB_SUFFIX}/${CMAKE_LIBRARY_ARCHITECTURE}")
 
     # install our player if asked for
     IF(WANT_PLAYER)

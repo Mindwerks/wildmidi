@@ -77,7 +77,6 @@ static int convert_8s(uint8_t *data, struct _sample *gus_sample) {
 
 	WM_ERROR_NEW("(%s:%i) ERROR: calloc failed (%s)", __FUNCTION__, __LINE__,
 			strerror(errno));
-//	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -809,7 +808,7 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 		gus_sample->inc_div = ((gus_sample->freq_root * 512) / gus_sample->rate) * 2;
 
 #if 0
-		// We dont use this info at this time ... kept in here for info
+		/* We dont use this info at this time, kept in here for info */
 		printf("\rTremolo Sweep: %i, Rate: %i, Depth %i\n",
 				gus_patch[gus_ptr+49], gus_patch[gus_ptr+50], gus_patch[gus_ptr+51]);
 		printf("\rVibrato Sweep: %i, Rate: %i, Depth %i\n",
@@ -844,27 +843,26 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 				uint8_t env_rate = gus_patch[gus_ptr + 37 + i];
 				gus_sample->env_target[i] = 16448 * gus_patch[gus_ptr + 43 + i];
 				GUSPAT_INT_DEBUG("Envelope Level",gus_patch[gus_ptr+43+i]); GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[env_rate]);
-				gus_sample->env_rate[i] = (uint32_t) (4194303.0
+				gus_sample->env_rate[i] = (int32_t) (4194303.0
 						/ ((float) WM_SampleRate * env_time_table[env_rate]));
-
+				GUSPAT_INT_DEBUG("Envelope Rate",gus_sample->env_rate[i]); GUSPAT_INT_DEBUG("GUSPAT Rate",env_rate);
 				if (gus_sample->env_rate[i] == 0) {
-					fprintf(stderr,
-							"\rWarning: libWildMidi %s found invalid envelope(%u) rate setting in %s. Using %f instead.\n",
+					WM_ERROR_NEW("%s: Warning: found invalid envelope(%u) rate setting in %s. Using %f instead.",
 							__FUNCTION__, i, filename, env_time_table[63]);
-					gus_sample->env_rate[i] = (uint32_t) (4194303.0
+					gus_sample->env_rate[i] = (int32_t) (4194303.0
 							/ ((float) WM_SampleRate * env_time_table[63]));
 					GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 				}
 			} else {
 				gus_sample->env_target[i] = 4194303;
-				gus_sample->env_rate[i] = (uint32_t) (4194303.0
+				gus_sample->env_rate[i] = (int32_t) (4194303.0
 						/ ((float) WM_SampleRate * env_time_table[63]));
 				GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 			}
 		}
 
 		gus_sample->env_target[6] = 0;
-		gus_sample->env_rate[6] = (uint32_t) (4194303.0
+		gus_sample->env_rate[6] = (int32_t) (4194303.0
 				/ ((float) WM_SampleRate * env_time_table[63]));
 
 		gus_ptr += 96;

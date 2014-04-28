@@ -6,29 +6,29 @@ wildmidi \- example player for libWildMidi
 .B libWildMidi
 .PP
 .SH FILES
-.B /etc/wildmidi.cfg
+.B /etc/wildmidi/wildmidi.cfg
 .PP
 .SH SYNOPSIS
-.B wildmidi [-behlv] [-c \fIconfig-file\fB] [-d \fIdevice\fB] [-m \fIvolume-level\fB] [-o \fIwav-file\fB] \fImidifile ...
+.B wildmidi [\-behlvwn] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-o \fIwav\-file\fB] \fImidifile ...
 .PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
 .PP
 \fImidifile\fP is processed by libWildMidi and the resulting audio is output by the player.
 .PP
-You can have more than one \fImidifile\fB on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
+You can have more than one \fImidifile\fP on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
 .PP
 .SH OPTIONS
 .IP "\fB\-b\fP | \fB\-\-reverb\fP"
 Turns on an 8 point reverb engine that adds depth to the final mix.
 .P
-.IP "\fB\-c\fP \fIconfig-file\fP | \fB\-\-config_file\fP \fIconfig\-file\fP"
-Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmidi.cfg
+.IP "\fB\-c\fP \fIconfig\-file\fP | \fB\-\-config\fP \fIconfig\-file\fP"
+Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmidi/wildmidi.cfg
 .PP
-.IP "\fB\-d\fP \fIdevice\fP | \fB\-\-auddev=\fIdevice\fP"
-Send the audio to \fIdevice\fP instead of the default. ALSA defaults to the system "default" while OSS defaults to "/dev/dsp". Win32 environments ignore this option.
+.IP "\fB\-d\fP \fIaudiodev\fP | \fB\-\-device=\fIaudiodev\fP"
+Send the audio to \fIaudiodev\fP instead of the default. ALSA defaults to the system "default" while OSS defaults to "/dev/dsp". Other environments do not support this option.
 .PP
-.IP "\fB\-e\fP | \fB\-\-enhanced_resample\fP"
+.IP "\fB\-e\fP | \fB\-\-enhanced\fP"
 Switches to a gauss based resampling algorithm which can improve the shape of the sound.
 .PP
 .IP "\fB\-h\fP | \fB\-\-help\fP"
@@ -37,7 +37,7 @@ Displays command line options
 .IP "\fB\-l\fP | \fB\-\-log_vol\fP"
 Some MIDI files have been recorded on hardware that uses a volume curve, making them sound really badly mixed on other MIDI devices. Use this option to use volume curves.
 .PP
-.IP "\fB\-m\fP \fIvolume\-level\fP | \fB\-\-master_volume=\fIvolume\-level\fP"
+.IP "\fB\-m\fP \fIvolume\-level\fP | \fB\-\-mastervol=\fIvolume\-level\fP"
 Set the overall volume level to \fIvolume\-level\fP. The minimum is 0 and the maximum is 127, with the default being 100.
 .PP
 .IP "\fB\-o\fP \fIwav\-file\fP | \fB\-\-wavout=\fIwav\-file\fP"
@@ -45,6 +45,12 @@ Records the audio in wav format to \fIwav-file\fP.
 .PP
 .IP "\fB\-r\fP \fIsndrate\fP | \fB\-\-rate=\fIsndrate\fP"
 Set the audio output rate to \fIsndrate\fP. The default rate is 32072.
+.PP
+.IP "\fB\-w\fP | \fB\-\-wholetempo\fP"
+Round down tempo to whole number
+.PP
+.IP "\fB\-n\fP | \fB\-\-roundtempo\fP"
+Round tempo to nearest whole number
 .PP
 .IP "\fB\-v\fP | \fB\-\-version\fP"
 Display version and copyright information
