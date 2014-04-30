@@ -2909,6 +2909,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
             for (i=0; i < no_tracks; i++) {
                 sample_remainder = 0.0;
                 decay_samples = 0;
+                track_delta[i] = 0;
                 do {
                     if(track_delta[i]) {
                         sample_count_tmp = (((float) track_delta[i] * samples_per_delta_f)
@@ -3166,6 +3167,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                             WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
                             goto _end;
                     }
+                    track_delta[i] = 0;
                     while (*tracks[i] > 0x7F) {
                         track_delta[i] = (track_delta[i] << 7)
                         + (*tracks[i] & 0x7F);
@@ -3174,7 +3176,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
                     tracks[i]++;
                 NEXT_TRACK2:
-                    smallest_delta = track_delta; // Added just to keep Xcode happy
+                    smallest_delta = track_delta[i]; // Added just to keep Xcode happy
                 } while (track_end[i] == 0);
                 /*
                  * Add decay at the end of each song
