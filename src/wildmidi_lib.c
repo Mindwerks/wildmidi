@@ -2426,25 +2426,6 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size,  _opti
 	return (midi_buffer);
 }
 
-WM_SYMBOL int WildMidi_SetConversionOptions (uint8_t option, uint16_t value){
-	switch (option) { // TODO: remove me
-	case WM_CO_CONVERTTYPE:
-		if (value <= XMIDI_CONVERT_MT32_TO_GS)
-			//WM_ConvertOptions.convert_type = value;
-			;
-		else {
-			WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, value);
-			return (0);
-		}
-		break;
-	default:
-		WM_ERROR_NEW("%s:%i:  %d is an invalid conversion option.", __FUNCTION__, __LINE__, option);
-		return (0);
-	}
-
-	return (1);
-}
-
 static struct _mdi *
 WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	struct _mdi *mdi;
@@ -4010,7 +3991,7 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 	return (0);
 }
 
-WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
+WM_SYMBOL midi *WildMidi_Open(const char *midifile, _options *options) {
 	uint8_t *mididata = NULL;
 	uint32_t midisize = 0;
 	midi * ret = NULL;
@@ -4042,7 +4023,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 	return (ret);
 }
 
-WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
+WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size, _options *options) {
 	midi * ret = NULL;
 
 	if (!WM_Initialized) {

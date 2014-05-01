@@ -1256,7 +1256,7 @@ int main(int argc, char **argv) {
 		else real_file++;
 
 		printf("Converting %s\r\n", real_file);
-		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size, NULL);
+		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size, &options);
 		if (!data) {
 			fprintf(stderr, "Conversion failed.\r\n");
 			return (1);
@@ -1317,7 +1317,7 @@ int main(int argc, char **argv) {
 			else real_file++;
 			printf("Playing %s \r\n", real_file);
 
-			midi_ptr = WildMidi_Open(argv[optind]);
+			midi_ptr = WildMidi_Open(argv[optind], &options);
 			optind++;
 			if (midi_ptr == NULL) {
 				fprintf(stderr, "\rSkipping %s\r\n", real_file);
@@ -1332,7 +1332,7 @@ int main(int argc, char **argv) {
 					midi_test[test_count].size);
 			test_data[25] = test_bank;
 			test_data[28] = test_patch;
-			midi_ptr = WildMidi_OpenBuffer(test_data, 633);
+			midi_ptr = WildMidi_OpenBuffer(test_data, 633, NULL);
 			test_count++;
 			if (midi_ptr == NULL) {
 				fprintf(stderr, "\rFailed loading test midi no. %i\r\n", test_count);

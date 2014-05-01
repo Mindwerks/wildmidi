@@ -464,6 +464,12 @@ int xmi2midi(uint8_t *in, uint32_t insize,
 	unsigned int i;
 	int ret = -1;
 
+	if (convert_type > XMIDI_CONVERT_MT32_TO_GS) {
+		WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, convert_type);
+		return (ret);
+	}
+	printf("TEST: %d\r\n",convert_type);
+
 	memset(&ctx, 0, sizeof(struct xmi_ctx));
 	ctx.src = ctx.src_ptr = in;
 	ctx.srcsize = insize;

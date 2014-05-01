@@ -102,12 +102,11 @@ typedef void midi;
 
 WM_SYMBOL long WildMidi_GetVersion (void);
 WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t options);
-WM_SYMBOL midi * WildMidi_Open (const char *midifile);
-WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
+WM_SYMBOL midi * WildMidi_Open (const char *midifile, _options *options);
+WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size, _options *options);
 WM_SYMBOL int WildMidi_GetOutput (midi *handle, int8_t *buffer, uint32_t size);
 WM_SYMBOL int WildMidi_SetOption (midi *handle, uint16_t options, uint16_t setting);
 WM_SYMBOL void * WildMidi_ConvertToMidi (const char *file, uint32_t *size, _options *options);
-WM_SYMBOL int WildMidi_SetConversionOptions (uint8_t option, uint16_t value);
 WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
 WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
