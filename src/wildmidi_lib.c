@@ -173,8 +173,6 @@ struct _mdi {
 	uint32_t mix_buffer_size;
 
 	struct _rvb *reverb;
-
-	_options convert_options;
 };
 
 struct _event {
@@ -2427,7 +2425,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size,  _opti
 }
 
 static struct _mdi *
-WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
+WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size, _options *options) {
 	struct _mdi *mdi;
 
 	uint32_t tmp_val;
@@ -2463,7 +2461,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, /*TODO: fixme options->convert_type*/ 2) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, options->convert_type) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -4010,7 +4008,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile, _options *options) {
 		return (NULL);
 	}
 
-	ret = (void *) WM_ParseNewMidi(mididata, midisize);
+	ret = (void *) WM_ParseNewMidi(mididata, midisize, options);
 	free(mididata);
 
 	if (ret) {
@@ -4040,7 +4038,7 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size, _options
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LONGFIL, NULL, 0);
 		return (NULL);
 	}
-	ret = (void *) WM_ParseNewMidi(midibuffer, size);
+	ret = (void *) WM_ParseNewMidi(midibuffer, size, &options);
 
 	if (ret) {
 		if (add_handle(ret) != 0) {

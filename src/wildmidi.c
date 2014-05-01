@@ -1133,7 +1133,7 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample;
 	int inpause = 0;
 	long libraryver;
-	_options options;
+	_options options = {0, 0};
 
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 	pcmname[0] = 0;
