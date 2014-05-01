@@ -1179,6 +1179,7 @@ int main(int argc, char **argv) {
 			break;
 		case 'g': /* XMIDI Conversion */
 			options.convert_type = atoi(optarg);
+			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {
 				fprintf(stderr, "Error: empty midi name.\n");
