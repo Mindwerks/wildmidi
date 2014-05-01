@@ -173,6 +173,8 @@ struct _mdi {
 	uint32_t mix_buffer_size;
 
 	struct _rvb *reverb;
+
+	_options convert_options;
 };
 
 struct _event {
@@ -181,15 +183,6 @@ struct _event {
 	uint32_t samples_to_next;
 	uint32_t samples_to_next_fixed;
 };
-
-/* when converting files to midi */
-typedef struct _convert_options {
-	uint8_t convert_type;
-	uint16_t frequency;
-} _convert_options;
-
-static _convert_options WM_ConvertOptions = {XMIDI_CONVERT_MT32_TO_GS, 0};
-
 
 #define FPBITS 10
 #define FPMASK ((1L<<FPBITS)-1L)
@@ -2387,7 +2380,7 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 	return (decay_samples);
 }
 
-WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
+WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size,  _options *options) {
 	uint8_t *file_buffer, *midi_buffer;
 
 	if (file == NULL) {
@@ -2395,6 +2388,11 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 				0);
 		return (NULL);
 	}
+
+	if (options == NULL) { // use default options
+		// TODO: fill in
+	}
+
 	/* pull in file data */
 	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
 		return (NULL);
@@ -2402,7 +2400,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_ConvertOptions.convert_type) < 0) {
+		if (xmi2midi(file_buffer, *size, &midi_buffer, size, options->convert_type) < 0) {
 			free(file_buffer);
 			return (NULL);
 		}
@@ -2429,10 +2427,11 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 }
 
 WM_SYMBOL int WildMidi_SetConversionOptions (uint8_t option, uint16_t value){
-	switch (option) {
+	switch (option) { // TODO: remove me
 	case WM_CO_CONVERTTYPE:
 		if (value <= XMIDI_CONVERT_MT32_TO_GS)
-			WM_ConvertOptions.convert_type = value;
+			//WM_ConvertOptions.convert_type = value;
+			;
 		else {
 			WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, value);
 			return (0);
@@ -2483,7 +2482,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_ConvertOptions.convert_type) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, /*TODO: fixme options->convert_type*/ 2) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -3964,36 +3963,6 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mix
 	return (0);
 }
 
-WM_SYMBOL int WildMidi_MasterVolume(uint8_t master_volume) {
-	struct _mdi *mdi = NULL;
-	struct _hndl * tmp_handle = first_handle;
-	int i = 0;
-
-	if (!WM_Initialized) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
-		return (-1);
-	}
-	if (master_volume > 127) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-				"(master volume out of range, range is 0-127)", 0);
-		return (-1);
-	}
-
-	WM_MasterVolume = lin_volume[master_volume];
-
-	if (tmp_handle) {
-		while (tmp_handle) {
-			mdi = (struct _mdi *) tmp_handle->handle;
-			for (i = 0; i < 16; i++) {
-				do_pan_adjust(mdi, i);
-			}
-			tmp_handle = tmp_handle->next;
-		}
-	}
-
-	return (0);
-}
-
 WM_SYMBOL int WildMidi_Close(midi * handle) {
 	struct _mdi *mdi = (struct _mdi *) handle;
 	struct _hndl * tmp_handle;
@@ -4237,6 +4206,37 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 
 WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		uint16_t setting) {
+	if (handle == NULL) { // handle global options
+		if (options == MW_MO_MASTERVOLUME) {
+			struct _mdi *mdi = NULL;
+			struct _hndl * tmp_handle = first_handle;
+			int i = 0;
+
+			if (!WM_Initialized) {
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
+				return (-1);
+			}
+			if (setting > 127) {
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+						"(master volume out of range, range is 0-127)", 0);
+				return (-1);
+			}
+
+			WM_MasterVolume = lin_volume[setting];
+
+			if (tmp_handle) {
+				while (tmp_handle) {
+					mdi = (struct _mdi *) tmp_handle->handle;
+					for (i = 0; i < 16; i++) {
+						do_pan_adjust(mdi, i);
+					}
+					tmp_handle = tmp_handle->next;
+				}
+			}
+		}
+		return (0);
+	}
+
 	struct _mdi *mdi = (struct _mdi *) handle;
 	struct _note *note_data = mdi->note;
 	int i;

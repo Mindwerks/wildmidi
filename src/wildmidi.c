@@ -1133,6 +1133,7 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample;
 	int inpause = 0;
 	long libraryver;
+	_options options;
 
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 	pcmname[0] = 0;
@@ -1177,9 +1178,7 @@ int main(int argc, char **argv) {
 			wav_file[sizeof(wav_file) - 1] = 0;
 			break;
 		case 'g': /* XMIDI Conversion */
-			if (!WildMidi_SetConversionOptions(WM_CO_CONVERTTYPE, atoi(optarg)))
-				return (1);
-			break;
+			options.convert_type = atoi(optarg);
 		case 'x': /* MIDI Output */
 			if (!*optarg) {
 				fprintf(stderr, "Error: empty midi name.\n");
@@ -1256,7 +1255,7 @@ int main(int argc, char **argv) {
 		else real_file++;
 
 		printf("Converting %s\r\n", real_file);
-		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size);
+		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size, NULL);
 		if (!data) {
 			fprintf(stderr, "Conversion failed.\r\n");
 			return (1);
@@ -1307,7 +1306,7 @@ int main(int argc, char **argv) {
 
 	wm_inittty();
 
-	WildMidi_MasterVolume(master_volume);
+	WildMidi_SetOption(NULL, MW_MO_MASTERVOLUME, master_volume);
 
 	while (optind < argc || test_midi) {
 		if (!test_midi) {
@@ -1416,13 +1415,13 @@ int main(int argc, char **argv) {
 				case '-':
 					if (master_volume > 0) {
 						master_volume--;
-						WildMidi_MasterVolume(master_volume);
+						WildMidi_SetOption(NULL, MW_MO_MASTERVOLUME, master_volume);
 					}
 					break;
 				case '+':
 					if (master_volume < 127) {
 						master_volume++;
-						WildMidi_MasterVolume(master_volume);
+						WildMidi_SetOption(NULL, MW_MO_MASTERVOLUME, master_volume);
 					}
 					break;
 				case ',': /* fast seek backwards */
