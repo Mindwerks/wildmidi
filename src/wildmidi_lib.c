@@ -3177,6 +3177,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     tracks[i]++;
                 NEXT_TRACK2:
                     smallest_delta = track_delta[i]; // Added just to keep Xcode happy
+                    UNUSED(smallest_delta); // Added to just keep clang happy
                 } while (track_end[i] == 0);
                 /*
                  * Add decay at the end of each song
