@@ -1,9 +1,11 @@
 /*
  DevTest.c: Display Information about the Gravis Ultrasound patch file.
+            Display Information about MIDI file.
+ 
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
  COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
- Copyright (C) Chris Ison  2001-2011
+ Copyright (C) Chris Ison  2001-2014
  Copyright (C) Bret Curtis 2013-2014
 
  This file is part of WildMIDI.
@@ -211,7 +213,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	unsigned int no_tracks;
 	unsigned int i;
 	unsigned int divisions = 96;
-	unsigned char running_event;
+	unsigned char running_event = 0;
 	unsigned char *sysex_store = NULL;
 	unsigned long int sysex_store_ofs = 0;
 	unsigned long int tempo = 500000;
@@ -256,7 +258,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	}
 
 	/*
-	 * Get Midi Format - we only support 0 and 1
+	 * Get Midi Format - we only support 0, 1 and 2
 	 */
 	tmp_val = *midi_data++ << 8;
 	tmp_val |= *midi_data++;
@@ -560,11 +562,10 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 								printf("\n");
 							}
 						}
-						free(sysex_store);
-						sysex_store = NULL;
-						sysex_store_ofs = 0;
 					}
-
+                    free(sysex_store);
+                    sysex_store = NULL;
+                    sysex_store_ofs = 0;
 					midi_data += sysex_size;
 				} else if (event == 0xFF) {
 					if (*midi_data == 0x02) {
