@@ -10,8 +10,17 @@ SET(wildmidi_library_SRCS
     mus.c
 )
 
-# Headers:
-SET(wildmidi_executable_HDRS)
+SET(wildmidi_library_HDRS
+    ../include/wm_error.h
+    ../include/file_io.h
+    ../include/lock.h
+    ../include/wildmidi_lib.h
+    ../include/reverb.h
+    ../include/gus_pat.h
+    ../include/xmidi.h
+    ../include/common.h
+    ../include/filenames.h
+)
 
 # set our target paths
 SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
@@ -30,6 +39,7 @@ ENDIF()
 IF(WANT_STATIC)
     ADD_LIBRARY(wildmidi_static STATIC 
         ${wildmidi_library_SRCS}
+        ${wildmidi_library_HDRS}
         )
 
     TARGET_LINK_LIBRARIES(wildmidi_static 
@@ -45,6 +55,7 @@ ENDIF(WANT_STATIC)
 # always build our dynamic library
 ADD_LIBRARY(wildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
+    ${wildmidi_library_HDRS}
     )
 
 TARGET_LINK_LIBRARIES(wildmidi_dynamic 
@@ -112,8 +123,14 @@ IF(WANT_PLAYER)
         wildmidi.c
     )
 
+    SET(wildmidi_executable_HDRS
+        ../include/wm_tty.h
+        ../include/getopt_long.h
+    )
+
     ADD_EXECUTABLE(wildmidi
         ${wildmidi_executable_SRCS}
+        ${wildmidi_executable_HDRS}
     )
 
     ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
@@ -137,6 +154,15 @@ IF(WANT_PLAYER)
         )
 ENDIF(WANT_PLAYER)
 
+IF(WANT_DEVTEST)
+    SET(wildmidi-devtest_executable_SRCS
+        DevTest.c
+    )
+    ADD_EXECUTABLE(wildmidi-devtest
+        ${wildmidi-devtest_executable_SRCS}
+    )
+ENDIF(WANT_DEVTEST)
+
 # add install target:
 IF(UNIX AND NOT APPLE)
     # install our libraries
@@ -149,6 +175,11 @@ IF(UNIX AND NOT APPLE)
     IF(WANT_PLAYER)
         INSTALL(TARGETS wildmidi DESTINATION bin)
     ENDIF(WANT_PLAYER)
+    
+    # install our devtest if asked for
+    IF(WANT_DEVTEST)
+        INSTALL(TARGETS wildmidi-devtest DESTINATION bin)
+    ENDIF(WANT_DEVTEST)
 
     # install supporting man pages and headers
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
