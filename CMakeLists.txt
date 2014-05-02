@@ -37,6 +37,7 @@ OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) suppor
 OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 #OPTION(WANT_COREAUDIO   "Include CoreAudio support (Driver support for Mac OS X" OFF)
 OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
+OPTION(WANT_DEVTEST     "Build WildMIDI DevTest file to check files" ON)
 IF(UNIX AND NOT APPLE)
 SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
 ELSE()
