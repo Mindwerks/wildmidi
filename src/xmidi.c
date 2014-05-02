@@ -469,6 +469,9 @@ int xmi2midi(uint8_t *in, uint32_t insize,
 		return (ret);
 	}
 
+	if (convert_type == 0)
+		convert_type = XMIDI_CONVERT_MT32_TO_GS;
+
 	memset(&ctx, 0, sizeof(struct xmi_ctx));
 	ctx.src = ctx.src_ptr = in;
 	ctx.srcsize = insize;

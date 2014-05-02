@@ -28,12 +28,12 @@
 #include <stdint.h>
 
 /* Conversion types for Midi files */
-#define XMIDI_CONVERT_NOCONVERSION		0x00
-#define XMIDI_CONVERT_MT32_TO_GM		0x01
-#define XMIDI_CONVERT_MT32_TO_GS		0x02
-#define XMIDI_CONVERT_MT32_TO_GS127		0x03 /* This one is broken, don't use */
-#define XMIDI_CONVERT_MT32_TO_GS127DRUM	0x04 /* This one is broken, don't use */
-#define XMIDI_CONVERT_GS127_TO_GS		0x05
+#define XMIDI_CONVERT_NOCONVERSION		0x01
+#define XMIDI_CONVERT_MT32_TO_GM		0x02
+#define XMIDI_CONVERT_MT32_TO_GS		0x03
+#define XMIDI_CONVERT_MT32_TO_GS127		0x04 /* This one is broken, don't use */
+#define XMIDI_CONVERT_MT32_TO_GS127DRUM	0x05 /* This one is broken, don't use */
+#define XMIDI_CONVERT_GS127_TO_GS		0x06
 
 int xmi2midi(uint8_t *in, uint32_t insize,
 	 uint8_t **out, uint32_t *outsize,
