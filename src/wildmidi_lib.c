@@ -2387,10 +2387,6 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size,  _opti
 		return (NULL);
 	}
 
-	if (options == NULL) { // use default options
-		// TODO: fill in
-	}
-
 	/* pull in file data */
 	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
 		return (NULL);
@@ -2398,7 +2394,11 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size,  _opti
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, options->convert_type) < 0) {
+		uint16_t convert_type = XMIDI_CONVERT_MT32_TO_GS; // set the default value
+		if (options)
+			convert_type = options->convert_type;
+
+		if (xmi2midi(file_buffer, *size, &midi_buffer, size, convert_type) < 0) {
 			free(file_buffer);
 			return (NULL);
 		}
@@ -2461,7 +2461,11 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size, _options *options) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, options->convert_type) < 0) {
+		uint16_t convert_type = XMIDI_CONVERT_MT32_TO_GS; // set the default value
+		if (options)
+			convert_type = options->convert_type;
+
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, convert_type) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -4038,7 +4042,7 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size, _options
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LONGFIL, NULL, 0);
 		return (NULL);
 	}
-	ret = (void *) WM_ParseNewMidi(midibuffer, size, &options);
+	ret = (void *) WM_ParseNewMidi(midibuffer, size, options);
 
 	if (ret) {
 		if (add_handle(ret) != 0) {
