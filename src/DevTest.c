@@ -1,9 +1,11 @@
 /*
  DevTest.c: Display Information about the Gravis Ultrasound patch file.
+            Display Information about MIDI file.
+
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
  COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
- Copyright (C) Chris Ison  2001-2011
+ Copyright (C) Chris Ison  2001-2014
  Copyright (C) Bret Curtis 2013-2014
 
  This file is part of WildMIDI.
@@ -91,7 +93,7 @@ static const char *PACKAGE_VERSION = "0.3";
 
 void do_version(void) {
 	printf("DevTest for WildMIDI %s - For testing purposes only\n\n", PACKAGE_VERSION);
-	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
+	printf("Copyright (C) Chris Ison 2001-2014 wildcode@users.sourceforge.net\n\n");
 	printf("DevTest comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
 	printf("under the terms and conditions of the GNU General Public License version 3.\n");
@@ -211,7 +213,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	unsigned int no_tracks;
 	unsigned int i;
 	unsigned int divisions = 96;
-	unsigned char running_event;
+	unsigned char running_event = 0;
 	unsigned char *sysex_store = NULL;
 	unsigned long int sysex_store_ofs = 0;
 	unsigned long int tempo = 500000;
@@ -256,7 +258,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	}
 
 	/*
-	 * Get Midi Format - we only support 0 and 1
+	 * Get Midi Format - we only support 0, 1 and 2
 	 */
 	tmp_val = *midi_data++ << 8;
 	tmp_val |= *midi_data++;
@@ -265,7 +267,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	if (verbose)
 		printf("Format: %i\n", tmp_val);
 
-	if (tmp_val > 1) {
+	if (tmp_val > 2) {
 		printf("Midi Format Not Supported\n");
 		return -1;
 	}
