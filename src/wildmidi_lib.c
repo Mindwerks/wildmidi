@@ -2394,7 +2394,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size,  _opti
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		uint16_t convert_type = XMIDI_CONVERT_MT32_TO_GS; // set the default value
+		uint16_t convert_type = 0; // set the default value
 		if (options)
 			convert_type = options->convert_type;
 
@@ -2461,7 +2461,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size, _options *options) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		uint16_t convert_type = XMIDI_CONVERT_MT32_TO_GS; // set the default value
+		uint16_t convert_type = 0; // set the default value
 		if (options)
 			convert_type = options->convert_type;
 
