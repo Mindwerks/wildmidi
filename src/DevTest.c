@@ -536,7 +536,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
         return -1;
     }
     
-    printf("First FORM found\n");
+    if (verbose)
+        printf("First FORM found\n");
         
     xmidi_data += 4;
     xmidi_size -= 4;
@@ -565,7 +566,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     // number of forms contained after this point
     form_cnt = *xmidi_data++;
     
-    printf("Contains %u forms\n", form_cnt);
+    if (verbose)
+        printf("Contains %u forms\n", form_cnt);
     
     
     /*
@@ -589,7 +591,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     cat_len |= *xmidi_data++ << 8;
     cat_len |= *xmidi_data++;
     xmidi_size -= 4;
-    printf("CAT length = %u",cat_len);
+    if (verbose)
+        printf("CAT length = %u",cat_len);
     
     if (strncmp((char *) xmidi_data,"XMID", 4) != 0) {
         printf("Not a valid xmidi file: expected XMID\n");
@@ -604,7 +607,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
             printf("Not a valid xmidi file: expected FORM\n");
             return -1;
         }
-        printf("\nNew FORM\n");
+        if (verbose)
+            printf("\nNew FORM\n");
         xmidi_data += 4;
         xmidi_size -= 4;
         
@@ -614,13 +618,15 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
         subform_len |= *xmidi_data++ << 8;
         subform_len |= *xmidi_data++;
         xmidi_size -= 4;
-        printf("FORM length: %u\n",subform_len);
+        if (verbose)
+            printf("FORM length: %u\n",subform_len);
         
         if (strncmp((char *) xmidi_data,"XMID", 4) != 0) {
             printf("Not a valid xmidi file: expected XMID\n");
             return -1;
         }
-        printf("XMID Data\n");
+        if (verbose)
+            printf("XMID Data\n");
         xmidi_data += 4;
         xmidi_size -= 4;
         subform_len -= 4;
@@ -640,19 +646,22 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 xmidi_size -= 4;
                 subform_len -= 8;
                 
-                printf("TIMB length: %u\n", tmp_val);
+                if (verbose)
+                    printf("TIMB length: %u\n", tmp_val);
             
                 /*
-                 patch information
-                 */
+                    patch information
+                */
                 tmp_val /= 2;
                 for (unsigned int j=0; j < tmp_val; j++) {
-                    printf ("Patch:%i, Bank:%i\n", xmidi_data[0], xmidi_data[1]);
+                    if (verbose)
+                        printf ("Patch:%i, Bank:%i\n", xmidi_data[0], xmidi_data[1]);
                     xmidi_data += 2;
                     xmidi_size -= 2;
                     subform_len -= 2;
                 }
-                printf("\n");
+                if (verbose)
+                    printf("\n");
         /*
             } else if (strncmp((char *) xmidi_data,"RBRN", 4) == 0) {
             */
@@ -670,7 +679,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 xmidi_size -= 4;
                 subform_len -= 8;
                 
-                printf("EVENT length: %u\n",event_len);
+                if (verbose)
+                    printf("EVENT length: %u\n",event_len);
             
                 do {
                     if (*xmidi_data < 0x80) {
@@ -681,7 +691,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                         event_len--;
                         subform_len--;
                         
-                        printf ("Intervals: %u\n", tmp_val);
+                        if (verbose)
+                            printf ("Intervals: %u\n", tmp_val);
                     
                     } else {
                         if ((check_ret = check_midi_event(xmidi_data, xmidi_size, divisions, 0, verbose)) == -1) {
@@ -715,7 +726,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                             xmidi_size--;
                             event_len--;
                             subform_len--;
-                            printf("Intervals: %u\n", tmp_val);
+                            if (verbose)
+                                printf("Intervals: %u\n", tmp_val);
                         } else {
                             xmidi_data += check_ret;
                             xmidi_size -= check_ret;
@@ -724,13 +736,15 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                         }
                     }
                 } while (event_len);
-                printf("\n");
+                if (verbose)
+                    printf("\n");
             } else {
                 printf("Not a valid xmidi file: unknown XMID entry\n");
                 return -1;
             }
         } while (subform_len);
-        printf("=============\n\n");
+        if (verbose)
+            printf("=============\n\n");
     }
     return 0;
 }
