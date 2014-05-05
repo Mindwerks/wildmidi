@@ -1077,9 +1077,9 @@ static void do_help(void) {
 	printf("  -t    --test_midi   Listen to test MIDI\n");
 	printf("Non-MIDI Options:\n");
 	printf("  -x    --tomidi     Convert file to midi and save to file\n");
-	printf("  -g    --convert    Convert XMI: 1 - No Conversion\n");
-	printf("                                  2 - MT32 to GM\n");
-	printf("                        (default) 3 - MT32 to GS\n");
+	printf("  -g    --convert    Convert XMI: 0 - No Conversion (default) \n");
+	printf("                                  1 - MT32 to GM\n");
+	printf("                                  2 - MT32 to GS\n");
 	printf("Software Wavetable Options:\n");
 	printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 	printf("  -l    --log_vol     Use log volume adjustments\n");
@@ -1133,7 +1133,6 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample;
 	int inpause = 0;
 	long libraryver;
-	_options options = {0, 0};
 
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 	pcmname[0] = 0;
@@ -1178,7 +1177,7 @@ int main(int argc, char **argv) {
 			wav_file[sizeof(wav_file) - 1] = 0;
 			break;
 		case 'g': /* XMIDI Conversion */
-			options.convert_type = atoi(optarg);
+			WildMidi_SetOption(NULL, WM_CO_XMI_TYPE, atoi(optarg));
 			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {
@@ -1256,7 +1255,7 @@ int main(int argc, char **argv) {
 		else real_file++;
 
 		printf("Converting %s\r\n", real_file);
-		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size, &options);
+		data = (uint8_t*) WildMidi_ConvertToMidi(argv[optind], &size);
 		if (!data) {
 			fprintf(stderr, "Conversion failed.\r\n");
 			return (1);
@@ -1317,7 +1316,7 @@ int main(int argc, char **argv) {
 			else real_file++;
 			printf("Playing %s \r\n", real_file);
 
-			midi_ptr = WildMidi_Open(argv[optind], &options);
+			midi_ptr = WildMidi_Open(argv[optind]);
 			optind++;
 			if (midi_ptr == NULL) {
 				fprintf(stderr, "\rSkipping %s\r\n", real_file);
@@ -1332,7 +1331,7 @@ int main(int argc, char **argv) {
 					midi_test[test_count].size);
 			test_data[25] = test_bank;
 			test_data[28] = test_patch;
-			midi_ptr = WildMidi_OpenBuffer(test_data, 633, NULL);
+			midi_ptr = WildMidi_OpenBuffer(test_data, 633);
 			test_count++;
 			if (midi_ptr == NULL) {
 				fprintf(stderr, "\rFailed loading test midi no. %i\r\n", test_count);
