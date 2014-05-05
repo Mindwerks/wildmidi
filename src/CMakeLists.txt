@@ -8,8 +8,16 @@ SET(wildmidi_library_SRCS
     gus_pat.c
 )
 
-# Headers:
-SET(wildmidi_executable_HDRS)
+SET(wildmidi_library_HDRS
+    ../include/wm_error.h
+    ../include/file_io.h
+    ../include/lock.h
+    ../include/wildmidi_lib.h
+    ../include/reverb.h
+    ../include/gus_pat.h
+    ../include/common.h
+    ../include/filenames.h
+)
 
 # set our target paths
 SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
@@ -28,6 +36,7 @@ ENDIF()
 IF(WANT_STATIC)
     ADD_LIBRARY(wildmidi_static STATIC 
         ${wildmidi_library_SRCS}
+        ${wildmidi_library_HDRS}
         )
 
     TARGET_LINK_LIBRARIES(wildmidi_static 
@@ -43,6 +52,7 @@ ENDIF(WANT_STATIC)
 # always build our dynamic library
 ADD_LIBRARY(wildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
+    ${wildmidi_library_HDRS}
     )
 
 TARGET_LINK_LIBRARIES(wildmidi_dynamic 
@@ -110,8 +120,14 @@ IF(WANT_PLAYER)
         wildmidi.c
     )
 
+    SET(wildmidi_executable_HDRS
+        ../include/wm_tty.h
+        ../include/getopt_long.h
+    )
+
     ADD_EXECUTABLE(wildmidi
         ${wildmidi_executable_SRCS}
+        ${wildmidi_executable_HDRS}
     )
 
     ADD_DEPENDENCIES(wildmidi wildmidi_static wildmidi_dynamic)
@@ -140,3 +156,4 @@ IF(UNIX AND NOT APPLE)
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
 ENDIF(UNIX AND NOT APPLE)
+
