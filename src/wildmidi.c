@@ -1177,7 +1177,7 @@ int main(int argc, char **argv) {
 			wav_file[sizeof(wav_file) - 1] = 0;
 			break;
 		case 'g': /* XMIDI Conversion */
-			WildMidi_SetOption(NULL, WM_CO_XMI_TYPE, atoi(optarg));
+			WildMidi_SetCvtOption(WM_CO_XMI_TYPE, atoi(optarg));
 			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {

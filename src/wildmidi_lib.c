@@ -80,11 +80,12 @@ uint16_t WM_SampleRate;
 
 /* when converting files to midi */
 typedef struct _cvt_options {
+	int lock;
 	uint16_t xmi_convert_type;
 	uint16_t frequency;
 } _cvt_options;
 
-static _cvt_options WM_ConvertOptions = {0, 0}; /* set default options */
+static _cvt_options WM_ConvertOptions = {0, 0, 0};
 
 static struct _patch *patch[128];
 
@@ -4234,19 +4235,6 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 
 WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		uint16_t setting) {
-	if (handle == NULL) { /* handle global options */
-		switch (options) {
-		case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
-			WM_ConvertOptions.xmi_convert_type = setting;
-		break;
-		default:
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-							"(invalid setting)", 0);
-			return (-1);
-		}
-		return (0);
-	}
-
 	struct _mdi *mdi = (struct _mdi *) handle;
 	struct _note *note_data = mdi->note;
 	int i;
@@ -4293,6 +4281,19 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 	}
 
 	WM_Unlock(&mdi->lock);
+	return (0);
+}
+
+WM_SYMBOL int WildMidi_SetCvtOption(uint16_t tag, uint16_t setting) {
+	switch (tag) {
+	case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
+		WM_ConvertOptions.xmi_convert_type = setting;
+		break;
+	default:
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+				"(invalid setting)", 0);
+		return (-1);
+	}
 	return (0);
 }
 
