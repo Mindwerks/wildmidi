@@ -79,12 +79,12 @@ static uint16_t WM_MixerOptions = 0;
 uint16_t WM_SampleRate;
 
 /* when converting files to midi */
-typedef struct _options {
+typedef struct _cvt_options {
 	uint16_t xmi_convert_type;
 	uint16_t frequency;
-} _options;
+} _cvt_options;
 
-_options WM_Options = {0, 0}; /* set default options */
+static _cvt_options WM_ConvertOptions = {0, 0}; /* set default options */
 
 static struct _patch *patch[128];
 
@@ -2401,7 +2401,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_Options.xmi_convert_type) < 0) {
+		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_ConvertOptions.xmi_convert_type) < 0) {
 			free(file_buffer);
 			return (NULL);
 		}
@@ -2464,7 +2464,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_Options.xmi_convert_type) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_ConvertOptions.xmi_convert_type) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -4231,7 +4231,7 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 	if (handle == NULL) { /* handle global options */
 		switch (options) {
 		case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
-			WM_Options.xmi_convert_type = setting;
+			WM_ConvertOptions.xmi_convert_type = setting;
 		break;
 		default:
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
