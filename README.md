@@ -16,7 +16,7 @@ PLAYER AND LIB PLATFORMS:
 * kFreeBSD: Debian, FreeBSD
 * Linux: Arch, Debian, Fedora, Ubuntu
 * Windows: x32 and x64
-* DOS: djgpp
+* DOS (djgpp)
 
 PLAYER SOUND SYSTEMS:
 
@@ -49,8 +49,9 @@ CHANGELOG
   unsigned long.
 * Support for loading XMI (XMIDI format) files, thanks Ryan Nunn for
   releasing his code under the LGPL.
-* support for loading MUS (MUS Id format) files, such as from Doom.
-* DOS (DJGPP) port, player: Support for Sound Blaster output.
+* Support for loading MUS (MUS Id format) files, such as from Doom.
+* Support for type-2 midi files.
+* DOS (DJGPP) port: Support for Sound Blaster output in player.
 * Build requires cmake-2.8.11 or newer now.
 
 0.3.7
