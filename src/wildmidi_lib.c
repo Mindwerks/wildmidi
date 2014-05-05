@@ -2386,45 +2386,51 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 	return (decay_samples);
 }
 
-WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
-	uint8_t *file_buffer, *midi_buffer;
+WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t *size) {
+	uint8_t *buf;
+	int ret;
 
-	if (file == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)",
-				0);
-		return (NULL);
+	if (!file) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)", 0);
+		return (-1);
 	}
-	/* pull in file data */
-	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
-		return (NULL);
+	if ((buf = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
+		return (-1);
 	}
 
-	/* determine data contents */
-	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_ConvertOptions.xmi_convert_type) < 0) {
-			free(file_buffer);
-			return (NULL);
+	ret = WildMidi_ConvertBufferToMidi(buf, *size, out, size);
+	free(buf);
+	return ret;
+}
+
+WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
+					uint8_t **out, uint32_t *outsize) {
+	if (!in || !out || !outsize) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL params)", 0);
+		return (-1);
+	}
+
+	if (!memcmp(in, "FORM", 4)) {
+		if (xmi2midi(in, insize, out, outsize,
+				WM_ConvertOptions.xmi_convert_type) < 0) {
+			return (-1);
 		}
 	}
-	else if (!memcmp(file_buffer, "MUS", 3)) {
-		if (mus2midi(file_buffer, *size, &midi_buffer, size) < 0) {
-			free(file_buffer);
-			return (NULL);
+	else if (!memcmp(in, "MUS", 3)) {
+		if (mus2midi(in, insize, out, outsize) < 0) {
+			return (-1);
 		}
 	}
-	else if (!memcmp(file_buffer, "MThd", 4)) {
-		WM_ERROR_NEW("%s:%i: %s is already a midi file.", __FUNCTION__, __LINE__, file);
-		free(file_buffer);
-		return (NULL);
+	else if (!memcmp(in, "MThd", 4)) {
+		WM_ERROR_NEW("%s:%i: already a midi file.", __FUNCTION__, __LINE__);
+		return (-1);
 	}
 	else {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
-		free(file_buffer);
-		return (NULL);
+		return (-1);
 	}
 
-	free(file_buffer);
-	return (midi_buffer);
+	return (0);
 }
 
 static struct _mdi *
