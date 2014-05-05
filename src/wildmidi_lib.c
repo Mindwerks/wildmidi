@@ -78,6 +78,14 @@ static uint16_t WM_MixerOptions = 0;
 
 uint16_t WM_SampleRate;
 
+/* when converting files to midi */
+typedef struct _options {
+	uint16_t xmi_convert_type;
+	uint16_t frequency;
+} _options;
+
+_options WM_Options = {0, 0}; /* set default options */
+
 static struct _patch *patch[128];
 
 static float reverb_room_width = 16.875f;
@@ -2386,6 +2394,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 				0);
 		return (NULL);
 	}
+
 	/* pull in file data */
 	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
 		return (NULL);
@@ -2393,7 +2402,7 @@ WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
 
 	/* determine data contents */
 	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, XMIDI_CONVERT_MT32_TO_GS) < 0) {
+		if (xmi2midi(file_buffer, *size, &midi_buffer, size, WM_Options.xmi_convert_type) < 0) {
 			free(file_buffer);
 			return (NULL);
 		}
@@ -2456,7 +2465,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, XMIDI_CONVERT_MT32_TO_GS) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_Options.xmi_convert_type) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -3897,7 +3906,7 @@ WM_SYMBOL long WildMidi_GetVersion (void) {
 	return (LIBWILDMIDI_VERSION);
 }
 
-WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t options) {
+WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mixer_options) {
 	if (WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_ALR_INIT, NULL, 0);
 		return (-1);
@@ -3913,13 +3922,14 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t opt
 		return (-1);
 	}
 
-	if (options & 0x5FF8) {
+	if (mixer_options & 0x5FF8) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
 				0);
 		WM_FreePatches();
 		return (-1);
 	}
-	WM_MixerOptions = options;
+
+	WM_MixerOptions = mixer_options;
 
 	if (rate < 11025) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
@@ -3932,36 +3942,6 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t opt
 	gauss_lock = 0;
 	patch_lock = 0;
 	WM_Initialized = 1;
-
-	return (0);
-}
-
-WM_SYMBOL int WildMidi_MasterVolume(uint8_t master_volume) {
-	struct _mdi *mdi = NULL;
-	struct _hndl * tmp_handle = first_handle;
-	int i = 0;
-
-	if (!WM_Initialized) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
-		return (-1);
-	}
-	if (master_volume > 127) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-				"(master volume out of range, range is 0-127)", 0);
-		return (-1);
-	}
-
-	WM_MasterVolume = lin_volume[master_volume];
-
-	if (tmp_handle) {
-		while (tmp_handle) {
-			mdi = (struct _mdi *) tmp_handle->handle;
-			for (i = 0; i < 16; i++) {
-				do_pan_adjust(mdi, i);
-			}
-			tmp_handle = tmp_handle->next;
-		}
-	}
 
 	return (0);
 }
@@ -4209,6 +4189,47 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 
 WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		uint16_t setting) {
+	if (handle == NULL) { // handle global options
+		struct _mdi *mdi = NULL;
+		struct _hndl *tmp_handle = first_handle;
+		int i = 0;
+
+		switch (options) {
+		case MW_MO_MASTERVOLUME:
+
+			if (!WM_Initialized) {
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
+				return (-1);
+			}
+			if (setting > 127) {
+				WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+						"(master volume out of range, range is 0-127)", 0);
+				return (-1);
+			}
+
+			WM_MasterVolume = lin_volume[setting];
+
+			if (tmp_handle) {
+				while (tmp_handle) {
+					mdi = (struct _mdi *) tmp_handle->handle;
+					for (i = 0; i < 16; i++) {
+						do_pan_adjust(mdi, i);
+					}
+					tmp_handle = tmp_handle->next;
+				}
+			}
+		break;
+		case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
+			WM_Options.xmi_convert_type = setting;
+		break;
+		default:
+			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+							"(invalid setting)", 0);
+			return (-1);
+		}
+		return (0);
+	}
+
 	struct _mdi *mdi = (struct _mdi *) handle;
 	struct _note *note_data = mdi->note;
 	int i;
@@ -4217,11 +4238,7 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return (-1);
 	}
-	if (handle == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
-				0);
-		return (-1);
-	}
+
 	WM_Lock(&mdi->lock);
 	if ((!(options & 0x0007)) || (options & 0xFFF8)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",

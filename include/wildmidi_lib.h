@@ -42,6 +42,11 @@
 #define WM_MO_REVERB		0x0004
 #define WM_MO_WHOLETEMPO	0x8000
 #define WM_MO_ROUNDTEMPO	0x2000
+#define MW_MO_MASTERVOLUME	0x0008
+
+/* conversion options */
+#define WM_CO_XMI_TYPE		0x0010
+#define WM_CO_FREQUENCY		0x0020
 
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
@@ -90,8 +95,7 @@ struct _WM_Info {
 typedef void midi;
 
 WM_SYMBOL long WildMidi_GetVersion (void);
-WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t options);
-WM_SYMBOL int WildMidi_MasterVolume (uint8_t master_volume);
+WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t mixer_options);
 WM_SYMBOL midi * WildMidi_Open (const char *midifile);
 WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
 WM_SYMBOL int WildMidi_GetOutput (midi *handle, int8_t *buffer, uint32_t size);
