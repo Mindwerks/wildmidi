@@ -1306,7 +1306,7 @@ int main(int argc, char **argv) {
 
 	wm_inittty();
 
-	WildMidi_SetOption(NULL, MW_MO_MASTERVOLUME, master_volume);
+	WildMidi_MasterVolume(master_volume);
 
 	while (optind < argc || test_midi) {
 		if (!test_midi) {
@@ -1415,13 +1415,13 @@ int main(int argc, char **argv) {
 				case '-':
 					if (master_volume > 0) {
 						master_volume--;
-						WildMidi_SetOption(NULL, MW_MO_MASTERVOLUME, master_volume);
+						WildMidi_MasterVolume(master_volume);
 					}
 					break;
 				case '+':
 					if (master_volume < 127) {
 						master_volume++;
-						WildMidi_SetOption(NULL, MW_MO_MASTERVOLUME, master_volume);
+						WildMidi_MasterVolume(master_volume);
 					}
 					break;
 				case ',': /* fast seek backwards */
