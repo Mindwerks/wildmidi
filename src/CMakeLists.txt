@@ -175,7 +175,7 @@ IF(UNIX AND NOT APPLE)
     IF(WANT_PLAYER)
         INSTALL(TARGETS wildmidi DESTINATION bin)
     ENDIF(WANT_PLAYER)
-    
+
     # install our devtest if asked for
     IF(WANT_DEVTEST)
         INSTALL(TARGETS wildmidi-devtest DESTINATION bin)
@@ -185,3 +185,4 @@ IF(UNIX AND NOT APPLE)
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
 ENDIF(UNIX AND NOT APPLE)
+

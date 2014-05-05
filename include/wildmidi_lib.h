@@ -43,6 +43,13 @@
 #define WM_MO_WHOLETEMPO	0x8000
 #define WM_MO_ROUNDTEMPO	0x2000
 
+/* conversion options */
+#define WM_CO_XMI_TYPE		0x0010
+#define WM_CO_FREQUENCY		0x0020
+
+/* for WildMidi_GetString */
+#define WM_GS_VERSION		0x0001
+
 /* set our symbol export visiblity */
 #if defined _WIN32 || defined __CYGWIN__
   /* ========== NOTE TO WINDOWS DEVELOPERS:
@@ -89,14 +96,18 @@ struct _WM_Info {
 
 typedef void midi;
 
+WM_SYMBOL const char * WildMidi_GetString (uint16_t info);
 WM_SYMBOL long WildMidi_GetVersion (void);
-WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t options);
+WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t mixer_options);
 WM_SYMBOL int WildMidi_MasterVolume (uint8_t master_volume);
 WM_SYMBOL midi * WildMidi_Open (const char *midifile);
 WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
 WM_SYMBOL int WildMidi_GetOutput (midi *handle, int8_t *buffer, uint32_t size);
 WM_SYMBOL int WildMidi_SetOption (midi *handle, uint16_t options, uint16_t setting);
-WM_SYMBOL void * WildMidi_ConvertToMidi (const char *file, uint32_t *size);
+WM_SYMBOL int WildMidi_SetCvtOption (uint16_t tag, uint16_t setting);
+WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t *size);
+WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
+							uint8_t **out, uint32_t *size);
 WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
 WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
@@ -105,6 +116,17 @@ WM_SYMBOL int WildMidi_Shutdown (void);
 /* NOTE: Not Yet Implemented Or Tested Properly */
 /*int WildMidi_Live (midi * handle, uint32_t midi_event);*/
 
+/*
+ reserved for future coding
+     
+// need to change these to use a time for cmd_pos and new_cmd_pos
+WM_SYMBOL int WildMidi_InsertMidiEvent (midi * handle, uint8_t char midi_cmd, *char midi_cmd_data, unsigned long int midi_cmd_data_size, unsigned long int *cmd_pos);
+WM_SYMBOL int WildMidi_DeleteMidiEvent (midi * handle, uint8_t char midi_cmd, unsigned long int *cmd_pos);
+WM_SYMBOL int WildMidi_MoveMidiEvent (midi * handle, , uint8_t char midi_cmd, unsigned long int *cmd_pos, unsigned long int *new_cmd_pos);
+    
+ */
+    
+#
 #if defined(__cplusplus)
 }
 #endif

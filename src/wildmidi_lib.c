@@ -78,6 +78,15 @@ static uint16_t WM_MixerOptions = 0;
 
 uint16_t WM_SampleRate;
 
+/* when converting files to midi */
+typedef struct _cvt_options {
+	int lock;
+	uint16_t xmi_convert_type;
+	uint16_t frequency;
+} _cvt_options;
+
+static _cvt_options WM_ConvertOptions = {0, 0, 0};
+
 static struct _patch *patch[128];
 
 static float reverb_room_width = 16.875f;
@@ -2378,45 +2387,51 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 	return (decay_samples);
 }
 
-WM_SYMBOL void* WildMidi_ConvertToMidi (const char *file, uint32_t *size) {
-	uint8_t *file_buffer, *midi_buffer;
+WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t *size) {
+	uint8_t *buf;
+	int ret;
 
-	if (file == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)",
-				0);
-		return (NULL);
+	if (!file) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)", 0);
+		return (-1);
 	}
-	/* pull in file data */
-	if ((file_buffer = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
-		return (NULL);
+	if ((buf = (uint8_t *) WM_BufferFile(file, size)) == NULL) {
+		return (-1);
 	}
 
-	/* determine data contents */
-	if (!memcmp(file_buffer, "FORM", 4)) {
-		if (xmi2midi(file_buffer, *size, &midi_buffer, size, XMIDI_CONVERT_MT32_TO_GS) < 0) {
-			free(file_buffer);
-			return (NULL);
+	ret = WildMidi_ConvertBufferToMidi(buf, *size, out, size);
+	free(buf);
+	return ret;
+}
+
+WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
+					uint8_t **out, uint32_t *outsize) {
+	if (!in || !out || !outsize) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL params)", 0);
+		return (-1);
+	}
+
+	if (!memcmp(in, "FORM", 4)) {
+		if (xmi2midi(in, insize, out, outsize,
+				WM_ConvertOptions.xmi_convert_type) < 0) {
+			return (-1);
 		}
 	}
-	else if (!memcmp(file_buffer, "MUS", 3)) {
-		if (mus2midi(file_buffer, *size, &midi_buffer, size) < 0) {
-			free(file_buffer);
-			return (NULL);
+	else if (!memcmp(in, "MUS", 3)) {
+		if (mus2midi(in, insize, out, outsize) < 0) {
+			return (-1);
 		}
 	}
-	else if (!memcmp(file_buffer, "MThd", 4)) {
-		WM_ERROR_NEW("%s:%i: %s is already a midi file.", __FUNCTION__, __LINE__, file);
-		free(file_buffer);
-		return (NULL);
+	else if (!memcmp(in, "MThd", 4)) {
+		WM_ERROR_NEW("%s:%i: already a midi file.", __FUNCTION__, __LINE__);
+		return (-1);
 	}
 	else {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
-		free(file_buffer);
-		return (NULL);
+		return (-1);
 	}
 
-	free(file_buffer);
-	return (midi_buffer);
+	return (0);
 }
 
 static struct _mdi *
@@ -2456,7 +2471,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, XMIDI_CONVERT_MT32_TO_GS) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_ConvertOptions.xmi_convert_type) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -2612,17 +2627,18 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	}
 
 	/*
-     * Handle type 0 & 1 the same, but type 2 differently
-     */
-    switch (midi_type) {
-        case 0: // Type 0 & 1 can use the same code
-        case 1:
+	 * Handle type 0 & 1 the same, but type 2 differently
+	 */
+	switch (midi_type) {
+	case 0:
+	case 1:
+	/* Type 0 & 1 can use the same code*/
             while (end_of_tracks != no_tracks) {
                 smallest_delta = 0;
                 for (i = 0; i < no_tracks; i++) {
                     if (track_end[i])
                         continue;
-                    
+
                     if (track_delta[i]) {
                         track_delta[i] -= subtract_delta;
                         if (track_delta[i]) {
@@ -2654,7 +2670,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                             {
                                 uint32_t tmp_decay_samples = 0;
                                 struct _patch *tmp_patch = NULL;
-                                
+
                                 if (mdi->channel[current_event_ch].isdrum) {
                                     tmp_patch = get_patch_data(mdi,
                                             ((mdi->channel[current_event_ch].bank << 8)
@@ -2674,7 +2690,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     decay_samples = tmp_decay_samples;
                                 }
                             }
-                                
+
                                 tracks[i] += 2;
                                 running_event[i] = current_event;
                                 break;
@@ -2742,7 +2758,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                             mdi->info.copyright[strlen(mdi->info.copyright)
                                                     + 1 + tmp_length] = '\0';
                                             mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
-                                            
+
                                         } else {
                                             mdi->info.copyright = malloc(tmp_length + 1);
                                             strncpy(mdi->info.copyright, (char *) tracks[i],
@@ -2764,7 +2780,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                         tracks[i] += 5;
                                         if (!tempo)
                                             tempo = 500000;
-                                        
+
                                         if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
                                             float bpm_f = (float) (60000000 / tempo);
                                             tempo = 60000000 / (uint32_t) bpm_f;
@@ -2780,7 +2796,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                                 / microseconds_per_pulse;
                                         samples_per_delta_f = (float) WM_SampleRate
                                                 / pulses_per_second;
-                                        
+
                                     } else {
                                         tmp_length = 0;
                                         tracks[i]++;
@@ -2803,15 +2819,15 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     }
                                     sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
                                     tracks[i]++;
-                                    
+
                                     running_event[i] = 0;
-                                    
+
                                     sysex_store = realloc(sysex_store,
                                             sizeof(uint8_t) * (sysex_store_len + sysex_len));
                                     memcpy(&sysex_store[sysex_store_len], tracks[i],
                                            sysex_len);
                                     sysex_store_len += sysex_len;
-                                    
+
                                     if (sysex_store[sysex_store_len - 1] == 0xF7) {
                                         uint8_t tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
                                         if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
@@ -2879,7 +2895,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     }
                 NEXT_TRACK: continue;
                 }
-                
+
                 subtract_delta = smallest_delta;
                 sample_count_tmp = (((float) smallest_delta * samples_per_delta_f)
                         + sample_remainder);
@@ -2905,7 +2921,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 }
             }
             break;
-        case 2: // Type 2 has to be handled differently
+
+	case 2: /* Type 2 has to be handled differently */
             for (i=0; i < no_tracks; i++) {
                 sample_remainder = 0.0;
                 decay_samples = 0;
@@ -2955,7 +2972,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                         {
                             uint32_t tmp_decay_samples = 0;
                             struct _patch *tmp_patch = NULL;
-                            
+
                             if (mdi->channel[current_event_ch].isdrum) {
                                 tmp_patch = get_patch_data(mdi,
                                                            ((mdi->channel[current_event_ch].bank << 8)
@@ -2975,7 +2992,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                 decay_samples = tmp_decay_samples;
                             }
                         }
-                            
+
                             tracks[i] += 2;
                             running_event[i] = current_event;
                             break;
@@ -3043,7 +3060,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                         mdi->info.copyright[strlen(mdi->info.copyright)
                                                             + 1 + tmp_length] = '\0';
                                         mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
-                                        
+
                                     } else {
                                         mdi->info.copyright = malloc(tmp_length + 1);
                                         strncpy(mdi->info.copyright, (char *) tracks[i],
@@ -3065,7 +3082,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     tracks[i] += 5;
                                     if (!tempo)
                                         tempo = 500000;
-                                    
+
                                     if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
                                         float bpm_f = (float) (60000000 / tempo);
                                         tempo = 60000000 / (uint32_t) bpm_f;
@@ -3081,7 +3098,7 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     / microseconds_per_pulse;
                                     samples_per_delta_f = (float) WM_SampleRate
                                     / pulses_per_second;
-                                    
+
                                 } else {
                                     tmp_length = 0;
                                     tracks[i]++;
@@ -3104,15 +3121,15 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                 }
                                 sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
                                 tracks[i]++;
-                                
+
                                 running_event[i] = 0;
-                                
+
                                 sysex_store = realloc(sysex_store,
                                                       sizeof(uint8_t) * (sysex_store_len + sysex_len));
                                 memcpy(&sysex_store[sysex_store_len], tracks[i],
                                        sysex_len);
                                 sysex_store_len += sysex_len;
-                                
+
                                 if (sysex_store[sysex_store_len - 1] == 0xF7) {
                                     uint8_t tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
                                     if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
@@ -3176,8 +3193,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
                     tracks[i]++;
                 NEXT_TRACK2:
-                    smallest_delta = track_delta[i]; // Added just to keep Xcode happy
-                    UNUSED(smallest_delta); // Added to just keep clang happy
+                    smallest_delta = track_delta[i]; /* Added just to keep Xcode happy */
+                    UNUSED(smallest_delta); /* Added to just keep clang happy */
                 } while (track_end[i] == 0);
                 /*
                  * Add decay at the end of each song
@@ -3197,10 +3214,10 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 }
             }
             break;
-        default: // Don't expect to get here, added for completeness
-            break;
+
+        default: break; /* Don't expect to get here, added for completeness */
     }
-    
+
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->info.approx_total_samples -=
@@ -3893,11 +3910,20 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
  * =========================
  */
 
+WM_SYMBOL const char *WildMidi_GetString(uint16_t info) {
+	static char WM_Version[] = "WildMidi Processing Library " PACKAGE_VERSION;
+	switch (info) {
+	case WM_GS_VERSION:
+		return WM_Version;
+	}
+	return NULL;
+}
+
 WM_SYMBOL long WildMidi_GetVersion (void) {
 	return (LIBWILDMIDI_VERSION);
 }
 
-WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t options) {
+WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mixer_options) {
 	if (WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_ALR_INIT, NULL, 0);
 		return (-1);
@@ -3913,13 +3939,13 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t opt
 		return (-1);
 	}
 
-	if (options & 0x5FF8) {
+	if (mixer_options & 0x5FF8) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
 				0);
 		WM_FreePatches();
 		return (-1);
 	}
-	WM_MixerOptions = options;
+	WM_MixerOptions = mixer_options;
 
 	if (rate < 11025) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
@@ -4217,11 +4243,7 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return (-1);
 	}
-	if (handle == NULL) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
-				0);
-		return (-1);
-	}
+
 	WM_Lock(&mdi->lock);
 	if ((!(options & 0x0007)) || (options & 0xFFF8)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
@@ -4259,6 +4281,19 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 	}
 
 	WM_Unlock(&mdi->lock);
+	return (0);
+}
+
+WM_SYMBOL int WildMidi_SetCvtOption(uint16_t tag, uint16_t setting) {
+	switch (tag) {
+	case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
+		WM_ConvertOptions.xmi_convert_type = setting;
+		break;
+	default:
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+				"(invalid setting)", 0);
+		return (-1);
+	}
 	return (0);
 }
 
