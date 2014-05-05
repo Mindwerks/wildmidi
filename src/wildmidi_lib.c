@@ -3930,6 +3930,18 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 	}
 	WM_FreePatches();
 	free_gauss();
+
+	/* reset the globals */
+	WM_MasterVolume = 948;
+	WM_MixerOptions = 0;
+	fix_release = 0;
+	auto_amp = 0;
+	auto_amp_with_amp = 0;
+	reverb_room_width = 16.875f;
+	reverb_room_length = 22.5f;
+	reverb_listen_posx = 8.4375f;
+	reverb_listen_posy = 16.875f;
+
 	WM_Initialized = 0;
 
 	return 0;

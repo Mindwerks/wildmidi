@@ -28,6 +28,7 @@ CHANGELOG
 
 0.3.7
 * Plug a memory leak in case of broken midis.
+* Properly reset global state upon library shutdown.
 
 0.3.6
 * Fix some portability issues.
