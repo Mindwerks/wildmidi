@@ -818,9 +818,25 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 }
                 if (verbose)
                     printf("\n");
-        /*
+        
             } else if (strncmp((char *) xmidi_data,"RBRN", 4) == 0) {
-            */
+                
+                xmidi_data += 4;
+                xmidi_size -= 4;
+                
+                event_len = *xmidi_data++ << 24;
+                event_len |= *xmidi_data++ << 16;
+                event_len |= *xmidi_data++ << 8;
+                event_len |= *xmidi_data++;
+                xmidi_size -= 4;
+                subform_len -= 8;
+                
+                if (verbose)
+                    printf("RBRN length: %u\n",event_len);
+                
+                // TODO: still have to work out what this is
+                xmidi_data += event_len;
+                subform_len -= event_len;
             
             } else if (strncmp((char *) xmidi_data,"EVNT", 4) == 0) {
                 int check_ret = 0;
