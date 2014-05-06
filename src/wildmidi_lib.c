@@ -4254,15 +4254,20 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 
 WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		uint16_t setting) {
-	struct _mdi *mdi = (struct _mdi *) handle;
-	struct _note *note_data = mdi->note;
+	struct _mdi *mdi;
 	int i;
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return (-1);
 	}
+	if (handle == NULL) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
+				0);
+		return (-1);
+	}
 
+	mdi = (struct _mdi *) handle;
 	WM_Lock(&mdi->lock);
 	if ((!(options & 0x0007)) || (options & 0xFFF8)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
@@ -4281,6 +4286,8 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 			| (options & setting));
 
 	if (options & WM_MO_LOG_VOLUME) {
+		struct _note *note_data = mdi->note;
+
 		for (i = 0; i < 16; i++) {
 			do_pan_adjust(mdi, i);
 		}
