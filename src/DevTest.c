@@ -51,6 +51,9 @@ static struct option const long_options[] = {
 	{ NULL, 0, NULL, 0 }
 };
 
+#define EVENT_DATA_8BIT 1
+
+
 static float env_time_table[] = {
 	0.0f,         0.091728000f, 0.045864000f, 0.030576000f, 0.022932000f, 0.018345600f, 0.015288000f, 0.013104000f,
 	0.011466000f, 0.010192000f, 0.009172800f, 0.008338909f, 0.007644000f, 0.007056000f, 0.006552000f, 0.006115200f,
@@ -205,7 +208,7 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 }
     
 int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
-        unsigned int divisions, unsigned char running_event, int verbose) {
+        unsigned int divisions, unsigned char running_event, int verbose, int options) {
     unsigned int rtn_cnt = 0;
     unsigned char event = 0;
     unsigned int meta_length = 0;
@@ -270,10 +273,18 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
             rtn_cnt += 2;
             break;
         case 0xB:
-            if ((midi_size < 2) || (midi_data[0] > 0x7F)
-                || (midi_data[1] > 0x7F)) {
-                printf("Controller: Missing or Corrupt MIDI Data\n");
-                return -1;
+            if (!(options & EVENT_DATA_8BIT)) {
+                if ((midi_size < 2) || (midi_data[0] > 0x7F)
+                        || (midi_data[1] > 0x7F)) {
+                    printf("Controller: Missing or Corrupt MIDI Data\n");
+                    return -1;
+                }
+            } else {
+                if ((midi_size < 2) || (midi_data[0] > 0x7F)) {
+                    printf("Controller: Missing or Corrupt MIDI Data\n");
+                    return -1;
+                }
+
             }
             if (verbose)
                 printf("Controller: chan(%i) ctrl(%i) set(%i)\n",
@@ -521,10 +532,155 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
     return rtn_cnt;
 }
 
+int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) {
+    u_int8_t is_hmq = 0;
+    u_int32_t zero_cnt = 0;
+    u_int32_t i = 0;
+    u_int32_t j = 0;
+    u_int32_t hmp_file_length = 0;
+    u_int32_t hmp_chunks = 0;
+    u_int32_t hmp_chunk_num = 0;
+    u_int32_t hmp_chunk_length = 0;
+    u_int32_t hmp_division = 0;
+    u_int32_t hmp_song_time = 0;
+    u_int32_t hmp_track = 0;
+    u_int32_t hmp_var_len_val = 0;
+    int32_t check_ret = 0;
+    
+    
+    // check the header
+    if (strncmp((char *) hmp_data,"HMIMIDIP", 8) != 0) {
+        printf("Not a valid HMP file: expected HMIMIDIP\n");
+        return -1;
+    }
+    hmp_data += 8;
+    hmp_size -= 8;
+    
+    if (strncmp((char *) hmp_data,"013195", 6) == 0) {
+        is_hmq = 1;
+        hmp_data += 6;
+        hmp_data -= 6;
+        if (verbose) printf("HMQ format detected");
+    }
+    
+    // should be a bunch of \0's
+    if (is_hmq) {
+        zero_cnt = 18;
+    } else {
+        zero_cnt = 24;
+    }
+    for (i = 0; i < zero_cnt; i++) {
+        if (hmp_data[0] != 0) {
+            printf("Not a valid HMP/HMQ file\n");
+            return -1;
+        }
+    }
+    hmp_data += zero_cnt;
+    hmp_size -= zero_cnt;
+    
+    hmp_file_length = *hmp_data++;
+    hmp_file_length += (*hmp_data++ << 8);
+    hmp_file_length += (*hmp_data++ << 16);
+    hmp_file_length += (*hmp_data++ << 24);
+    if (verbose) printf("File length: %u\n", hmp_file_length);
+    // Next 12 bytes are normally \0 so skipping over them
+    hmp_data += 12;
+    hmp_size -= 16;
+    
+    hmp_chunks = *hmp_data++;
+    hmp_chunks += (*hmp_data++ << 8);
+    hmp_chunks += (*hmp_data++ << 16);
+    hmp_chunks += (*hmp_data++ << 24);
+    if (verbose) printf("Number of chunks: %u\n", hmp_chunks);
+    // Unsure of what next 4 bytes are so skip over them
+    hmp_data += 4;
+    hmp_size -= 8;
+    
+    hmp_division = *hmp_data++;
+    hmp_division += (*hmp_data++ << 8);
+    hmp_division += (*hmp_data++ << 16);
+    hmp_division += (*hmp_data++ << 24);
+    if (verbose) printf("division: %u\n", hmp_division);
+    
+    hmp_song_time = *hmp_data++;
+    hmp_song_time += (*hmp_data++ << 8);
+    hmp_song_time += (*hmp_data++ << 16);
+    hmp_song_time += (*hmp_data++ << 24);
+    hmp_size -= 8;
+    if (verbose) printf("Song Time: %u\n", hmp_song_time);
+    
+    hmp_data += 712;
+    hmp_size -= 712;
+    
+    for (i = 0; i < hmp_chunks; i++) {
+
+        hmp_chunk_num = *hmp_data++;
+        hmp_chunk_num += (*hmp_data++ << 8);
+        hmp_chunk_num += (*hmp_data++ << 16);
+        hmp_chunk_num += (*hmp_data++ << 24);
+        hmp_size -= 4;
+        if (verbose) printf("Chunk number: %u\n", hmp_chunk_num);
+        
+        hmp_chunk_length = *hmp_data++;
+        hmp_chunk_length += (*hmp_data++ << 8);
+        hmp_chunk_length += (*hmp_data++ << 16);
+        hmp_chunk_length += (*hmp_data++ << 24);
+        hmp_size -= 4;
+        if (verbose) printf("Chunk length: %u\n", hmp_chunk_length);
+        if (hmp_chunk_length > hmp_size) {
+            printf("File too short\n");
+            return -1;
+        }
+
+        hmp_track = *hmp_data++;
+        hmp_track += (*hmp_data++ << 8);
+        hmp_track += (*hmp_data++ << 16);
+        hmp_track += (*hmp_data++ << 24);
+        hmp_size -= 4;
+        if (verbose) printf("Track ???: %u\n", hmp_track);
+        
+        // Start of Midi Data
+        
+        // because chunk length includes chunk header
+        // remove header length from chunk length
+        hmp_chunk_length -= 12;
+        
+        // Start of Midi Data
+        for (j = 0; j < hmp_chunk_length; j++) {
+            hmp_var_len_val = 0;
+            if (*hmp_data < 0x80) {
+                do {
+                    hmp_var_len_val = (hmp_var_len_val << 7) | (*hmp_data++ & 0x7F);
+                    hmp_size--;
+                    j++;
+                } while (*hmp_data < 0x80);
+            }
+            hmp_var_len_val = (hmp_var_len_val << 7) | (*hmp_data++ & 0x7F);
+            hmp_size--;
+
+//          j++; <- this was causing off by 1 issues
+            
+            if (verbose) printf("delta: %u\n", hmp_var_len_val);
+
+            if ((check_ret = check_midi_event(hmp_data, hmp_size, hmp_division, 0, verbose, EVENT_DATA_8BIT)) == -1) {
+                printf("Missing or Corrupt MIDI Data\n");
+                return -1;
+            }
+            j += check_ret;
+            hmp_data += check_ret;
+            hmp_size -= check_ret;
+        }
+        
+    }
+    
+    return 0;
+}
+    
 int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
         int verbose) {
     unsigned int tmp_val = 0;
     unsigned int i = 0;
+    unsigned int j = 0;
     unsigned int form_cnt = 0;
     unsigned int cat_len = 0;
     unsigned int subform_len = 0;
@@ -653,7 +809,7 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                     patch information
                 */
                 tmp_val /= 2;
-                for (unsigned int j=0; j < tmp_val; j++) {
+                for (j=0; j < tmp_val; j++) {
                     if (verbose)
                         printf ("Patch:%i, Bank:%i\n", xmidi_data[0], xmidi_data[1]);
                     xmidi_data += 2;
@@ -695,7 +851,7 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                             printf ("Intervals: %u\n", tmp_val);
                     
                     } else {
-                        if ((check_ret = check_midi_event(xmidi_data, xmidi_size, divisions, 0, verbose)) == -1) {
+                        if ((check_ret = check_midi_event(xmidi_data, xmidi_size, divisions, 0, verbose, 0)) == -1) {
                             printf("Missing or Corrupt MIDI Data\n");
                             return -1;
                         }
@@ -945,7 +1101,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 				}
 			}
 //            printf("Event Offset: 0x%.8x\n", total_count);
-            if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose)) == -1) {
+            if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose, 0)) == -1) {
                 printf("Missing or Corrupt MIDI Data\n");
                 return -1;
             }
@@ -1149,7 +1305,9 @@ int main(int argc, char ** argv) {
 				&& (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
 						".pat") != 0)
                 && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                        ".xmi") != 0)) {
+                        ".xmi") != 0)
+                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
+                           ".hmp") != 0)) {
 			printf("Testing of %s is not supported\n", argv[optind]);
 			optind++;
 			continue;
@@ -1167,6 +1325,10 @@ int main(int argc, char ** argv) {
 			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
                                   ".xmi") == 0) {
 				testret = test_xmidi(filebuffer, filesize, verbose);
+            } else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
+                                  ".hmp") == 0) {
+                // Will add .hmq extention if we find hmp files with it
+				testret = test_hmp(filebuffer, filesize, verbose);
             }
 			free(filebuffer);
 			if (testret != 0) {
