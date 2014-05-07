@@ -1,0 +1,542 @@
+                                    
+
+
+
+IBM Audio Interface Library
+
+ Extended MIDI (XMIDI) Specification
+
+ Release 1.02 of 17 August 1992
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Contents
+
+Overview ........................................................... 3
+Extended MIDI Controller Reference ................................. 4
+Extended MIDI IFF (.XMI) Structure ................................. 11
+Extended MIDI Global Timbre Library File Format .................... 13
+Glossary of Audio Interface Library Terms .......................... 14
+Overview
+
+The term 'Extended MIDI,' or 'XMIDI,' refers to the set of features added to the base Musical
+Instrument Digital Interface (MIDI) data specification by the drivers and utility programs
+included with the Audio Interface Library's Version 2.00 release.  The XMIDI standard brings
+many powerful features to the Audio Interface Library which would otherwise be absent in a
+system conforming to the original MIDI standard.
+
+Composers who are interested in getting started with XMIDI should pay particular attention to
+the descriptions of the utility programs MIDIFORM, GLIB, MIDIECHO, and CAKEPORT
+in the Tools Reference section of this manual, before moving on to the specific discussions of
+the Extended MIDI controllers below.  It is strongly recommended that musicians with even the
+slightest programming knowledge (or interest) examine the Application Program Interface
+Reference section as well, in order to gain the best possible understanding of the Audio
+Interface Library's capabilities.
+
+Programmers seeking to master effective Audio Interface Library application design are also
+advised to familiarize themselves with the Tools Reference section, followed by a thorough
+perusal of the Application Program Interface Reference and Technical Notes.  Special attention
+should be given to the Programming Examples section as well.  The chapters in this section on
+the two primary XMIDI file formats are provided for reference only.
+
+Users planning to upgrade Audio Interface Library Version 1 MIDI applications to the XMIDI
+standard should begin with an understanding of the MIDIFORM and GLIB programs and how
+they create and manage the new system's data file formats.  Virtually all of the Version 1 API
+functions have been retained, but many have undergone revision or syntactic changes as part of
+the Version 2.0 release.  A careful review of the Application Program Interface Reference and
+Programming Examples sections will ease the transition to the new API.
+Extended MIDI Controller Reference
+
+XMIDI provides a number of additional MIDI-style Control Change messages which greatly
+extend the range of composition and arrangement options available to the musician and
+application programmer.  Below is a list of Extended MIDI Control Change messages available
+in the current Audio Interface Library release, together with explanations of their uses in
+XMIDI sequences.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Controller    ³ Description                 ³
+ÆÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍµ
+³ 110 (6eh)     ³ Channel Lock                ³
+³ 111 (6fh)     ³ Channel Lock Protect        ³
+³ 112 (70h)     ³ Voice Protect               ³
+³ 113 (71h)     ³ Timbre Protect              ³
+³ 114 (72h)     ³ Patch Bank Select           ³
+³ 115 (73h)     ³ Indirect Controller Prefix  ³
+³ 116 (74h)     ³ For Loop Controller         ³
+³ 117 (75h)     ³ Next/Break Loop Controller  ³
+³ 118 (76h)     ³ Clear Beat/Bar Count        ³
+³ 119 (77h)     ³ Callback Trigger            ³
+³ 120 (78h)     ³ Sequence Branch Index       ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+Channel Lock (110)
+
+ < 64: Release previously locked channel and restore default channel
+       number mapping
+
+>= 64: Seize ("lock") an unlocked, unprotected physical MIDI channel 
+       (2-9) for assignment to this logical channel # (11-16)
+
+The Channel Lock controller is one of the more powerful Extended MIDI controllers.  Channel
+locking allows the XMIDI drivers to play multiple XMIDI sequences simultaneously, which in
+turn permits the creation of impressive sound effects and musical "mixes."
+
+When used with a value greater than or equal to 64, the Channel Lock controller attempts to
+seize, or "lock," the highest MIDI channel number recognized by the driver's supported
+synthesizer which has the fewest actively playing notes.  Channels which are already locked, or
+which have been "protected" against locking by use of the XMIDI Channel Lock Protect
+controller (111), are immune to seizure.  If no available MIDI channels are eligible for locking
+under these criteria, the controller will have no effect.  (This will occur only if all unprotected
+channels are already locked.)
+
+After a MIDI channel has been successfully locked, the driver maps the locked channel onto
+the MIDI channel in which the Channel Lock controller itself appeared.  This means that all
+subsequent MIDI events sent on the same channel as the Channel Lock controller (the "logical"
+channel) will instead be transmitted on the newly locked (or "physical") channel.
+This concept is perhaps best illustrated with a typical application of channel locking.  Below is
+a list of events comprising a short XMIDI sequence to create a "machine gun" sound effect. 
+(Timing and note velocity information has been omitted for simplicity.)
+
+Ch 02 Controller 114 = 1      ;XMIDI Patch Bank Select = 1
+Ch 02 Patch = 5               ;MIDI Program Change to patch 5 ("gunshot")
+Ch 02 Pitch Wheel 0           ;Pitch bend centered (no bend)
+Ch 02 Controller 1 = 0        ;Modulation = 0
+Ch 02 Controller 7 = 127      ;Volume = 127
+Ch 02 Controller 10 = 64      ;Panpot = 64 (center of stereo field)
+Ch 02 Controller 116 = 5      ;FOR loop = 1 to 5...
+Ch 02 Note C 5 on             ;...sound a brief "gunshot" note...
+Ch 02 Note C 5 off
+Ch 02 Controller 116 = 127    ;...NEXT loop
+
+This "machine gun" sequence would be ideal for use as part of an arcade game's sound-effects
+arsenal, except for one serious drawback: what happens if MIDI channel 2 is already being
+used by a background music sequence, or perhaps another sound effect?  The controller values
+and patch change in the sequence above would certainly have an unfavorable effect on a
+romantic violin solo playing on channel 2.  The problem could be solved by setting aside a
+block of active MIDI channels for use with overlaid sound-effects sequences, but this might be
+an unacceptable compromise for applications requiring playback of any but the simplest XMIDI
+sequences.
+
+Channel locking and remapping is a much more satisfactory solution.  When composing
+sequences for the XMIDI standard, the composer could assign all tracks in sound effects and
+other overlaid sequences to MIDI channels in the range 11 through 16.  MIDI channels in this
+range are not normally recognized by synthesizers supported by the AIL.  But if an XMIDI
+Channel Lock controller is then inserted before the first Channel Voice event in the channel,
+the AIL driver can temporarily reassign a physical MIDI channel to the out-of-range logical
+channel number, preventing the channel's use by any other sequence being played for as long
+as it is needed by the sequence which "locked" the channel.  A not-so-obvious benefit of this
+scheme is that all sound-effects sequences can safely share the same logical channel numbers
+between 11 and 16, since only the physical channel numbers recognized by the synthesizer are
+vulnerable to usage conflicts.
+
+With channel locking installed, the machine gun sound-effect sequence might look like this:
+
+Ch 11 Controller 110 = 127    ;XMIDI Channel Lock (seize channel) 
+Ch 11 Controller 114 = 1      ;XMIDI Patch Bank Select = 1
+Ch 11 Patch = 5               ;MIDI Program Change to patch 5 ("gunshot")
+Ch 11 Pitch Wheel 0           ;Pitch bend centered (no bend)
+Ch 11 Controller 1 = 0        ;Modulation = 0
+Ch 11 Controller 7 = 127      ;Volume = 127
+Ch 11 Controller 10 = 64      ;Panpot = 64 (center of stereo field)
+Ch 11 Controller 116 = 5      ;FOR loop = 1 to 5...
+Ch 11 Note C 5 on             ;...sound a brief "gunshot" note...
+Ch 11 Note C 5 off
+Ch 11 Controller 116 = 127    ;...NEXT loop
+Ch 11 Controller 110 = 0      ;XMIDI Channel Lock (release channel)The sequence's new final event, a Channel Lock controller with the value 0, is actually
+unnecessary since all channels locked by a sequence are released automatically as soon as the
+sequence ends or playback is stopped.  However, in sequences with multiple tracks, it is a
+good idea to explicitly release each locked channel as soon as it is no longer needed by the
+sequence, instead of waiting for all tracks to expire.  This allows the XMIDI driver to restore
+the channel to the sequence from which it was "stolen," minimizing the disruption to the
+background music.
+
+When a locked channel is released, either through a Channel Lock controller with a value
+below 64 or through a C call to the analogous AIL_release_channel() function, the timbre
+bank, patch number, pitch wheel, and MIDI controllers in the channel are updated to their
+correct values before being returned to the service of the original sequence.  This relieves the
+application of the responsibility of keeping track of these values while a channel is locked. 
+Conversely, when a channel is locked by a Channel Lock controller or its complementary
+AIL_lock_channel() function, the MIDI Sustain (Hold1) controller (64) in the channel is
+forced to its "off" condition and all notes playing in the channel are silenced.  No other
+controller values or MIDI messages are initialized!  It is essential for a sequence (or an
+application) which has just received a locked channel to initialize all MIDI parameters,
+including MIDI controllers likely to contain undesirable values, the XMIDI Patch Bank Select
+controller and MIDI Program Change number, and the MIDI pitch wheel, to appropriate
+values.  (Avoid the temptation to accomplish this with MIDI Channel Mode messages such as
+All Notes Off or Reset All Controllers.  Channel Mode messages may be interpreted differently
+by various synthesizers, and the XMIDI driver code which maintains sequence state tables and
+other data structures makes no attempt to interpret them at all.)
+Channel Lock Protect (111)
+
+ < 64: Channel is eligible for temporary reassignment by
+       AIL_lock_channel() or Channel Lock controllers
+
+>= 64: Channel may not be locked (seized for reassignment)
+
+Occasionally it may be desirable to prevent any sequence or application process from
+interrupting traffic on a given MIDI channel.  Depending on its value, the XMIDI Channel
+Lock Protect controller will either render the physical MIDI channel in which it appears
+immune to seizure, or allow it to be considered for seizure when a Channel Lock controller
+message or AIL_lock_channel() call is issued.
+
+Voice Protect (112)
+
+ < 64: Voices playing in channel assume normal priority (release voice
+       protection)
+
+>= 64: Voices playing in channel assume highest possible priority (assert
+       voice protection)
+
+Available on some synthesizers, voice protection is an XMIDI feature which allows a sequence
+to discourage the polyphonic voice assignment algorithm from "stealing" synthesizer voices
+from notes played in a given MIDI channel when no free voices are available.  If the Voice
+Protect controller's value is less than 64, voices assigned to notes playing in the channel will be
+considered for reassignment to play incoming note events.  This is the default condition for
+each channel.  Otherwise, the "voice priority" of notes in the channel will constantly assume its
+maximum value, preventing the channel's notes from being robbed of their voices.  Voice
+protection should be used conservatively and released as soon as possible, since the synthesizer
+emulation code works best when allowed to make its own decisions regarding voice allocation.
+        
+Timbre Protect (113)
+
+ < 64: Timbre currently assigned to this channel's patch may be 
+       "discarded" (if least-recently-used) to make room in local timbre
+       cache or synthesizer memory
+
+>= 64: Timbre may not be discarded from cache or synthesizer memory
+
+For information on timbre protection, refer to the descriptions of the AIL_protect_timbre() /
+AIL_unprotect_timbre() functions in the Application Program Interface Reference section of
+this manual.
+Patch Bank Select (114)
+
+This controller may be used to "extend" the scope of MIDI Program Change (or Cakewalk
+"Patch") messages.  Normally, any of 128 synthesizer patches may be selected with a Program
+Change message; however, the Patch Bank Select controller instructs the AIL XMIDI driver to
+associate custom timbres in any of 127 banks with synthesizer patches which are subsequently
+selected in a channel.
+
+By convention, patch bank 0 is reserved for the Roland MT-32's built-in patch/timbre
+combinations, and for the Ad Lib-style instruments intended to emulate those patches.  Custom
+Roland timbres (and their Ad Lib counterparts) should be placed in patch banks 1 through 126. 
+Timbre bank 127 is reserved for custom "drum kit" timbres to be used when playing note
+events on MIDI channel 10.
+
+When a MIDI Program Change (or "patch") event is encountered, the XMIDI synthesizer
+driver looks in its collection of timbres from the Global Timbre Library for a custom timbre
+whose "patch number" is the specified Program Change number and whose "bank" is equal to
+the current Patch Bank Select controller value.  If the timbre is found, the synthesizer is
+automatically instructed to associate the timbre with the patch which was just selected by the
+Program Change event.  Under normal circumstances, the search for the requested timbre
+should not fail, since the application should have been informed in advance of the need for the
+timbre via the AIL_timbre_request() function.  (See the Application Program Interface
+Reference section of this manual for more information on XMIDI timbre management.)
+
+The default Patch Bank Select controller value is 0.  Therefore, AIL applications which do not
+require custom Roland MT-32 timbres may disregard this controller altogether.  Otherwise,
+care must be taken to explicitly specify the Timbre Bank Select controller value to be used in
+each channel of every sequence and sound effect used by the application, since the default
+value of 0 is asserted only upon driver initialization -- not when a channel is locked or when a
+sequence stops. 
+
+Indirect Controller Prefix (115)
+
+This controller specifies that the next Control Change message encountered in this channel
+should obtain its value from the Indirect Controller Array's nth byte entry, where n is the
+indirect controller prefix's own value.  For more information on the Indirect Controller Array,
+see the AIL_register_sequence() function description in the Application Program Interface
+Reference section of this manual.
+For Loop Controller (116)
+
+1-127: Define beginning of MIDI data block to be played a total of v
+       times, where v is the For loop controller's value
+
+    0: Define beginning of MIDI data block to be played indefinitely
+
+This controller allows the creation of a loop within an XMIDI sequence.  Its use is almost self-
+explanatory, especially for those familiar with BASIC or C's "for...next" construct.  A loop
+value of 1 causes the block of MIDI/XMIDI events between the For controller and its
+corresponding Next/Break controller to be executed precisely once -- as if the controllers did
+not exist.  Values from 2 to 127 cause the event block to be executed from 2 to 127 times.  A
+value of 0, on the other hand, causes the event block to loop indefinitely, interruptable only at
+the application's request.
+
+There are four rules to bear in mind when using For...Next/Break loops:
+
+* At least one XMIDI 'quantization interval' must separate the For and
+  Next/Break loop controllers.  In practice, this means that more than
+  1/120 second (8.4 milliseconds) of real time must elapse between these
+  two events during playback.  Otherwise, the application will "hang"
+  forever with interrupts disabled, since neither the For nor the 
+  Next/Break controller automatically terminates the current interval.
+
+* The branching effect caused by a Next/Break controller does not result
+  in the note queue being flushed, unlike the operation of the
+  AIL_branch_index() function.  Only the sequence pointer is adjusted by
+  the Next/Break controller.  Refer to the AIL_branch_index() function
+  description in the Application Program Interface Reference for
+  additional notes about sequence branching in general.
+
+* Multi-track MIDI Format 1 files are converted to MIDI Format 0 during
+  the MIDIFORM program's XMIDI compilation process.  This implies that
+  loops placed on a single track will actually cause events in all other
+  tracks to be repeated as well.  In situations where it is desired to       
+  loop tracks independently of each other, a possible solution is to
+  split the tracks into multiple XMIDI sequences and have the application
+  play each sequence simultaneously.
+
+* For...Next/Break controller loops may be nested up to 4 levels deep.
+Next/Break Loop Controller (117)
+
+ < 64: (Break) Loop iteration stops, regardless of the current For loop
+       count
+
+>= 64: (Next) Decrement innermost For loop count and, if nonzero, branch
+       immediately to the innermost For controller event
+
+One application of the Indirect Controller Prefix controller (q.v.) would be to turn a Next
+controller into a Break controller by providing a dynamic controller value as specified above. 
+This feature may be used to introduce elements of application program control into sound-effect
+sequences.  Otherwise, the Next controller should have a value greater than or equal to 64, in
+order to function in the manner detailed in the preceding For Loop Controller description.
+
+Clear Beat/Bar Count (118)
+
+(Value unused, 0-127)
+
+This controller resets the current beat and measure counters to 0:0.  See the AIL_beat_count()
+/ AIL_measure_count() function description in the Application Program Interface Reference
+section for information on the beat and measure counters.
+
+Callback Trigger (119)
+
+(Value = trigger_value parameter passed to callback function, 0-127)
+
+See the AIL_install_callback() function description in the Application Program Interface
+Reference section for information on callback functions.
+
+Sequence Branch Index (120)
+
+(Value = marker_number parameter passed to AIL_branch_index() function,
+0-127)
+
+See the AIL_branch_index() function description in the Application Program Interface
+Reference section for information on sequence branching.
+
+* * *
+
+In addition to the controllers listed here, some synthesizer drivers (such as the Roland MT-32
+family) provide several other XMIDI Control Change message types.  These controllers allow
+the musician to access the synthesizer's set of memory-addressable features, without the need to
+deal directly with MIDI System Exclusive messages.  For more information about synthesizer-
+specific XMIDI controllers, as well as a list of general XMIDI controllers supported by each
+driver, refer to the Technical Notes section of this manual.Extended MIDI IFF (.XMI) Structure
+
+XMIDI sequence files are "preprocessed" MIDI sequence files.  Created by the MIDIFORM
+program described in the Tools Reference section of this manual, XMIDI files are stored in
+accordance with Electronic Arts' Interchange File Format (EA IFF 85) standard.  Below is a
+summary of the XMIDI format's technical details, which is presented as an aid to application
+developers with specialized needs not supported directly by the Audio Interface Library.
+
+The XMIDI file format preserves all of the information needed to faithfully reproduce the
+MIDI sequence's original sound, while discarding elements of the MIDI storage format that are
+redundant, inefficient, or otherwise unnecessary for real-time playback.  An XMIDI file
+containing a single translated MIDI sequence often requires from 10% to 30% less storage
+space, and can be performed with substantially less background processing time.
+
+Each XMIDI file created by the MIDIFORM program contains a single IFF "CAT " chunk of
+type XMID.  The CAT chunk contains at least one XMIDI sequence, whose local chunks are
+stored within a "FORM" chunk of type XMID.  As created by MIDIFORM, the XMIDI file
+may contain a chunk of type FORM XDIR which contains information about the file's
+collection of XMIDI sequences.  The XDIR chunk is for the application's benefit, and is not
+currently required by the XMIDI drivers.
+In the expression below, <len> signifies a 32-bit "big endian" (or Motorola 680XX-style,
+MSB first) chunk length, which includes neither itself nor its preceding 4-character CAT ,
+FORM, or local chunk name.  Square brackets enclose optional chunks; ellipses are placed
+after the closing braces of chunks or data items which may be repeated.
+
+[  FORM<len>XDIR
+   {
+       INFO<len>
+           UWORD # of FORMs XMID in file, 1-65535     
+   }  ]
+
+CAT <len>XMID
+{
+    FORM<len>XMID
+        {
+      [ TIMB<len>
+            UWORD # of timbre list entries, 0-16384
+          { UBYTE patch number 0-127
+            UBYTE timbre bank 0-127 } ... ]
+
+      [ RBRN<len>
+            UWORD # of branch point offsets, 0-127
+          { UWORD Sequence Branch Index controller value 0-127
+            ULONG controller offset from start of EVNT chunk } ... ]
+
+        EVNT<len>
+          { UBYTE interval count (if < 128) 
+            UBYTE <MIDI event> (if > 127) } ...
+        } ...
+}
+
+TIMB and RBRN are optional chunks.  RBRN is included only if XMIDI Sequence Branch
+Index (120) controllers appear in the original MIDI sequence.  The mandatory EVNT chunk
+contains the quantized sequence events.  EVNT must appear as the last local chunk in FORM
+XMID, while the other local chunks may appear in any order.  <MIDI event> consists of any
+MIDI Channel Voice, System Exclusive, or Meta-event except Note Off.  The MIDI 'running
+status' convention is not used.  Note On events are followed by their duration in intervals,
+expressed as a MIDI variable-length quantity (i.e., a string of 7-bit bytes stored most
+significant byte first, with the high bit set in all bytes except the last).
+Extended MIDI Global Timbre Library File Format
+
+For information about Global Timbre Library data in general, review the discussion of the
+GLIB program in the Tools Reference section of this manual, as well as the descriptions of
+timbre-related functions in the Application Program Interface Reference.  A 'boilerplate'
+example of C code to fetch a desired timbre from any Global Timbre Library file can be found
+in the sample program listing XPLAY.C.
+
+In the expression below, ellipses are placed after the closing braces of data items which may be
+repeated.
+
+File header, one entry for each timbre in file
+
+{
+     BYTE timbre patch number
+     BYTE timbre bank number
+     ULONG offset of timbre length word from start of file
+} ...
+
+Structure of each timbre as stored in file
+
+{
+     UWORD timbre length word (size of timbre in bytes + 2)
+          {
+          UBYTE timbre data byte
+          } ...
+} ...
+Glossary of Audio Interface Library Terms
+
+ADV: Abbreviation for Audio Driver, the standard MS-DOS filename suffix for AIL device
+drivers.  The .ADV files are actually small assembly-language programs which contain the
+"intelligence" needed to support a given PC audio device.
+
+API: Application Program Interface.  The AIL API module is linked directly with the
+application.  It contains the Process Services (described in the API Reference section), as well
+as the actual C or Pascal-callable routines which link the application to its installed audio
+drivers.
+
+Bank: A collection of timbres, or software instrument definitions.  Think of a bank as a
+"virtual orchestra" which contains a number of different instruments available for use by a
+given driver.  See also Bankfile.
+
+Bankfile: An MS-DOS file containing a bank.  Bankfiles are typically generated by a
+synthesizer's "instrument editor" program.  The Audio Interface Library includes a program
+called GLIB which converts these device-specific bankfiles into an efficient, standardized
+runtime file format known as the Global Timbre Library, or GTL.  See the description of the
+GLIB program in the Tools Reference section for details.
+
+Channel: Most MIDI events can be associated with one of sixteen possible channels.  Although
+MIDI is a serial data standard at heart, it is often required to convey information which exists
+as a series of events in a number of parallel, synchronous dimensions.  For instance, a single
+MIDI data stream may be expected to "play" an ensemble consisting of a piano, two guitars, a
+drum set, and a brass section.  By associating events intended for a given instrument with the
+instrument's unique channel number, the composer of the MIDI sequence can prevent
+acoustically unfortunate conflicts between the pianos, drums, guitars, and horns.
+
+Controller: MIDI defines a number of control change events which affect the performance
+characteristics of instruments playing in a particular channel.  Each MIDI synthesizer responds
+to a portion of the defined MIDI controller set.  For example, the Roland MT-32 recognizes
+the standard MIDI controllers for Volume (controller 7), Panpot (controller 10), Sustain
+(controller 64), and Modulation (controller 1), among others.
+
+Global Timbre Library: See Bankfile.
+
+GTL: See Bankfile.
+
+MIDI Channel: See Channel.
+
+MIDI Channel Voice Message: A short representation (2-3 bytes) of a single MIDI event. 
+Channel Voice messages include the Note Off, Note On, Polyphonic Key Pressure, Control
+Change, Program Change, Channel Pressure, and Pitch Wheel Change message types.
+
+MIDI Controller: See Controller.
+MIDI System Exclusive Message: A device-specific data packet sent to a MIDI synthesizer. 
+Often, system exclusive messages are used to control aspects of synthesis not otherwise covered
+by the MIDI standard, such as custom instrument data, reverb control, and channel response
+configuration.  Most MIDI synthesizers are accompanied by literature describing what system
+exclusive messages they recognize, if any.
+
+Multi-Timbral: Refers to a synthesizer's ability to play notes with more than one type of
+musical instrument at a time.
+
+Operator: See Partial.
+
+Partial: Also called an operator, a partial is a component of an FM or additive voice (q.v.). 
+On the Roland MT-32/LAPC-1 synthesizer, each voice may use from 1 to 4 of 32 available
+partials.  On the Ad Lib, Sound Blaster, and other YM3812-based cards, each voice requires 2
+of 18 available partials.  The Yamaha YMF262 (OPL3) device, used in some newer FM sound
+cards, provides 36 partials which may be assigned in groups of 2 or 4 per voice.
+
+Patch: A patch associates a timbre with a given MIDI channel.  In general, the details of patch
+manipulation are handled automatically by the AIL drivers.  For information on a given
+synthesizer's patch format, consult the programming manual for the device in question.
+
+Patch Bank: See Bank
+
+PCM: Abbreviation for Pulse Code Modulation, the technique used for most sampled sound
+playback on the PC.  A common variation which implements rudimentary data compression is
+known as ADPCM, or ADaptive Pulse Code Modulation.
+
+Polyphonic: Refers to a synthesizer's ability to play more than one voice at a time.
+
+Sequence: Simply put, a musical work expressed as a series (sequence) of MIDI events.
+
+Sysex: See MIDI System Exclusive Message.
+
+System Exclusive Message: See MIDI System Exclusive Message.
+
+Timbre: In the Audio Interface Library's parlance, a timbre (pronounced tim'-ber, or 
+tam'-ber) is a software definition of a musical instrument.  See also Bank and Bankfile.
+
+Timbre Cache: Some AIL XMIDI drivers require the application to set aside a small area of
+memory to store instrument definitions.  This area is known as the timbre cache.  See the API
+Reference's discussion of the AIL_default_timbre_cache_size() function for more information.
+
+Track: A logical division of a MIDI sequence.  Often, the composer associates a single MIDI
+channel with each track, placing all performance data for each instrument on its own track.
+Voice: As used in the Audio Interface Library, the term voice refers to the minimum
+synthesizer resources needed to play a single note with a given instrument.  The Ad Lib and
+similar devices provide a total of 9 simultaneous voices, while the Roland MT-32/LAPC-1
+synthesizer can generate from 8 to 32 voices at once, depending on the number of partials
+(q.v.) used by each voice.
+
+XMIDI: Abbreviation for eXtended MIDI.  See the preceding parts of this section for details.
+
