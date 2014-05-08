@@ -99,8 +99,8 @@ static const char *PACKAGE_BUGREPORT = "https://github.com/Mindwerks/wildmidi/is
 static const char *PACKAGE_VERSION = "0.4";
 
 void do_version(void) {
-	printf("DevTest for WildMIDI %s - For testing purposes only\n\n", PACKAGE_VERSION);
-	printf("Copyright (C) Chris Ison 2001-2014 wildcode@users.sourceforge.net\n\n");
+	printf("DevTest for WildMIDI %s - For testing purposes only\n", PACKAGE_VERSION);
+	printf("Copyright (C) WildMIDI Developers 2001-2014\n");
 	printf("DevTest comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
 	printf("under the terms and conditions of the GNU General Public License version 3.\n");

@@ -530,6 +530,24 @@ static uint32_t freq_table[] = { 837201792, 837685632, 838169728,
  * =========================
  */
 
+static void _cvt_reset_options (void) {
+	WM_Lock(&WM_ConvertOptions.lock);
+	WM_ConvertOptions.xmi_convert_type = 0;
+	WM_ConvertOptions.frequency = 0;
+	WM_Unlock(&WM_ConvertOptions.lock);
+}
+
+static uint16_t _cvt_get_option (uint16_t tag) {
+	uint16_t r = 0;
+	WM_Lock(&WM_ConvertOptions.lock);
+	switch (tag) {
+	case WM_CO_XMI_TYPE: r = WM_ConvertOptions.xmi_convert_type; break;
+	case WM_CO_FREQUENCY: r = WM_ConvertOptions.frequency; break;
+	}
+	WM_Unlock(&WM_ConvertOptions.lock);
+	return r;
+}
+
 static void WM_CheckEventMemoryPool(struct _mdi *mdi) {
 	if (mdi->event_count >= mdi->events_size) {
 		mdi->events_size += MEM_CHUNK;
@@ -2413,7 +2431,7 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
 
 	if (!memcmp(in, "FORM", 4)) {
 		if (xmi2midi(in, insize, out, outsize,
-				WM_ConvertOptions.xmi_convert_type) < 0) {
+				_cvt_get_option(WM_CO_XMI_TYPE)) < 0) {
 			return (-1);
 		}
 	}
@@ -2471,7 +2489,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t cvt_size;
 
 	if (!memcmp(midi_data, "FORM", 4)) {
-		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size, WM_ConvertOptions.xmi_convert_type) < 0) {
+		if (xmi2midi(midi_data, midi_size, &cvt, &cvt_size,
+				_cvt_get_option(WM_CO_XMI_TYPE)) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -4235,15 +4254,20 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 
 WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		uint16_t setting) {
-	struct _mdi *mdi = (struct _mdi *) handle;
-	struct _note *note_data = mdi->note;
+	struct _mdi *mdi;
 	int i;
 
 	if (!WM_Initialized) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return (-1);
 	}
+	if (handle == NULL) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
+				0);
+		return (-1);
+	}
 
+	mdi = (struct _mdi *) handle;
 	WM_Lock(&mdi->lock);
 	if ((!(options & 0x0007)) || (options & 0xFFF8)) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
@@ -4262,6 +4286,8 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 			| (options & setting));
 
 	if (options & WM_MO_LOG_VOLUME) {
+		struct _note *note_data = mdi->note;
+
 		for (i = 0; i < 16; i++) {
 			do_pan_adjust(mdi, i);
 		}
@@ -4285,6 +4311,7 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 }
 
 WM_SYMBOL int WildMidi_SetCvtOption(uint16_t tag, uint16_t setting) {
+	WM_Lock(&WM_ConvertOptions.lock);
 	switch (tag) {
 	case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
 		WM_ConvertOptions.xmi_convert_type = setting;
@@ -4292,8 +4319,10 @@ WM_SYMBOL int WildMidi_SetCvtOption(uint16_t tag, uint16_t setting) {
 	default:
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 				"(invalid setting)", 0);
+		WM_Unlock(&WM_ConvertOptions.lock);
 		return (-1);
 	}
+	WM_Unlock(&WM_ConvertOptions.lock);
 	return (0);
 }
 
@@ -4344,6 +4373,19 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 	}
 	WM_FreePatches();
 	free_gauss();
+
+	/* reset the globals */
+	_cvt_reset_options ();
+	WM_MasterVolume = 948;
+	WM_MixerOptions = 0;
+	fix_release = 0;
+	auto_amp = 0;
+	auto_amp_with_amp = 0;
+	reverb_room_width = 16.875f;
+	reverb_room_length = 22.5f;
+	reverb_listen_posx = 8.4375f;
+	reverb_listen_posy = 16.875f;
+
 	WM_Initialized = 0;
 
 	return (0);
