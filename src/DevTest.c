@@ -4,6 +4,7 @@
             .pat Gravis Ultrasound patch file.
             .mid MIDI file.
             .xmi Xmidi file.
+            .hmp "HMIMIDIP" and "HMIMIDIP013195" file.
  
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
  COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
@@ -419,7 +420,9 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
                 free(sysex_store);
                 sysex_store = NULL;
                 rtn_cnt += sysex_size;
-                
+            } else if ((event <= 0xFE) && (event >= 0xF1)) {
+                // Added just in case
+                printf("Realtime Event: 0x%.2x ** NOTE: Not expected in midi file type data\n",event);
             } else if (event == 0xFF) {
                 unsigned int tempo = 500000;
                 
@@ -531,7 +534,197 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
 //    printf("Return Count: %i\n", rtn_cnt);
     return rtn_cnt;
 }
+    
+int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
+    u_int16_t hmi_division = 0;
+    u_int32_t hmi_duration_secs = 0;
+    u_int8_t hmi_track_cnt = 0;
+    u_int32_t i = 0;
+    u_int32_t j = 0;
+    u_int32_t *hmi_track_offset = NULL;
+    u_int32_t hmi_dbg = 0;
+    u_int32_t hmi_delta = 0;
+    u_int32_t hmi_track_end = 0;
+    int32_t check_ret = 0;
+    u_int8_t hmi_running_event = 0;
+    u_int32_t hmi_track_header_length = 0;
+    u_int32_t hmi_file_end = hmi_size;
+    
+    // Check header
+    if (strncmp((char *) hmi_data,"HMI-MIDISONG061595", 18) != 0) {
+        printf("Not a valid HMI file: expected HMI-MIDISONG061595\n");
+        return -1;
+    }
+    hmi_data += 210;
+    hmi_size -= 210;
+    hmi_dbg += 210;
+    
+    hmi_division = *hmi_data++;
+    hmi_division |= *hmi_data++ << 8;
+    hmi_size -= 2;
+    if (verbose) printf("Division %i\n",hmi_division);
+    hmi_dbg += 2;
+    
+    
+    //FIXME: This is according to specs we have, but is obviously incorrect.
+    hmi_duration_secs = *hmi_data++;
+    hmi_duration_secs += (*hmi_data++ << 8);
+    hmi_duration_secs += (*hmi_data++ << 16);
+    hmi_duration_secs += (*hmi_data++ << 24);
+    hmi_size -= 4;
+    if (verbose) printf("Duration (secs): %u\n",hmi_duration_secs);
+    hmi_dbg += 4;
+    
+    hmi_data += 12;
+    hmi_size -= 12;
+    hmi_dbg += 12;
 
+    hmi_track_cnt = *hmi_data++;
+    hmi_size--;
+    if (verbose) printf("Track count: %i\n", hmi_track_cnt);
+    hmi_track_offset = malloc(sizeof(u_int32_t) * hmi_track_cnt);
+    hmi_dbg++;
+
+    hmi_data += 141;
+    hmi_size -= 141;
+    hmi_dbg += 141;
+
+    for (i = 0; i < hmi_track_cnt; i++) {
+//        printf("DEBUG @ %.8x\n",hmi_dbg);
+        hmi_track_offset[i] = *hmi_data++;
+        hmi_track_offset[i] += (*hmi_data++ << 8);
+        hmi_track_offset[i] += (*hmi_data++ << 16);
+        hmi_track_offset[i] += (*hmi_data++ << 24);
+        hmi_size -= 4;
+        //FIXME: These are absolute data offsets?
+        if (verbose) printf("Track %i offset: %.8x\n",i,hmi_track_offset[i]);
+        hmi_dbg += 4;
+    }
+
+    hmi_size -= (hmi_track_offset[0] - hmi_dbg);
+    hmi_data += (hmi_track_offset[0] - hmi_dbg);
+    hmi_dbg += (hmi_track_offset[0] - hmi_dbg);
+    for (i = 0; i < hmi_track_cnt; i++) {
+        /*
+        printf("DEBUG @ %.8x: ",hmi_dbg);
+        for (j = 0; j < 16; j++) {
+            printf("%.2x ",hmi_data[j]);
+        }
+        printf("\n");
+        */
+        if (strncmp((char *) hmi_data,"HMI-MIDITRACK", 13) != 0) {
+            printf("Not a valid HMI file: expected HMI-MIDITRACK\n");
+            return -1;
+        }
+        if (verbose) printf("Start of track %u\n",i);
+        
+        hmi_track_header_length = hmi_data[0x57];
+        hmi_track_header_length += (hmi_data[0x58] << 8);
+        hmi_track_header_length += (hmi_data[0x59] << 16);
+        hmi_track_header_length += (hmi_data[0x5a] << 24);
+        if (verbose) printf("Track header length: %u\n",hmi_track_header_length);
+        
+        hmi_data += hmi_track_header_length;
+        hmi_size -= hmi_track_header_length;
+        hmi_dbg += hmi_track_header_length;
+
+        hmi_track_end = 0;
+        if (i < (hmi_track_cnt -1)) {
+            hmi_track_end = hmi_track_offset[i+1];
+        } else {
+            hmi_track_end = hmi_file_end;
+        }
+//        printf("DEBUG: 0x%.8x\n",hmi_track_end);
+        
+        while (hmi_dbg < hmi_track_end) {
+            /*
+            printf("DEBUG @ 0x%.8x: ",hmi_dbg);
+            for (j = 0; j < 16; j++) {
+                printf("%.2x ",hmi_data[j]);
+            }
+            printf("\n");
+            */
+            hmi_delta = 0;
+            if (*hmi_data > 0x7f) {
+                while (*hmi_data > 0x7F) {
+                    hmi_delta = (hmi_delta << 7) | (*hmi_data & 0x7F);
+                    hmi_data++;
+                    hmi_size--;
+                    hmi_dbg++;
+                }
+            }
+            hmi_delta = (hmi_delta << 7) | (*hmi_data & 0x7F);
+            if (verbose) printf("Delta: %u\n",hmi_delta);
+            hmi_data++;
+            hmi_size--;
+            hmi_dbg++;
+            
+            if (hmi_data[0] == 0xfe) {
+                if (verbose) printf("Skipping HMI event\n");
+                if (hmi_data[1] == 0x10) {
+                    hmi_size -= (hmi_data[4] + 5);
+                    hmi_dbg += (hmi_data[4] + 5);
+                    hmi_data += (hmi_data[4] + 5);
+                } else if (hmi_data[1] == 0x15) {
+                    hmi_size -= 4;
+                    hmi_dbg += 4;
+                    hmi_data += 4;
+                }
+                hmi_data += 4;
+                hmi_size -= 4;
+                hmi_dbg += 4;
+            } else {
+                if ((check_ret = check_midi_event(hmi_data, hmi_size, hmi_division,     hmi_running_event, verbose, EVENT_DATA_8BIT)) == -1) {
+                    printf("Missing or Corrupt MIDI Data\n");
+                    return -1;
+                }
+                // Running event
+                // 0xff does not alter running event
+                if ((*hmi_data == 0xF0) || (*hmi_data == 0xF7)) {
+                    // Sysex resets running event data
+                    hmi_running_event = 0;
+                } else if (*hmi_data < 0xF0) {
+                    // MIDI events 0x80 to 0xEF set running event
+                    if (*hmi_data >= 0x80) {
+                        hmi_running_event = *hmi_data;
+                    }
+                }
+//                if (verbose) printf("Running Event: 0x%.2x\n",hmi_running_event);
+                
+                if ((hmi_running_event & 0xf0) == 0x90) {
+                    // note on has extra data to specify how long the note is.
+                    hmi_data += check_ret;
+                    hmi_size -= check_ret;
+                    hmi_dbg += check_ret;
+                    
+                    hmi_delta = 0;
+                    if (*hmi_data > 0x7f) {
+                        while (*hmi_data > 0x7F) {
+                            hmi_delta = (hmi_delta << 7) | (*hmi_data & 0x7F);
+                            hmi_data++;
+                            hmi_size--;
+                            hmi_dbg++;
+                        }
+                    }
+                    hmi_delta = (hmi_delta << 7) | (*hmi_data & 0x7F);
+                    if (verbose) printf("Note Length (ticks?): %u\n",hmi_delta);
+                    hmi_data++;
+                    hmi_size--;
+                    hmi_dbg++;
+                    
+                } else {
+                    hmi_data += check_ret;
+                    hmi_size -= check_ret;
+                    hmi_dbg += check_ret;
+                }
+            }
+        }
+    }
+    
+    free (hmi_track_offset);
+    return 0;
+}
+    
 int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) {
     u_int8_t is_hmq = 0;
     u_int32_t zero_cnt = 0;
@@ -834,7 +1027,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 if (verbose)
                     printf("RBRN length: %u\n",event_len);
                 
-                // TODO: still have to work out what this is
+                // TODO: still have to work out what this is.
+                // Does not seem to be needed for midi playback.
                 xmidi_data += event_len;
                 subform_len -= event_len;
             
@@ -877,15 +1071,7 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                             event_len -= check_ret;
                             subform_len -= check_ret;
                             tmp_val = 0;
-/*
-                            {
-                                int j = 0;
-                                for (j=0; j < 16; j++) {
-                                    printf("0x%.2x ", xmidi_data[j]);
-                                }
-                                printf("\n");
-                            }
-*/
+
                             if (*xmidi_data > 0x7f) {
                                 while (*xmidi_data > 0x7f) {
                                     tmp_val = (tmp_val << 7) | (*xmidi_data++ & 0x7f);
@@ -899,7 +1085,7 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                             event_len--;
                             subform_len--;
                             if (verbose)
-                                printf("Intervals: %u\n", tmp_val);
+                                printf("Note Length (intervals?): %u\n", tmp_val);
                         } else {
                             xmidi_data += check_ret;
                             xmidi_size -= check_ret;
@@ -1323,7 +1509,9 @@ int main(int argc, char ** argv) {
                 && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
                         ".xmi") != 0)
                 && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                           ".hmp") != 0)) {
+                        ".hmp") != 0)
+                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
+                        ".hmi") != 0)) {
 			printf("Testing of %s is not supported\n", argv[optind]);
 			optind++;
 			continue;
@@ -1339,12 +1527,16 @@ int main(int argc, char ** argv) {
 					".pat") == 0) {
 				testret = test_guspat(filebuffer, filesize, verbose);
 			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                                  ".xmi") == 0) {
+                    ".xmi") == 0) {
 				testret = test_xmidi(filebuffer, filesize, verbose);
+                
             } else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                                  ".hmp") == 0) {
+                    ".hmp") == 0) {
                 // Will add .hmq extention if we find hmp files with it
 				testret = test_hmp(filebuffer, filesize, verbose);
+            } else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
+                    ".hmi") == 0) {
+				testret = test_hmi(filebuffer, filesize, verbose);
             }
 			free(filebuffer);
 			if (testret != 0) {
