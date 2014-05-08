@@ -319,7 +319,7 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
                 return -1;
             }
             if (verbose)
-                printf("Set Pitch: chan(%i) note(%i)\n", (event & 0x0F),
+                printf("Set Pitch: chan(%i) pitch(%i)\n", (event & 0x0F),
                        ((midi_data[0] << 7) | midi_data[1]));
             rtn_cnt += 2;
             break;
@@ -540,6 +540,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     u_int32_t hmi_duration_secs = 0;
     u_int8_t hmi_track_cnt = 0;
     u_int32_t i = 0;
+    u_int32_t j = 0;
     u_int32_t *hmi_track_offset = NULL;
     u_int32_t hmi_dbg = 0;
     u_int32_t hmi_delta = 0;
@@ -589,7 +590,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     hmi_dbg += 141;
 
     for (i = 0; i < hmi_track_cnt; i++) {
-//        printf("DEBUG @ %.8x\n",hmi_dbg);
+        printf("DEBUG @ %.8x\n",hmi_dbg);
         hmi_track_offset[i] = *hmi_data++;
         hmi_track_offset[i] += (*hmi_data++ << 8);
         hmi_track_offset[i] += (*hmi_data++ << 16);
@@ -604,13 +605,13 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     hmi_data += (hmi_track_offset[0] - hmi_dbg);
     hmi_dbg += (hmi_track_offset[0] - hmi_dbg);
     for (i = 0; i < hmi_track_cnt; i++) {
-        /*
+        
         printf("DEBUG @ %.8x: ",hmi_dbg);
         for (j = 0; j < 16; j++) {
             printf("%.2x ",hmi_data[j]);
         }
         printf("\n");
-        */
+        
         if (strncmp((char *) hmi_data,"HMI-MIDITRACK", 13) != 0) {
             printf("Not a valid HMI file: expected HMI-MIDITRACK\n");
             return -1;
@@ -633,16 +634,16 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
         } else {
             hmi_track_end = hmi_file_end;
         }
-//        printf("DEBUG: 0x%.8x\n",hmi_track_end);
+        printf("DEBUG: 0x%.8x\n",hmi_track_end);
         
         while (hmi_dbg < hmi_track_end) {
-            /*
+            
             printf("DEBUG @ 0x%.8x: ",hmi_dbg);
             for (j = 0; j < 16; j++) {
                 printf("%.2x ",hmi_data[j]);
             }
             printf("\n");
-            */
+            
             hmi_delta = 0;
             if (*hmi_data > 0x7f) {
                 while (*hmi_data > 0x7F) {
@@ -689,6 +690,13 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
                     }
                 }
 //                if (verbose) printf("Running Event: 0x%.2x\n",hmi_running_event);
+                
+                if ((hmi_data[0] == 0xff) && (hmi_data[1] == 0x2f) && (hmi_data[2] == 0x00)) {
+                    hmi_data += check_ret;
+                    hmi_size -= check_ret;
+                    hmi_dbg += check_ret;
+                    break;
+                }
                 
                 if ((hmi_running_event & 0xf0) == 0x90) {
                     // note on has extra data to specify how long the note is.
@@ -752,7 +760,7 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
         is_hmq = 1;
         hmp_data += 6;
         hmp_data -= 6;
-        if (verbose) printf("HMQ format detected");
+        if (verbose) printf("HMPv2 format detected");
     }
     
     // should be a bunch of \0's
@@ -763,7 +771,7 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
     }
     for (i = 0; i < zero_cnt; i++) {
         if (hmp_data[0] != 0) {
-            printf("Not a valid HMP/HMQ file\n");
+            printf("Not a valid HMP file\n");
             return -1;
         }
     }
