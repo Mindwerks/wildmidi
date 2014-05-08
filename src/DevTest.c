@@ -540,7 +540,6 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     u_int32_t hmi_duration_secs = 0;
     u_int8_t hmi_track_cnt = 0;
     u_int32_t i = 0;
-    u_int32_t j = 0;
     u_int32_t *hmi_track_offset = NULL;
     u_int32_t hmi_dbg = 0;
     u_int32_t hmi_delta = 0;
