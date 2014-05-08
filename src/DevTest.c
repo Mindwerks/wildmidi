@@ -590,7 +590,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     hmi_dbg += 141;
 
     for (i = 0; i < hmi_track_cnt; i++) {
-        printf("DEBUG @ %.8x\n",hmi_dbg);
+//        printf("DEBUG @ %.8x\n",hmi_dbg);
         hmi_track_offset[i] = *hmi_data++;
         hmi_track_offset[i] += (*hmi_data++ << 8);
         hmi_track_offset[i] += (*hmi_data++ << 16);
@@ -605,13 +605,13 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     hmi_data += (hmi_track_offset[0] - hmi_dbg);
     hmi_dbg += (hmi_track_offset[0] - hmi_dbg);
     for (i = 0; i < hmi_track_cnt; i++) {
-        
+/*
         printf("DEBUG @ %.8x: ",hmi_dbg);
         for (j = 0; j < 16; j++) {
             printf("%.2x ",hmi_data[j]);
         }
         printf("\n");
-        
+*/
         if (strncmp((char *) hmi_data,"HMI-MIDITRACK", 13) != 0) {
             printf("Not a valid HMI file: expected HMI-MIDITRACK\n");
             return -1;
@@ -634,16 +634,16 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
         } else {
             hmi_track_end = hmi_file_end;
         }
-        printf("DEBUG: 0x%.8x\n",hmi_track_end);
+//        printf("DEBUG: 0x%.8x\n",hmi_track_end);
         
         while (hmi_dbg < hmi_track_end) {
-            
+/*
             printf("DEBUG @ 0x%.8x: ",hmi_dbg);
             for (j = 0; j < 16; j++) {
                 printf("%.2x ",hmi_data[j]);
             }
             printf("\n");
-            
+*/
             hmi_delta = 0;
             if (*hmi_data > 0x7f) {
                 while (*hmi_data > 0x7F) {
