@@ -540,7 +540,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     u_int32_t hmi_duration_secs = 0;
     u_int8_t hmi_track_cnt = 0;
     u_int32_t i = 0;
-    u_int32_t j = 0;
+//    u_int32_t j = 0;
     u_int32_t *hmi_track_offset = NULL;
     u_int32_t hmi_dbg = 0;
     u_int32_t hmi_delta = 0;
@@ -628,7 +628,6 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
         hmi_size -= hmi_track_header_length;
         hmi_dbg += hmi_track_header_length;
 
-        hmi_track_end = 0;
         if (i < (hmi_track_cnt -1)) {
             hmi_track_end = hmi_track_offset[i+1];
         } else {
@@ -678,6 +677,21 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
                     printf("Missing or Corrupt MIDI Data\n");
                     return -1;
                 }
+                
+                // Display loop start/end
+                // TODO: Don't have a HMI file with a loop in it to test this.
+                if (hmi_data[0] > 0x7f) {
+                    if ((hmi_data[0] & 0xf0) == 0xb0) {
+                        if ((hmi_data[1] == 110) && (hmi_data[2] == 255) && (verbose)) printf("HMI Loop Start\n");
+                        if ((hmi_data[1] == 111) && (hmi_data[2] == 128) && (verbose)) printf("HMI Loop End\n");
+                    }
+                } else {
+                    if ((hmi_running_event & 0xf0) == 0xb0) {
+                        if ((hmi_data[0] == 110) && (hmi_data[1] == 255) && (verbose)) printf("HMI Loop Start\n");
+                        if ((hmi_data[0] == 111) && (hmi_data[1] == 128) && (verbose)) printf("HMI Loop End\n");
+                    }
+                }
+                
                 // Running event
                 // 0xff does not alter running event
                 if ((*hmi_data == 0xF0) || (*hmi_data == 0xF7)) {
@@ -697,7 +711,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
                     hmi_dbg += check_ret;
                     break;
                 }
-                
+
                 if ((hmi_running_event & 0xf0) == 0x90) {
                     // note on has extra data to specify how long the note is.
                     hmi_data += check_ret;
@@ -759,8 +773,8 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
     if (strncmp((char *) hmp_data,"013195", 6) == 0) {
         is_hmq = 1;
         hmp_data += 6;
-        hmp_data -= 6;
-        if (verbose) printf("HMPv2 format detected");
+        hmp_size -= 6;
+        if (verbose) printf("HMPv2 format detected\n");
     }
     
     // should be a bunch of \0's
@@ -770,7 +784,8 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
         zero_cnt = 24;
     }
     for (i = 0; i < zero_cnt; i++) {
-        if (hmp_data[0] != 0) {
+//        printf("DEBUG (%.2x): %.2x\n",i, hmp_data[i]);
+        if (hmp_data[i] != 0) {
             printf("Not a valid HMP file\n");
             return -1;
         }
@@ -809,9 +824,13 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
     hmp_size -= 8;
     if (verbose) printf("Song Time: %u\n", hmp_song_time);
     
-    hmp_data += 712;
-    hmp_size -= 712;
-    
+    if (is_hmq) {
+        hmp_data += 840;
+        hmp_size -= 840;
+    } else {
+        hmp_data += 712;
+        hmp_size -= 712;
+    }
     for (i = 0; i < hmp_chunks; i++) {
 
         hmp_chunk_num = *hmp_data++;
@@ -865,6 +884,11 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
             if ((check_ret = check_midi_event(hmp_data, hmp_size, hmp_division, 0, verbose, EVENT_DATA_8BIT)) == -1) {
                 printf("Missing or Corrupt MIDI Data\n");
                 return -1;
+            }
+            // Display loop start/end
+            if ((hmp_chunk_num == 1) && ((hmp_data[0] & 0xf0) == 0xb0)) {
+                if ((hmp_data[1] == 110) && (hmp_data[2] == 255) && (verbose)) printf("HMP Loop Start\n");
+                if ((hmp_data[1] == 111) && (hmp_data[2] == 128) && (verbose)) printf("HMP Loop End\n");
             }
             j += check_ret;
             hmp_data += check_ret;
