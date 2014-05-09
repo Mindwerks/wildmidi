@@ -856,7 +856,7 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
         hmp_track += (*hmp_data++ << 16);
         hmp_track += (*hmp_data++ << 24);
         hmp_size -= 4;
-        if (verbose) printf("Track ???: %u\n", hmp_track);
+        if (verbose) printf("Track Number: %u\n", hmp_track);
         
         // Start of Midi Data
         
