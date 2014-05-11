@@ -673,23 +673,9 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
                 hmi_size -= 4;
                 hmi_dbg += 4;
             } else {
-                if ((check_ret = check_midi_event(hmi_data, hmi_size, hmi_division,     hmi_running_event, verbose, EVENT_DATA_8BIT)) == -1) {
+                if ((check_ret = check_midi_event(hmi_data, hmi_size, hmi_division, hmi_running_event, verbose, 0)) == -1) {
                     printf("Missing or Corrupt MIDI Data\n");
                     return -1;
-                }
-                
-                // Display loop start/end
-                // TODO: Don't have a HMI file with a loop in it to test this.
-                if (hmi_data[0] > 0x7f) {
-                    if ((hmi_data[0] & 0xf0) == 0xb0) {
-                        if ((hmi_data[1] == 110) && (hmi_data[2] == 255) && (verbose)) printf("HMI Loop Start\n");
-                        if ((hmi_data[1] == 111) && (hmi_data[2] == 128) && (verbose)) printf("HMI Loop End\n");
-                    }
-                } else {
-                    if ((hmi_running_event & 0xf0) == 0xb0) {
-                        if ((hmi_data[0] == 110) && (hmi_data[1] == 255) && (verbose)) printf("HMI Loop Start\n");
-                        if ((hmi_data[0] == 111) && (hmi_data[1] == 128) && (verbose)) printf("HMI Loop End\n");
-                    }
                 }
                 
                 // Running event
