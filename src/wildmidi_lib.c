@@ -2760,6 +2760,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     u_int32_t hmp_file_length = 0;
     u_int32_t hmp_chunks = 0;
     u_int32_t hmp_divisions = 0;
+    u_int32_t hmp_bpm = 0;
     u_int32_t hmp_song_time = 0;
     struct _mdi *hmp_mdi;
     u_int8_t **hmp_chunk;
@@ -2774,6 +2775,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     u_int32_t subtract_delta = 0;
     //u_int32_t chunks_finished = 0;
     u_int32_t end_of_chunks = 0;
+    u_int32_t var_len_shift = 0;
     
     u_int32_t tempo = 500000;
 	float samples_per_delta_f = 0.0;
@@ -2831,15 +2833,21 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_chunks += (*hmp_data++ << 16);
     hmp_chunks += (*hmp_data++ << 24);
     
-    // Unsure of what next 4 bytes are so skip over them
-    hmp_data += 4;
-    
+    // Still decyphering what this is
     hmp_divisions = *hmp_data++;
     hmp_divisions += (*hmp_data++ << 8);
     hmp_divisions += (*hmp_data++ << 16);
     hmp_divisions += (*hmp_data++ << 24);
+    // Defaulting
+    hmp_divisions = 60;
     
+    // Beats per minute
+    hmp_bpm = *hmp_data++;
+    hmp_bpm += (*hmp_data++ << 8);
+    hmp_bpm += (*hmp_data++ << 16);
+    hmp_bpm += (*hmp_data++ << 24);
     
+#if 0
     if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
         float bpm_f = (float) (60000000 / tempo);
         tempo = 60000000 / (uint32_t) bpm_f;
@@ -2848,15 +2856,16 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         + 0.5f;
         tempo = 60000000 / (uint32_t) bpm_fr;
     }
-    /* Slow but needed for accuracy */
-    microseconds_per_pulse = (float) tempo
-    / (float) hmp_divisions;
-    pulses_per_second = 1000000.0f
-    / microseconds_per_pulse;
-    samples_per_delta_f = (float) WM_SampleRate
-    / pulses_per_second;
+#endif
     
-
+    /* Slow but needed for accuracy */
+    tempo = 60000000 / hmp_bpm;
+    microseconds_per_pulse = (float) tempo / (float) hmp_divisions;
+    pulses_per_second = 1000000.0f / microseconds_per_pulse;
+    samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
+    
+    //DEBUG
+    //fprintf(stderr, "DEBUG: Samples Per Delta Tick: %f\r\n",samples_per_delta_f);
     
     // FIXME: This value is incorrect
     hmp_song_time = *hmp_data++;
@@ -2865,7 +2874,10 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_song_time += (*hmp_data++ << 24);
     hmp_size -= 32;
     
-    UNUSED(hmp_song_time);
+    // DEBUG
+    //fprintf(stderr,"DEBUG: ??DIVISIONS??: %u, BPM: %u, ??SONG TIME??: %u:%.2u\r\n",hmp_divisions, hmp_bpm, (hmp_song_time / 60), (hmp_song_time % 60));
+    
+    // UNUSED(hmp_song_time);
     
     if (is_hmp2) {
         hmp_data += 840;
@@ -2877,10 +2889,9 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     
     hmp_mdi = Init_MDI();
     
-    midi_setup_divisions(hmp_mdi, hmp_divisions);
-    
     // FIXME: need to check if this means same value as MIDI divisions
     // If not then need to create its own setup function.
+    //midi_setup_divisions(hmp_mdi, hmp_divisions);
     midi_setup_divisions(hmp_mdi, hmp_divisions);
     
     hmp_chunk = malloc(sizeof(u_int8_t *) * hmp_chunks);
@@ -2927,13 +2938,15 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_ofs[i] = 12;
 
         chunk_delta[i] = 0;
+        var_len_shift = 0;
         if (*hmp_data < 0x80) {
             do {
-                chunk_delta[i] = (chunk_delta[i] << 7) | (*hmp_data++ & 0x7F);
+                chunk_delta[i] = chunk_delta[i] | ((*hmp_data++ & 0x7F) << var_len_shift);
+                var_len_shift += 7;
                 chunk_ofs[i]++;
             } while (*hmp_data < 0x80);
         }
-        chunk_delta[i] = (chunk_delta[i] << 7) | (*hmp_data++ & 0x7F);
+        chunk_delta[i] = chunk_delta[i] | ((*hmp_data++ & 0x7F) << var_len_shift);
         chunk_ofs[i]++;
         
         if (chunk_delta[i] < smallest_delta) {
@@ -2949,6 +2962,10 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     subtract_delta = smallest_delta;
     while (end_of_chunks < hmp_chunks) {
         smallest_delta = 0;
+        
+        // DEBUG
+        // fprintf(stderr,"DEBUG: Delta Ticks: %u\r\n",subtract_delta);
+        
         for (i = 0; i < hmp_chunks; i++) {
             if (chunk_end[i])
                 continue;
@@ -2983,11 +3000,16 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                             WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                             goto _hmp_end;
                         }
+
                         if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x51) && (hmp_chunk[i][2] == 0x03)) {
                             /* Tempo */
                             tempo = (hmp_chunk[i][3] << 16) + (hmp_chunk[i][4] << 8)+ hmp_chunk[i][5];
                             if (!tempo)
                                 tempo = 500000;
+
+                            // DEBUG
+                            fprintf(stderr,"DEBUG: Tempo change %u\r\n", tempo);
+#if 0
                             
                             if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
                                 float bpm_f = (float) (60000000 / tempo);
@@ -3000,17 +3022,20 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                             microseconds_per_pulse = (float) tempo / (float) hmp_divisions;
                             pulses_per_second = 1000000.0f / microseconds_per_pulse;
                                 samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
+#endif
                         }
                         hmp_chunk[i] += setup_ret;
                     }
                 }
+                var_len_shift = 0;
                 if (*hmp_chunk[i] < 0x80) {
                     do {
-                        chunk_delta[i] = (chunk_delta[i] << 7) + (*hmp_chunk[i] & 0x7F);
+                        chunk_delta[i] = chunk_delta[i] + ((*hmp_chunk[i] & 0x7F) << var_len_shift);
+                        var_len_shift += 7;
                         hmp_chunk[i]++;
                     } while (*hmp_chunk[i] < 0x80);
                 }
-                chunk_delta[i] = (chunk_delta[i] << 7) + (*hmp_chunk[i] & 0x7F);
+                chunk_delta[i] = chunk_delta[i] + ((*hmp_chunk[i] & 0x7F) << var_len_shift);
                 hmp_chunk[i]++;
             } while (!chunk_delta[i]);
             if ((!smallest_delta) || (smallest_delta > chunk_delta[i])) {
@@ -3036,6 +3061,8 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
             hmp_mdi->event_count++;
         }
         hmp_mdi->info.approx_total_samples += sample_count;
+        // DEBUG
+        // fprintf(stderr,"DEBUG: Sample Count %u\r\n",sample_count);
     }
 
     if ((hmp_mdi->event_count)

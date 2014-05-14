@@ -852,15 +852,17 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
         
         // Start of Midi Data
         for (j = 0; j < hmp_chunk_length; j++) {
+            u_int32_t var_len_shift = 0;
             hmp_var_len_val = 0;
             if (*hmp_data < 0x80) {
                 do {
-                    hmp_var_len_val = (hmp_var_len_val << 7) | (*hmp_data++ & 0x7F);
+                    hmp_var_len_val = hmp_var_len_val | ((*hmp_data++ & 0x7F) << var_len_shift);
+                    var_len_shift += 7;
                     hmp_size--;
                     j++;
                 } while (*hmp_data < 0x80);
             }
-            hmp_var_len_val = (hmp_var_len_val << 7) | (*hmp_data++ & 0x7F);
+            hmp_var_len_val = hmp_var_len_val | ((*hmp_data++ & 0x7F) << var_len_shift);
             hmp_size--;
 
 //          j++; <- this was causing off by 1 issues

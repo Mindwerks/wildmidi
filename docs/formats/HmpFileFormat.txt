@@ -43,7 +43,7 @@ Description
     char no_idea_2[16];        // All zeros
     char number_of_chunks[4];  // Number of chunks stored as little-endian
     char no_idea_3[4];         // Unknown
-    char division[4];          // division stored as little-endian
+    char beats_per_minute[4];   // beats per minute stored as little-endian *** NOTE: Using a division of 60 ***
     char song_length_s[4];     // length of song in seconds as little-endian
 }
 
@@ -78,12 +78,12 @@ Description
 
 MIDI Delta
 
-This is a variable length value that determins how time (in MIDI ticks) is to pass before the following MIDI event is to be processed. Opposite to MIDI variable length values, HMP files have bit 7 set on the last value in the variable length value. A value of 255 would be stored as 0x01 0xff, or a value of 1 would be stored as 0x81 in the HMP variable length format.
+This is a variable length value that determins how time (in MIDI ticks) is to pass before the following MIDI event is to be processed. Opposite to MIDI variable length values. In HMP files the variable length value is stored in LSB with bit 7 set off for all except the last 7 bit value. A value of 255 would be stored as 0x7f 0x81, or a value of 1 would be stored as 0x81 in the HMP variable length format.
 
     Examples:
-    Delta of 255: < midi event > 0x01 0xff < midi event>
+    Delta of 255: < midi event > 0x7f 0x81 < midi event>
     Delta of 127: < midi event > 0xff < midi event >
-    Delta of 65537: < midi event > 0x02 0x00 0xf1 < midi event >
+    Delta of 65537: < midi event > 0x7f 0x00 0x82 < midi event >
 
 
 
