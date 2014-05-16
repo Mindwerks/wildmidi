@@ -203,33 +203,6 @@ IF(WANT_DEVTEST)
     )
 ENDIF(WANT_DEVTEST)
 
-IF(WANT_BUGHUNT)
-    SET(wildmidi-bughunt_executable_SRCS
-        ${wildmidi_executable_SRCS}
-        ${wildmidi_library_SRCS}
-    )
-    ADD_EXECUTABLE(wildmidi-bughunt
-        ${wildmidi-bughunt_executable_SRCS}
-    )
-    IF(AUDIODRV_OPENAL)
-      TARGET_INCLUDE_DIRECTORIES(wildmidi-bughunt PRIVATE
-        ${OPENAL_INCLUDE_DIR}
-        )
-    ELSEIF(AUDIODRV_ALSA)
-      TARGET_INCLUDE_DIRECTORIES(wildmidi-bughunt PRIVATE
-        ${ALSA_INCLUDE_DIR}
-        )
-    ELSEIF(AUDIODRV_OSS)
-     # no special header paths
-    ENDIF()
-
-    TARGET_LINK_LIBRARIES(wildmidi-bughunt
-        ${M_LIBRARY}
-        ${AUDIO_LIBRARY}
-        )
-
-ENDIF(WANT_BUGHUNT)
-
 # add install target:
 IF(UNIX AND NOT APPLE)
     # install our libraries
@@ -249,11 +222,6 @@ IF(UNIX AND NOT APPLE)
     # install our devtest if asked for
     IF(WANT_DEVTEST)
         INSTALL(TARGETS wildmidi-devtest DESTINATION bin)
-    ENDIF(WANT_DEVTEST)
-
-    # install our bughunt if asked for
-    IF(WANT_DEVTEST)
-        INSTALL(TARGETS wildmidi-bughunt DESTINATION bin)
     ENDIF(WANT_DEVTEST)
 
     # install supporting man pages and headers
