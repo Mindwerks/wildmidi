@@ -211,7 +211,7 @@ ENDIF()
 IF(WIN32)
     IF (WANT_PLAYER OR WANT_PLAYERSTATIC)
         LINK_LIBRARIES(winmm)
-    ENDIF(WANT_PLAYER)
+    ENDIF()
 ENDIF(WIN32)
 
 # ######### General setup ##########
