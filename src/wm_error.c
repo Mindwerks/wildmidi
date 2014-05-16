@@ -56,6 +56,7 @@ void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Library Already Initialized",
 		"Not a midi file",
 		"Refusing to load unusually long file",
+        "Not a hmp file",
 
 		"Invalid error code"
 	};
