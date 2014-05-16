@@ -19,6 +19,11 @@ SET(wildmidi_library_HDRS
     ../include/filenames.h
 )
 
+IF(MSVC)
+   SET(GETOPT getopt_long.c)
+ELSE()
+   SET(GETOPT)
+ENDIF()
 SET(wildmidi_executable_SRCS
     ${GETOPT}
     wm_tty.c
@@ -108,7 +113,6 @@ SET(WILDMIDILIBSTATIC "${CMAKE_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
 
 # MS Visual Studio
 IF(MSVC)
-    SET(GETOPT getopt_long.c)
     SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
     SET(WILDMIDILIBSTATIC "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_STATIC_NAME}.lib")
 ENDIF(MSVC)
@@ -130,17 +134,6 @@ ENDIF(CMAKE_GENERATOR STREQUAL "Xcode")
 
 # do we want the wildmidi player?
 IF(WANT_PLAYER)
-    SET(wildmidi_executable_SRCS
-        ${GETOPT}
-        wm_tty.c
-        wildmidi.c
-    )
-
-    SET(wildmidi_executable_HDRS
-        ../include/wm_tty.h
-        ../include/getopt_long.h
-    )
-
     ADD_EXECUTABLE(wildmidi
         ${wildmidi_executable_SRCS}
         ${wildmidi_executable_HDRS}
