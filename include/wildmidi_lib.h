@@ -102,6 +102,7 @@ WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t mi
 WM_SYMBOL int WildMidi_MasterVolume (uint8_t master_volume);
 WM_SYMBOL midi * WildMidi_Open (const char *midifile);
 WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
+WM_SYMBOL int WildMidi_GetMidiOutput (midi *handle, int8_t **buffer, uint32_t *size);
 WM_SYMBOL int WildMidi_GetOutput (midi *handle, int8_t *buffer, uint32_t size);
 WM_SYMBOL int WildMidi_SetOption (midi *handle, uint16_t options, uint16_t setting);
 WM_SYMBOL int WildMidi_SetCvtOption (uint16_t tag, uint16_t setting);

@@ -2005,7 +2005,7 @@ static void do_sysex_roland_drum_track(struct _mdi *mdi,
 	}
 }
 
-static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
+static void do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
 	int i;
 	for (i = 0; i < 16; i++) {
 		mdi->channel[i].bank = 0;
@@ -2032,6 +2032,15 @@ static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 	UNUSED(data); /* NOOP, to please the compiler gods */
 }
 
+static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
+    do_sysex_gm_reset(mdi,data);
+}
+
+static void do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data) {
+    do_sysex_gm_reset(mdi,data);
+}
+
+
 static void do_endoftrack(struct _mdi *mdi, struct _event_data *data) {
     // placeholder function so we can record eot in the event stream
     // for conversion function WM_Event2Midi
@@ -2057,7 +2066,7 @@ static void WM_ResetToStart(midi * handle) {
 	mdi->samples_to_mix = 0;
 	mdi->info.current_sample = 0;
 
-	do_sysex_roland_reset(mdi, NULL);
+	do_sysex_gm_reset(mdi, NULL);
 }
 
 static int midi_setup_divisions(struct _mdi *mdi, uint32_t divisions) {
@@ -2299,9 +2308,26 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 	return (0);
 }
 
+static int midi_setup_sysex_gm_reset(struct _mdi *mdi) {
+	if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+		mdi->events[mdi->event_count - 1].do_event = *do_sysex_gm_reset;
+		mdi->events[mdi->event_count - 1].event_data.channel = 0;
+		mdi->events[mdi->event_count - 1].event_data.data = 0;
+	} else {
+		WM_CheckEventMemoryPool(mdi);
+		mdi->events[mdi->event_count].do_event = *do_sysex_roland_reset;
+		mdi->events[mdi->event_count].event_data.channel = 0;
+		mdi->events[mdi->event_count].event_data.data = 0;
+		mdi->events[mdi->event_count].samples_to_next = 0;
+		mdi->event_count++;
+	}
+	return (0);
+}
+
 static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
 	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_sysex_roland_reset;
 		mdi->events[mdi->event_count - 1].event_data.channel = 0;
 		mdi->events[mdi->event_count - 1].event_data.data = 0;
@@ -2316,6 +2342,25 @@ static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
 	return (0);
 }
 
+static int midi_setup_sysex_yamaha_reset(struct _mdi *mdi) {
+	if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+		mdi->events[mdi->event_count - 1].do_event = *do_sysex_yamaha_reset;
+		mdi->events[mdi->event_count - 1].event_data.channel = 0;
+		mdi->events[mdi->event_count - 1].event_data.data = 0;
+	} else {
+		WM_CheckEventMemoryPool(mdi);
+		mdi->events[mdi->event_count].do_event = *do_sysex_roland_reset;
+		mdi->events[mdi->event_count].event_data.channel = 0;
+		mdi->events[mdi->event_count].event_data.data = 0;
+		mdi->events[mdi->event_count].samples_to_next = 0;
+		mdi->event_count++;
+	}
+	return (0);
+}
+
+
+#if 0
 static int midi_setup_endoftrack(struct _mdi *mdi) {
     // This should only be getting called by WM_ParseNewMidi
     //  for type 2 midi files.
@@ -2334,7 +2379,7 @@ static int midi_setup_endoftrack(struct _mdi *mdi) {
 	}
 	return (0);
 }
-
+#endif
 static int midi_setup_tempo(struct _mdi *mdi, u_int32_t setting) {
 	if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
@@ -2444,6 +2489,7 @@ static void freeMDI(struct _mdi *mdi) {
 	free(mdi);
 }
 
+#if 0
 static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 
 	struct _sample *sample = NULL;
@@ -2485,6 +2531,7 @@ static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
 	}
 	return (decay_samples);
 }
+#endif
 
 WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t *size) {
 	uint8_t *buf;
@@ -2533,15 +2580,387 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
 	return (0);
 }
 
+/*
+ Store a delta value
+ 
+ returns the amount of bytes stored
+ */
+u_int32_t
+WM_Event2Midi_StoreDeltaFromSamples(u_int8_t **out, u_int32_t samples, u_int32_t divisions, u_int32_t tempo) {
+    u_int32_t out_ofs = 0;
+    u_int32_t value = 0;
+    float value_f = 0.0;
+    float samples_per_delta_f = 0.0;
+    
+    samples_per_delta_f = (float)WM_SampleRate / ((1000000/(float)tempo)*(float)divisions);
+    
+    value_f = (float)samples / samples_per_delta_f;
+    value = (u_int32_t)value_f;
+    
+    if (value > 0x0fffffff) out[out_ofs++] = ((value >> 21) &0x7f) | 0x80;
+    if (value > 0x1fffff) out[out_ofs++] = ((value >> 14) &0x7f) | 0x80;
+    if (value > 0x3fff) out[out_ofs++] = ((value >> 7) & 0x7f) | 0x80;
+    out[out_ofs++] = value &0x7f;
+
+    return out_ofs;
+}
+
+/*
+    Convert WildMIDI's MDI events into a type 0 MIDI file.
+ 
+    returns
+    0 = successful
+    -1 = failed
+ 
+    **out points to place to store stuff
+    *outsize points to where to store byte counts
+    
+    NOTE: This will only write out events that we do support.
+ 
+    *** CAUTION ***
+    This will output type 0 midi file reguardless of the original file type. Type 2 midi files will have each original track play on the same track one after the other in the type 0 file.
+ */
+int
+WM_Event2Midi(struct _mdi *mdi, u_int8_t **out, uint32_t *outsize) {
+    u_int32_t i = 0;
+    u_int32_t out_ofs = 0;
+    u_int8_t running_event = 0;
+    u_int32_t divisions = 0;
+    u_int32_t deltabytecount = 0;
+    u_int32_t tempo = 500000;
+
+    if (!mdi->event_count) {
+        WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CONVERT, "(No events to convert)", 0);
+        return -1;
+    }
+    
+    *out = malloc (sizeof(u_int8_t) * (mdi->event_count * 3));
+    
+    // Midi Header
+    out[0] = 'M';
+    out[1] = 'T';
+    out[2] = 'h';
+    out[3] = 'd';
+    out[4] = 0x00;
+    out[5] = 0x00;
+    out[6] = 0x00;
+    out[7] = 0x06;
+    // Type 0
+    out[8] = 0x00;
+    out[9] = 0x00;
+    out[10] = 0x00;
+    out[11] = 0x01;
+    // Division stored in 12-15
+    // Track Header
+    out[16] = 'M';
+    out[17] = 'T';
+    out[18] = 'r';
+    out[19] = 'k';
+    // Track size stored in 20-23 *** see below
+    out_ofs = 24;
+    
+    for (i = 0; i < mdi->event_count; i++) {
+        
+        // TODO Is there a better way?
+        if (mdi->events[i].do_event == NULL) {
+        } else if (mdi->events[i].do_event == do_midi_divisions) {
+            // DEBUG
+            fprintf(stderr,"Division: %u\r\n",mdi->events[i].event_data.data);
+            divisions = mdi->events[i].event_data.data;
+            out[12] = (divisions >> 24) & 0xff;
+            out[13] = (divisions >> 16) & 0xff;
+            out[14] = (divisions >> 8) & 0xff;
+            out[15] = divisions & 0xff;
+        } else if (mdi->events[i].do_event == do_note_off) {
+            // DEBUG
+            fprintf(stderr,"Note Off: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0x80 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0x80 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_note_on) {
+            // DEBUG
+            fprintf(stderr,"Note On: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0x90 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0x90 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_aftertouch) {
+            // DEBUG
+            fprintf(stderr,"Aftertouch: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xa0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xa0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_bank_select) {
+            // DEBUG
+            fprintf(stderr,"Control Bank Select: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_data_entry_course) {
+            // DEBUG
+            fprintf(stderr,"Control Data Entry Course: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_volume) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Volume: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_balance) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Balance: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_pan) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Pan: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_expression) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Expression: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_balance) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Balance: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_data_entry_fine) {
+            // DEBUG
+            fprintf(stderr,"Control Data Entry Fine: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_hold) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Hold: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_balance) {
+            // DEBUG
+            fprintf(stderr,"Control Data Increment: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_balance) {
+            // DEBUG
+            fprintf(stderr,"Control Data Decrement: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_non_registered_param) {
+            // DEBUG
+            fprintf(stderr,"Control Non Registered Param: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_registered_param_fine) {
+            // DEBUG
+            fprintf(stderr,"Control Registered Param Fine: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_registered_param_course) {
+            // DEBUG
+            fprintf(stderr,"Control Registered Param Course: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_sound_off) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Sound Off: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_controllers_off) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Controllers Off: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_control_channel_notes_off) {
+            // DEBUG
+            fprintf(stderr,"Control Channel Notes Off: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_patch) {
+            // DEBUG
+            fprintf(stderr,"Patch: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xc0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xc0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_channel_pressure) {
+            // DEBUG
+            fprintf(stderr,"Channel Pressure: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xd0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xd0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_pitch) {
+            // DEBUG
+            fprintf(stderr,"Pitch: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xe0 | mdi->events[i].event_data.channel)) {
+                out[out_ofs++] = 0xe0 | mdi->events[i].event_data.channel;
+                running_event = out[out_ofs - 1];
+            }
+            out[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            out[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == do_sysex_roland_drum_track) {
+            // DEBUG
+            fprintf(stderr,"Sysex Roland Drum Track: %u %u\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            int8_t foo[] = {0xf0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x15, 0x00, 0xf7};
+            uint8_t foo_ch = mdi->events[i].event_data.channel;
+            if (foo_ch == 9) {
+                foo_ch = 0;
+            } else if (foo_ch < 9) {
+                foo_ch++;
+            }
+            foo[7] = 0x10 | foo_ch;
+            foo[9] = mdi->events[i].event_data.data;
+            memcpy(&out[out_ofs],foo,10);
+            out_ofs += 10;
+            running_event = 0;
+        }  else if (mdi->events[i].do_event == do_sysex_gm_reset) {
+            // DEBUG
+            fprintf(stderr,"Sysex GM Reset\r\n");
+            int8_t foo[] = {0xf0, 0x7e, 0x7f, 0x09, 0x01, 0xf7};
+            memcpy(&out[out_ofs],foo,6);
+            out_ofs += 6;
+            running_event = 0;
+        } else if (mdi->events[i].do_event == do_sysex_roland_reset) {
+            // DEBUG
+            fprintf(stderr,"Sysex Roland Reset\r\n");
+            int8_t foo[] = {0xf0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7f, 0x00, 0x41, 0xf7};
+            memcpy(&out[out_ofs],foo,11);
+            out_ofs += 11;
+            running_event = 0;
+        }  else if (mdi->events[i].do_event == do_sysex_yamaha_reset) {
+            // DEBUG
+            fprintf(stderr,"Sysex Yamaha Reset\r\n");
+            int8_t foo[] = {0xf0, 0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
+            memcpy(&out[out_ofs],foo,9);
+            out_ofs += 9;
+            running_event = 0;
+        } else if (mdi->events[i].do_event == do_endoftrack) {
+            // DEBUG
+            fprintf(stderr,"End Of Track\r\n");
+        } else if (mdi->events[i].do_event == do_tempo) {
+            // DEBUG
+            fprintf(stderr,"Tempo: %u\r\n",mdi->events[i].event_data.data);
+            tempo = mdi->events[i].event_data.data & 0xffffff;
+            out[out_ofs++] = 0xff;
+            out[out_ofs++] = 0x51;
+            out[out_ofs++] = 0x03;
+            out[out_ofs++] = (tempo & 0xff0000) >> 16;
+            out[out_ofs++] = (tempo & 0xff00) >> 8;
+            out[out_ofs++] = (tempo & 0xff);
+        } else {
+            // DEBUG
+            fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+        }
+        // Delta Add
+        {
+            deltabytecount = WM_Event2Midi_StoreDeltaFromSamples(&out[out_ofs],mdi->events[i].samples_to_next,divisions,tempo);
+            out_ofs += deltabytecount;
+        }
+    }
+    // Write end of track marker
+    out[out_ofs++] = 0xff;
+    out[out_ofs++] = 0x2f;
+    out[out_ofs++] = 0x00;
+    
+    // Write track length
+    out[20] = (out_ofs >> 24) & 0xff;
+    out[21] = (out_ofs >> 16) & 0xff;
+    out[22] = (out_ofs >> 8) & 0xff;
+    out[23] = out_ofs & 0xff;
+    
+    *out = realloc(*out, out_ofs);
+    *outsize = out_ofs;
+    
+    return 0;
+}
+
 u_int32_t
 WM_SetupMidiEvent(struct _mdi *mdi, u_int8_t * event_data, u_int8_t running_event) {
     /*
-        Only add standard MIDI and Sysex events in here.
-        Non-standard events need to be handled by calling function
-        to avoid compatibility issues.
+     Only add standard MIDI and Sysex events in here.
+     Non-standard events need to be handled by calling function
+     to avoid compatibility issues.
      
-        TODO:
-            Add value limit checks
+     TODO:
+     Add value limit checks
      */
     u_int32_t ret_cnt = 0;
     u_int8_t command = 0;
@@ -2604,7 +3023,7 @@ WM_SetupMidiEvent(struct _mdi *mdi, u_int8_t * event_data, u_int8_t running_even
         case 0xf0:
             if (channel == 0x0f) {
                 /*
-                    MIDI Meta Events
+                 MIDI Meta Events
                  */
                 u_int32_t tmp_length = 0;
                 if (event_data[0] == 0x02) {
@@ -2623,7 +3042,7 @@ WM_SetupMidiEvent(struct _mdi *mdi, u_int8_t * event_data, u_int8_t running_even
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-
+                    
                     /* Copy copyright info in the getinfo struct */
                     if (mdi->info.copyright) {
                         mdi->info.copyright = realloc(mdi->info.copyright,(strlen(mdi->info.copyright) + 1 + tmp_length + 1));
@@ -2635,6 +3054,7 @@ WM_SetupMidiEvent(struct _mdi *mdi, u_int8_t * event_data, u_int8_t running_even
                         memcpy(mdi->info.copyright, event_data, tmp_length);
                         mdi->info.copyright[tmp_length] = '\0';
                     }
+                    ret_cnt += tmp_length;
                     
                 } else if ((event_data[0] == 0x2F) && (event_data[1] == 0x00)) {
                     /*
@@ -2673,7 +3093,7 @@ WM_SetupMidiEvent(struct _mdi *mdi, u_int8_t * event_data, u_int8_t running_even
                 
             } else if ((channel == 0) || (channel == 7)) {
                 /*
-                 Roland Sysex Events
+                 Sysex Events
                  */
                 uint32_t sysex_len = 0;
                 uint8_t *sysex_store = NULL;
@@ -2696,8 +3116,9 @@ WM_SetupMidiEvent(struct _mdi *mdi, u_int8_t * event_data, u_int8_t running_even
                 sysex_store_len += sysex_len;
                 
                 if (sysex_store[sysex_store_len - 1] == 0xF7) {
-                    uint8_t tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
-                    if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
+                    uint8_t rolandsysexid[] = { 0x41, 0x10, 0x42, 0x12 };
+                    if (memcmp(rolandsysexid, sysex_store, 4) == 0) {
+                        // For Roland Sysex Messages
                         /* checksum */
                         uint8_t sysex_cs = 0;
                         uint32_t sysex_ofs = 4;
@@ -2728,12 +3149,24 @@ WM_SetupMidiEvent(struct _mdi *mdi, u_int8_t * event_data, u_int8_t running_even
                                 }
                             }
                         }
+                    } else {
+                        // For non-Roland Sysex Messages
+                        int8_t gm_reset[] = {0x7e, 0x7f, 0x09, 0x01, 0xf7};
+                        int8_t yamaha_reset[] = {0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
+                        
+                        if (memcmp(gm_reset, sysex_store, 5) == 0) {
+                            // GM Reset
+                            midi_setup_sysex_gm_reset(mdi);
+                        } else if (memcmp(yamaha_reset,sysex_store,8) == 0) {
+                            // Yamaha Reset
+                            midi_setup_sysex_yamaha_reset(mdi);
+                        }
                     }
                 }
                 free(sysex_store);
                 sysex_store = NULL;
-//                sysex_store_len = 0;
-//                event_data += sysex_len;
+                //                sysex_store_len = 0;
+                //                event_data += sysex_len;
                 ret_cnt += sysex_len;
             } else {
                 WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
@@ -2760,6 +3193,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     u_int32_t hmp_file_length = 0;
     u_int32_t hmp_chunks = 0;
     u_int32_t hmp_divisions = 0;
+    u_int32_t hmp_unknown = 0;
     u_int32_t hmp_bpm = 0;
     u_int32_t hmp_song_time = 0;
     struct _mdi *hmp_mdi;
@@ -2786,7 +3220,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     //u_int8_t hmp_channel = 0;
     
     uint32_t sample_count = 0;
-	float sample_count_tmp = 0;
+	float sample_count_f = 0;
 	float sample_remainder = 0;
 
 
@@ -2834,11 +3268,14 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_chunks += (*hmp_data++ << 24);
     
     // Still decyphering what this is
-    hmp_divisions = *hmp_data++;
-    hmp_divisions += (*hmp_data++ << 8);
-    hmp_divisions += (*hmp_data++ << 16);
-    hmp_divisions += (*hmp_data++ << 24);
-    // Defaulting
+    hmp_unknown = *hmp_data++;
+    hmp_unknown += (*hmp_data++ << 8);
+    hmp_unknown += (*hmp_data++ << 16);
+    hmp_unknown += (*hmp_data++ << 24);
+    
+    UNUSED(hmp_unknown);
+
+    // Defaulting: experimenting has found this to be the ideal value
     hmp_divisions = 60;
     
     // Beats per minute
@@ -2877,7 +3314,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     // DEBUG
     //fprintf(stderr,"DEBUG: ??DIVISIONS??: %u, BPM: %u, ??SONG TIME??: %u:%.2u\r\n",hmp_divisions, hmp_bpm, (hmp_song_time / 60), (hmp_song_time % 60));
     
-    // UNUSED(hmp_song_time);
+    UNUSED(hmp_song_time);
     
     if (is_hmp2) {
         hmp_data += 840;
@@ -2889,10 +3326,8 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     
     hmp_mdi = Init_MDI();
     
-    // FIXME: need to check if this means same value as MIDI divisions
-    // If not then need to create its own setup function.
-    //midi_setup_divisions(hmp_mdi, hmp_divisions);
     midi_setup_divisions(hmp_mdi, hmp_divisions);
+    midi_setup_tempo(hmp_mdi, tempo);
     
     hmp_chunk = malloc(sizeof(u_int8_t *) * hmp_chunks);
     chunk_length = malloc(sizeof(u_int32_t) * hmp_chunks);
@@ -2910,6 +3345,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_num += (*hmp_data++ << 8);
         chunk_num += (*hmp_data++ << 16);
         chunk_num += (*hmp_data++ << 24);
+        chunk_ofs[i] += 4;
         
         UNUSED(chunk_num);
         
@@ -2917,7 +3353,8 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_length[i] += (*hmp_data++ << 8);
         chunk_length[i] += (*hmp_data++ << 16);
         chunk_length[i] += (*hmp_data++ << 24);
-        
+        chunk_ofs[i] += 4;
+
         if (chunk_length[i] > hmp_size) {
             WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
             goto _hmp_end;
@@ -2928,15 +3365,12 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         hmp_track += (*hmp_data++ << 16);
         hmp_track += (*hmp_data++ << 24);
         hmp_size -= chunk_length[i];
-        
+        chunk_ofs[i] += 4;
+
         UNUSED(hmp_track);
         
         // Start of Midi Data
         
-        // because chunk length includes chunk header
-        // remove header length from chunk length
-        chunk_ofs[i] = 12;
-
         chunk_delta[i] = 0;
         var_len_shift = 0;
         if (*hmp_data < 0x80) {
@@ -2954,6 +3388,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         }
         
         // goto start of next chunk
+        
         hmp_data = hmp_chunk[i] + chunk_length[i];
         hmp_chunk[i] += chunk_ofs[i]++;
         chunk_end[i] = 0;
@@ -3038,6 +3473,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                 chunk_delta[i] = chunk_delta[i] + ((*hmp_chunk[i] & 0x7F) << var_len_shift);
                 hmp_chunk[i]++;
             } while (!chunk_delta[i]);
+            
             if ((!smallest_delta) || (smallest_delta > chunk_delta[i])) {
                 smallest_delta = chunk_delta[i];
             }
@@ -3045,32 +3481,18 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         }
         
         subtract_delta = smallest_delta;
-        sample_count_tmp = (((float) smallest_delta * samples_per_delta_f)
+        sample_count_f= (((float) smallest_delta * samples_per_delta_f)
                             + sample_remainder);
-        sample_count = (uint32_t) sample_count_tmp;
-        sample_remainder = sample_count_tmp - (float) sample_count;
-        if ((hmp_mdi->event_count)
-            && (hmp_mdi->events[hmp_mdi->event_count - 1].do_event == NULL)) {
-            hmp_mdi->events[hmp_mdi->event_count - 1].samples_to_next += sample_count;
-        } else {
-            WM_CheckEventMemoryPool(hmp_mdi);
-            hmp_mdi->events[hmp_mdi->event_count].do_event = NULL;
-            hmp_mdi->events[hmp_mdi->event_count].event_data.channel = 0;
-            hmp_mdi->events[hmp_mdi->event_count].event_data.data = 0;
-            hmp_mdi->events[hmp_mdi->event_count].samples_to_next = sample_count;
-            hmp_mdi->event_count++;
-        }
+        sample_count = (u_int32_t) sample_count_f;
+        sample_remainder = sample_count_f - (float) sample_count;
+        
+        hmp_mdi->events[hmp_mdi->event_count - 1].samples_to_next += sample_count;
         hmp_mdi->info.approx_total_samples += sample_count;
+
         // DEBUG
         // fprintf(stderr,"DEBUG: Sample Count %u\r\n",sample_count);
     }
 
-    if ((hmp_mdi->event_count)
-        && (hmp_mdi->events[hmp_mdi->event_count - 1].do_event == NULL)) {
-        hmp_mdi->info.approx_total_samples -=
-        hmp_mdi->events[hmp_mdi->event_count - 1].samples_to_next;
-        hmp_mdi->event_count--;
-    }
     /* Set total MIDI time to 1/1000's seconds */
     hmp_mdi->info.total_midi_time = (hmp_mdi->info.approx_total_samples * 1000) / WM_SampleRate;
     /*mdi->info.approx_total_samples += WM_SampleRate * 3;*/
@@ -3120,8 +3542,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	float pulses_per_second = 0.0;
 
 	uint32_t sample_count = 0;
-	float sample_count_tmp = 0;
-	float sample_remainder = 0;
+	float sample_count_f = 0.0;
+	float sample_remainder = 0.0;
 	uint8_t *sysex_store = NULL;
 	//uint32_t sysex_store_len = 0;
 
@@ -3247,14 +3669,15 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
 
 	mdi = Init_MDI();
-
     midi_setup_divisions(mdi,divisions);
+    midi_setup_tempo(mdi,tempo);
     
 	tracks = malloc(sizeof(uint8_t *) * no_tracks);
 	track_delta = malloc(sizeof(uint32_t) * no_tracks);
 	track_end = malloc(sizeof(uint8_t) * no_tracks);
 	running_event = malloc(sizeof(uint8_t) * no_tracks);
 
+    smallest_delta = 0xffffffff;
 	for (i = 0; i < no_tracks; i++) {
 		if (midi_size < 8) {
 			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
@@ -3295,7 +3718,13 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		}
 		track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
 		tracks[i]++;
+        if (track_delta[i] < smallest_delta) {
+            smallest_delta = track_delta[i];
+        }
 	}
+    
+    subtract_delta = smallest_delta;
+    
 
 	/*
 	 * Handle type 0 & 1 the same, but type 2 differently
@@ -3321,7 +3750,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                         }
                     }
                     do {
-#if 1
                         if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x2f) && (tracks[i][2] == 0x00)) {
                             /* End of Track */
                             end_of_tracks++;
@@ -3374,255 +3802,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                 tracks[i]++;
                             } while (*tracks[i] > 0x7f);
                         }
-#else
-                        /* FIXME:
-                            remove this chunk of code once new code fully testes
-                         */
-                        
-                        if (*tracks[i] > 0x7F) {
-                            current_event = *tracks[i];
-                            tracks[i]++;
-                        } else {
-                            current_event = running_event[i];
-                            if (running_event[i] < 0x80) {
-                                WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
-                                goto _end;
-                            }
-                        }
-                        current_event_ch = current_event & 0x0F;
-                        switch (current_event >> 4) {
-                            case 0x8:
-                            NOTEOFF: midi_setup_noteoff(mdi, current_event_ch,
-                                                        tracks[i][0], tracks[i][1]);
-                                // FIXME *******************
-                                // Wrong area for this and does not take running events into account
-                                // or the proper data offset for drum instruments
-                                // **************************
-
-                                /* To better calculate samples needed after the end of midi,
-                                 * we calculate samples for decay for note off */
-                            {
-                                uint32_t tmp_decay_samples = 0;
-                                struct _patch *tmp_patch = NULL;
-                                
-                                if (mdi->channel[current_event_ch].isdrum) {
-                                    tmp_patch = get_patch_data(mdi,
-                                                               ((mdi->channel[current_event_ch].bank << 8)
-                                                                | tracks[i][0] | 0x80));
-                                    /*	if (tmp_patch == NULL)
-                                     printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);*/
-                                } else {
-                                    tmp_patch = mdi->channel[current_event_ch].patch;
-                                    /*	if (tmp_patch == NULL)
-                                     printf("Channel %i patch not loaded\n", current_event_ch);*/
-                                }
-                                tmp_decay_samples = get_decay_samples(tmp_patch,
-                                                                      tracks[i][0]);
-                                /* if the note off decay is more than the decay we currently tracking then
-                                 * we set it to new decay. */
-                                if (tmp_decay_samples > decay_samples) {
-                                    decay_samples = tmp_decay_samples;
-                                }
-                            }
-                                
-                                tracks[i] += 2;
-                                running_event[i] = current_event;
-                                break;
-                            case 0x9:
-                                if (tracks[i][1] == 0) {
-                                    goto NOTEOFF;
-                                }
-                                midi_setup_noteon(mdi, (current_event & 0x0F), tracks[i][0],
-                                                  tracks[i][1]);
-                                tracks[i] += 2;
-                                running_event[i] = current_event;
-                                break;
-                            case 0xA:
-                                midi_setup_aftertouch(mdi, (current_event & 0x0F),
-                                                      tracks[i][0], tracks[i][1]);
-                                tracks[i] += 2;
-                                running_event[i] = current_event;
-                                break;
-                            case 0xB:
-                                midi_setup_control(mdi, (current_event & 0x0F),
-                                                   tracks[i][0], tracks[i][1]);
-                                tracks[i] += 2;
-                                running_event[i] = current_event;
-                                break;
-                            case 0xC:
-                                midi_setup_patch(mdi, (current_event & 0x0F), *tracks[i]);
-                                tracks[i]++;
-                                running_event[i] = current_event;
-                                break;
-                            case 0xD:
-                                midi_setup_channel_pressure(mdi, (current_event & 0x0F),
-                                                            *tracks[i]);
-                                tracks[i]++;
-                                running_event[i] = current_event;
-                                break;
-                            case 0xE:
-                                midi_setup_pitch(mdi, (current_event & 0x0F),
-                                                 ((tracks[i][1] << 7) | (tracks[i][0] & 0x7F)));
-                                tracks[i] += 2;
-                                running_event[i] = current_event;
-                                break;
-                            case 0xF: /* Meta Event */
-                                if (current_event == 0xFF) {
-                                    if (tracks[i][0] == 0x02) { /* Copyright Event */
-                                        /* Get Length */
-                                        tmp_length = 0;
-                                        tracks[i]++;
-                                        while (*tracks[i] > 0x7f) {
-                                            tmp_length = (tmp_length << 7)
-                                            + (*tracks[i] & 0x7f);
-                                            tracks[i]++;
-                                        }
-                                        tmp_length = (tmp_length << 7)
-                                        + (*tracks[i] & 0x7f);
-                                        /* Copy copyright info in the getinfo struct */
-                                        if (mdi->info.copyright) {
-                                            mdi->info.copyright = realloc(
-                                                                          mdi->info.copyright,
-                                                                          (strlen(mdi->info.copyright) + 1
-                                                                           + tmp_length + 1));
-                                            strncpy(
-                                                    &mdi->info.copyright[strlen(
-                                                                                mdi->info.copyright) + 1],
-                                                    (char *) tracks[i], tmp_length);
-                                            mdi->info.copyright[strlen(mdi->info.copyright)
-                                                                + 1 + tmp_length] = '\0';
-                                            mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
-                                            
-                                        } else {
-                                            mdi->info.copyright = malloc(tmp_length + 1);
-                                            strncpy(mdi->info.copyright, (char *) tracks[i],
-                                                    tmp_length);
-                                            mdi->info.copyright[tmp_length] = '\0';
-                                        }
-                                        tracks[i] += tmp_length + 1;
-                                    } else if ((tracks[i][0] == 0x2F)
-                                               && (tracks[i][1] == 0x00)) {
-                                        /* End of Track */
-                                        end_of_tracks++;
-                                        track_end[i] = 1;
-                                        goto NEXT_TRACK;
-                                    } else if ((tracks[i][0] == 0x51)
-                                               && (tracks[i][1] == 0x03)) {
-                                        /* Tempo */
-                                        tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8)
-                                        + tracks[i][4];
-                                        tracks[i] += 5;
-                                        if (!tempo)
-                                            tempo = 500000;
-                                        
-                                        if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
-                                            float bpm_f = (float) (60000000 / tempo);
-                                            tempo = 60000000 / (uint32_t) bpm_f;
-                                        } else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-                                            float bpm_fr = (float) (60000000 / tempo)
-                                            + 0.5f;
-                                            tempo = 60000000 / (uint32_t) bpm_fr;
-                                        }
-                                        /* Slow but needed for accuracy */
-                                        microseconds_per_pulse = (float) tempo
-                                        / (float) divisions;
-                                        pulses_per_second = 1000000.0f
-                                        / microseconds_per_pulse;
-                                        samples_per_delta_f = (float) WM_SampleRate
-                                        / pulses_per_second;
-                                        
-                                    } else {
-                                        tmp_length = 0;
-                                        tracks[i]++;
-                                        while (*tracks[i] > 0x7f) {
-                                            tmp_length = (tmp_length << 7)
-                                            + (*tracks[i] & 0x7f);
-                                            tracks[i]++;
-                                        }
-                                        tmp_length = (tmp_length << 7)
-                                        + (*tracks[i] & 0x7f);
-                                        tracks[i] += tmp_length + 1;
-                                    }
-                                } else if ((current_event == 0xF0)
-                                           || (current_event == 0xF7)) {
-                                    /* Roland Sysex Events */
-                                    uint32_t sysex_len = 0;
-                                    while (*tracks[i] > 0x7F) {
-                                        sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
-                                        tracks[i]++;
-                                    }
-                                    sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
-                                    tracks[i]++;
-                                    
-                                    running_event[i] = 0;
-                                    
-                                    sysex_store = realloc(sysex_store,
-                                                          sizeof(uint8_t) * (sysex_store_len + sysex_len));
-                                    memcpy(&sysex_store[sysex_store_len], tracks[i],
-                                           sysex_len);
-                                    sysex_store_len += sysex_len;
-                                    
-                                    if (sysex_store[sysex_store_len - 1] == 0xF7) {
-                                        uint8_t tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
-                                        if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
-                                            /* checksum */
-                                            uint8_t sysex_cs = 0;
-                                            uint32_t sysex_ofs = 4;
-                                            do {
-                                                sysex_cs += sysex_store[sysex_ofs];
-                                                if (sysex_cs > 0x7F) {
-                                                    sysex_cs -= 0x80;
-                                                }
-                                                sysex_ofs++;
-                                            } while (sysex_store[sysex_ofs + 1] != 0xF7);
-                                            sysex_cs = 128 - sysex_cs;
-                                            /* is roland sysex message valid */
-                                            if (sysex_cs == sysex_store[sysex_ofs]) {
-                                                /* process roland sysex event */
-                                                if (sysex_store[4] == 0x40) {
-                                                    if (((sysex_store[5] & 0xF0) == 0x10)
-                                                        && (sysex_store[6] == 0x15)) {
-                                                        /* Roland Drum Track Setting */
-                                                        uint8_t sysex_ch = 0x0F
-                                                        & sysex_store[5];
-                                                        if (sysex_ch == 0x00) {
-                                                            sysex_ch = 0x09;
-                                                        } else if (sysex_ch <= 0x09) {
-                                                            sysex_ch -= 1;
-                                                        }
-                                                        midi_setup_sysex_roland_drum_track(
-                                                                                           mdi, sysex_ch,
-                                                                                           sysex_store[7]);
-                                                    } else if ((sysex_store[5] == 0x00)
-                                                               && (sysex_store[6] == 0x7F)
-                                                               && (sysex_store[7] == 0x00)) {
-                                                        /* Roland GS Reset */
-                                                        midi_setup_sysex_roland_reset(mdi);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        free(sysex_store);
-                                        sysex_store = NULL;
-                                        sysex_store_len = 0;
-                                    }
-                                    tracks[i] += sysex_len;
-                                } else {
-                                    WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
-                                    goto _end;
-                                }
-                                break;
-                            default:
-                                WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
-                                goto _end;
-                        }
-                        while (*tracks[i] > 0x7F) {
-                            track_delta[i] = (track_delta[i] << 7)
-							+ (*tracks[i] & 0x7F);
-                            tracks[i]++;
-                        }
-                        
-#endif
                         track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
                         tracks[i]++;
                     } while (!track_delta[i]);
@@ -3633,21 +3812,12 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 }
 
                 subtract_delta = smallest_delta;
-                sample_count_tmp = (((float) smallest_delta * samples_per_delta_f)
+                sample_count_f = (((float) smallest_delta * samples_per_delta_f)
                         + sample_remainder);
-                sample_count = (uint32_t) sample_count_tmp;
-                sample_remainder = sample_count_tmp - (float) sample_count;
-                if ((mdi->event_count)
-                    && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-                    mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-                } else {
-                    WM_CheckEventMemoryPool(mdi);
-                    mdi->events[mdi->event_count].do_event = NULL;
-                    mdi->events[mdi->event_count].event_data.channel = 0;
-                    mdi->events[mdi->event_count].event_data.data = 0;
-                    mdi->events[mdi->event_count].samples_to_next = sample_count;
-                    mdi->event_count++;
-                }
+                sample_count = (uint32_t) sample_count_f;
+                sample_remainder = sample_count_f - (float) sample_count;
+
+                mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
                 mdi->info.approx_total_samples += sample_count;
                 /* printf("Decay Samples = %lu\n",decay_samples);*/
                 if (decay_samples > sample_count) {
@@ -3665,21 +3835,11 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 track_delta[i] = 0;
                 do {
                     if(track_delta[i]) {
-                        sample_count_tmp = (((float) track_delta[i] * samples_per_delta_f)
+                        sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
                                             + sample_remainder);
-                        sample_count = (uint32_t) sample_count_tmp;
-                        sample_remainder = sample_count_tmp - (float) sample_count;
-                        if ((mdi->event_count)
-                            && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-                            mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-                        } else {
-                            WM_CheckEventMemoryPool(mdi);
-                            mdi->events[mdi->event_count].do_event = NULL;
-                            mdi->events[mdi->event_count].event_data.channel = 0;
-                            mdi->events[mdi->event_count].event_data.data = 0;
-                            mdi->events[mdi->event_count].samples_to_next = sample_count;
-                            mdi->event_count++;
-                        }
+                        sample_count = (uint32_t) sample_count_f;
+                        sample_remainder = sample_count_f - (float) sample_count;
+                        mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
                         mdi->info.approx_total_samples += sample_count;
                         /* printf("Decay Samples = %lu\n",decay_samples);*/
                         if (decay_samples > sample_count) {
@@ -3773,12 +3933,6 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
         default: break; /* Don't expect to get here, added for completeness */
     }
 
-	if ((mdi->event_count)
-			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->info.approx_total_samples -=
-				mdi->events[mdi->event_count - 1].samples_to_next;
-		mdi->event_count--;
-	}
 	/* Set total MIDI time to 1/1000's seconds */
 	mdi->info.total_midi_time = (mdi->info.approx_total_samples * 1000)
 			/ WM_SampleRate;
@@ -4790,6 +4944,26 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 	}
 	return (WM_GetOutput_Linear(handle, buffer, size));
 }
+
+WM_SYMBOL int WildMidi_GetMidiOutput(midi * handle, int8_t **buffer, uint32_t *size) {
+	if (__builtin_expect((!WM_Initialized), 0)) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
+		return (-1);
+	}
+	if (__builtin_expect((handle == NULL), 0)) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
+                 0);
+		return (-1);
+	}
+	if (__builtin_expect((buffer == NULL), 0)) {
+		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+                 "(NULL buffer pointer)", 0);
+		return (-1);
+	}
+    WM_Event2Midi(handle, (u_int8_t **)buffer, size);
+    return 0;
+}
+
 
 WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		uint16_t setting) {

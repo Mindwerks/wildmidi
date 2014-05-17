@@ -42,6 +42,7 @@ enum {
 	WM_ERR_NOT_MIDI,
 	WM_ERR_LONGFIL,
     WM_ERR_NOT_HMP,
+    WM_ERR_CONVERT,
     
 	WM_ERR_MAX
 };

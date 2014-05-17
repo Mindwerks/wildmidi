@@ -57,6 +57,7 @@ void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Not a midi file",
 		"Refusing to load unusually long file",
         "Not a hmp file",
+        "Unable to convert",
 
 		"Invalid error code"
 	};
