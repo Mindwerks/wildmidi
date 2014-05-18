@@ -1440,6 +1440,34 @@ int main(int argc, char **argv) {
 					}
 					WildMidi_FastSeek(midi_ptr, &seek_to_sample);
 					break;
+                    case 'm': /* save as midi */
+                        
+                    {
+                        int8_t *getmidibuffer = NULL;
+                        uint32_t getmidisize = 0;
+                        int32_t getmidiret = 0;
+                        
+                        getmidiret = WildMidi_GetMidiOutput(midi_ptr, &getmidibuffer, &getmidisize);
+                        if (getmidiret == -1) {
+                            fprintf(stderr, "\r\n\nFAILED to convert events to midi\r\n");
+                        } else {
+                            char *real_file = FIND_LAST_DIRSEP(argv[optind-1]);
+
+                            if (!real_file) real_file = argv[optind];
+                            else real_file++;
+                            
+                            strncpy(midi_file, real_file, strlen(real_file));
+                            midi_file[strlen(real_file)-4] = '.';
+                            midi_file[strlen(real_file)-3] = 'm';
+                            midi_file[strlen(real_file)-2] = 'i';
+                            midi_file[strlen(real_file)-1] = 'd';
+                            
+                            printf("Writing %s: %u bytes.\r\n", midi_file, getmidisize);
+                            write_midi_output(getmidibuffer,getmidisize);
+                            free(getmidibuffer);
+                        }
+                    }
+                    break;
 				default:
 					break;
 				}
