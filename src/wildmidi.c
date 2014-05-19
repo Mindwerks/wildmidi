@@ -1051,6 +1051,7 @@ static struct option const long_options[] = {
 	{ "wavout", 1, 0, 'o' },
 	{ "tomidi", 1, 0, 'x' },
 	{ "convert", 1, 0, 'g' },
+	{ "frequency", 1, 0, 'f' },
 	{ "log_vol", 0, 0, 'l' },
 	{ "reverb", 0, 0, 'b' },
 	{ "test_midi", 0, 0, 't' },
@@ -1076,10 +1077,11 @@ static void do_help(void) {
 	printf("  -n    --roundtempo  Round tempo to nearest whole number\n");
 	printf("  -t    --test_midi   Listen to test MIDI\n");
 	printf("Non-MIDI Options:\n");
-	printf("  -x    --tomidi     Convert file to midi and save to file\n");
-	printf("  -g    --convert    Convert XMI: 0 - No Conversion (default) \n");
-	printf("                                  1 - MT32 to GM\n");
-	printf("                                  2 - MT32 to GS\n");
+	printf("  -x    --tomidi      Convert file to midi and save to file\n");
+	printf("  -g    --convert     Convert XMI: 0 - No Conversion (default)\n");
+	printf("                                   1 - MT32 to GM\n");
+	printf("                                   2 - MT32 to GS\n");
+	printf("  -f    --frequency   Use a specific Hz (BPM)\n");
 	printf("Software Wavetable Options:\n");
 	printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 	printf("  -l    --log_vol     Use log volume adjustments\n");
@@ -1143,7 +1145,7 @@ int main(int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "vho:tx:g:lr:c:m:btk:p:ed:wn", long_options,
+		i = getopt_long(argc, argv, "vho:tx:g:f:lr:c:m:btk:p:ed:wn", long_options,
 				&option_index);
 		if (i == -1)
 			break;
@@ -1178,6 +1180,9 @@ int main(int argc, char **argv) {
 			break;
 		case 'g': /* XMIDI Conversion */
 			WildMidi_SetCvtOption(WM_CO_XMI_TYPE, atoi(optarg));
+			break;
+		case 'f': /* MIDI-like Conversion */
+			WildMidi_SetCvtOption(WM_CO_FREQUENCY, atoi(optarg));
 			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {
