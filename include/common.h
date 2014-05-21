@@ -3,8 +3,7 @@
 
 	Midi Wavetable Processing library
 
-    Copyright (C) Chris Ison 2001-2011
-    Copyright (C) Bret Curtis 2013-2014
+    Copyright (C) WildMIDI Developers 2001-2014
 
     This file is part of WildMIDI.
 
@@ -27,60 +26,18 @@
 #ifndef __COMMON_H
 #define __COMMON_H
 
-#define SAMPLE_16BIT 0x01
-#define SAMPLE_UNSIGNED 0x02
-#define SAMPLE_LOOP 0x04
-#define SAMPLE_PINGPONG 0x08
-#define SAMPLE_REVERSE 0x10
-#define SAMPLE_SUSTAIN 0x20
-#define SAMPLE_ENVELOPE 0x40
-#define SAMPLE_CLAMPED 0x80
-
-#ifdef DEBUG_SAMPLES
-#define SAMPLE_CONVERT_DEBUG(dx) printf("\r%s\n",dx)
-#else
-#define SAMPLE_CONVERT_DEBUG(dx)
-#endif
+#define UNUSED(x) (void)(x)
+#define MEM_CHUNK 8192
 
 extern uint16_t WM_SampleRate;
+extern uint16_t WM_MixerOptions;
 
-struct _sample {
-	uint32_t data_length;
-	uint32_t loop_start;
-	uint32_t loop_end;
-	uint32_t loop_size;
-	uint8_t  loop_fraction;
-	uint16_t rate;
-	uint32_t freq_low;
-	uint32_t freq_high;
-	uint32_t freq_root;
-	uint8_t  modes;
-	int32_t env_rate[7];
-	int32_t env_target[7];
-	uint32_t inc_div;
-	int16_t *data;
-	struct _sample *next;
-};
+extern float reverb_room_width; //= 16.875f;
+extern float reverb_room_length;// = 22.5f;
 
-struct _env {
-	float time;
-	float level;
-	uint8_t set;
-};
+extern float reverb_listen_posx;// = 8.4375f;
+extern float reverb_listen_posy;// = 16.875f;
 
-struct _patch {
-	uint16_t patchid;
-	uint8_t loaded;
-	char *filename;
-	int16_t amp;
-	uint8_t keep;
-	uint8_t remove;
-	struct _env env[6];
-	uint8_t  note;
-	uint32_t inuse_count;
-	struct _sample *first_sample;
-	struct _patch *next;
-};
 
 /* Set our global defines here */
 #ifndef M_PI

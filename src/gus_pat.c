@@ -3,8 +3,7 @@
 
  Midi Wavetable Processing library
 
- Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2014
+ Copyright (C) WildMIDI Developers 2001-2014
 
  This file is part of WildMIDI.
 
@@ -36,6 +35,7 @@
 #include "common.h"
 #include "wm_error.h"
 #include "file_io.h"
+#include "sample.h"
 
 #ifdef DEBUG_GUSPAT
 #define GUSPAT_FILENAME_DEBUG(dx) fprintf(stderr,"\r%s\n",dx)

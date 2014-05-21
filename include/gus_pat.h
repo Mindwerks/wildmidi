@@ -3,8 +3,7 @@
 
 	Midi Wavetable Processing library
 
-    Copyright (C) Chris Ison 2001-2011
-    Copyright (C) Bret Curtis 2013-2014
+    Copyright (C) WildMIDI Developers 2001-2014
 
     This file is part of WildMIDI.
 
@@ -72,6 +71,8 @@ static float env_time_table[] = {
 };
 
 extern struct _sample * load_gus_pat (const char *filename, int fix_release);
+
+
 
 #endif /* __GUS_PAT_H */
 

@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -589,6 +590,8 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     hmi_size -= 141;
     hmi_dbg += 141;
 
+    hmi_track_offset[0] = hmi_data; // To keep Xcode happy
+    
     for (i = 0; i < hmi_track_cnt; i++) {
 //        printf("DEBUG @ %.8x\n",hmi_dbg);
         hmi_track_offset[i] = *hmi_data++;
@@ -614,6 +617,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
 */
         if (strncmp((char *) hmi_data,"HMI-MIDITRACK", 13) != 0) {
             printf("Not a valid HMI file: expected HMI-MIDITRACK\n");
+            free (hmi_track_offset);
             return -1;
         }
         if (verbose) printf("Start of track %u\n",i);
@@ -675,6 +679,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
             } else {
                 if ((check_ret = check_midi_event(hmi_data, hmi_size, hmi_division, hmi_running_event, verbose, 0)) == -1) {
                     printf("Missing or Corrupt MIDI Data\n");
+                    free (hmi_track_offset);
                     return -1;
                 }
                 
@@ -1523,7 +1528,8 @@ int main(int argc, char ** argv) {
 
 	while (optind < argc) {
 		if ((strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") != 0)
-				&& (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
+            && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar") != 0)
+            && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
 						".pat") != 0)
                 && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
                         ".xmi") != 0)
@@ -1541,6 +1547,9 @@ int main(int argc, char ** argv) {
 		if ((filebuffer = DT_BufferFile(argv[optind], &filesize)) != NULL) {
 			if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid")
 					== 0) {
+				testret = test_midi(filebuffer, filesize, verbose);
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar")
+                       == 0) {
 				testret = test_midi(filebuffer, filesize, verbose);
 			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
 					".pat") == 0) {
