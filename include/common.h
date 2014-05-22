@@ -29,6 +29,7 @@
 #define UNUSED(x) (void)(x)
 #define MEM_CHUNK 8192
 
+extern int16_t WM_MasterVolume;
 extern uint16_t WM_SampleRate;
 extern uint16_t WM_MixerOptions;
 

@@ -539,9 +539,8 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
 int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
     uint16_t hmi_division = 0;
     uint32_t hmi_duration_secs = 0;
-    uint8_t hmi_track_cnt = 0;
+    uint32_t hmi_track_cnt = 0;
     uint32_t i = 0;
-//    uint32_t j = 0;
     uint32_t *hmi_track_offset = NULL;
     uint32_t hmi_dbg = 0;
     uint32_t hmi_delta = 0;
@@ -590,7 +589,7 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     hmi_size -= 141;
     hmi_dbg += 141;
 
-    hmi_track_offset[0] = hmi_data; // To keep Xcode happy
+    hmi_track_offset[0] = *hmi_data; // To keep Xcode happy
     
     for (i = 0; i < hmi_track_cnt; i++) {
 //        printf("DEBUG @ %.8x\n",hmi_dbg);

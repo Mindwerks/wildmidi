@@ -32,6 +32,8 @@
 #include "patches.h"
 #include "sample.h"
 
+struct _patch *patch[128];
+
 int patch_lock = 0;
 
 struct _patch *

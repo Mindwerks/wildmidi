@@ -28,8 +28,6 @@
 
 #include "wildmidi_lib.h"
 
-int16_t WM_MasterVolume;
-
 struct _channel {
 	uint8_t bank;
 	struct _patch *patch;

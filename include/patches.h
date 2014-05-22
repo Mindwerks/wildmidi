@@ -49,7 +49,7 @@ struct _patch {
 	struct _patch *next;
 };
 
-struct _patch *patch[128];
+extern struct _patch *patch[128];
 
 extern int patch_lock;
 

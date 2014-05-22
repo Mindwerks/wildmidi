@@ -65,6 +65,7 @@
 #include "mus.h"
 #include "patches.h"
 #include "sample.h"
+//#include "hmi.h"
 
 
 /*
@@ -77,6 +78,7 @@ static int WM_Initialized = 0;
 uint16_t WM_MixerOptions = 0;
 
 uint16_t WM_SampleRate;
+int16_t WM_MasterVolume;
 
 /* when converting files to midi */
 typedef struct _cvt_options {
@@ -1732,7 +1734,11 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 	}
     if (memcmp(mididata,"HMIMIDIP", 8) == 0) {
         ret = (void *) WM_ParseNewHmp(mididata, midisize);
-    } else {
+    }
+//    else if (memcmp(mididata, "HMI-MIDISONG061595", 18) != 0) {
+//        ret = (void *) WM_ParseNewHmi(mididata, midisize);
+//    }
+    else {
         ret = (void *) WM_ParseNewMidi(mididata, midisize);
 	}
     free(mididata);

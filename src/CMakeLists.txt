@@ -23,13 +23,14 @@ SET(wildmidi_library_HDRS
     ../include/reverb.h
     ../include/gus_pat.h
     ../include/xmidi.h
+    ../include/mus.h
+    ../include/hmp.h
+    ../include/midi.h
+    ../include/internal_midi.h
+    ../include/patches.h
+    ../include/sample.h
     ../include/common.h
     ../include/filenames.h
-    ../include/sample.h
-    ../include/patches.h
-    ../include/mus.h
-    ../include/midi.h
-    ../include/hmp.h
 )
 
 IF(MSVC)
