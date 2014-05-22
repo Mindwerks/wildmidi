@@ -24,7 +24,7 @@ RANLIB=$(CROSS)-ranlib
 endif
 
 INCLUDE = -I. -I../include/stdint -I../include
-CFLAGS = $(INCLUDE) -Wall -W
+CFLAGS = $(INCLUDE) -Wall -W -fno-common
 ARFLAGS = cr
 
 # SB output support (comment out if not wanted)
