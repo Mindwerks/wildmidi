@@ -8,6 +8,11 @@ SET(wildmidi_library_SRCS
     gus_pat.c
     xmidi.c
     mus.c
+    hmp.c
+    midi.c
+    internal_midi.c
+    patches.c
+    sample.c
 )
 
 SET(wildmidi_library_HDRS
@@ -20,6 +25,11 @@ SET(wildmidi_library_HDRS
     ../include/xmidi.h
     ../include/common.h
     ../include/filenames.h
+    ../include/sample.h
+    ../include/patches.h
+    ../include/mus.h
+    ../include/midi.h
+    ../include/hmp.h
 )
 
 IF(MSVC)
