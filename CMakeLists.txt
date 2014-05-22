@@ -65,6 +65,7 @@ ENDIF()
 IF(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(
         -Wall -W
+        -fno-common
         )
 
     IF(NOT WIN32 AND NOT CYGWIN)
