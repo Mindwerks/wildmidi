@@ -320,6 +320,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                     }
                 }
                 var_len_shift = 0;
+                chunk_delta[i] = 0;
                 if (*hmp_chunk[i] < 0x80) {
                     do {
                         chunk_delta[i] = chunk_delta[i] + ((*hmp_chunk[i] & 0x7F) << var_len_shift);

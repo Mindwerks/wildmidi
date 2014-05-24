@@ -538,7 +538,7 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
     
 int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
     uint16_t hmi_division = 0;
-    uint32_t hmi_duration_secs = 0;
+    //uint32_t hmi_duration_secs = 0;
     uint32_t hmi_track_cnt = 0;
     uint32_t i = 0;
     uint32_t *hmi_track_offset = NULL;
@@ -549,35 +549,24 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     uint8_t hmi_running_event = 0;
     uint32_t hmi_track_header_length = 0;
     uint32_t hmi_file_end = hmi_size;
+    uint32_t hmi_tmp = 0;
     
     // Check header
     if (strncmp((char *) hmi_data,"HMI-MIDISONG061595", 18) != 0) {
         printf("Not a valid HMI file: expected HMI-MIDISONG061595\n");
         return -1;
     }
-    hmi_data += 210;
-    hmi_size -= 210;
-    hmi_dbg += 210;
+    
+    hmi_data += 212;
+    hmi_size -= 212;
+    hmi_dbg += 212;
     
     hmi_division = *hmi_data++;
-    hmi_division |= *hmi_data++ << 8;
-    hmi_size -= 2;
-    if (verbose) printf("Division %i\n",hmi_division);
-    hmi_dbg += 2;
-    
-    
-    //FIXME: This is according to specs we have, but is obviously incorrect.
-    hmi_duration_secs = *hmi_data++;
-    hmi_duration_secs += (*hmi_data++ << 8);
-    hmi_duration_secs += (*hmi_data++ << 16);
-    hmi_duration_secs += (*hmi_data++ << 24);
-    hmi_size -= 4;
-    if (verbose) printf("Duration (secs): %u\n",hmi_duration_secs);
-    hmi_dbg += 4;
-    
-    hmi_data += 12;
-    hmi_size -= 12;
-    hmi_dbg += 12;
+    if (verbose) printf("Beats per minute: %u\n",hmi_division);
+   
+    hmi_data += 15;
+    hmi_size -= 16;
+    hmi_dbg += 16;
 
     hmi_track_cnt = *hmi_data++;
     hmi_size--;
@@ -805,7 +794,7 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
     hmp_division += (*hmp_data++ << 8);
     hmp_division += (*hmp_data++ << 16);
     hmp_division += (*hmp_data++ << 24);
-    if (verbose) printf("division: %u\n", hmp_division);
+    if (verbose) printf("Beats per minute: %u\n", hmp_division);
     
     hmp_song_time = *hmp_data++;
     hmp_song_time += (*hmp_data++ << 8);

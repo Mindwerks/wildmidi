@@ -10,6 +10,7 @@ SET(wildmidi_library_SRCS
     mus.c
     hmp.c
     midi.c
+    hmi.c
     internal_midi.c
     patches.c
     sample.c
@@ -26,6 +27,7 @@ SET(wildmidi_library_HDRS
     ../include/mus.h
     ../include/hmp.h
     ../include/midi.h
+    ../include/hmi.h
     ../include/internal_midi.h
     ../include/patches.h
     ../include/sample.h

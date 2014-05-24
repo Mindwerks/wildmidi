@@ -65,7 +65,7 @@
 #include "mus.h"
 #include "patches.h"
 #include "sample.h"
-//#include "hmi.h"
+#include "hmi.h"
 
 
 /*
@@ -1734,11 +1734,9 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 	}
     if (memcmp(mididata,"HMIMIDIP", 8) == 0) {
         ret = (void *) WM_ParseNewHmp(mididata, midisize);
-    }
-//    else if (memcmp(mididata, "HMI-MIDISONG061595", 18) != 0) {
-//        ret = (void *) WM_ParseNewHmi(mididata, midisize);
-//    }
-    else {
+    } else if (memcmp(mididata, "HMI-MIDISONG061595", 18) == 0) {
+        ret = (void *) WM_ParseNewHmi(mididata, midisize);
+    } else {
         ret = (void *) WM_ParseNewMidi(mididata, midisize);
 	}
     free(mididata);

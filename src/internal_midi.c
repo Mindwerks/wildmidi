@@ -981,7 +981,7 @@ int midi_setup_divisions(struct _mdi *mdi, uint32_t divisions) {
 	return (0);
 }
 
-static int midi_setup_noteoff(struct _mdi *mdi, uint8_t channel,
+int midi_setup_noteoff(struct _mdi *mdi, uint8_t channel,
                               uint8_t note, uint8_t velocity) {
 	if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {

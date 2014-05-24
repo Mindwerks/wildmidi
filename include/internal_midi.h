@@ -148,6 +148,8 @@ extern void do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data);
 extern void do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data);
 extern void do_meta_tempo(struct _mdi *mdi, struct _event_data *data);
 
+extern int midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);
+
 // =====================
 
 /*

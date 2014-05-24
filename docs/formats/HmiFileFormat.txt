@@ -16,7 +16,7 @@ This document is licensed under the Creative Commons Attribution-ShareAlike 4.0 
 
 Introduction
 
-This document describes the HMI format as used by the WildMIDI project. It is not a complete description of the HMI file format and only those parts that are relevant to the WildMidi project are described here. Unfortunately we cannot answer questions about the format that are not described within this document. If you feel there is an error in this document please feel free to report it as a bug at https://github.com/Mindwerks/wildmidi/issues?direction=desc&sort=updated&state=open.
+This document describes the HMI format as used by the WildMIDI project. It is not a complete description of the HMI file format and only those parts that have been decyphered and are  relevant to the WildMidi project are described here. Unfortunately we cannot answer questions about the format that are not described within this document. If you feel there is an error in this document please feel free to report it as a bug at https://github.com/Mindwerks/wildmidi/issues?direction=desc&sort=updated&state=open.
 
 
 
@@ -24,17 +24,17 @@ Description
 
 // Header
 {
-    char header[] = "HMI-MIDISONG061595";
-    char no_idea_1[210];
-    char divisions[2]; // Stored as little endian
-    char time_in_secs[4]; // this is incorrect but specs sighted stated this.
-    char no_idea_2[12];
+    char header[18] = "HMI-MIDISONG061595";
+    char no_idea_1[196];
+    char beats_per_minute;
+    char no_idea_2[15];
     char track_count;
     char no_idea_3[141];
     {
         // Repeat for number of tracks in track_count
         char track_offset[4]; // Stored as little endian;
     }
+    char no_idea_4[??]; // this is the remaining amout up to the first track chunk marked by the first track offset.
 }
 
 // Track Chunk
@@ -50,6 +50,7 @@ Description
         char midi_delta[] = ???; // See MIDI Delta
         char midi_event[] = ???; // See MIDI Events
                                  // ** NOTE ** Note On event is slightly different to the normal MIDI note on event. See MIDI Events below.
+                                 // Last event in track chunk is end of track meta event, defined as 0xff 0x2f 0x00.
     }
 {
 
@@ -78,15 +79,7 @@ The first byte of a midi events is split into 2 x 4bits. Bits 7-4 is the command
 
 The following commands are detailed in this document with the channel information (bits 3 - 0) set to 0, example 0x80. However the channel information could have a value anywhere from 0 to F in hexidecimal.
 
-// Note Off
-{
-    // Does not exist in HMI specs sighted but added here just in case
-    char cmd = 0x80;
-    char note = 27; // Could be a value of 0 - 127
-    char velocity = 0; // Could be a value of 0 - 127. Ignored by WildMIDI
-}
-
-// Note On
+// Note On Event
 {
     char cmd = 0x90;
     char note = 32; // Could be a value of 0 - 127
@@ -95,60 +88,34 @@ The following commands are detailed in this document with the channel informatio
     char length[] = < variable length value >; // See MIDI Delta for example
 }
 
-// Aftertouch
+// Aftertouch Event
 {
-    // Adjust the velocity of a note as if adjusting the preasure you are placing on the key of a preasure sensitive keyboard after you started playing it.
-
-    char cmd = 0xa0;
-    char note = 32; // Could be a value of 0 - 127
-    char velocity = 100; // Could be a value of 0 - 127.
+    // See "Aftertouch Event" in MidFileFormat.txt
 }
 
-// Controller
+// Controller Events
 {
-    char cmd = 0xb0;
-    char controller = 32; // Could be a value of 0 - 127
-    char setting = 100; // Could be a value of 0 - 127 
+    // See "Controller Events" in MidFileFormat.txt
 }
 
-// Patch
+// Patch Event
 {
-    /*
-        Change the patch (or sound) used to play notes on the channel
-     */
-    char cmd = 0xc0;
-    char change_patch = 32; // Could be a value of 0 - 127
+    // See "Patch Event" in MidFileFormat.txt
 }
 
-// Preasure
+// Preasure Event
 {
-    /*
-        Adjust the velocity of all active notes on the channel as if adjusting the preasure you are placing on the keys of a preasure sensitive keyboard after you started playing them.
-     */
-    char cmd = 0xd0;
-    char velocity = 32; // Could be a value of 0 - 127
+    // See "Pressure Event" in MidFileFormat.txt
 }
 
-// Pitch
+// Pitch Event
 {
-    /*
-        Adjust the pitch of a channel just like a pitch bend wheel does.
-     */
-    char cmd = 0xe0;
-    char data_1 = 32; // Could be a value of 0 - 127
-    char data_2 = 100; // Could be a value of 0 - 127.
+    // See "Patch Event" in MidFileFormat.txt
 }
 
-// Sysex
+// Sysexs Events
 {
-    ** It is uncertain if sysex events will apepar in a HMI file but they have been included because it is possible **
-    
-    char cmd = 0xf0;
-    // *** OR ***
-    char cmd = 0xf7;
-
-    char sysex_size[] = < variable length in MIDI file format >;
-    char sysex_data[sysex_size]; // Ending with 0xf7
+    // See "Sysex Events" in MidFileFormat.txt
 }
 
 // HMI Events
@@ -158,7 +125,7 @@ The following commands are detailed in this document with the channel informatio
     
     {
         char type = 0x10;
-        char data_1[2];;
+        char data_1[2];
         char size; // Could be anything from 0x00 to 0xff
         char data_2[size];
         char data_3[5];
@@ -178,10 +145,7 @@ The following commands are detailed in this document with the channel informatio
 
 // Meta Events
 {
-    char cmd = 0xff;
-    char instruction = 0x02; // Could be 0 - 127
-    char data_size[] = < variable length in MIDI file format >;
-    char data[data_size];
+    // See "Meta Events" MidFileFormat.txt
 }
 
 
