@@ -1,39 +1,43 @@
-.TH WildMidi_GetVersion 3 "24 May 2014" "" "WildMidi Programmer's Manual"
+.TH WildMidi_GetMidiOutput 3 "24 May 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_GetVersion \- Get the library version
+WildMidi_GetMidiOutput \- get a midi file of a file being processed.
 .SH LIBRARY
 .B libWildMidi
+.PP
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B long WildMidi_GetVersion (void);
+.B int WildMidi_GetMidiOutput (midi *\fIhandle\fP, int8_t **\fIbuffer\fP, uint32_t *\fIsize\fP)
 .PP
 .SH DESCRIPTION
-Retrieve the library version.  Does not require library initialization.
+.B UNDERDEVEL AND MAY CHANGE BEFORE RELEASE
+.PP
+Places a midi file of a file being processed in the location pointed to by \fIbuffer\fP.
+.PP
+.IP \fIhandle\fP
+The identifier obtained from opening a file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+.PP
+.IP \fIbuffer\fP
+The location where WildMIDI is to store the midi file of the \fIhandle\fP being processed.
+.PP
+.IP \fIsize\fP
+The location where WildMIDI is to store the size of the midi file stored in \fIbuffer\fP.
 .PP
 .SH "RETURN VALUE"
-Returns the library version
-.PP
-.SH "EXAMPLES"
-.PP
-.nf
-\f(CWlong ver = WildMidi_GetVersion();
-printf("libWildMidi\-%ld.%ld.%ld",
-       (ver>>16) & 255, (ver>>8) & 255, (ver) & 255);\fR
-.fi
+Returns \-1 on error otherwise returns 0
 .PP
 .SH SEE ALSO
+.BR WildMidi_GetVersion (3) ,
 .BR WildMidi_Init (3) ,
-.BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_MasterVolume (3),
 .BR WildMidi_Open (3) ,
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
-.BR WildMidi_GetMidiOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
 .BR WildMidi_Close (3) ,
-.BR WildMidi_Shutdown (3) ,
+.BR WildMidi_Shutdown (3),
 .BR wildmidi.cfg (5)
 .PP
 .SH AUTHOR

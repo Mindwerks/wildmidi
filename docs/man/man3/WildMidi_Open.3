@@ -1,4 +1,4 @@
-.TH WildMidi_Open 3 "7 March 2014" "" "WildMidi Programmer's Manual"
+.TH WildMidi_Open 3 "24 May 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_Open \- Open a midi file for processing
 .SH LIBRARY
@@ -10,7 +10,7 @@ WildMidi_Open \- Open a midi file for processing
 .B midi *WildMidi_Open (const char *\fImidifile\fP)
 .PP
 .SH DESCRIPTION
-Open a MIDI file pointed to by \fImidifile\fP for processing. This file must be in standard midi format.
+Open a MIDI type file pointed to by \fImidifile\fP for processing. This file must be in HMP, HMI, or MIDI format.
 .PP
 .SH "RETURN VALUE"
 Returns NULL on error and sends a message to stderr, otherwise returns a handle for the midi file opened. This handle is used by most functions in libWildMidi to identify which midi file we are referring to.
@@ -22,6 +22,7 @@ Returns NULL on error and sends a message to stderr, otherwise returns a handle 
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
+.BR WildMidi_GetMidiOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
 .BR WildMidi_Close (3) ,
@@ -29,12 +30,11 @@ Returns NULL on error and sends a message to stderr, otherwise returns a handle 
 .BR wildmidi.cfg (5)
 .PP
 .SH AUTHOR
-Chris Ison <wildcode@users.sf.net>
+Chris Ison <chrisisonwildcode@gmail.com>
 Bret Curtis <psi29a@gmail.com>
 .PP
 .SH COPYRIGHT
-Copyright (C) Chris Ison  2001\-2010
-Copyright (C) Bret Curtis 2013\-2014
+Copyright (C) WildMidi Developers 2001\-2014
 .PP
 This file is part of WildMIDI.
 .PP

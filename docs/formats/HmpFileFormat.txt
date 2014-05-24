@@ -7,7 +7,7 @@ Under Construction
 Document version 1
 Written by Chris Ison
 
-
+Last Edited 24 May 2014
 
 Copyright (C) 2014 WildMidi Developers
 This document is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.

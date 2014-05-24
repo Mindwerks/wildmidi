@@ -2,9 +2,8 @@
  wildmidi.c
  Midi Player using the WildMidi Midi Processing Library
 
- Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2014
-
+ Copyright (C) WildMidi Developers 2001-2014
+ 
  This file is part of WildMIDI.
 
  WildMIDI is free software: you can redistribute and/or modify the player
@@ -1294,7 +1293,7 @@ int main(int argc, char **argv) {
 	printf(" +  Volume up        e  Better resampling    n  Next Midi\n");
 	printf(" -  Volume down      l  Log volume           q  Quit\n");
 	printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
-	printf("                     p  Pause On/Off\n\n");
+	printf(" m  save as midi     p  Pause On/Off\n\n");
 
 	output_buffer = malloc(16384);
 	if (output_buffer == NULL) {

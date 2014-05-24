@@ -1,4 +1,4 @@
-.TH WildMidi_OpenBuffer 3 "7 March 2014" "" "WildMidi Programmer's Manual"
+.TH WildMidi_OpenBuffer 3 "24 May 2014" "" "WildMidi Programmer's Manual"
 .SH NAME
 WildMidi_OpenBuffer \- Open a midi file buffer for processing
 .PP
@@ -11,10 +11,10 @@ WildMidi_OpenBuffer \- Open a midi file buffer for processing
 .B midi *WildMidi_OpenBuffer (uint8_t *\fImidibuffer\fP, uint32_t \fIsize\fP)
 .PP
 .SH DESCRIPTION
-Open a midi file, that you have buffered in memory, for processing.
+Open a file, that you have buffered in memory, for processing.
 .PP
 .IP \fImidibuffer\fP
-The memory location of the buffered midi file. This buffer needs to be in standard midi file format. Once this function is called, any changes to the buffer will have no effect.
+The memory location of the buffered file. This buffer needs to be in either HMP, HMI, or MIDI file format. Once this function is called, any changes to the buffer will have no effect.
 .PP
 .IP \fIsize\fP
 This is the size of the midi file in bytes that is stored in memory.
@@ -29,6 +29,7 @@ Returns NULL on error, otherwise returns a handle for the midi buffer opened.
 .BR WildMidi_Open (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
+.BR WildMidi_GetMidiOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
 .BR WildMidi_Close (3) ,
@@ -36,12 +37,11 @@ Returns NULL on error, otherwise returns a handle for the midi buffer opened.
 .BR wildmidi.cfg (5)
 .PP
 .SH AUTHOR
-Chris Ison <wildcode@users.sf.net>
+Chris Ison <chrisisonwildcode@gmail.com>
 Bret Curtis <psi29a@gmail.com>
 .PP
 .SH COPYRIGHT
-Copyright (C) Chris Ison  2001\-2010
-Copyright (C) Bret Curtis 2013\-2014
+Copyright (C) WildMidi Developers 2001\-2014
 .PP
 This file is part of WildMIDI.
 .PP
