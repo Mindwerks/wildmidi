@@ -1768,8 +1768,14 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LONGFIL, NULL, 0);
 		return (NULL);
 	}
-	ret = (void *) WM_ParseNewMidi(midibuffer, size);
-
+	if (memcmp(midibuffer,"HMIMIDIP", 8) == 0) {
+        ret = (void *) WM_ParseNewHmp(midibuffer, size);
+    } else if (memcmp(midibuffer, "HMI-MIDISONG061595", 18) == 0) {
+        ret = (void *) WM_ParseNewHmi(midibuffer, size);
+    } else {
+        ret = (void *) WM_ParseNewMidi(midibuffer, size);
+	}
+    
 	if (ret) {
 		if (add_handle(ret) != 0) {
 			WildMidi_Close(ret);

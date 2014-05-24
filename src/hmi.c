@@ -112,7 +112,7 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     hmi_track_end = malloc(sizeof(uint32_t) * hmi_track_cnt);
     hmi_delta = malloc(sizeof(uint32_t) * hmi_track_cnt);
     note = malloc(sizeof(struct _note) * 128 * hmi_track_cnt);
-    hmi_running_event = malloc(sizeof(uint8_t *) * 128 * hmi_track_cnt);
+    hmi_running_event = malloc(sizeof(uint8_t) * 128 * hmi_track_cnt);
 
     hmi_data += 370;
     
