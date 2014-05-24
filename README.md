@@ -17,6 +17,7 @@ PLAYER AND LIB PLATFORMS:
 * Linux: Arch, Debian, Fedora, Ubuntu
 * Windows: x32 and x64
 * DOS (djgpp)
+* OSX (in Xterm)
 
 PLAYER SOUND SYSTEMS:
 
