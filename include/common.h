@@ -42,7 +42,7 @@
 #define SAMPLE_CONVERT_DEBUG(dx)
 #endif
 
- extern unsigned short int WM_SampleRate;
+extern unsigned short int _WM_SampleRate;
 
 struct _sample {
 	unsigned long int data_length;

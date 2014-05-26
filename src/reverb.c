@@ -35,7 +35,7 @@
 /*
  reverb function
  */
-void reset_reverb(struct _rvb *rvb) {
+void _WM_reset_reverb(struct _rvb *rvb) {
 	int i, j, k;
 	for (i = 0; i < rvb->l_buf_size; i++) {
 		rvb->l_buf[i] = 0;
@@ -56,7 +56,7 @@ void reset_reverb(struct _rvb *rvb) {
 }
 
 /*
- init_reverb
+ _WM_init_reverb
 
  =========================
  Engine Description
@@ -72,7 +72,7 @@ void reset_reverb(struct _rvb *rvb) {
 
  */
 struct _rvb *
-init_reverb(int rate, float room_x, float room_y, float listen_x,
+_WM_init_reverb(int rate, float room_x, float room_y, float listen_x,
 		float listen_y) {
 
 	/* filters set at 125Hz, 250Hz, 500Hz, 1000Hz, 2000Hz, 4000Hz */
@@ -301,21 +301,19 @@ init_reverb(int rate, float room_x, float room_y, float listen_x,
 
 	rtn_rvb->gain = 4;
 
-	reset_reverb(rtn_rvb);
+	_WM_reset_reverb(rtn_rvb);
 	return rtn_rvb;
 }
 
-/*
- free_reverb - free up memory used for reverb
- */
-void free_reverb(struct _rvb *rvb) {
+/* _WM_free_reverb - free up memory used for reverb */
+void _WM_free_reverb(struct _rvb *rvb) {
 	if (!rvb) return;
 	free(rvb->l_buf);
 	free(rvb->r_buf);
 	free(rvb);
 }
 
-void do_reverb(struct _rvb *rvb, signed long int *buffer, int size) {
+void _WM_do_reverb(struct _rvb *rvb, signed long int *buffer, int size) {
 	int i, j, k;
 	signed long int l_buf_flt = 0;
 	signed long int r_buf_flt = 0;

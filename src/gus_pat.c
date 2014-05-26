@@ -75,7 +75,7 @@ static int convert_8s(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR_NEW("(%s:%i) ERROR: calloc failed (%s)", __FUNCTION__, __LINE__,
+	_WM_ERROR_NEW("(%s:%i) ERROR: calloc failed (%s)", __FUNCTION__, __LINE__,
 			strerror(errno));
 	return -1;
 }
@@ -128,7 +128,7 @@ static int convert_8sp(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -155,7 +155,7 @@ static int convert_8sr(unsigned char *data, struct _sample *gus_sample) {
 		gus_sample->modes ^= SAMPLE_REVERSE;
 		return 0;
 	}
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -206,7 +206,7 @@ static int convert_8srp(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -227,7 +227,7 @@ static int convert_8u(unsigned char *data, struct _sample *gus_sample) {
 		gus_sample->modes ^= SAMPLE_UNSIGNED;
 		return 0;
 	}
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -279,7 +279,7 @@ static int convert_8up(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -306,7 +306,7 @@ static int convert_8ur(unsigned char *data, struct _sample *gus_sample) {
 		gus_sample->modes ^= SAMPLE_REVERSE | SAMPLE_UNSIGNED;
 		return 0;
 	}
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -356,7 +356,7 @@ static int convert_8urp(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -381,7 +381,7 @@ static int convert_16s(unsigned char *data, struct _sample *gus_sample) {
 		gus_sample->data_length >>= 1;
 		return 0;
 	}
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -442,7 +442,7 @@ static int convert_16sp(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -473,7 +473,7 @@ static int convert_16sr(unsigned char *data, struct _sample *gus_sample) {
 		gus_sample->modes ^= SAMPLE_REVERSE;
 		return 0;
 	}
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -529,7 +529,7 @@ static int convert_16srp(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -554,7 +554,7 @@ static int convert_16u(unsigned char *data, struct _sample *gus_sample) {
 		gus_sample->modes ^= SAMPLE_UNSIGNED;
 		return 0;
 	}
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -615,7 +615,7 @@ static int convert_16up(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -646,7 +646,7 @@ static int convert_16ur(unsigned char *data, struct _sample *gus_sample) {
 		gus_sample->modes ^= SAMPLE_REVERSE | SAMPLE_UNSIGNED;
 		return 0;
 	}
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
@@ -702,13 +702,13 @@ static int convert_16urp(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
 	return -1;
 }
 
 /* sample loading */
 
-struct _sample * load_gus_pat(const char *filename, int fix_release) {
+struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 	unsigned char *gus_patch;
 	unsigned long int gus_size;
 	unsigned long int gus_ptr;
@@ -739,34 +739,34 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__); SAMPLE_CONVERT_DEBUG(filename);
 
-	if ((gus_patch = WM_BufferFile(filename, &gus_size)) == NULL) {
+	if ((gus_patch = _WM_BufferFile(filename, &gus_size)) == NULL) {
 		return NULL;
 	}
 	if (gus_size < 239) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
 		free(gus_patch);
 		return NULL;
 	}
 	if (memcmp(gus_patch, "GF1PATCH110\0ID#000002", 22)
 			&& memcmp(gus_patch, "GF1PATCH100\0ID#000002", 22)) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
 				0);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
 		free(gus_patch);
 		return NULL;
 	}
 	if (gus_patch[82] > 1) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
 				0);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
 		free(gus_patch);
 		return NULL;
 	}
 	if (gus_patch[151] > 1) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
 				0);
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
 		free(gus_patch);
 		return NULL;
 	}
@@ -785,8 +785,8 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 			gus_sample = gus_sample->next;
 		}
 		if (gus_sample == NULL) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
 			free(gus_patch);
 			return NULL;
 		}
@@ -840,7 +840,6 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 		/*
 		 FIXME: Experimental Hacky Fix
 		 */
-
 		if (fix_release) {
 			if (env_time_table[gus_patch[gus_ptr + 40]]
 					< env_time_table[gus_patch[gus_ptr + 41]]) {
@@ -856,26 +855,26 @@ struct _sample * load_gus_pat(const char *filename, int fix_release) {
 				gus_sample->env_target[i] = 16448 * gus_patch[gus_ptr + 43 + i];
 				GUSPAT_INT_DEBUG("Envelope Level",gus_patch[gus_ptr+43+i]); GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[env_rate]);
 				gus_sample->env_rate[i] = (signed long int) (4194303.0
-						/ ((float) WM_SampleRate * env_time_table[env_rate]));
+						/ ((float) _WM_SampleRate * env_time_table[env_rate]));
 				GUSPAT_INT_DEBUG("Envelope Rate",gus_sample->env_rate[i]); GUSPAT_INT_DEBUG("GUSPAT Rate",env_rate);
 				if (gus_sample->env_rate[i] == 0) {
-					WM_ERROR_NEW("%s: Warning: found invalid envelope(%lu) rate setting in %s. Using %f instead.",
+					_WM_ERROR_NEW("%s: Warning: found invalid envelope(%lu) rate setting in %s. Using %f instead.",
 							__FUNCTION__, i, filename, env_time_table[63]);
 					gus_sample->env_rate[i] = (signed long int) (4194303.0
-							/ ((float) WM_SampleRate * env_time_table[63]));
+							/ ((float) _WM_SampleRate * env_time_table[63]));
 					GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 				}
 			} else {
 				gus_sample->env_target[i] = 4194303;
 				gus_sample->env_rate[i] = (signed long int) (4194303.0
-						/ ((float) WM_SampleRate * env_time_table[63]));
+						/ ((float) _WM_SampleRate * env_time_table[63]));
 				GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
 			}
 		}
 
 		gus_sample->env_target[6] = 0;
 		gus_sample->env_rate[6] = (signed long int) (4194303.0
-				/ ((float) WM_SampleRate * env_time_table[63]));
+				/ ((float) _WM_SampleRate * env_time_table[63]));
 
 		gus_ptr += 96;
 		tmp_cnt = gus_sample->data_length;

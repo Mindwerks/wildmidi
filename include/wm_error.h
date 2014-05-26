@@ -45,12 +45,12 @@ enum {
 	WM_ERR_MAX
 };
 
- extern void WM_ERROR_NEW(const char * wmfmt, ...)
+ extern void _WM_ERROR_NEW(const char * wmfmt, ...)
 #ifdef __GNUC__
 		__attribute__((format(printf, 1, 2)))
 #endif
 		;
- extern void WM_ERROR(const char * func, unsigned int lne, int wmerno,
+ extern void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		const char * wmfor, int error);
 
 #endif /* __WM_ERROR_H */

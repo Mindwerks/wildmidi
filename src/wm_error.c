@@ -30,7 +30,7 @@
 #include <stdarg.h>
 #include "wm_error.h"
 
-void WM_ERROR_NEW(const char * wmfmt, ...) {
+void _WM_ERROR_NEW(const char * wmfmt, ...) {
 	va_list args;
 	fprintf(stderr, "\r");
 	va_start(args, wmfmt);
@@ -39,7 +39,7 @@ void WM_ERROR_NEW(const char * wmfmt, ...) {
 	fprintf(stderr, "\n");
 }
 
-void WM_ERROR(const char * func, unsigned int lne, int wmerno,
+void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		const char * wmfor, int error) {
 
 	static const char *errors[WM_ERR_MAX+1] = {

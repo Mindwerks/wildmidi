@@ -89,7 +89,7 @@ static const char *PACKAGE_URL = "http://www.mindwerks.net/projects/wildmidi/";
 static const char *PACKAGE_BUGREPORT = "https://github.com/Mindwerks/wildmidi/issues";
 static const char *PACKAGE_VERSION = "0.3";
 
-void do_version(void) {
+static void do_version(void) {
 	printf("DevTest for WildMIDI %s - For testing purposes only\n\n", PACKAGE_VERSION);
 	printf("Copyright (C) Chris Ison 2001-2010 wildcode@users.sourceforge.net\n\n");
 	printf("DevTest comes with ABSOLUTELY NO WARRANTY\n");
@@ -101,14 +101,14 @@ void do_version(void) {
 	printf("\n");
 }
 
-void do_help(void) {
+static void do_help(void) {
 	do_version();
 	printf(" -d N   --debug-level N    Verbose output\n");
 	printf(" -h     --help             Display this information\n");
 	printf(" -v     --version          Display version information\n\n");
 }
 
-unsigned char *
+static unsigned char *
 DT_BufferFile(const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	unsigned char *data;
@@ -199,7 +199,7 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 	return data;
 }
 
-int test_midi(unsigned char * midi_data, unsigned long int midi_size,
+static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 		int verbose) {
 	unsigned int tmp_val;
 	unsigned int track_size;
@@ -560,10 +560,10 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 								printf("\n");
 							}
 						}
-						free(sysex_store);
-						sysex_store = NULL;
-						sysex_store_ofs = 0;
 					}
+					free(sysex_store);
+					sysex_store = NULL;
+					sysex_store_ofs = 0;
 
 					midi_data += sysex_size;
 				} else if (event == 0xFF) {
@@ -658,7 +658,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	return 0;
 }
 
-int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
+static int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 		int verbose) {
 	unsigned long int gus_ptr = 0;
 	unsigned char no_of_samples = 0;

@@ -25,12 +25,12 @@
 #ifndef __LOCK_H
 #define __LOCK_H
 
- extern void WM_Lock (int * wmlock);
- extern void WM_Unlock (int *wmlock);
+extern void _WM_Lock (int * wmlock);
+extern void _WM_Unlock (int *wmlock);
 
 #ifdef __DJGPP__
-#define WM_Lock(p) do {} while (0)
-#define WM_Unlock(p) do {} while (0)
+#define _WM_Lock(p) do {} while (0)
+#define _WM_Unlock(p) do {} while (0)
 #endif
 
 #endif /* __LOCK_H */

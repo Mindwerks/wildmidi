@@ -49,9 +49,9 @@ struct _rvb {
 	unsigned long int max_reverb_time;
 };
 
- extern void reset_reverb (struct _rvb *rvb);
- extern struct _rvb *init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y);
- extern void free_reverb (struct _rvb *rvb);
- extern void do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
+ extern void _WM_reset_reverb (struct _rvb *rvb);
+ extern struct _rvb *_WM_init_reverb(int rate, float room_x, float room_y, float listen_x, float listen_y);
+ extern void _WM_free_reverb (struct _rvb *rvb);
+ extern void _WM_do_reverb (struct _rvb *rvb, signed long int *buffer, int size);
 
 #endif /* __REVERB_H */
