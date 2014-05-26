@@ -200,7 +200,7 @@ struct _hndl {
 	struct _hndl *prev;
 };
 
-struct _hndl * first_handle = NULL;
+static struct _hndl *first_handle = NULL;
 
 #define MAX_AUTO_AMP 2.0
 
