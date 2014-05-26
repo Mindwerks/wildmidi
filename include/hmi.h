@@ -26,6 +26,6 @@
 #ifndef __HMI_H
 #define __HMI_H
 
-extern struct _mdi *WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size);
+extern struct _mdi *_WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size);
 
 #endif /* __HMI_H */

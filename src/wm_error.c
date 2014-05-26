@@ -30,7 +30,7 @@
 #include <stdarg.h>
 #include "wm_error.h"
 
-void WM_ERROR_NEW(const char * wmfmt, ...) {
+void _WM_ERROR_NEW(const char * wmfmt, ...) {
 	va_list args;
 	fprintf(stderr, "\r");
 	va_start(args, wmfmt);
@@ -39,7 +39,7 @@ void WM_ERROR_NEW(const char * wmfmt, ...) {
 	fprintf(stderr, "\n");
 }
 
-void WM_ERROR(const char * func, unsigned int lne, int wmerno,
+void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		const char * wmfor, int error) {
 
 	static const char *errors[WM_ERR_MAX+1] = {
@@ -56,9 +56,10 @@ void WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Library Already Initialized",
 		"Not a midi file",
 		"Refusing to load unusually long file",
-        "Not a hmp file",
-        "Not a hmi file",
-        "Unable to convert",
+		"Not a hmp file",
+		"Not a hmi file",
+		"Unable to convert",
+
 		"Invalid error code"
 	};
 

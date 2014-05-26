@@ -33,21 +33,21 @@
 #include "sample.h"
 
 
-struct _sample *get_sample_data(struct _patch *sample_patch, uint32_t freq) {
+struct _sample *_WM_get_sample_data(struct _patch *sample_patch, uint32_t freq) {
 	struct _sample *last_sample = NULL;
 	struct _sample *return_sample = NULL;
     
-	WM_Lock(&patch_lock);
+	_WM_Lock(&_WM_patch_lock);
 	if (sample_patch == NULL) {
-		WM_Unlock(&patch_lock);
+		_WM_Unlock(&_WM_patch_lock);
 		return (NULL);
 	}
 	if (sample_patch->first_sample == NULL) {
-		WM_Unlock(&patch_lock);
+		_WM_Unlock(&_WM_patch_lock);
 		return (NULL);
 	}
 	if (freq == 0) {
-		WM_Unlock(&patch_lock);
+		_WM_Unlock(&_WM_patch_lock);
 		return (sample_patch->first_sample);
 	}
     
@@ -56,7 +56,7 @@ struct _sample *get_sample_data(struct _patch *sample_patch, uint32_t freq) {
 	while (last_sample) {
 		if (freq > last_sample->freq_low) {
 			if (freq < last_sample->freq_high) {
-				WM_Unlock(&patch_lock);
+				_WM_Unlock(&_WM_patch_lock);
 				return (last_sample);
 			} else {
 				return_sample = last_sample;
@@ -64,14 +64,14 @@ struct _sample *get_sample_data(struct _patch *sample_patch, uint32_t freq) {
 		}
 		last_sample = last_sample->next;
 	}
-	WM_Unlock(&patch_lock);
+	_WM_Unlock(&_WM_patch_lock);
 	return (return_sample);
 }
 
 /* sample loading */
 
 int
-load_sample(struct _patch *sample_patch) {
+_WM_load_sample(struct _patch *sample_patch) {
 	struct _sample *guspat = NULL;
 	struct _sample *tmp_sample = NULL;
 	uint32_t i = 0;
@@ -79,11 +79,11 @@ load_sample(struct _patch *sample_patch) {
 	/* we only want to try loading the guspat once. */
 	sample_patch->loaded = 1;
     
-	if ((guspat = load_gus_pat(sample_patch->filename, fix_release)) == NULL) {
+	if ((guspat = _WM_load_gus_pat(sample_patch->filename, _WM_fix_release)) == NULL) {
 		return (-1);
 	}
     
-	if (auto_amp) {
+	if (_WM_auto_amp) {
 		int16_t tmp_max = 0;
 		int16_t tmp_min = 0;
 		int16_t samp_max = 0;
@@ -105,7 +105,7 @@ load_sample(struct _patch *sample_patch) {
 				tmp_min = samp_min;
 			tmp_sample = tmp_sample->next;
 		} while (tmp_sample);
-		if (auto_amp_with_amp) {
+		if (_WM_auto_amp_with_amp) {
 			if (tmp_max >= -tmp_min) {
 				sample_patch->amp = (sample_patch->amp
                                      * ((32767 << 10) / tmp_max)) >> 10;
@@ -177,13 +177,13 @@ load_sample(struct _patch *sample_patch) {
                 
 				if (sample_patch->env[i].set & 0x01) {
 					guspat->env_rate[i] = (int32_t) (4194303.0
-                                                     / ((float) WM_SampleRate
+                                                     / ((float) _WM_SampleRate
                                                         * (sample_patch->env[i].time / 1000.0)));
 				}
 			} else {
 				guspat->env_target[i] = 4194303;
 				guspat->env_rate[i] = (int32_t) (4194303.0
-                                                 / ((float) WM_SampleRate * env_time_table[63]));
+                                                 / ((float) _WM_SampleRate * env_time_table[63]));
 			}
 		}
         

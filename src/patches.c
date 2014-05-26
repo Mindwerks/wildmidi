@@ -32,39 +32,38 @@
 #include "patches.h"
 #include "sample.h"
 
-struct _patch *patch[128];
-
-int patch_lock = 0;
+struct _patch *_WM_patch[128];
+int _WM_patch_lock = 0;
 
 struct _patch *
-get_patch_data(struct _mdi *mdi, uint16_t patchid) {
+_WM_get_patch_data(struct _mdi *mdi, uint16_t patchid) {
 	struct _patch *search_patch;
     
-	WM_Lock(&patch_lock);
+	_WM_Lock(&_WM_patch_lock);
     
-	search_patch = patch[patchid & 0x007F];
+	search_patch = _WM_patch[patchid & 0x007F];
     
 	if (search_patch == NULL) {
-		WM_Unlock(&patch_lock);
+		_WM_Unlock(&_WM_patch_lock);
 		return (NULL);
 	}
     
 	while (search_patch) {
 		if (search_patch->patchid == patchid) {
-			WM_Unlock(&patch_lock);
+			_WM_Unlock(&_WM_patch_lock);
 			return (search_patch);
 		}
 		search_patch = search_patch->next;
 	}
 	if ((patchid >> 8) != 0) {
-		WM_Unlock(&patch_lock);
-		return (get_patch_data(mdi, patchid & 0x00FF));
+		_WM_Unlock(&_WM_patch_lock);
+		return (_WM_get_patch_data(mdi, patchid & 0x00FF));
 	}
-	WM_Unlock(&patch_lock);
+	_WM_Unlock(&_WM_patch_lock);
 	return (NULL);
 }
 
-void load_patch(struct _mdi *mdi, uint16_t patchid) {
+void _WM_load_patch(struct _mdi *mdi, uint16_t patchid) {
 	uint32_t i;
 	struct _patch *tmp_patch = NULL;
     
@@ -74,21 +73,21 @@ void load_patch(struct _mdi *mdi, uint16_t patchid) {
 		}
 	}
     
-	tmp_patch = get_patch_data(mdi, patchid);
+	tmp_patch = _WM_get_patch_data(mdi, patchid);
 	if (tmp_patch == NULL) {
 		return;
 	}
     
-	WM_Lock(&patch_lock);
+	_WM_Lock(&_WM_patch_lock);
 	if (!tmp_patch->loaded) {
-		if (load_sample(tmp_patch) == -1) {
-			WM_Unlock(&patch_lock);
+		if (_WM_load_sample(tmp_patch) == -1) {
+			_WM_Unlock(&_WM_patch_lock);
 			return;
 		}
 	}
     
 	if (tmp_patch->first_sample == NULL) {
-		WM_Unlock(&patch_lock);
+		_WM_Unlock(&_WM_patch_lock);
 		return;
 	}
     
@@ -97,5 +96,5 @@ void load_patch(struct _mdi *mdi, uint16_t patchid) {
                            (sizeof(struct _patch*) * mdi->patch_count));
 	mdi->patches[mdi->patch_count - 1] = tmp_patch;
 	tmp_patch->inuse_count++;
-	WM_Unlock(&patch_lock);
+	_WM_Unlock(&_WM_patch_lock);
 }

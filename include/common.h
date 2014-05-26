@@ -29,15 +29,15 @@
 #define UNUSED(x) (void)(x)
 #define MEM_CHUNK 8192
 
-extern int16_t WM_MasterVolume;
-extern uint16_t WM_SampleRate;
-extern uint16_t WM_MixerOptions;
+extern int16_t _WM_MasterVolume;
+extern uint16_t _WM_SampleRate;
+extern uint16_t _WM_MixerOptions;
 
-extern float reverb_room_width; //= 16.875f;
-extern float reverb_room_length;// = 22.5f;
+extern float _WM_reverb_room_width; //= 16.875f;
+extern float _WM_reverb_room_length;// = 22.5f;
 
-extern float reverb_listen_posx;// = 8.4375f;
-extern float reverb_listen_posy;// = 16.875f;
+extern float _WM_reverb_listen_posx;// = 8.4375f;
+extern float _WM_reverb_listen_posy;// = 16.875f;
 
 
 /* Set our global defines here */

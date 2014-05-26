@@ -41,7 +41,7 @@
  Turns hmp file data into an event stream
  */
 struct _mdi *
-WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
+_WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     uint32_t hmi_tmp = 0;
     uint8_t *hmi_base = hmi_data;
     uint16_t hmi_bpm = 0;
@@ -82,7 +82,7 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     UNUSED(hmi_size);
     
     if (memcmp(hmi_data, "HMI-MIDISONG061595", 18)) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
 		return NULL;
 	}
     
@@ -94,18 +94,18 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     
     hmi_track_cnt = hmi_data[228];
 
-    hmi_mdi = Init_MDI();
+    hmi_mdi = _WM_initMDI();
     
-    midi_setup_divisions(hmi_mdi, hmi_division);
+    _WM_midi_setup_divisions(hmi_mdi, hmi_division);
     
     tempo = 60000000 / hmi_bpm;
     
-    midi_setup_tempo(hmi_mdi, tempo);
+    _WM_midi_setup_tempo(hmi_mdi, tempo);
 
     /* Slow but needed for accuracy */
     microseconds_per_pulse = (float) tempo / (float) hmi_division;
     pulses_per_second = 1000000.0f / microseconds_per_pulse;
-    samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
+    samples_per_delta_f = (float) _WM_SampleRate / pulses_per_second;
 
     hmi_track_offset = (uint32_t *)malloc(sizeof(uint32_t) * hmi_track_cnt);
     hmi_track_header_length = malloc(sizeof(uint32_t) * hmi_track_cnt);
@@ -119,7 +119,7 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     smallest_delta = 0xffffffff;
     
     if (hmi_size < (370 + (hmi_track_cnt * 17))) {
-        WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
         goto _hmi_end;
     }
     
@@ -132,14 +132,14 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_track_offset[i] += (*hmi_data++ << 24);
         
         if (hmi_size < (hmi_track_offset[i] + 0x5a + 4)) {
-            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
             goto _hmi_end;
         }
         
         hmi_addr = hmi_base + hmi_track_offset[i];
         
         if (memcmp(hmi_addr, "HMI-MIDITRACK", 13)) {
-            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
             goto _hmi_end;
         }
         
@@ -207,7 +207,7 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                             smallest_delta = note[hmi_tmp].length;
                         }
                     } else {
-                        midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
+                        _WM_midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
                     }
                 }
             }
@@ -232,7 +232,7 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     for(j = 0; j < 128; j++) {
                         hmi_tmp = (128 * i) + j;
                         if (note[hmi_tmp].length) {
-                            midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
+                            _WM_midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
                             note[hmi_tmp].length = 0;
                         }
                     }
@@ -252,8 +252,8 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     hmi_data += 4;
                     hmi_track_offset[i] += 4;
                 } else {
-                    if ((setup_ret = WM_SetupMidiEvent(hmi_mdi,hmi_data,hmi_running_event[i])) == 0) {
-                        WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+                    if ((setup_ret = _WM_SetupMidiEvent(hmi_mdi,hmi_data,hmi_running_event[i])) == 0) {
+                        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                         goto _hmi_end;
                     }
                     
@@ -299,7 +299,7 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                                 smallest_delta = note[hmi_tmp].length;
                             }
                         } else {
-                            midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
+                            _WM_midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
                         }
                 
                     } else {
@@ -342,15 +342,15 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     }
     
     /* Set total MIDI time to 1/1000's seconds */
-    hmi_mdi->info.total_midi_time = (hmi_mdi->info.approx_total_samples * 1000) / WM_SampleRate;
-    /*mdi->info.approx_total_samples += WM_SampleRate * 3;*/
+    hmi_mdi->info.total_midi_time = (hmi_mdi->info.approx_total_samples * 1000) / _WM_SampleRate;
+    /*mdi->info.approx_total_samples += _WM_SampleRate * 3;*/
     
     /* Add additional samples needed for decay */
     // hmp_mdi->info.approx_total_samples += decay_samples;
     /*printf("decay_samples = %lu\n",decay_samples);*/
     
-    if ((hmi_mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width, reverb_room_length, reverb_listen_posx, reverb_listen_posy)) == NULL) {
-        WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+    if ((hmi_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _hmi_end;
     }
     
@@ -359,7 +359,7 @@ WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     hmi_mdi->samples_to_mix = 0;
     hmi_mdi->note = NULL;
     
-    WM_ResetToStart(hmi_mdi);
+    _WM_ResetToStart(hmi_mdi);
     
 
 _hmi_end:
@@ -371,7 +371,7 @@ _hmi_end:
     free(hmi_running_event);
 
     if (hmi_mdi->reverb) return (hmi_mdi);
-    freeMDI(hmi_mdi);
+    _WM_freeMDI(hmi_mdi);
     return 0;
 
 }

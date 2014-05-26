@@ -110,53 +110,53 @@ struct _mdi {
 	struct _rvb *reverb;
 };
 
-extern int16_t lin_volume[];
+extern int16_t _WM_lin_volume[];
 
 // =====================
 
 /* 
     All "do" functions need to be "extern" for playback
  */
-extern void do_midi_divisions(struct _mdi *mdi, struct _event_data *data);
-extern void do_note_off(struct _mdi *mdi, struct _event_data *data);
-extern void do_note_on(struct _mdi *mdi, struct _event_data *data);
-extern void do_aftertouch(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_bank_select(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_data_entry_course(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_volume(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_balance(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_pan(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_expression(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_data_entry_fine(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_hold(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_data_increment(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_data_decrement(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_non_registered_param_fine(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_non_registered_param_course(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_registered_param_fine(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_registered_param_course(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_sound_off(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_controllers_off(struct _mdi *mdi, struct _event_data *data);
-extern void do_control_channel_notes_off(struct _mdi *mdi, struct _event_data *data);
-extern void do_patch(struct _mdi *mdi, struct _event_data *data);
-extern void do_channel_pressure(struct _mdi *mdi, struct _event_data *data);
-extern void do_pitch(struct _mdi *mdi, struct _event_data *data);
-extern void do_sysex_roland_drum_track(struct _mdi *mdi, struct _event_data *data);
-extern void do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data);
-extern void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data);
-extern void do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data);
-extern void do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data);
-extern void do_meta_tempo(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_midi_divisions(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_aftertouch(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_bank_select(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_data_entry_course(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_volume(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_balance(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_pan(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_expression(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_data_entry_fine(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_data_increment(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_data_decrement(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_non_registered_param_fine(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_non_registered_param_course(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_registered_param_fine(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_registered_param_course(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_sound_off(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_controllers_off(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_notes_off(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_patch(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_sysex_roland_drum_track(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_meta_tempo(struct _mdi *mdi, struct _event_data *data);
 
-extern int midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);
+extern int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);
 
 // =====================
 
 /*
     Only non-standard midi event or non-track event setup functions need to be here
  */
-extern int midi_setup_divisions(struct _mdi *mdi, uint32_t divisions);
-extern int midi_setup_tempo(struct _mdi *mdi, uint32_t setting);
+extern int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions);
+extern int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting);
 
 // =====================
 
@@ -164,14 +164,14 @@ extern int midi_setup_tempo(struct _mdi *mdi, uint32_t setting);
     All other declirations
  */
 
-extern struct _mdi * Init_MDI(void);
-extern void freeMDI(struct _mdi *mdi);
-extern uint32_t WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event);
-extern void WM_ResetToStart(struct _mdi *mdi);
-extern void WM_CheckEventMemoryPool(struct _mdi *mdi);
-extern void do_pan_adjust(struct _mdi *mdi, uint8_t ch);
-extern void do_note_off_extra(struct _note *nte);
-extern uint32_t get_volume(struct _mdi *mdi, uint8_t ch, struct _note *nte);
+extern struct _mdi * _WM_initMDI(void);
+extern void _WM_freeMDI(struct _mdi *mdi);
+extern uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event);
+extern void _WM_ResetToStart(struct _mdi *mdi);
+extern void _WM_CheckEventMemoryPool(struct _mdi *mdi);
+extern void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch);
+extern void _WM_do_note_off_extra(struct _note *nte);
+extern uint32_t _WM_get_volume(struct _mdi *mdi, uint8_t ch, struct _note *nte);
 
 
 #endif /* __INTERNAL_MIDI_H */

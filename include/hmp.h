@@ -26,6 +26,6 @@
 #ifndef __HMP_H
 #define __HMP_H
 
-extern struct _mdi *WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size);
+extern struct _mdi *_WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size);
 
 #endif /* __HMP_H */

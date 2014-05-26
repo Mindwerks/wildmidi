@@ -49,11 +49,11 @@ struct _patch {
 	struct _patch *next;
 };
 
-extern struct _patch *patch[128];
+extern struct _patch *_WM_patch[128];
 
-extern int patch_lock;
+extern int _WM_patch_lock;
 
-extern struct _patch *get_patch_data(struct _mdi *mdi, uint16_t patchid);
-extern void load_patch(struct _mdi *mdi, uint16_t patchid);
+extern struct _patch *_WM_get_patch_data(struct _mdi *mdi, uint16_t patchid);
+extern void _WM_load_patch(struct _mdi *mdi, uint16_t patchid);
 
 #endif /* __PATCHES_H */

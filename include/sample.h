@@ -61,11 +61,11 @@ struct _sample {
 	struct _sample *next;
 };
 
-extern int fix_release;
-extern int auto_amp;
-extern int auto_amp_with_amp;
+extern int _WM_fix_release;
+extern int _WM_auto_amp;
+extern int _WM_auto_amp_with_amp;
 
-extern struct _sample *get_sample_data(struct _patch *sample_patch, uint32_t freq);
-extern int load_sample(struct _patch *sample_patch);
+extern struct _sample *_WM_get_sample_data(struct _patch *sample_patch, uint32_t freq);
+extern int _WM_load_sample(struct _patch *sample_patch);
 
 #endif /* __SAMPLE_H */

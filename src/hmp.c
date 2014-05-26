@@ -39,7 +39,7 @@
  Turns hmp file data into an event stream
  */
 struct _mdi *
-WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
+_WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     uint8_t is_hmp2 = 0;
     uint32_t zero_cnt = 0;
     uint32_t i = 0;
@@ -78,7 +78,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     
     
     if (memcmp(hmp_data, "HMIMIDIP", 8)) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
 		return NULL;
 	}
 	hmp_data += 8;
@@ -98,7 +98,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     }
     for (i = 0; i < zero_cnt; i++) {
         if (hmp_data[i] != 0) {
-            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
             return NULL;
 	    }
     }
@@ -147,7 +147,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     tempo = 60000000 / hmp_bpm;
     microseconds_per_pulse = (float) tempo / (float) hmp_divisions;
     pulses_per_second = 1000000.0f / microseconds_per_pulse;
-    samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
+    samples_per_delta_f = (float) _WM_SampleRate / pulses_per_second;
     
     //DEBUG
     //fprintf(stderr, "DEBUG: Samples Per Delta Tick: %f\r\n",samples_per_delta_f);
@@ -172,10 +172,10 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         hmp_size -= 712;
     }
     
-    hmp_mdi = Init_MDI();
+    hmp_mdi = _WM_initMDI();
     
-    midi_setup_divisions(hmp_mdi, hmp_divisions);
-    midi_setup_tempo(hmp_mdi, tempo);
+    _WM_midi_setup_divisions(hmp_mdi, hmp_divisions);
+    _WM_midi_setup_tempo(hmp_mdi, tempo);
     
     hmp_chunk = malloc(sizeof(uint8_t *) * hmp_chunks);
     chunk_length = malloc(sizeof(uint32_t) * hmp_chunks);
@@ -205,7 +205,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_ofs[i] += 4;
         
         if (chunk_length[i] > hmp_size) {
-            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
             goto _hmp_end;
         }
         hmp_size -= chunk_length[i];
@@ -287,9 +287,9 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                     } else {
                         uint32_t setup_ret = 0;
                         
-                        setup_ret = WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], 0);
+                        setup_ret = _WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], 0);
                         if (setup_ret == 0) {
-                            WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+                            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                             goto _hmp_end;
                         }
                         
@@ -303,17 +303,17 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                             fprintf(stderr,"DEBUG: Tempo change %u\r\n", tempo);
 #if 0
                             
-                            if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
+                            if ((_WM_MixerOptions & WM_MO_WHOLETEMPO)) {
                                 float bpm_f = (float) (60000000 / tempo);
                                 tempo = 60000000 / (uint32_t) bpm_f;
-                            } else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+                            } else if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
                                 float bpm_fr = (float) (60000000 / tempo) + 0.5f;
                                 tempo = 60000000 / (uint32_t) bpm_fr;
                             }
                             /* Slow but needed for accuracy */
                             microseconds_per_pulse = (float) tempo / (float) hmp_divisions;
                             pulses_per_second = 1000000.0f / microseconds_per_pulse;
-                            samples_per_delta_f = (float) WM_SampleRate / pulses_per_second;
+                            samples_per_delta_f = (float) _WM_SampleRate / pulses_per_second;
 #endif
                         }
                         hmp_chunk[i] += setup_ret;
@@ -352,15 +352,15 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     }
     
     /* Set total MIDI time to 1/1000's seconds */
-    hmp_mdi->info.total_midi_time = (hmp_mdi->info.approx_total_samples * 1000) / WM_SampleRate;
-    /*mdi->info.approx_total_samples += WM_SampleRate * 3;*/
+    hmp_mdi->info.total_midi_time = (hmp_mdi->info.approx_total_samples * 1000) / _WM_SampleRate;
+    /*mdi->info.approx_total_samples += _WM_SampleRate * 3;*/
     
     /* Add additional samples needed for decay */
     // hmp_mdi->info.approx_total_samples += decay_samples;
     /*printf("decay_samples = %lu\n",decay_samples);*/
     
-    if ((hmp_mdi->reverb = init_reverb(WM_SampleRate, reverb_room_width, reverb_room_length, reverb_listen_posx, reverb_listen_posy)) == NULL) {
-        WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+    if ((hmp_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _hmp_end;
     }
     
@@ -369,7 +369,7 @@ WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_mdi->samples_to_mix = 0;
     hmp_mdi->note = NULL;
     
-    WM_ResetToStart(hmp_mdi);
+    _WM_ResetToStart(hmp_mdi);
     
 _hmp_end:
     free(hmp_chunk);
@@ -378,6 +378,6 @@ _hmp_end:
     free(chunk_ofs);
     free(chunk_end);
     if (hmp_mdi->reverb) return (hmp_mdi);
-    freeMDI(hmp_mdi);
+    _WM_freeMDI(hmp_mdi);
     return NULL;
 }

@@ -26,8 +26,8 @@
 #ifndef __MIDI_H
 #define __MIDI_H
 
-extern struct _mdi *WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size);
-extern int WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize);
+extern struct _mdi *_WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size);
+extern int _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize);
 
 #endif /* __MIDI_H */
 
