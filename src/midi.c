@@ -814,6 +814,17 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = (tempo & 0xff0000) >> 16;
             (*out)[out_ofs++] = (tempo & 0xff00) >> 8;
             (*out)[out_ofs++] = (tempo & 0xff);
+        } else if (mdi->events[i].do_event == _WM_do_meta_timesignature) {
+            // DEBUG
+            // fprintf(stderr,"Time Signature: %x\r\n",mdi->events[i].event_data.data);
+            tempo = mdi->events[i].event_data.data & 0xffffffff;
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x58;
+            (*out)[out_ofs++] = 0x04;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff000000) >> 24;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff0000) >> 16;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
         } else {
             // DEBUG
             fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -833,6 +844,9 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             if (value > 0x1fffff) (*out)[out_ofs++] = (((value >> 14) &0x7f) | 0x80);
             if (value > 0x3fff) (*out)[out_ofs++] = (((value >> 7) & 0x7f) | 0x80);
             (*out)[out_ofs++] = (value & 0x7f);
+            
+            //DEBUG
+            //fprintf(stderr,"\rDelta: %.x %.x %.x %.x\r\n", ((value >> 21) &0x7f), ((value >> 14) &0x7f), ((value >> 7) &0x7f), (value &0x7f));
         }
     }
     // Write end of track marker

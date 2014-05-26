@@ -37,6 +37,7 @@
 #include "file_io.h"
 #include "sample.h"
 
+//#define DEBUG_GUSPAT
 #ifdef DEBUG_GUSPAT
 #define GUSPAT_FILENAME_DEBUG(dx) fprintf(stderr,"\r%s\n",dx)
 
@@ -760,7 +761,8 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 		return NULL;
 	}
 
-	GUSPAT_FILENAME_DEBUG(filename); GUSPAT_INT_DEBUG("voices",gus_patch[83]);
+	GUSPAT_FILENAME_DEBUG(filename);
+    GUSPAT_INT_DEBUG("voices",gus_patch[83]);
 
 	no_of_samples = gus_patch[198];
 	gus_ptr = 239;
@@ -839,6 +841,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 		}
 
 		for (i = 0; i < 6; i++) {
+            GUSPAT_INT_DEBUG("Envelope #",i);
 			if (gus_sample->modes & SAMPLE_ENVELOPE) {
 				uint8_t env_rate = gus_patch[gus_ptr + 37 + i];
 				gus_sample->env_target[i] = 16448 * gus_patch[gus_ptr + 43 + i];

@@ -956,6 +956,15 @@ void _WM_do_meta_tempo(struct _mdi *mdi, struct _event_data *data) {
     return;
 }
 
+void _WM_do_meta_timesignature(struct _mdi *mdi, struct _event_data *data) {
+    // placeholder function so we can record tempo in the event stream
+    // for conversion function _WM_Event2Midi
+    
+    UNUSED(mdi);
+    UNUSED(data);
+    return;
+}
+
 void _WM_ResetToStart(struct _mdi *mdi) {
 	mdi->current_event = mdi->events;
 	mdi->samples_to_mix = 0;
@@ -1291,6 +1300,23 @@ int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting) {
 	return (0);
 }
 
+int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
+	if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+		mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_timesignature;
+		mdi->events[mdi->event_count - 1].event_data.channel = 0;
+		mdi->events[mdi->event_count - 1].event_data.data = setting;
+	} else {
+		_WM_CheckEventMemoryPool(mdi);
+		mdi->events[mdi->event_count].do_event = *_WM_do_meta_timesignature;
+		mdi->events[mdi->event_count].event_data.channel = 0;
+		mdi->events[mdi->event_count].event_data.data = setting;
+		mdi->events[mdi->event_count].samples_to_next = 0;
+		mdi->event_count++;
+	}
+	return (0);
+}
+
 struct _mdi *
 _WM_initMDI(void) {
 	struct _mdi *mdi;
@@ -1517,6 +1543,14 @@ _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event
                      */
                     _WM_midi_setup_tempo(mdi, ((event_data[2] << 16) + (event_data[3] << 8) + event_data[4]));
                     ret_cnt += 5;
+                } else if ((event_data[0] == 0x58) && (event_data[1] == 0x04)) {
+                    /*
+                     Time Signature
+                                          
+                     We only setting this up here for WM_Event2Midi function
+                     */
+                    midi_setup_timesignature(mdi, ((event_data[2] << 24) + (event_data[3] << 16) + (event_data[4] << 8) + event_data[5]));
+                    ret_cnt += 6;
                 } else {
                     /*
                      Unsupported Meta Event
