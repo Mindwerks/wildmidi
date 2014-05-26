@@ -267,7 +267,7 @@ struct _hndl {
 	struct _hndl *prev;
 };
 
-struct _hndl * first_handle = NULL;
+static struct _hndl *first_handle = NULL;
 
 /* f: ( VOLUME / 127.0 ) * 1024.0 */
 static signed short int lin_volume[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 72,
