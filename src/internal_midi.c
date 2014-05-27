@@ -1300,7 +1300,7 @@ int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting) {
 	return (0);
 }
 
-int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
+static int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
 	if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_timesignature;
