@@ -1066,7 +1066,8 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 						note_data = note_data->next;
 						continue;
 					case 6:
-						if (__builtin_expect((note_data->replay != NULL), 1)) {
+						END_THIS_NOTE:  // FIXME: tidy up code to go here to end notes.
+                                                if (__builtin_expect((note_data->replay != NULL), 1)) {
 							RESTART_NOTE: note_data->active = 0;
 							{
 								struct _note *prev_note = NULL;
@@ -1110,17 +1111,22 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 						}
 						continue;
 					}
+                                 _NEXT_ENVELOPE:
 					note_data->env++;
-
+                                        if (note_data->env == 7) goto END_THIS_NOTE;
 					if (note_data->is_off == 1) {
 						_WM_do_note_off_extra(note_data);
 					}
 
 					if (note_data->env_level
-							> note_data->sample->env_target[note_data->env]) {
+							>= note_data->sample->env_target[note_data->env]) {
 						note_data->env_inc =
 								-note_data->sample->env_rate[note_data->env];
 					} else {
+                                                /*
+                                                     Envelope 5 is meant to be last release. If already below its limit then use envelope 6.
+                                                 */
+                                                if (note_data->env > 4) goto _NEXT_ENVELOPE; //FIXME: potential for endless loop or set
 						note_data->env_inc =
 								note_data->sample->env_rate[note_data->env];
 					}
