@@ -12,23 +12,34 @@ Website: http://www.mindwerks.net/projects/wildmidi
 
 PLATFORMS:
 
-* Linux: Arch, Debian, Fedora, Ubuntu
-* Windows: x32 and x64
-* BSD: Debian, FreeBSD, NetBSD, OpenBSD
+* Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS, OpenAL output)
+* Windows: x86 and x64
+* OSX: x86, x64 and powerpc (in Xterm. player: OpenAL output)
+* BSD: Debian, FreeBSD, NetBSD, OpenBSD. (player: OSS output)
+* kFreeBSD: Debian (player: OSS output)
 * Hurd: Debian
+* DOS (player: sound blaster or compatibles output.)
 
 BUILD FROM SOURCE:
 
 Requirements:
 * git
 * cmake
-* GCC / Xcode / VisualStudio / MinGW
+* GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
+* DOS port: DJGPP / GNU make
 
 CHANGELOG
 
 0.3.7
 * Plug a memory leak in case of broken midis.
 * Properly reset global state upon library shutdown.
+* Support for type-2 midi files.
+* Fix a possible crash in WildMidi_SetOption.
+* DOS port: Support for Sound Blaster output in player.
+* Uglify the library's private global variable and function names.
+* Build: Add option for a statically linked player.
+* Build: Add headers to project files. Use -fno-common flag.
+* Other small fixes/clean-ups.
 
 0.3.6
 * Fix some portability issues.
