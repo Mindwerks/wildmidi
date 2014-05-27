@@ -314,7 +314,7 @@ void _WM_do_note_off_extra(struct _note *nte) {
 				}
 			}
 #if 1
-		} else if (nte->modes & SAMPLE_SUSTAIN) {
+		} else if ((nte->modes & SAMPLE_SUSTAIN) && (nte->hold)) {
 			if (nte->env < 3) {
 				nte->env = 3;
 				if (nte->env_level > nte->sample->env_target[3]) {
