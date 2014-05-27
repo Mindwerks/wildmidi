@@ -24,8 +24,12 @@ RANLIB=$(CROSS)-ranlib
 endif
 
 INCLUDE = -I. -I../include
-CFLAGS = $(INCLUDE) -Wall -W
+CFLAGS = $(INCLUDE) -Wall -W -fno-common
 ARFLAGS = cr
+
+# SB output support (comment out if not wanted)
+CFLAGS+= -DAUDIODRV_DOSSB
+SB_OBJ = dosirq.o dosdma.o dossb.o
 
 LD = $(CC)
 LDFLAGS = -L. -lWildMidi -lm
@@ -40,12 +44,14 @@ LDFLAGS+= -s
 endif
 
 # Build rules
+%.o: %.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 %.o: ../src/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 # Objects
 LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
-PLAYER_OBJ= getopt_long.o wm_tty.o wildmidi.o
+PLAYER_OBJ= $(SB_OBJ) getopt_long.o wm_tty.o wildmidi.o
 
 # Build targets
 TARGETS = libWildMidi.a wildmidi.exe

@@ -3,7 +3,7 @@
 
  Midi Wavetable Processing library
 
- Copyright (C) Chris Ison  2001-2011
+ Copyright (C) Chris Ison  2001-2014
  Copyright (C) Bret Curtis 2013-2014
 
  This file is part of WildMIDI.
@@ -2387,6 +2387,7 @@ static struct _mdi *
 WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	struct _mdi *mdi;
 	unsigned int tmp_val;
+	unsigned int midi_type;
 	unsigned int track_size;
 	unsigned char **tracks;
 	unsigned int end_of_tracks = 0;
@@ -2444,15 +2445,16 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	}
 
 	/*
-	 * Get Midi Format - we only support 0 and 1
+	 * Get Midi Format - we only support 0, 1 & 2
 	 */
 	tmp_val = *midi_data++ << 8;
 	tmp_val |= *midi_data++;
 	midi_size -= 2;
-	if (tmp_val > 1) {
+	if (tmp_val > 2) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
 		return NULL;
 	}
+	midi_type = tmp_val;
 
 	/*
 	 * Get No. of Tracks
@@ -2465,6 +2467,14 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		return NULL;
 	}
 	no_tracks = tmp_val;
+
+	/*
+	 * Check that type 0 midi file has only 1 track
+	 */
+	if ((midi_type == 0) && (no_tracks > 1)) {
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(expected 1 track for type 0 midi file, found more)", 0);
+		return NULL;
+	}
 
 	/*
 	 * Get Divisions
@@ -2538,6 +2548,13 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		tracks[i]++;
 	}
 
+	/*
+	 * Handle type 0 & 1 the same, but type 2 differently
+	 */
+	switch (midi_type) {
+	case 0:
+	case 1:
+	/* Type 0 & 1 can use the same code */
 	while (end_of_tracks != no_tracks) {
 		smallest_delta = 0;
 		for (i = 0; i < no_tracks; i++) {
@@ -2650,7 +2667,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 							tmp_length = (tmp_length << 7)
 									+ (*tracks[i] & 0x7f);
 							/* Copy copyright info in the getinfo struct */
-							if (mdi->info.copyright != NULL) {
+							if (mdi->info.copyright) {
 								mdi->info.copyright = realloc(
 										mdi->info.copyright,
 										(strlen(mdi->info.copyright) + 1
@@ -2827,6 +2844,307 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 			decay_samples = 0;
 		}
 	}
+	break;
+
+	case 2: /* Type 2 has to be handled differently */
+		for (i = 0; i < no_tracks; i++) {
+			sample_remainder = 0.0;
+			decay_samples = 0;
+			track_delta[i] = 0;
+			do {
+				if(track_delta[i]) {
+					sample_count_tmp = (((float) track_delta[i] * samples_per_delta_f)
+							+ sample_remainder);
+					sample_count = (unsigned long int) sample_count_tmp;
+					sample_remainder = sample_count_tmp - (float) sample_count;
+					if ((mdi->event_count)
+							&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+						mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
+					} else {
+						WM_CheckEventMemoryPool(mdi);
+						mdi->events[mdi->event_count].do_event = NULL;
+						mdi->events[mdi->event_count].event_data.channel = 0;
+						mdi->events[mdi->event_count].event_data.data = 0;
+						mdi->events[mdi->event_count].samples_to_next = sample_count;
+						mdi->event_count++;
+					}
+					mdi->info.approx_total_samples += sample_count;
+					/* printf("Decay Samples = %lu\n",decay_samples);*/
+					if (decay_samples > sample_count) {
+						decay_samples -= sample_count;
+					} else {
+						decay_samples = 0;
+					}
+				}
+				if (*tracks[i] > 0x7F) {
+					current_event = *tracks[i];
+					tracks[i]++;
+				} else {
+					current_event = running_event[i];
+					if (running_event[i] < 0x80) {
+						_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+						goto _end;
+					}
+				}
+				current_event_ch = current_event & 0x0F;
+				switch (current_event >> 4) {
+				case 0x8:
+					NOTEOFF2: midi_setup_noteoff(mdi, current_event_ch,
+							tracks[i][0], tracks[i][1]);
+					/* To better calculate samples needed after the end of midi,
+					 * we calculate samples for decay for note off */
+					{
+						unsigned long int tmp_decay_samples = 0;
+						struct _patch *tmp_patch = NULL;
+
+						if (mdi->channel[current_event_ch].isdrum) {
+							tmp_patch = get_patch_data(mdi,
+									((mdi->channel[current_event_ch].bank << 8)
+											| tracks[i][0] | 0x80));
+						/*	if (tmp_patch == NULL)
+								printf("Drum patch not loaded 0x%02x on channel %i\n",((mdi->channel[current_event_ch].bank << 8) | tracks[i][0] | 0x80),current_event_ch);*/
+						} else {
+							tmp_patch = mdi->channel[current_event_ch].patch;
+						/*	if (tmp_patch == NULL)
+								printf("Channel %i patch not loaded\n", current_event_ch);*/
+						}
+						tmp_decay_samples = get_decay_samples(tmp_patch,
+								tracks[i][0]);
+						/* if the note off decay is more than the decay we currently tracking then
+						 * we set it to new decay. */
+						if (tmp_decay_samples > decay_samples) {
+							decay_samples = tmp_decay_samples;
+						}
+					}
+
+					tracks[i] += 2;
+					running_event[i] = current_event;
+					break;
+				case 0x9:
+					if (tracks[i][1] == 0) {
+						goto NOTEOFF2;
+					}
+					midi_setup_noteon(mdi, (current_event & 0x0F), tracks[i][0],
+							tracks[i][1]);
+					tracks[i] += 2;
+					running_event[i] = current_event;
+					break;
+				case 0xA:
+					midi_setup_aftertouch(mdi, (current_event & 0x0F),
+							tracks[i][0], tracks[i][1]);
+					tracks[i] += 2;
+					running_event[i] = current_event;
+					break;
+				case 0xB:
+					midi_setup_control(mdi, (current_event & 0x0F),
+							tracks[i][0], tracks[i][1]);
+					tracks[i] += 2;
+					running_event[i] = current_event;
+					break;
+				case 0xC:
+					midi_setup_patch(mdi, (current_event & 0x0F), *tracks[i]);
+					tracks[i]++;
+					running_event[i] = current_event;
+					break;
+				case 0xD:
+					midi_setup_channel_pressure(mdi, (current_event & 0x0F),
+							*tracks[i]);
+					tracks[i]++;
+					running_event[i] = current_event;
+					break;
+				case 0xE:
+					midi_setup_pitch(mdi, (current_event & 0x0F),
+							((tracks[i][1] << 7) | (tracks[i][0] & 0x7F)));
+					tracks[i] += 2;
+					running_event[i] = current_event;
+					break;
+				case 0xF: /* Meta Event */
+					if (current_event == 0xFF) {
+						if (tracks[i][0] == 0x02) { /* Copyright Event */
+							/* Get Length */
+							tmp_length = 0;
+							tracks[i]++;
+							while (*tracks[i] > 0x7f) {
+								tmp_length = (tmp_length << 7)
+										+ (*tracks[i] & 0x7f);
+								tracks[i]++;
+							}
+							tmp_length = (tmp_length << 7)
+									+ (*tracks[i] & 0x7f);
+							/* Copy copyright info in the getinfo struct */
+							if (mdi->info.copyright) {
+								mdi->info.copyright = realloc(
+										mdi->info.copyright,
+										(strlen(mdi->info.copyright) + 1
+												+ tmp_length + 1));
+								strncpy(
+										&mdi->info.copyright[strlen(
+												mdi->info.copyright) + 1],
+										(char *) tracks[i], tmp_length);
+								mdi->info.copyright[strlen(mdi->info.copyright)
+										+ 1 + tmp_length] = '\0';
+								mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
+
+							} else {
+								mdi->info.copyright = malloc(tmp_length + 1);
+								strncpy(mdi->info.copyright, (char *) tracks[i],
+										tmp_length);
+								mdi->info.copyright[tmp_length] = '\0';
+							}
+							tracks[i] += tmp_length + 1;
+						} else if ((tracks[i][0] == 0x2F)
+								&& (tracks[i][1] == 0x00)) {
+							/* End of Track */
+							end_of_tracks++;
+							track_end[i] = 1;
+							goto NEXT_TRACK2;
+						} else if ((tracks[i][0] == 0x51)
+								&& (tracks[i][1] == 0x03)) {
+							/* Tempo */
+							tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8)
+									+ tracks[i][4];
+							tracks[i] += 5;
+							if (!tempo)
+								tempo = 500000;
+
+							if ((WM_MixerOptions & WM_MO_WHOLETEMPO)) {
+								float bpm_f = (float) (60000000 / tempo);
+								tempo = 60000000
+										/ (unsigned long int) bpm_f;
+							} else if ((WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+								float bpm_fr = (float) (60000000 / tempo)
+										+ 0.5f;
+								tempo = 60000000
+										/ (unsigned long int) bpm_fr;
+							}
+							/* Slow but needed for accuracy */
+							microseconds_per_pulse = (float) tempo
+									/ (float) divisions;
+							pulses_per_second = 1000000.0f
+									/ microseconds_per_pulse;
+							samples_per_delta_f = (float) _WM_SampleRate
+									/ pulses_per_second;
+
+						} else {
+							tmp_length = 0;
+							tracks[i]++;
+							while (*tracks[i] > 0x7f) {
+								tmp_length = (tmp_length << 7)
+										+ (*tracks[i] & 0x7f);
+								tracks[i]++;
+							}
+							tmp_length = (tmp_length << 7)
+									+ (*tracks[i] & 0x7f);
+							tracks[i] += tmp_length + 1;
+						}
+					} else if ((current_event == 0xF0)
+							|| (current_event == 0xF7)) {
+						/* Roland Sysex Events */
+						unsigned long int sysex_len = 0;
+						while (*tracks[i] > 0x7F) {
+							sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
+							tracks[i]++;
+						}
+						sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
+						tracks[i]++;
+
+						running_event[i] = 0;
+
+						sysex_store = realloc(sysex_store,
+								sizeof(unsigned char)
+										* (sysex_store_len + sysex_len));
+						memcpy(&sysex_store[sysex_store_len], tracks[i],
+								sysex_len);
+						sysex_store_len += sysex_len;
+
+						if (sysex_store[sysex_store_len - 1] == 0xF7) {
+							unsigned char tmpsysexdata[] = { 0x41, 0x10, 0x42, 0x12 };
+							if (memcmp(tmpsysexdata, sysex_store, 4) == 0) {
+								/* checksum */
+								unsigned char sysex_cs = 0;
+								unsigned int sysex_ofs = 4;
+								do {
+									sysex_cs += sysex_store[sysex_ofs];
+									if (sysex_cs > 0x7F) {
+										sysex_cs -= 0x80;
+									}
+									sysex_ofs++;
+								} while (sysex_store[sysex_ofs + 1] != 0xF7);
+								sysex_cs = 128 - sysex_cs;
+								/* is roland sysex message valid */
+								if (sysex_cs == sysex_store[sysex_ofs]) {
+									/* process roland sysex event */
+									if (sysex_store[4] == 0x40) {
+										if (((sysex_store[5] & 0xF0) == 0x10)
+												&& (sysex_store[6] == 0x15)) {
+											/* Roland Drum Track Setting */
+											unsigned char sysex_ch = 0x0F
+													& sysex_store[5];
+											if (sysex_ch == 0x00) {
+												sysex_ch = 0x09;
+											} else if (sysex_ch <= 0x09) {
+												sysex_ch -= 1;
+											}
+											midi_setup_sysex_roland_drum_track(
+													mdi, sysex_ch,
+													sysex_store[7]);
+										} else if ((sysex_store[5] == 0x00)
+												&& (sysex_store[6] == 0x7F)
+												&& (sysex_store[7] == 0x00)) {
+											/* Roland GS Reset */
+											midi_setup_sysex_roland_reset(mdi);
+										}
+									}
+								}
+							}
+							free(sysex_store);
+							sysex_store = NULL;
+							sysex_store_len = 0;
+						}
+						tracks[i] += sysex_len;
+					} else {
+						_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
+						goto _end;
+					}
+					break;
+				default:
+					_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
+					goto _end;
+				}
+				track_delta[i] = 0;
+				while (*tracks[i] > 0x7F) {
+					track_delta[i] = (track_delta[i] << 7)
+							+ (*tracks[i] & 0x7F);
+					tracks[i]++;
+				}
+				track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
+				tracks[i]++;
+				NEXT_TRACK2:
+				smallest_delta = track_delta[i]; // Added just to keep Xcode happy
+				UNUSED(smallest_delta); // Added to just keep clang happy
+			} while (track_end[i] == 0);
+			/*
+			 * Add decay at the end of each song
+			 */
+			if (decay_samples) {
+				if ((mdi->event_count)
+						&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+					mdi->events[mdi->event_count - 1].samples_to_next += decay_samples;
+				} else {
+					WM_CheckEventMemoryPool(mdi);
+					mdi->events[mdi->event_count].do_event = NULL;
+					mdi->events[mdi->event_count].event_data.channel = 0;
+					mdi->events[mdi->event_count].event_data.data = 0;
+					mdi->events[mdi->event_count].samples_to_next = decay_samples;
+					mdi->event_count++;
+				}
+			}
+		}
+		break;
+
+	default: break; /* Don't expect to get here, added for completeness */
+	}
+
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->info.approx_total_samples -=
