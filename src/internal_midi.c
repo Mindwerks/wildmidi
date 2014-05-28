@@ -295,7 +295,7 @@ void _WM_do_note_off_extra(struct _note *nte) {
     
 	nte->is_off = 0;
     
-	if (nte->hold) {
+	if (nte->hold & 1) {
 		nte->hold |= HOLD_OFF;
 	} else {
 		if (!(nte->modes & SAMPLE_ENVELOPE)) {

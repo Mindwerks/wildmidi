@@ -922,8 +922,8 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 		if (__builtin_expect((!mdi->samples_to_mix), 0)) {
 			while ((!mdi->samples_to_mix) && (event->do_event)) {
 				event->do_event(mdi, &event->event_data);
-				event++;
 				mdi->samples_to_mix = event->samples_to_next;
+				event++;
 				mdi->current_event = event;
 			}
 
@@ -1063,8 +1063,8 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 						note_data = note_data->next;
 						continue;
 					case 6:
-						_END_THIS_NOTE:  // FIXME: tidy up code to go here to end notes.
-                                                if (__builtin_expect((note_data->replay != NULL), 1)) {
+						_END_THIS_NOTE:
+                        if (__builtin_expect((note_data->replay != NULL), 1)) {
 							note_data->active = 0;
 							{
 								struct _note *prev_note = NULL;
@@ -1335,10 +1335,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 								(note_data->sample_pos
 										>= note_data->sample->data_length),
 								0)) {
-							if (__builtin_expect((note_data->replay == NULL), 1)) {
-								goto KILL_NOTE;
-							}
-							goto RESTART_NOTE;
+							goto _END_THIS_NOTE;
 						}
 					}
 
@@ -1396,7 +1393,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 						break;
 					case 5:
 						if (__builtin_expect((note_data->env_level == 0), 1)) {
-							goto KILL_NOTE;
+							goto _END_THIS_NOTE;
 						}
 						/* sample release */
 						if (note_data->modes & SAMPLE_LOOP)
@@ -1405,8 +1402,9 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 						note_data = note_data->next;
 						continue;
 					case 6:
+                        _END_THIS_NOTE:
 						if (__builtin_expect((note_data->replay != NULL), 1)) {
-							RESTART_NOTE: note_data->active = 0;
+							note_data->active = 0;
 							{
 								struct _note *prev_note = NULL;
 								struct _note *nte_array = mdi->note;
@@ -1427,7 +1425,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 								note_data->active = 1;
 							}
 						} else {
-							KILL_NOTE: note_data->active = 0;
+							note_data->active = 0;
 							{
 								struct _note *prev_note = NULL;
 								struct _note *nte_array = mdi->note;
