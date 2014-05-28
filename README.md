@@ -10,27 +10,23 @@ Version: 0.4.0
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
-PLAYER AND LIB PLATFORMS:
+PLATFORMS:
 
+* Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS, OpenAL output)
+* Windows: x86 and x64
+* OSX: x86, x64 and powerpc (in Xterm. player: OpenAL output)
+* BSD: Debian, FreeBSD, NetBSD, OpenBSD. (player: OSS output)
+* kFreeBSD: Debian (player: OSS output)
 * Hurd: Debian
-* kFreeBSD: Debian, FreeBSD
-* Linux: Arch, Debian, Fedora, Ubuntu
-* Windows: x32 and x64
-* DOS (djgpp)
-
-PLAYER SOUND SYSTEMS:
-
-* ALSA
-* OSS
-* OpenAL
-* SB16 (DOS)
+* DOS (player: sound blaster or compatibles output.)
 
 BUILD FROM SOURCE:
 
 Requirements:
 * git
 * cmake
-* GCC / Xcode / VisualStudio / MinGW
+* GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
+* DOS port: DJGPP / GNU make
 
 CHANGELOG
 
@@ -48,13 +44,18 @@ CHANGELOG
 * Support for loading XMI (XMIDI format) files, thanks Ryan Nunn for
   releasing his code under the LGPL.
 * Support for loading MUS (MUS Id format) files, such as from Doom.
-* Support for type-2 midi files.
-* DOS (DJGPP) port: Support for Sound Blaster output in player.
 * Build requires cmake-2.8.11 or newer now.
 
 0.3.7
 * Plug a memory leak in case of broken midis.
 * Properly reset global state upon library shutdown.
+* Support for type-2 midi files.
+* Fix a possible crash in WildMidi_SetOption.
+* DOS port: Support for Sound Blaster output in player.
+* Uglify the library's private global variable and function names.
+* Build: Add option for a statically linked player.
+* Build: Add headers to project files. Use -fno-common flag.
+* Other small fixes/clean-ups.
 
 0.3.6
 * Fix some portability issues.
