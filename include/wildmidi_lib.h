@@ -40,7 +40,6 @@
 #define WM_MO_LOG_VOLUME	0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB		0x0004
-#define WM_MO_WHOLETEMPO	0x8000
 #define WM_MO_ROUNDTEMPO	0x2000
 
 /* conversion options */

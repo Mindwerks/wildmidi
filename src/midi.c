@@ -50,8 +50,8 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t divisions = 96;
 	uint32_t tempo = 500000;
 	float samples_per_delta_f = 0.0;
-	float microseconds_per_pulse = 0.0;
-	float pulses_per_second = 0.0;
+	float pulses_per_second_f = 0.0;
+    float bpm_f = 0.0;
     
 	uint32_t sample_count = 0;
 	float sample_count_f = 0.0;
@@ -176,17 +176,14 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		return (NULL);
 	}
     
-	if ((_WM_MixerOptions & WM_MO_WHOLETEMPO)) {
-		float bpm_f = (float) (60000000 / tempo);
-		tempo = 60000000 / (uint32_t) bpm_f;
-	} else if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-		float bpm_fr = (float) (60000000 / tempo) + 0.5f;
-		tempo = 60000000 / (uint32_t) bpm_fr;
-	}
+	if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+		bpm_f = (float) (60000000 / tempo) + 0.5f;
+	} else {
+        bpm_f = (float) (60000000 / tempo);
+    }
 	/* Slow but needed for accuracy */
-	microseconds_per_pulse = (float) tempo / (float) divisions;
-	pulses_per_second = 1000000.0f / microseconds_per_pulse;
-	samples_per_delta_f = (float) _WM_SampleRate / pulses_per_second;
+	pulses_per_second_f = ((float)divisions * bpm_f) / 60.0;
+	samples_per_delta_f = (float)_WM_SampleRate / pulses_per_second_f;
     
 	mdi = _WM_initMDI();
     _WM_midi_setup_divisions(mdi,divisions);
@@ -306,21 +303,15 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     if (!tempo)
                                         tempo = 500000;
                                     
-                                    if ((_WM_MixerOptions & WM_MO_WHOLETEMPO)) {
-                                        float bpm_f = (float) (60000000 / tempo);
-                                        tempo = 60000000 / (uint32_t) bpm_f;
-                                    } else if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-                                        float bpm_fr = (float) (60000000 / tempo)
-                                        + 0.5f;
-                                        tempo = 60000000 / (uint32_t) bpm_fr;
+                                    if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+                                        bpm_f = (float) (60000000 / tempo) + 0.5f;
+                                    } else {
+                                        bpm_f = (float) (60000000 / tempo);
                                     }
+                                        
                                     /* Slow but needed for accuracy */
-                                    microseconds_per_pulse = (float) tempo
-                                    / (float) divisions;
-                                    pulses_per_second = 1000000.0f
-                                    / microseconds_per_pulse;
-                                    samples_per_delta_f = (float) _WM_SampleRate
-                                    / pulses_per_second;
+                                    pulses_per_second_f = ((float)divisions * bpm_f) / 60.0;
+                                    samples_per_delta_f = (float)_WM_SampleRate / pulses_per_second_f;
                                 }
                             }
                             tracks[i] += setup_ret;
@@ -407,22 +398,16 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                 tempo = (tracks[i][3] << 16) + (tracks[i][4] << 8)+ tracks[i][5];
                                 if (!tempo)
                                     tempo = 500000;
-                                
-                                if ((_WM_MixerOptions & WM_MO_WHOLETEMPO)) {
-                                    float bpm_f = (float) (60000000 / tempo);
-                                    tempo = 60000000 / (uint32_t) bpm_f;
-                                } else if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-                                    float bpm_fr = (float) (60000000 / tempo)
-                                    + 0.5f;
-                                    tempo = 60000000 / (uint32_t) bpm_fr;
+
+                                if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+                                    bpm_f = (float) (60000000 / tempo) + 0.5f;
+                                } else {
+                                    bpm_f = (float) (60000000 / tempo);
                                 }
+                                
                                 /* Slow but needed for accuracy */
-                                microseconds_per_pulse = (float) tempo
-                                / (float) divisions;
-                                pulses_per_second = 1000000.0f
-                                / microseconds_per_pulse;
-                                samples_per_delta_f = (float) _WM_SampleRate
-                                / pulses_per_second;
+                                pulses_per_second_f = ((float)divisions * bpm_f) / 60.0;
+                                samples_per_delta_f = (float)_WM_SampleRate / pulses_per_second_f;
                             }
                         }
                         tracks[i] += setup_ret;
@@ -519,6 +504,11 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint8_t running_event = 0;
     uint32_t divisions = 0;
     uint32_t tempo = 500000;
+	float samples_per_delta_f = 0.0;
+	float pulses_per_second_f = 0.0;
+    float bpm_f = 0.0;
+    uint32_t value = 0;
+    float value_f = 0.0;
     
     if (!mdi->event_count) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CONVERT, "(No events to convert)", 0);
@@ -777,28 +767,28 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             foo[7] = 0x10 | foo_ch;
             foo[9] = mdi->events[i].event_data.data;
-            memcpy(&((*out)[out_ofs]),foo,10);
+            memcpy(&((*out)[out_ofs]),foo,11);
             out_ofs += 11;
             running_event = 0;
         }  else if (mdi->events[i].do_event == _WM_do_sysex_gm_reset) {
             // DEBUG
             // fprintf(stderr,"Sysex GM Reset\r\n");
             int8_t foo[] = {0xf0, 0x05, 0x7e, 0x7f, 0x09, 0x01, 0xf7};
-            memcpy(&((*out)[out_ofs]),foo,6);
+            memcpy(&((*out)[out_ofs]),foo,7);
             out_ofs += 7;
             running_event = 0;
         } else if (mdi->events[i].do_event == _WM_do_sysex_roland_reset) {
             // DEBUG
             // fprintf(stderr,"Sysex Roland Reset\r\n");
             int8_t foo[] = {0xf0, 0x0a, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7f, 0x00, 0x41, 0xf7};
-            memcpy(&((*out)[out_ofs]),foo,11);
+            memcpy(&((*out)[out_ofs]),foo,12);
             out_ofs += 12;
             running_event = 0;
         }  else if (mdi->events[i].do_event == _WM_do_sysex_yamaha_reset) {
             // DEBUG
             // fprintf(stderr,"Sysex Yamaha Reset\r\n");
             int8_t foo[] = {0xf0, 0x08, 0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
-            memcpy(&((*out)[out_ofs]),foo,9);
+            memcpy(&((*out)[out_ofs]),foo,10);
             out_ofs += 10;
             running_event = 0;
         } else if (mdi->events[i].do_event == _WM_do_meta_endoftrack) {
@@ -808,6 +798,18 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             // DEBUG
             // fprintf(stderr,"Tempo: %u\r\n",mdi->events[i].event_data.data);
             tempo = mdi->events[i].event_data.data & 0xffffff;
+            
+            if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+                bpm_f = (float) (60000000 / tempo) + 0.5f;
+            } else {
+                bpm_f = (float) (60000000 / tempo);
+            }
+            /* Slow but needed for accuracy */
+            pulses_per_second_f = ((float)divisions * bpm_f) / 60.0;
+            samples_per_delta_f = (float)_WM_SampleRate / pulses_per_second_f;
+            //DEBUG
+            //fprintf(stderr,"\rDEBUG: div %i, tempo %i, bpm %f, pps %f, spd %f\r\n", divisions, tempo, bpm_f, pulses_per_second_f, samples_per_delta_f);
+            
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x51;
             (*out)[out_ofs++] = 0x03;
@@ -829,25 +831,22 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             // DEBUG
             fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
         }
-        // Delta Add
-        {
-            uint32_t value = 0;
-            float value_f = 0.0;
-            float samples_per_delta_f = 0.0;
-            
-            samples_per_delta_f = (float)_WM_SampleRate / ((1000000/(float)tempo)*(float)divisions);
-            
-            value_f = (float)mdi->events[i].samples_to_next / samples_per_delta_f;
-            value = (uint32_t)value_f;
-            
-            if (value > 0x0fffffff) (*out)[out_ofs++] = (((value >> 21) &0x7f) | 0x80);
-            if (value > 0x1fffff) (*out)[out_ofs++] = (((value >> 14) &0x7f) | 0x80);
-            if (value > 0x3fff) (*out)[out_ofs++] = (((value >> 7) & 0x7f) | 0x80);
-            (*out)[out_ofs++] = (value & 0x7f);
-            
-            //DEBUG
-            //fprintf(stderr,"\rDelta: %.x %.x %.x %.x\r\n", ((value >> 21) &0x7f), ((value >> 14) &0x7f), ((value >> 7) &0x7f), (value &0x7f));
-        }
+        
+        value_f = (float)mdi->events[i].samples_to_next / samples_per_delta_f;
+        value = (uint32_t)(value_f + 0.5);
+        
+        //DEBUG
+        //fprintf(stderr,"\rDEBUG: STN %i, SPD %f, Delta %i\r\n", mdi->events[i].samples_to_next, samples_per_delta_f, value);
+        
+        if (value > 0x0fffffff)
+            (*out)[out_ofs++] = (((value >> 28) &0x7f) | 0x80);
+        if (value > 0x1fffff)
+            (*out)[out_ofs++] = (((value >> 21) &0x7f) | 0x80);
+        if (value > 0x3fff)
+            (*out)[out_ofs++] = (((value >> 14) & 0x7f) | 0x80);
+        if (value > 0x7f)
+            (*out)[out_ofs++] = (((value >> 7) & 0x7f) | 0x80);
+        (*out)[out_ofs++] = (value & 0x7f);
     }
     // Write end of track marker
     (*out)[out_ofs++] = 0xff;

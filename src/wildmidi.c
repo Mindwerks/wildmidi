@@ -1059,7 +1059,6 @@ static struct option const long_options[] = {
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 	{ "device", 1, 0, 'd' },
 #endif
-	{ "wholetempo", 0, 0, 'w' },
 	{ "roundtempo", 0, 0, 'n' },
 	{ NULL, 0, NULL, 0 }
 };
@@ -1142,7 +1141,7 @@ int main(int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "vho:tx:g:lr:c:m:btk:p:ed:wn", long_options,
+		i = getopt_long(argc, argv, "vho:tx:g:lr:c:m:btk:p:ed:n", long_options,
 				&option_index);
 		if (i == -1)
 			break;
@@ -1218,9 +1217,6 @@ int main(int argc, char **argv) {
 			break;
 		case 'p': /* set test patch */
 			test_patch = (uint8_t) atoi(optarg);
-			break;
-		case 'w': /* whole number tempo */
-			mixer_options |= WM_MO_WHOLETEMPO;
 			break;
 		case 'n': /* whole number tempo */
 			mixer_options |= WM_MO_ROUNDTEMPO;

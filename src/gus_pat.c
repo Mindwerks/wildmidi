@@ -831,14 +831,14 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 		/*
 		 FIXME: Experimental Hacky Fix
 		 */
-		if (fix_release) {
+		//if (fix_release) {
 			if (env_time_table[gus_patch[gus_ptr + 40]]
 					< env_time_table[gus_patch[gus_ptr + 41]]) {
 				uint8_t tmp_hack_rate = gus_patch[gus_ptr + 41];
 				gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 40];
 				gus_patch[gus_ptr + 40] = tmp_hack_rate;
 			}
-		}
+		//}
 
 		for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
