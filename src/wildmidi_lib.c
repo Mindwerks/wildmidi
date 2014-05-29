@@ -1374,7 +1374,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 #endif
 						break;
 					case 2:
-						if (note_data->modes & SAMPLE_SUSTAIN) {
+						if (note_data->hold) {
 							note_data->env_inc = 0;
 							note_data = note_data->next;
 							continue;
