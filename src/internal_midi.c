@@ -294,10 +294,7 @@ void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
 void _WM_do_note_off_extra(struct _note *nte) {
     
 	nte->is_off = 0;
-    
-	if (nte->hold & 1) {
-		nte->hold |= HOLD_OFF;
-	} else {
+        {
 		if (!(nte->modes & SAMPLE_ENVELOPE)) {
 			if (nte->modes & SAMPLE_LOOP) {
 				nte->modes ^= SAMPLE_LOOP;
