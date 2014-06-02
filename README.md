@@ -67,11 +67,11 @@ CHANGELOG
 * OpenAL support: This gains us OSX and other platforms that OpenAL
   supports for sound output!
 * DOS (DJGPP) support: This goes a long way to helping other DOS
-  based applications like UHexen2.
+  based applications.
 * MinGW support: This gains us win32 and win64 support using this
   toolchain.
-* Fedora support: We are now ready to see this get pushed upstream
-  to Fedora.
+* OSS fixes.
+* Add missing parts of the absolute paths fix in config parsing.
 * New portable file and path-name system to handle cross-platform
   support.
 * Support for Debian/kFreeBSD, Debian/Hurd and other Debian archs.
@@ -84,4 +84,12 @@ CHANGELOG
 * better FreeBSD support
 * Supported platforms are Debian, FreeBSD, Windows and OSX (but only
   for WAV output)
+
+0.3.1 - 0.3.2
+* Cmake updates/fixes/cleanups.
+
+0.3.0
+* initial CMake support.
+* process non-registered params. fix issue of notes ending before
+  attack envelope completed. (sf.net svn r149/r151.)
 
