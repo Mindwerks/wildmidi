@@ -1,5 +1,5 @@
 /*
-	MUS2MIDI: DMX (DOOM) MUS to MIDI Library
+	MUS2MIDI: MUS to MIDI Library
 
 	Copyright (C) 2014  Bret Curtis
 
@@ -25,7 +25,44 @@
 #include "mus.h"
 #include "wm_error.h"
 
-#define TEMPO						0x001aa309
+#define FREQUENCY					140 /* default Hz or BPM */
+
+#if 0 /* older units: */
+#define TEMPO						0x001aa309 /* MPQN: 60000000 / 34.37Hz = 1745673 */
+#define DIVISION					0x0059 /* 89 -- used by many mus2midi converters */
+#endif
+
+#define TEMPO						0x00068A1B /* MPQN: 60000000 / 140BPM (140Hz) = 428571 */
+						/*	0x000D1436 -> MPQN: 60000000 /  70BPM  (70Hz) = 857142 */
+
+#define DIVISION					0x0101 /* 257 for 140Hz files with a 140MPQN */
+						/*	0x0088 -> 136 for  70Hz files with a 140MPQN */
+						/*	0x010B -> 267 for  70hz files with a 70MPQN  */
+						/*	0x01F9 -> 505 for 140hz files with a 70MPQN  */
+
+/* New
+ * QLS: MPQN/1000000 = 0.428571
+ * TDPS: QLS/PPQN = 0.428571/136 = 0.003151257
+ * PPQN: 136
+ *
+ * QLS: MPQN/1000000 = 0.428571
+ * TDPS: QLS/PPQN = 0.428571/257 = 0.001667591
+ * PPQN: 257
+ *
+ * QLS: MPQN/1000000 = 0.857142
+ * TDPS: QLS/PPQN = 0.857142/267 = 0.00321027
+ * PPQN: 267
+ *
+ * QLS: MPQN/1000000 = 0.857142
+ * TDPS: QLS/PPQN = 0.857142/505 = 0.001697311
+ * PPQN: 505
+ *
+ * Old
+ * QLS: MPQN/1000000 = 1.745673
+ * TDPS: QLS/PPQN = 1.745673 / 89 = 0.019614303 (seconds per tick)
+ * PPQN: (TDPS = QLS/PPQN) (0.019614303 = 1.745673/PPQN) (0.019614303*PPQN = 1.745673) (PPQN = 89.000001682)
+ *
+ */
 
 #define MUSEVENT_KEYOFF				0
 #define MUSEVENT_KEYON				1
@@ -175,7 +212,8 @@ static int32_t writevarlen(int32_t value, uint8_t *out)
 #define READ_INT32(b) ((b)[0] | ((b)[1] << 8) | ((b)[2] << 16) | ((b)[3] << 24))
 
 int _WM_mus2midi(uint8_t *in, uint32_t insize,
-	     uint8_t **out, uint32_t *outsize) {
+		 uint8_t **out, uint32_t *outsize,
+		 uint16_t frequency) {
 	struct mus_ctx ctx;
 	MUSHeader header;
 	uint8_t *cur, *end;
@@ -189,6 +227,9 @@ int _WM_mus2midi(uint8_t *in, uint32_t insize,
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 		return (-1);
 	}
+
+	if (!frequency)
+		frequency = FREQUENCY;
 
 	/* read the MUS header and set our location */
 	memcpy(header.ID, in, 4);
@@ -236,7 +277,7 @@ int _WM_mus2midi(uint8_t *in, uint32_t insize,
 	write4(&ctx, 6);	/* length of header */
 	write2(&ctx, 0);	/* MIDI type (always 0) */
 	write2(&ctx, 1);	/* MUS files only have 1 track */
-	write2(&ctx, 0x0059);	/* division */
+	write2(&ctx, DIVISION);	/* division */
 
 	/* Write out track header and track length position for later */
 	begin_track_pos = getdstpos(&ctx);
@@ -380,7 +421,7 @@ int _WM_mus2midi(uint8_t *in, uint32_t insize,
 		if (event & 128) {
 			delta_time = 0;
 			do {
-				delta_time = delta_time * 128 + (*cur & 127);
+				delta_time = (delta_time * 128 + (*cur & 127)) * (140.0 / frequency);
 			} while ((*cur++ & 128));
 		} else {
 			delta_time = 0;

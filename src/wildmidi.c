@@ -3,7 +3,7 @@
  Midi Player using the WildMidi Midi Processing Library
 
  Copyright (C) WildMidi Developers 2001-2014
- 
+
  This file is part of WildMIDI.
 
  WildMIDI is free software: you can redistribute and/or modify the player
@@ -1050,6 +1050,7 @@ static struct option const long_options[] = {
 	{ "wavout", 1, 0, 'o' },
 	{ "tomidi", 1, 0, 'x' },
 	{ "convert", 1, 0, 'g' },
+	{ "frequency", 1, 0, 'f' },
 	{ "log_vol", 0, 0, 'l' },
 	{ "reverb", 0, 0, 'b' },
 	{ "test_midi", 0, 0, 't' },
@@ -1070,14 +1071,14 @@ static void do_help(void) {
 	printf("  -d D  --device=D    Use device D for audio output instead of default\n");
 #endif
 	printf("MIDI Options:\n");
-	printf("  -w    --wholetempo  Round down tempo to whole number\n");
 	printf("  -n    --roundtempo  Round tempo to nearest whole number\n");
 	printf("  -t    --test_midi   Listen to test MIDI\n");
 	printf("Non-MIDI Options:\n");
-	printf("  -x    --tomidi     Convert file to midi and save to file\n");
-	printf("  -g    --convert    Convert XMI: 0 - No Conversion (default) \n");
-	printf("                                  1 - MT32 to GM\n");
-	printf("                                  2 - MT32 to GS\n");
+	printf("  -x    --tomidi      Convert file to midi and save to file\n");
+	printf("  -g    --convert     Convert XMI: 0 - No Conversion (default)\n");
+	printf("                                   1 - MT32 to GM\n");
+	printf("                                   2 - MT32 to GS\n");
+	printf("  -f    --frequency   Use a specific Hz (BPM)\n");
 	printf("Software Wavetable Options:\n");
 	printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 	printf("  -l    --log_vol     Use log volume adjustments\n");
@@ -1141,7 +1142,7 @@ int main(int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "vho:tx:g:lr:c:m:btk:p:ed:n", long_options,
+		i = getopt_long(argc, argv, "vho:tx:g:f:lr:c:m:btk:p:ed:n", long_options,
 				&option_index);
 		if (i == -1)
 			break;
@@ -1161,7 +1162,7 @@ int main(int argc, char **argv) {
 			rate = res;
 			break;
 		case 'b': /* Reverb */
-			mixer_options|= WM_MO_REVERB;
+			mixer_options |= WM_MO_REVERB;
 			break;
 		case 'm': /* Master Volume */
 			master_volume = (uint8_t) atoi(optarg);
@@ -1176,6 +1177,9 @@ int main(int argc, char **argv) {
 			break;
 		case 'g': /* XMIDI Conversion */
 			WildMidi_SetCvtOption(WM_CO_XMI_TYPE, atoi(optarg));
+			break;
+		case 'f': /* MIDI-like Conversion */
+			WildMidi_SetCvtOption(WM_CO_FREQUENCY, atoi(optarg));
 			break;
 		case 'x': /* MIDI Output */
 			if (!*optarg) {
@@ -1435,34 +1439,30 @@ int main(int argc, char **argv) {
 					}
 					WildMidi_FastSeek(midi_ptr, &seek_to_sample);
 					break;
-                    case 'm': /* save as midi */
-                        
-                    {
-                        int8_t *getmidibuffer = NULL;
-                        uint32_t getmidisize = 0;
-                        int32_t getmidiret = 0;
-                        
-                        getmidiret = WildMidi_GetMidiOutput(midi_ptr, &getmidibuffer, &getmidisize);
-                        if (getmidiret == -1) {
-                            fprintf(stderr, "\r\n\nFAILED to convert events to midi\r\n");
-                        } else {
-                            char *real_file = FIND_LAST_DIRSEP(argv[optind-1]);
+				case 'm': /* save as midi */ {
+					int8_t *getmidibuffer = NULL;
+					uint32_t getmidisize = 0;
+					int32_t getmidiret = 0;
 
-                            if (!real_file) real_file = argv[optind];
-                            else real_file++;
-                            
-                            strncpy(midi_file, real_file, strlen(real_file));
-                            midi_file[strlen(real_file)-4] = '.';
-                            midi_file[strlen(real_file)-3] = 'm';
-                            midi_file[strlen(real_file)-2] = 'i';
-                            midi_file[strlen(real_file)-1] = 'd';
-                            
-                            printf("Writing %s: %u bytes.\r\n", midi_file, getmidisize);
-                            write_midi_output(getmidibuffer,getmidisize);
-                            free(getmidibuffer);
-                        }
-                    }
-                    break;
+					getmidiret = WildMidi_GetMidiOutput(midi_ptr, &getmidibuffer, &getmidisize);
+					if (getmidiret == -1) {
+						fprintf(stderr, "\r\n\nFAILED to convert events to midi\r\n");
+					} else {
+						char *real_file = FIND_LAST_DIRSEP(argv[optind-1]);
+						if (!real_file) real_file = argv[optind];
+						else real_file++;
+
+						strncpy(midi_file, real_file, strlen(real_file));
+						midi_file[strlen(real_file)-4] = '.';
+						midi_file[strlen(real_file)-3] = 'm';
+						midi_file[strlen(real_file)-2] = 'i';
+						midi_file[strlen(real_file)-1] = 'd';
+
+						printf("Writing %s: %u bytes.\r\n", midi_file, getmidisize);
+						write_midi_output(getmidibuffer,getmidisize);
+						free(getmidibuffer);
+					}
+				    }	break;
 				default:
 					break;
 				}

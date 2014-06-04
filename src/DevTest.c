@@ -129,7 +129,6 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
 #endif
-
 	char *buffer_file = NULL;
 
 #ifndef _WIN32
@@ -426,7 +425,6 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 printf("Realtime Event: 0x%.2x ** NOTE: Not expected in midi file type data\n",event);
             } else if (event == 0xFF) {
                 unsigned int tempo = 500000;
-                
                 /*
                  * Only including meta events that are supported by wildmidi
                  */
@@ -540,7 +538,6 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                     printf("\n");
                 }
                 rtn_cnt += meta_length;
-                
             } else {
                 printf("Corrupt Midi, Unknown Event Data\n");
                 return -1;
@@ -726,7 +723,6 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
                     hmi_data++;
                     hmi_size--;
                     hmi_dbg++;
-                    
                 } else {
                     hmi_data += check_ret;
                     hmi_size -= check_ret;
@@ -754,7 +750,6 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
     uint32_t hmp_track = 0;
     uint32_t hmp_var_len_val = 0;
     int32_t check_ret = 0;
-    
     
     // check the header
     if (strncmp((char *) hmp_data,"HMIMIDIP", 8) != 0) {
@@ -890,7 +885,6 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
             hmp_data += check_ret;
             hmp_size -= check_ret;
         }
-        
     }
     
     return 0;
@@ -944,12 +938,11 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     
     if (verbose)
         printf("Contains %u forms\n", form_cnt);
-    
-    
+
     /*
-        at this stage unsure if remaining data in
-        this section means anything
-        */
+      at this stage unsure if remaining data in
+      this section means anything
+     */
     tmp_val -= 13;
     xmidi_data += tmp_val;
     xmidi_size -= tmp_val;
@@ -1024,7 +1017,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 
                 if (verbose)
                     printf("TIMB length: %u\n", tmp_val);
-            
+
                 /*
                     patch information
                 */
@@ -1038,9 +1031,8 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 }
                 if (verbose)
                     printf("\n");
-        
+
             } else if (strncmp((char *) xmidi_data,"RBRN", 4) == 0) {
-                
                 xmidi_data += 4;
                 xmidi_size -= 4;
                 
@@ -1058,7 +1050,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 // Does not seem to be needed for midi playback.
                 xmidi_data += event_len;
                 subform_len -= event_len;
-            
+
             } else if (strncmp((char *) xmidi_data,"EVNT", 4) == 0) {
                 int check_ret = 0;
 
@@ -1083,10 +1075,9 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                         xmidi_size--;
                         event_len--;
                         subform_len--;
-                        
                         if (verbose)
                             printf ("Intervals: %u\n", tmp_val);
-                    
+
                     } else {
                         if ((check_ret = check_midi_event(xmidi_data, xmidi_size, divisions, 0, verbose, 0)) == -1) {
                             printf("Missing or Corrupt MIDI Data\n");
@@ -1291,7 +1282,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 		delta_accum = 0;
 		while (midi_data < next_track) {
 			delta = 0;
-//            printf("Get Delta: ");
+//			printf("Get Delta: ");
 			while (*midi_data > 0x7F) {
 				delta = (delta << 7) | (*midi_data & 0x7F);
 //				printf("0x%.2x ",*midi_data);
@@ -1305,7 +1296,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 				}
 			}
 			delta = (delta << 7) | (*midi_data & 0x7F);
-//            printf("0x%.2x\n",*midi_data);
+//			printf("0x%.2x\n",*midi_data);
 			midi_data++;
 			if (midi_size == 0) {
 				printf("Corrupt Midi, Missing or Corrupt Track Data\n");
@@ -1327,43 +1318,46 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 					return -1;
 				}
 			}
-//            printf("Event Offset: 0x%.8x\n", total_count);
-            if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose, 0)) == -1) {
-                printf("Missing or Corrupt MIDI Data\n");
-                return -1;
-            }
-            
-            if ((*midi_data == 0xF0) || (*midi_data == 0xF7)) {
-                // Sysex resets running event data
-                running_event = 0;
-            } else if (*midi_data < 0xF0) {
-                // MIDI events 0x80 to 0xEF set running event
-                if (*midi_data >= 0x80) {
-                    running_event = *midi_data;
-//                    printf("Set running_event 0x%2x\n", running_event);
-                }
-            }
-            midi_size -= check_ret;
-            total_count += check_ret;
-            
-//            printf("Midi data remaining: %lu\n", midi_size);
-            
-            if (midi_size == 0) {
-                // check for end of track being at end
-                if ((midi_data[0] == 0xff) && (midi_data[1] == 0x2f) && (midi_data[2] == 0x0)) {
-                    return 0;
-                } else {
-                    printf("Corrupt Midi, Missing or Corrupt Track Data\n");
-                    return -1;
-                }
-            }
-            midi_data += check_ret;
+
+//			printf("Event Offset: 0x%.8x\n", total_count);
+			if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose, 0)) == -1) {
+				printf("Missing or Corrupt MIDI Data\n");
+				return -1;
+			}
+
+			if ((*midi_data == 0xF0) || (*midi_data == 0xF7)) {
+				/* Sysex resets running event data */
+				running_event = 0;
+			} else if (*midi_data < 0xF0) {
+				/* MIDI events 0x80 to 0xEF set running event */
+				if (*midi_data >= 0x80) {
+					running_event = *midi_data;
+//					printf("Set running_event 0x%2x\n", running_event);
+				}
+			}
+			midi_size -= check_ret;
+			total_count += check_ret;
+
+//			printf("Midi data remaining: %lu\n", midi_size);
+
+			if (midi_size == 0) {
+				/* check for end of track being at end */
+				if ((midi_data[0] == 0xff) && (midi_data[1] == 0x2f) && (midi_data[2] == 0x0)) {
+					return 0;
+				} else {
+					printf("Corrupt Midi, Missing or Corrupt Track Data\n");
+					return -1;
+				}
+			}
+			midi_data += check_ret;
+
 			if (midi_data > next_track) {
 				printf("Corrupt Midi, Track Data went beyond track boundries.\n");
 				return -1;
 			}
 		}
 	}
+
 	return 0;
 }
 
@@ -1528,16 +1522,12 @@ int main(int argc, char ** argv) {
 	}
 
 	while (optind < argc) {
-		if ((strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") != 0)
-            && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar") != 0)
-            && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-						".pat") != 0)
-                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                        ".xmi") != 0)
-                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                        ".hmp") != 0)
-                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                        ".hmi") != 0)) {
+		if ((strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".pat") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".xmi") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmp") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") != 0)) {
 			printf("Testing of %s is not supported\n", argv[optind]);
 			optind++;
 			continue;
@@ -1546,27 +1536,20 @@ int main(int argc, char ** argv) {
 		printf("Testing: %s\n", argv[optind]);
 		testret = 0;
 		if ((filebuffer = DT_BufferFile(argv[optind], &filesize)) != NULL) {
-			if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid")
-					== 0) {
+			if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") == 0) {
 				testret = test_midi(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar")
-                       == 0) {
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar") == 0) {
 				testret = test_midi(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-					".pat") == 0) {
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".pat") == 0) {
 				testret = test_guspat(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                    ".xmi") == 0) {
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".xmi") == 0) {
 				testret = test_xmidi(filebuffer, filesize, verbose);
-                
-            } else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                    ".hmp") == 0) {
-                // Will add .hmq extention if we find hmp files with it
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmp") == 0) {
+			/* Will add .hmq extention if we find hmp files with it */
 				testret = test_hmp(filebuffer, filesize, verbose);
-            } else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                    ".hmi") == 0) {
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") == 0) {
 				testret = test_hmi(filebuffer, filesize, verbose);
-            }
+			}
 			free(filebuffer);
 			if (testret != 0) {
 				printf("FAILED: %s will not work correctly with WildMIDI\n\n",

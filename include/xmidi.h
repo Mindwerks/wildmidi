@@ -36,7 +36,7 @@
 #define XMIDI_CONVERT_GS127_TO_GS		0x05
 
 int _WM_xmi2midi(uint8_t *in, uint32_t insize,
-	 uint8_t **out, uint32_t *outsize,
-	 uint32_t convert_type);
+		 uint8_t **out, uint32_t *outsize,
+		 uint32_t convert_type);
 
 #endif /* XMIDILIB_H */

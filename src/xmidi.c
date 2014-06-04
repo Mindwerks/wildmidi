@@ -458,8 +458,8 @@ static const char mt32asgs[256] = {
 };
 
 int _WM_xmi2midi(uint8_t *in, uint32_t insize,
-	     uint8_t **out, uint32_t *outsize,
-	     uint32_t convert_type) {
+		 uint8_t **out, uint32_t *outsize,
+		 uint32_t convert_type) {
 	struct xmi_ctx ctx;
 	unsigned int i;
 	int ret = -1;

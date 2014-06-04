@@ -200,7 +200,7 @@ struct _hndl {
 	struct _hndl *prev;
 };
 
-static struct _hndl *first_handle = NULL;
+static struct _hndl * first_handle = NULL;
 
 #define MAX_AUTO_AMP 2.0
 
@@ -479,7 +479,7 @@ static int WM_LoadConfig(const char *config_file) {
 					} else if (strcasecmp(line_tokens[0], "_WM_reverb_room_width") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(syntax error in _WM_reverb_room_width line)",
+									"(syntax error in reverb_room_width line)",
 									0);
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
@@ -492,19 +492,19 @@ static int WM_LoadConfig(const char *config_file) {
 						_WM_reverb_room_width = (float) atof(line_tokens[1]);
 						if (_WM_reverb_room_width < 1.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(_WM_reverb_room_width < 1 meter, setting to minimum of 1 meter)",
+									"(reverb_room_width < 1 meter, setting to minimum of 1 meter)",
 									0);
 							_WM_reverb_room_width = 1.0f;
 						} else if (_WM_reverb_room_width > 100.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(_WM_reverb_room_width > 100 meters, setting to maximum of 100 meters)",
+									"(reverb_room_width > 100 meters, setting to maximum of 100 meters)",
 									0);
 							_WM_reverb_room_width = 100.0f;
 						}
 					} else if (strcasecmp(line_tokens[0], "_WM_reverb_room_length") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(syntax error in _WM_reverb_room_length line)",
+									"(syntax error in reverb_room_length line)",
 									0);
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
@@ -517,19 +517,19 @@ static int WM_LoadConfig(const char *config_file) {
 						_WM_reverb_room_length = (float) atof(line_tokens[1]);
 						if (_WM_reverb_room_length < 1.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(_WM_reverb_room_length < 1 meter, setting to minimum of 1 meter)",
+									"(reverb_room_length < 1 meter, setting to minimum of 1 meter)",
 									0);
 							_WM_reverb_room_length = 1.0f;
 						} else if (_WM_reverb_room_length > 100.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(_WM_reverb_room_length > 100 meters, setting to maximum of 100 meters)",
+									"(reverb_room_length > 100 meters, setting to maximum of 100 meters)",
 									0);
 							_WM_reverb_room_length = 100.0f;
 						}
 					} else if (strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(syntax error in _WM_reverb_listen_posx line)",
+									"(syntax error in reverb_listen_posx line)",
 									0);
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
@@ -543,7 +543,7 @@ static int WM_LoadConfig(const char *config_file) {
 						if ((_WM_reverb_listen_posx > _WM_reverb_room_width)
 								|| (_WM_reverb_listen_posx < 0.0f)) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(_WM_reverb_listen_posx set outside of room)",
+									"(reverb_listen_posx set outside of room)",
 									0);
 							_WM_reverb_listen_posx = _WM_reverb_room_width / 2.0f;
 						}
@@ -551,7 +551,7 @@ static int WM_LoadConfig(const char *config_file) {
 							"reverb_listener_posy") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(syntax error in _WM_reverb_listen_posy line)",
+									"(syntax error in reverb_listen_posy line)",
 									0);
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
@@ -565,7 +565,7 @@ static int WM_LoadConfig(const char *config_file) {
 						if ((_WM_reverb_listen_posy > _WM_reverb_room_width)
 								|| (_WM_reverb_listen_posy < 0.0f)) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(_WM_reverb_listen_posy set outside of room)",
+									"(reverb_listen_posy set outside of room)",
 									0);
 							_WM_reverb_listen_posy = _WM_reverb_room_length * 0.75f;
 						}
@@ -1536,7 +1536,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t *size) {
 	uint8_t *buf;
 	int ret;
-    
+
 	if (!file) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL filename)", 0);
 		return (-1);
@@ -1544,7 +1544,7 @@ WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t 
 	if ((buf = (uint8_t *) _WM_BufferFile(file, size)) == NULL) {
 		return (-1);
 	}
-    
+
 	ret = WildMidi_ConvertBufferToMidi(buf, *size, out, size);
 	free(buf);
 	return ret;
@@ -1556,15 +1556,16 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL params)", 0);
 		return (-1);
 	}
-    
+
 	if (!memcmp(in, "FORM", 4)) {
 		if (_WM_xmi2midi(in, insize, out, outsize,
-                     _cvt_get_option(WM_CO_XMI_TYPE)) < 0) {
+				_cvt_get_option(WM_CO_XMI_TYPE)) < 0) {
 			return (-1);
 		}
 	}
 	else if (!memcmp(in, "MUS", 3)) {
-		if (_WM_mus2midi(in, insize, out, outsize) < 0) {
+		if (_WM_mus2midi(in, insize, out, outsize,
+				_cvt_get_option(WM_CO_FREQUENCY)) < 0) {
 			return (-1);
 		}
 	}
@@ -1576,7 +1577,7 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
 		return (-1);
 	}
-    
+
 	return (0);
 }
 
@@ -1728,14 +1729,14 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 	if ((mididata = (uint8_t *) _WM_BufferFile(midifile, &midisize)) == NULL) {
 		return (NULL);
 	}
-    if (memcmp(mididata,"HMIMIDIP", 8) == 0) {
-        ret = (void *) _WM_ParseNewHmp(mididata, midisize);
-    } else if (memcmp(mididata, "HMI-MIDISONG061595", 18) == 0) {
-        ret = (void *) _WM_ParseNewHmi(mididata, midisize);
-    } else {
-        ret = (void *) _WM_ParseNewMidi(mididata, midisize);
+	if (memcmp(mididata,"HMIMIDIP", 8) == 0) {
+		ret = (void *) _WM_ParseNewHmp(mididata, midisize);
+	} else if (memcmp(mididata, "HMI-MIDISONG061595", 18) == 0) {
+		ret = (void *) _WM_ParseNewHmi(mididata, midisize);
+	} else {
+		ret = (void *) _WM_ParseNewMidi(mididata, midisize);
 	}
-    free(mididata);
+	free(mididata);
 
 	if (ret) {
 		if (add_handle(ret) != 0) {
@@ -1765,13 +1766,13 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 		return (NULL);
 	}
 	if (memcmp(midibuffer,"HMIMIDIP", 8) == 0) {
-        ret = (void *) _WM_ParseNewHmp(midibuffer, size);
-    } else if (memcmp(midibuffer, "HMI-MIDISONG061595", 18) == 0) {
-        ret = (void *) _WM_ParseNewHmi(midibuffer, size);
-    } else {
-        ret = (void *) _WM_ParseNewMidi(midibuffer, size);
+		ret = (void *) _WM_ParseNewHmp(midibuffer, size);
+	} else if (memcmp(midibuffer, "HMI-MIDISONG061595", 18) == 0) {
+		ret = (void *) _WM_ParseNewHmi(midibuffer, size);
+	} else {
+		ret = (void *) _WM_ParseNewMidi(midibuffer, size);
 	}
-    
+
 	if (ret) {
 		if (add_handle(ret) != 0) {
 			WildMidi_Close(ret);
@@ -1930,8 +1931,8 @@ WM_SYMBOL int WildMidi_GetMidiOutput(midi * handle, int8_t **buffer, uint32_t *s
                  "(NULL buffer pointer)", 0);
 		return (-1);
 	}
-    _WM_Event2Midi(handle, (uint8_t **)buffer, size);
-    return 0;
+	_WM_Event2Midi(handle, (uint8_t **)buffer, size);
+	return 0;
 }
 
 
@@ -1998,6 +1999,9 @@ WM_SYMBOL int WildMidi_SetCvtOption(uint16_t tag, uint16_t setting) {
 	switch (tag) {
 	case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
 		WM_ConvertOptions.xmi_convert_type = setting;
+		break;
+	case WM_CO_FREQUENCY: /* validation happens in format */
+		WM_ConvertOptions.frequency = setting;
 		break;
 	default:
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,

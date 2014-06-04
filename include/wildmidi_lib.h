@@ -114,19 +114,15 @@ WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
 
 /* NOTE: Not Yet Implemented Or Tested Properly */
-/*int WildMidi_Live (midi * handle, uint32_t midi_event);*/
+/*WM_SYMBOL int WildMidi_Live (midi * handle, uint32_t midi_event);*/
 
-/*
- reserved for future coding
-     
-// need to change these to use a time for cmd_pos and new_cmd_pos
+/* reserved for future coding
+ * need to change these to use a time for cmd_pos and new_cmd_pos
 WM_SYMBOL int WildMidi_InsertMidiEvent (midi * handle, uint8_t char midi_cmd, *char midi_cmd_data, unsigned long int midi_cmd_data_size, unsigned long int *cmd_pos);
 WM_SYMBOL int WildMidi_DeleteMidiEvent (midi * handle, uint8_t char midi_cmd, unsigned long int *cmd_pos);
 WM_SYMBOL int WildMidi_MoveMidiEvent (midi * handle, , uint8_t char midi_cmd, unsigned long int *cmd_pos, unsigned long int *new_cmd_pos);
-    
  */
-    
-#
+
 #if defined(__cplusplus)
 }
 #endif
