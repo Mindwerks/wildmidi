@@ -2436,7 +2436,8 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
 		}
 	}
 	else if (!memcmp(in, "MUS", 3)) {
-		if (mus2midi(in, insize, out, outsize) < 0) {
+		if (mus2midi(in, insize, out, outsize,
+				_cvt_get_option(WM_CO_FREQUENCY)) < 0) {
 			return (-1);
 		}
 	}
@@ -2497,7 +2498,8 @@ WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		midi_size = cvt_size;
 	}
 	else if (!memcmp(midi_data, "MUS", 3)) {
-		if (mus2midi(midi_data, midi_size, &cvt, &cvt_size) < 0) {
+		if (mus2midi(midi_data, midi_size, &cvt, &cvt_size,
+				_cvt_get_option(WM_CO_FREQUENCY)) < 0) {
 			return (NULL);
 		}
 		midi_data = cvt;
@@ -4315,6 +4317,9 @@ WM_SYMBOL int WildMidi_SetCvtOption(uint16_t tag, uint16_t setting) {
 	switch (tag) {
 	case WM_CO_XMI_TYPE: /* validation happens in xmidi.c */
 		WM_ConvertOptions.xmi_convert_type = setting;
+		break;
+	case WM_CO_FREQUENCY: /* validation happens in format */
+		WM_ConvertOptions.frequency = setting;
 		break;
 	default:
 		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
