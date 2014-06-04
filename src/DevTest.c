@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -536,19 +537,19 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
 }
 
 static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
-    u_int16_t hmi_division = 0;
-    u_int32_t hmi_duration_secs = 0;
-    u_int8_t hmi_track_cnt = 0;
-    u_int32_t i = 0;
-//    u_int32_t j = 0;
-    u_int32_t *hmi_track_offset = NULL;
-    u_int32_t hmi_dbg = 0;
-    u_int32_t hmi_delta = 0;
-    u_int32_t hmi_track_end = 0;
+    uint16_t hmi_division = 0;
+    uint32_t hmi_duration_secs = 0;
+    uint8_t hmi_track_cnt = 0;
+    uint32_t i = 0;
+//    uint32_t j = 0;
+    uint32_t *hmi_track_offset = NULL;
+    uint32_t hmi_dbg = 0;
+    uint32_t hmi_delta = 0;
+    uint32_t hmi_track_end = 0;
     int32_t check_ret = 0;
-    u_int8_t hmi_running_event = 0;
-    u_int32_t hmi_track_header_length = 0;
-    u_int32_t hmi_file_end = hmi_size;
+    uint8_t hmi_running_event = 0;
+    uint32_t hmi_track_header_length = 0;
+    uint32_t hmi_file_end = hmi_size;
     
     // Check header
     if (strncmp((char *) hmi_data,"HMI-MIDISONG061595", 18) != 0) {
@@ -582,7 +583,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     hmi_track_cnt = *hmi_data++;
     hmi_size--;
     if (verbose) printf("Track count: %i\n", hmi_track_cnt);
-    hmi_track_offset = malloc(sizeof(u_int32_t) * hmi_track_cnt);
+    hmi_track_offset = malloc(sizeof(uint32_t) * hmi_track_cnt);
     hmi_dbg++;
 
     hmi_data += 141;
@@ -747,18 +748,18 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
 }
 
 static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) {
-    u_int8_t is_hmq = 0;
-    u_int32_t zero_cnt = 0;
+    uint8_t is_hmq = 0;
+    uint32_t zero_cnt = 0;
     u_int32_t i = 0;
-    u_int32_t j = 0;
-    u_int32_t hmp_file_length = 0;
-    u_int32_t hmp_chunks = 0;
-    u_int32_t hmp_chunk_num = 0;
-    u_int32_t hmp_chunk_length = 0;
-    u_int32_t hmp_division = 0;
-    u_int32_t hmp_song_time = 0;
-    u_int32_t hmp_track = 0;
-    u_int32_t hmp_var_len_val = 0;
+    uint32_t j = 0;
+    uint32_t hmp_file_length = 0;
+    uint32_t hmp_chunks = 0;
+    uint32_t hmp_chunk_num = 0;
+    uint32_t hmp_chunk_length = 0;
+    uint32_t hmp_division = 0;
+    uint32_t hmp_song_time = 0;
+    uint32_t hmp_track = 0;
+    uint32_t hmp_var_len_val = 0;
     int32_t check_ret = 0;
     
     // check the header
