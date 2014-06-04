@@ -426,7 +426,6 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 printf("Realtime Event: 0x%.2x ** NOTE: Not expected in midi file type data\n",event);
             } else if (event == 0xFF) {
                 unsigned int tempo = 500000;
-                
                 /*
                  * Only including meta events that are supported by wildmidi
                  */
@@ -525,7 +524,6 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                     printf("\n");
                 }
                 rtn_cnt += meta_length;
-                
             } else {
                 printf("Corrupt Midi, Unknown Event Data\n");
                 return -1;
@@ -565,7 +563,6 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     hmi_size -= 2;
     if (verbose) printf("Division %i\n",hmi_division);
     hmi_dbg += 2;
-    
     
     //FIXME: This is according to specs we have, but is obviously incorrect.
     hmi_duration_secs = *hmi_data++;
@@ -733,7 +730,6 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
                     hmi_data++;
                     hmi_size--;
                     hmi_dbg++;
-                    
                 } else {
                     hmi_data += check_ret;
                     hmi_size -= check_ret;
@@ -750,7 +746,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
 static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) {
     uint8_t is_hmq = 0;
     uint32_t zero_cnt = 0;
-    u_int32_t i = 0;
+    uint32_t i = 0;
     uint32_t j = 0;
     uint32_t hmp_file_length = 0;
     uint32_t hmp_chunks = 0;
@@ -894,7 +890,6 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
             hmp_data += check_ret;
             hmp_size -= check_ret;
         }
-        
     }
     
     return 0;
@@ -948,12 +943,11 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     
     if (verbose)
         printf("Contains %u forms\n", form_cnt);
-    
-    
+
     /*
-        at this stage unsure if remaining data in
-        this section means anything
-        */
+      at this stage unsure if remaining data in
+      this section means anything
+     */
     tmp_val -= 13;
     xmidi_data += tmp_val;
     xmidi_size -= tmp_val;
@@ -1028,7 +1022,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 
                 if (verbose)
                     printf("TIMB length: %u\n", tmp_val);
-            
+
                 /*
                     patch information
                 */
@@ -1042,9 +1036,8 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 }
                 if (verbose)
                     printf("\n");
-        
+
             } else if (strncmp((char *) xmidi_data,"RBRN", 4) == 0) {
-                
                 xmidi_data += 4;
                 xmidi_size -= 4;
                 
@@ -1062,7 +1055,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 // Does not seem to be needed for midi playback.
                 xmidi_data += event_len;
                 subform_len -= event_len;
-            
+
             } else if (strncmp((char *) xmidi_data,"EVNT", 4) == 0) {
                 int check_ret = 0;
 
@@ -1087,10 +1080,9 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                         xmidi_size--;
                         event_len--;
                         subform_len--;
-                        
                         if (verbose)
                             printf ("Intervals: %u\n", tmp_val);
-                    
+
                     } else {
                         if ((check_ret = check_midi_event(xmidi_data, xmidi_size, divisions, 0, verbose, 0)) == -1) {
                             printf("Missing or Corrupt MIDI Data\n");
@@ -1332,37 +1324,37 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 				}
 			}
 
-//            printf("Event Offset: 0x%.8x\n", total_count);
-            if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose, 0)) == -1) {
-                printf("Missing or Corrupt MIDI Data\n");
-                return -1;
-            }
-            
-            if ((*midi_data == 0xF0) || (*midi_data == 0xF7)) {
-                // Sysex resets running event data
-                running_event = 0;
-            } else if (*midi_data < 0xF0) {
-                // MIDI events 0x80 to 0xEF set running event
-                if (*midi_data >= 0x80) {
-                    running_event = *midi_data;
-//                    printf("Set running_event 0x%2x\n", running_event);
-                }
-            }
-            midi_size -= check_ret;
-            total_count += check_ret;
-            
-//            printf("Midi data remaining: %lu\n", midi_size);
-            
-            if (midi_size == 0) {
-                // check for end of track being at end
-                if ((midi_data[0] == 0xff) && (midi_data[1] == 0x2f) && (midi_data[2] == 0x0)) {
-                    return 0;
-                } else {
-                    printf("Corrupt Midi, Missing or Corrupt Track Data\n");
-                    return -1;
-                }
-            }
-            midi_data += check_ret;
+//			printf("Event Offset: 0x%.8x\n", total_count);
+			if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose, 0)) == -1) {
+				printf("Missing or Corrupt MIDI Data\n");
+				return -1;
+			}
+
+			if ((*midi_data == 0xF0) || (*midi_data == 0xF7)) {
+				/* Sysex resets running event data */
+				running_event = 0;
+			} else if (*midi_data < 0xF0) {
+				/* MIDI events 0x80 to 0xEF set running event */
+				if (*midi_data >= 0x80) {
+					running_event = *midi_data;
+//					printf("Set running_event 0x%2x\n", running_event);
+				}
+			}
+			midi_size -= check_ret;
+			total_count += check_ret;
+
+//			printf("Midi data remaining: %lu\n", midi_size);
+
+			if (midi_size == 0) {
+				/* check for end of track being at end */
+				if ((midi_data[0] == 0xff) && (midi_data[1] == 0x2f) && (midi_data[2] == 0x0)) {
+					return 0;
+				} else {
+					printf("Corrupt Midi, Missing or Corrupt Track Data\n");
+					return -1;
+				}
+			}
+			midi_data += check_ret;
 
 			if (midi_data > next_track) {
 				printf("Corrupt Midi, Track Data went beyond track boundries.\n");
@@ -1370,6 +1362,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			}
 		}
 	}
+
 	return 0;
 }
 
