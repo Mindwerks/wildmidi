@@ -420,7 +420,7 @@ int mus2midi(uint8_t *in, uint32_t insize,
 		if (event & 128) {
 			delta_time = 0;
 			do {
-				delta_time = (delta_time * 128 + (*cur & 127)) * (140 / frequency);
+				delta_time = (delta_time * 128 + (*cur & 127)) * (140.0 / frequency);
 			} while ((*cur++ & 128));
 		} else {
 			delta_time = 0;
