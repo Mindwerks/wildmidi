@@ -1165,7 +1165,7 @@ int main(int argc, char **argv) {
 			rate = res;
 			break;
 		case 'b': /* Reverb */
-			mixer_options ^= WM_MO_REVERB;
+			mixer_options |= WM_MO_REVERB;
 			break;
 		case 'm': /* Master Volume */
 			master_volume = (uint8_t) atoi(optarg);
