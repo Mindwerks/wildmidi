@@ -42,7 +42,7 @@
 #define SAMPLE_CONVERT_DEBUG(dx)
 #endif
 
-extern uint16_t WM_SampleRate;
+extern uint16_t _WM_SampleRate;
 
 struct _sample {
 	uint32_t data_length;

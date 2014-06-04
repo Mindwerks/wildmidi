@@ -457,15 +457,15 @@ static const char mt32asgs[256] = {
 	121, 0	/* 127 Jungle Tune set to Breath Noise */
 };
 
-int xmi2midi(uint8_t *in, uint32_t insize,
-	     uint8_t **out, uint32_t *outsize,
-	     uint32_t convert_type) {
+int _WM_xmi2midi(uint8_t *in, uint32_t insize,
+		 uint8_t **out, uint32_t *outsize,
+		 uint32_t convert_type) {
 	struct xmi_ctx ctx;
 	unsigned int i;
 	int ret = -1;
 
 	if (convert_type > XMIDI_CONVERT_MT32_TO_GS) {
-		WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, convert_type);
+		_WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, convert_type);
 		return (ret);
 	}
 
@@ -475,12 +475,12 @@ int xmi2midi(uint8_t *in, uint32_t insize,
 	ctx.convert_type = convert_type;
 
 	if (ParseXMI(&ctx) < 0) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		goto _end;
 	}
 
 	if (ExtractTracks(&ctx) < 0) {
-		WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		goto _end;
 	}
 
@@ -906,7 +906,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 
 		/* Never occur */
 		default:
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
 			break;
 		}
 	}
@@ -949,7 +949,7 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 
 		/* Convert it */
 		if (!(ppqn = ConvertFiletoList(ctx))) {
-			WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
 			break;
 		}
 		ctx->timing[num] = ppqn;
@@ -976,7 +976,7 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 
 	file_size = getsrcsize(ctx);
 	if (getsrcpos(ctx) + 8 > file_size) {
-badfile:	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+badfile:	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 		return (-1);
 	}
 
@@ -997,7 +997,7 @@ badfile:	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 
 		/* XDIRless XMIDI, we can handle them here. */
 		if (!memcmp(buf, "XMID", 4)) {
-			WM_ERROR_NEW("Warning: XMIDI without XDIR");
+			_WM_ERROR_NEW("Warning: XMIDI without XDIR");
 			ctx->info.tracks = 1;
 		}
 		/* Not an XMIDI that we recognise */
@@ -1051,7 +1051,7 @@ badfile:	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 			copy(ctx, buf, 4);
 
 			if (memcmp(buf, "CAT ", 4)) {
-				WM_ERROR_NEW("XMI error: expected \"CAT \", found \"%c%c%c%c\".",
+				_WM_ERROR_NEW("XMI error: expected \"CAT \", found \"%c%c%c%c\".",
 						buf[0], buf[1], buf[2], buf[3]);
 				return (-1);
 			}
@@ -1063,7 +1063,7 @@ badfile:	WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 			copy(ctx, buf, 4);
 
 			if (memcmp(buf, "XMID", 4)) {
-				WM_ERROR_NEW("XMI error: expected \"XMID\", found \"%c%c%c%c\".",
+				_WM_ERROR_NEW("XMI error: expected \"XMID\", found \"%c%c%c%c\".",
 						buf[0], buf[1], buf[2], buf[3]);
 				return (-1);
 			}
@@ -1089,7 +1089,7 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 	i = ExtractTracksFromXmi(ctx);
 
 	if (i != ctx->info.tracks) {
-		WM_ERROR_NEW("XMI error: extracted only %u out of %u tracks from XMIDI",
+		_WM_ERROR_NEW("XMI error: extracted only %u out of %u tracks from XMIDI",
 				ctx->info.tracks, i);
 		return (-1);
 	}

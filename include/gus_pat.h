@@ -71,7 +71,7 @@ static float env_time_table[] = {
 	0.838656000f, 0.823942737f, 0.809736828f, 0.796012475f, 0.782745600f, 0.769913705f, 0.757495742f, 0.745472000f
 };
 
-extern struct _sample * load_gus_pat (const char *filename, int fix_release);
+extern struct _sample * _WM_load_gus_pat (const char *filename, int _fix_release);
 
 #endif /* __GUS_PAT_H */
 

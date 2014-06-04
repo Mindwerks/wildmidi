@@ -35,8 +35,8 @@
 #define XMIDI_CONVERT_MT32_TO_GS127DRUM	0x04 /* This one is broken, don't use */
 #define XMIDI_CONVERT_GS127_TO_GS		0x05
 
-int xmi2midi(uint8_t *in, uint32_t insize,
-	 uint8_t **out, uint32_t *outsize,
-	 uint32_t convert_type);
+int _WM_xmi2midi(uint8_t *in, uint32_t insize,
+		 uint8_t **out, uint32_t *outsize,
+		 uint32_t convert_type);
 
 #endif /* XMIDILIB_H */
