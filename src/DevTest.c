@@ -1,11 +1,11 @@
 /*
  DevTest.c: Display Information about the folling file formats
- 
+
             .pat Gravis Ultrasound patch file.
             .mid MIDI file.
             .xmi Xmidi file.
             .hmp "HMIMIDIP" and "HMIMIDIP013195" file.
- 
+
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
  COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
@@ -98,7 +98,7 @@ static const char *PACKAGE_URL = "http://www.mindwerks.net/projects/wildmidi/";
 static const char *PACKAGE_BUGREPORT = "https://github.com/Mindwerks/wildmidi/issues";
 static const char *PACKAGE_VERSION = "0.4";
 
-void do_version(void) {
+static void do_version(void) {
 	printf("DevTest for WildMIDI %s - For testing purposes only\n", PACKAGE_VERSION);
 	printf("Copyright (C) WildMIDI Developers 2001-2014\n");
 	printf("DevTest comes with ABSOLUTELY NO WARRANTY\n");
@@ -110,14 +110,14 @@ void do_version(void) {
 	printf("\n");
 }
 
-void do_help(void) {
+static void do_help(void) {
 	do_version();
 	printf(" -d N   --debug-level N    Verbose output\n");
 	printf(" -h     --help             Display this information\n");
 	printf(" -v     --version          Display version information\n\n");
 }
 
-unsigned char *
+static unsigned char *
 DT_BufferFile(const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	unsigned char *data;
@@ -207,8 +207,8 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 	free(buffer_file);
 	return data;
 }
-    
-int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
+
+static int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
         unsigned int divisions, unsigned char running_event, int verbose, int options) {
     unsigned int rtn_cnt = 0;
     unsigned char event = 0;
@@ -534,8 +534,8 @@ int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
 //    printf("Return Count: %i\n", rtn_cnt);
     return rtn_cnt;
 }
-    
-int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
+
+static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
     u_int16_t hmi_division = 0;
     u_int32_t hmi_duration_secs = 0;
     u_int8_t hmi_track_cnt = 0;
@@ -745,8 +745,8 @@ int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) 
     free (hmi_track_offset);
     return 0;
 }
-    
-int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) {
+
+static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) {
     u_int8_t is_hmq = 0;
     u_int32_t zero_cnt = 0;
     u_int32_t i = 0;
@@ -760,7 +760,6 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
     u_int32_t hmp_track = 0;
     u_int32_t hmp_var_len_val = 0;
     int32_t check_ret = 0;
-    
     
     // check the header
     if (strncmp((char *) hmp_data,"HMIMIDIP", 8) != 0) {
@@ -899,8 +898,8 @@ int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int verbose) 
     
     return 0;
 }
-    
-int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
+
+static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
         int verbose) {
     unsigned int tmp_val = 0;
     unsigned int i = 0;
@@ -1137,8 +1136,8 @@ int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     }
     return 0;
 }
-    
-int test_midi(unsigned char * midi_data, unsigned long int midi_size,
+
+static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 		int verbose) {
 	unsigned int tmp_val;
 	unsigned int track_size;
@@ -1154,14 +1153,13 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	float microseconds_per_pulse = 0.0;
 	float pulses_per_second = 0.0;
 	float samples_per_delta_f = 0.0;
-    int check_ret = 0;
-    unsigned int total_count = 0;
-    
+	int check_ret = 0;
+	unsigned int total_count = 0;
+
 	if (strncmp((char *) midi_data, "RIFF", 4) == 0) {
 		midi_data += 20;
 		midi_size -= 20;
-        total_count += 20;
-
+		total_count += 20;
 	}
 
 	if (strncmp((char *) midi_data, "MThd", 4) != 0) {
@@ -1171,8 +1169,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 
 	midi_data += 4;
 	midi_size -= 4;
-    total_count += 4;
-
+	total_count += 4;
 
 	if (midi_size < 10) {
 		printf("Midi File Too Short\n");
@@ -1187,7 +1184,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	tmp_val |= *midi_data++ << 8;
 	tmp_val |= *midi_data++;
 	midi_size -= 4;
-    total_count += 4;
+	total_count += 4;
 
 	if (verbose)
 		printf("Header Size: %i\n", tmp_val);
@@ -1203,7 +1200,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	tmp_val = *midi_data++ << 8;
 	tmp_val |= *midi_data++;
 	midi_size -= 2;
-    total_count += 2;
+	total_count += 2;
 
 	if (verbose)
 		printf("Format: %i\n", tmp_val);
@@ -1219,8 +1216,8 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	tmp_val = *midi_data++ << 8;
 	tmp_val |= *midi_data++;
 	midi_size -= 2;
-    total_count += 2;
-    
+	total_count += 2;
+
 	if (verbose)
 		printf("Number of Tracks: %i\n", tmp_val);
 
@@ -1236,7 +1233,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	divisions = *midi_data++ << 8;
 	divisions |= *midi_data++;
 	midi_size -= 2;
-    total_count += 2;
+	total_count += 2;
 
 	if (verbose) {
 		printf("Divisions: %i\n", divisions);
@@ -1271,14 +1268,14 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 
 		midi_data += 4;
 		midi_size -= 4;
-        total_count += 4;
+		total_count += 4;
 
 		track_size = *midi_data++ << 24;
 		track_size |= *midi_data++ << 16;
 		track_size |= *midi_data++ << 8;
 		track_size |= *midi_data++;
 		midi_size -= 4;
-        total_count += 4;
+		total_count += 4;
 		if (verbose)
 			printf("Track Size: %i\n", track_size);
 
@@ -1297,13 +1294,13 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 		delta_accum = 0;
 		while (midi_data < next_track) {
 			delta = 0;
-//            printf("Get Delta: ");
+//			printf("Get Delta: ");
 			while (*midi_data > 0x7F) {
 				delta = (delta << 7) | (*midi_data & 0x7F);
 //				printf("0x%.2x ",*midi_data);
-                midi_data++;
+				midi_data++;
 				midi_size--;
-                total_count++;
+				total_count++;
 
 				if (midi_size == 0) {
 					printf("Corrupt Midi, Missing or Corrupt Track Data\n");
@@ -1311,14 +1308,14 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 				}
 			}
 			delta = (delta << 7) | (*midi_data & 0x7F);
-//            printf("0x%.2x\n",*midi_data);
+//			printf("0x%.2x\n",*midi_data);
 			midi_data++;
 			if (midi_size == 0) {
 				printf("Corrupt Midi, Missing or Corrupt Track Data\n");
 				return -1;
 			}
 			midi_size--;
-            total_count++;
+			total_count++;
 			delta_accum += delta;
 			/* tempo microseconds per quarter note
 			 * divisions pulses per quarter note */
@@ -1333,6 +1330,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 					return -1;
 				}
 			}
+
 //            printf("Event Offset: 0x%.8x\n", total_count);
             if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose, 0)) == -1) {
                 printf("Missing or Corrupt MIDI Data\n");
@@ -1364,6 +1362,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 }
             }
             midi_data += check_ret;
+
 			if (midi_data > next_track) {
 				printf("Corrupt Midi, Track Data went beyond track boundries.\n");
 				return -1;
@@ -1373,7 +1372,7 @@ int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	return 0;
 }
 
-int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
+static int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 		int verbose) {
 	unsigned long int gus_ptr = 0;
 	unsigned char no_of_samples = 0;
@@ -1534,15 +1533,11 @@ int main(int argc, char ** argv) {
 	}
 
 	while (optind < argc) {
-		if ((strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") != 0)
-				&& (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-						".pat") != 0)
-                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                        ".xmi") != 0)
-                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                        ".hmp") != 0)
-                && (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                        ".hmi") != 0)) {
+		if ((strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".pat") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".xmi") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmp") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") != 0)) {
 			printf("Testing of %s is not supported\n", argv[optind]);
 			optind++;
 			continue;
@@ -1551,24 +1546,18 @@ int main(int argc, char ** argv) {
 		printf("Testing: %s\n", argv[optind]);
 		testret = 0;
 		if ((filebuffer = DT_BufferFile(argv[optind], &filesize)) != NULL) {
-			if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid")
-					== 0) {
+			if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") == 0) {
 				testret = test_midi(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-					".pat") == 0) {
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".pat") == 0) {
 				testret = test_guspat(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                    ".xmi") == 0) {
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".xmi") == 0) {
 				testret = test_xmidi(filebuffer, filesize, verbose);
-                
-            } else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                    ".hmp") == 0) {
-                // Will add .hmq extention if we find hmp files with it
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmp") == 0) {
+			/* Will add .hmq extention if we find hmp files with it */
 				testret = test_hmp(filebuffer, filesize, verbose);
-            } else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4),
-                    ".hmi") == 0) {
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") == 0) {
 				testret = test_hmi(filebuffer, filesize, verbose);
-            }
+			}
 			free(filebuffer);
 			if (testret != 0) {
 				printf("FAILED: %s will not work correctly with WildMIDI\n\n",
