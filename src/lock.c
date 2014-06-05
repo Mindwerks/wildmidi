@@ -39,13 +39,13 @@
 /*
  _WM_Lock(wmlock)
 
- wm_lock = a pointer to a value
+ wmlock = a pointer to a value
 
  returns nothing
 
- Attemptes to set a lock on the MDI tree so that
+ Attempts to set a lock on the MDI tree so that
  only 1 library command may access it at any time.
- If lock fails the process retries untill successful.
+ If lock fails the process retries until successful.
  */
 void _WM_Lock(int * wmlock) {
 	LOCK_START:
@@ -71,7 +71,7 @@ void _WM_Lock(int * wmlock) {
 /*
  _WM_Unlock(wmlock)
 
- wm_lock = a pointer to a value
+ wmlock = a pointer to a value
 
  returns nothing
 
