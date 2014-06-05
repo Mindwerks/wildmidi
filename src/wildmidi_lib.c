@@ -476,7 +476,7 @@ static int WM_LoadConfig(const char *config_file) {
 							return (-1);
 						}
 						patchid = ((atoi(line_tokens[1]) & 0xFF) << 8) | 0x80;
-					} else if (strcasecmp(line_tokens[0], "_WM_reverb_room_width") == 0) {
+					} else if (strcasecmp(line_tokens[0], "reverb_room_width") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_width line)",
@@ -501,7 +501,7 @@ static int WM_LoadConfig(const char *config_file) {
 									0);
 							_WM_reverb_room_width = 100.0f;
 						}
-					} else if (strcasecmp(line_tokens[0], "_WM_reverb_room_length") == 0) {
+					} else if (strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_length line)",
