@@ -42,6 +42,7 @@
 #endif
 
 struct _patch;
+struct _mdi;
 
 struct _sample {
 	uint32_t data_length;
@@ -67,5 +68,6 @@ extern int _WM_auto_amp_with_amp;
 
 extern struct _sample *_WM_get_sample_data(struct _patch *sample_patch, uint32_t freq);
 extern int _WM_load_sample(struct _patch *sample_patch);
+extern uint32_t _WM_get_decay_samples(struct _mdi * mdi, uint8_t channel, uint8_t note);
 
 #endif /* __SAMPLE_H */

@@ -114,10 +114,15 @@ WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
 
 /* NOTE: Not Yet Implemented Or Tested Properly */
-/*WM_SYMBOL int WildMidi_Live (midi * handle, uint32_t midi_event);*/
+/* Due to delay in audio output in the player, this is not being developed
+   futher at the moment. Further Development will occur when output latency
+   has been reduced enough to "appear" instant.
+WM_SYMBOL int WildMidi_Live (midi * handle, uint32_t midi_event);
+ */
 
 /* reserved for future coding
  * need to change these to use a time for cmd_pos and new_cmd_pos
+
 WM_SYMBOL int WildMidi_InsertMidiEvent (midi * handle, uint8_t char midi_cmd, *char midi_cmd_data, unsigned long int midi_cmd_data_size, unsigned long int *cmd_pos);
 WM_SYMBOL int WildMidi_DeleteMidiEvent (midi * handle, uint8_t char midi_cmd, unsigned long int *cmd_pos);
 WM_SYMBOL int WildMidi_MoveMidiEvent (midi * handle, , uint8_t char midi_cmd, unsigned long int *cmd_pos, unsigned long int *new_cmd_pos);

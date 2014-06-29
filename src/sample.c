@@ -30,7 +30,76 @@
 #include "common.h"
 #include "patches.h"
 #include "gus_pat.h"
+#include "internal_midi.h"
 #include "sample.h"
+
+/*
+ FIXME: Need to decide if this stuff needs to be broken up for different formats.
+ */
+ 
+ 
+uint32_t _WM_get_decay_samples(struct _mdi * mdi, uint8_t channel, uint8_t note) {
+    struct _patch *patch = NULL;
+	struct _sample *sample = NULL;
+	uint32_t freq = 0;
+	uint32_t decay_samples = 0;
+    
+    
+    if (mdi->channel[channel].isdrum) {
+        patch = _WM_get_patch_data(mdi,
+                                   ((mdi->channel[channel].bank << 8)
+                                    | note | 0x80));
+    } else {
+        patch = mdi->channel[channel].patch;
+    }
+    
+	if (patch == NULL) return (0);
+    
+	/* first get the freq we need so we can check the right sample */
+	if (patch->patchid & 0x80) {
+		/* is a drum patch */
+		if (patch->note) {
+			freq = _WM_freq_table[(patch->note % 12) * 100]
+            >> (10 - (patch->note / 12));
+		} else {
+			freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
+		}
+	} else {
+		freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
+	}
+    
+	/* get the sample */
+	sample = _WM_get_sample_data(patch, (freq / 100));
+	if (sample == NULL) return (0);
+    
+	/*
+     FIXME: Check to see if all drum samples not looped.
+     Also because this particular code is guspat related look at splitting it out and putting it into gus_pat.c
+     */
+    if (patch->patchid & 0x80) {
+        // FIXME: not all drumset guspats are sample release
+		float sratedata = ((float) sample->rate / (float) _WM_SampleRate)
+        * (float) (sample->data_length >> 10);
+		decay_samples = (uint32_t) sratedata;
+        /*	printf("Drums (%i / %i) * %lu = %f\n", sample->rate, _WM_SampleRate, (sample->data_length >> 10), sratedata);*/
+	} else if (sample->modes & SAMPLE_CLAMPED) {
+		decay_samples = (4194303 / sample->env_rate[5]);
+        /*	printf("clamped 4194303 / %lu = %lu\n", sample->env_rate[5], decay_samples);*/
+	} else {
+        if (sample->modes & SAMPLE_SUSTAIN) {
+            decay_samples =
+                ((4194303 - sample->env_target[3]) / sample->env_rate[4])
+                + (sample->env_target[4] / sample->env_rate[5]);
+        } else {
+            decay_samples =
+            ((4194303 - sample->env_target[2]) / sample->env_rate[4])
+            + (sample->env_target[4] / sample->env_rate[5]);
+
+        }
+        /*	printf("NOT clamped ((4194303 - %lu) / %lu) + (%lu / %lu)) = %lu\n", sample->env_target[4], sample->env_rate[4], sample->env_target[4], sample->env_rate[5], decay_samples);*/
+	}
+	return (decay_samples);
+}
 
 
 struct _sample *_WM_get_sample_data(struct _patch *sample_patch, uint32_t freq) {

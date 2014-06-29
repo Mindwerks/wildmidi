@@ -26,8 +26,6 @@
 #ifndef __INTERNAL_MIDI_H
 #define __INTERNAL_MIDI_H
 
-#include "wildmidi_lib.h"
-
 struct _channel {
 	uint8_t bank;
 	struct _patch *patch;
@@ -52,9 +50,6 @@ struct _event_data {
 	uint32_t data;
 };
 
-struct _patch;
-struct _sample;
-
 struct _note {
 	uint16_t noteid;
 	uint8_t velocity;
@@ -70,7 +65,8 @@ struct _note {
 	uint8_t active;
 	struct _note *replay;
 	struct _note *next;
-	uint32_t vol_lvl;
+    uint32_t left_mix_volume;
+    uint32_t right_mix_volume;
 	uint8_t is_off;
 };
 
@@ -83,19 +79,33 @@ struct _event {
 	uint32_t samples_to_next_fixed;
 };
 
-struct _WM_Info;
-
 struct _mdi {
 	int lock;
 	uint32_t samples_to_mix;
 	struct _event *events;
 	struct _event *current_event;
 	uint32_t event_count;
-	uint32_t events_size;	/* try to stay optimally ahead to prevent reallocs */
-    
+	uint32_t events_size; /* try to stay optimally ahead to prevent reallocs */
+    struct {
+        /* private info */
+        char *copyright;
+        uint32_t current_sample;
+        uint32_t approx_total_samples;
+        uint16_t mixer_options;
+        uint32_t total_midi_time;
+    } extra_info;
+    struct {
+        /* public info */
+        /* needs to match format of struct _WM_Info in wildmidi_lib.h */
+        char *copyright;
+        uint32_t current_sample;
+        uint32_t approx_total_samples;
+        uint16_t mixer_options;
+        uint32_t total_midi_time;
+    } * tmp_info;
 	uint16_t midi_master_vol;
-	struct _WM_Info info;
-	struct _WM_Info *tmp_info;
+//	struct _WM_Info info;
+//	struct _WM_Info *tmp_info;
 	struct _channel channel[16];
 	struct _note *note;
 	struct _note note_table[2][16][128];
@@ -110,7 +120,9 @@ struct _mdi {
 	struct _rvb *reverb;
 };
 
+
 extern int16_t _WM_lin_volume[];
+extern uint32_t _WM_freq_table[];
 
 // =====================
 
@@ -172,7 +184,7 @@ extern void _WM_ResetToStart(struct _mdi *mdi);
 extern void _WM_CheckEventMemoryPool(struct _mdi *mdi);
 extern void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch);
 extern void _WM_do_note_off_extra(struct _note *nte);
-extern uint32_t _WM_get_volume(struct _mdi *mdi, uint8_t ch, struct _note *nte);
+extern void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch);
 
 
 #endif /* __INTERNAL_MIDI_H */

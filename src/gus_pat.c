@@ -727,6 +727,8 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 	};
 	uint32_t tmp_loop;
 
+    UNUSED(fix_release);
+    
 	SAMPLE_CONVERT_DEBUG(__FUNCTION__); SAMPLE_CONVERT_DEBUG(filename);
 
 	if ((gus_patch = (uint8_t *) _WM_BufferFile(filename, &gus_size)) == NULL) {
@@ -830,15 +832,35 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 
 		/*
 		 FIXME: Experimental Hacky Fix
-		 */
-		//if (fix_release) {
-			if (env_time_table[gus_patch[gus_ptr + 40]]
-					< env_time_table[gus_patch[gus_ptr + 41]]) {
-				uint8_t tmp_hack_rate = gus_patch[gus_ptr + 41];
-				gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 40];
-				gus_patch[gus_ptr + 40] = tmp_hack_rate;
-			}
-		//}
+        
+         This looks for "dodgy" release envelope settings that faulty editors
+         may have set and attempts to corrects it.
+         
+         if (fix_release)
+         Lets make this automatic ...
+         */
+        {
+            if ((env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) && (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]])) {
+                uint8_t tmp_hack_rate = 0;
+                tmp_hack_rate = gus_patch[gus_ptr + 41];
+                gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 40];
+                gus_patch[gus_ptr + 42] = gus_patch[gus_ptr + 40];
+                gus_patch[gus_ptr + 40] = tmp_hack_rate;
+                tmp_hack_rate = gus_patch[gus_ptr + 47];
+                gus_patch[gus_ptr + 47] = gus_patch[gus_ptr + 46];
+                gus_patch[gus_ptr + 48] = gus_patch[gus_ptr + 46];
+                gus_patch[gus_ptr + 46] = tmp_hack_rate;
+            }
+        }
+        
+        /*
+         FIXME: Experimental Hacky Fix
+         
+         Seeing if this fixes the "hard" end to gus sounds.
+         */
+        if ((env_time_table[gus_patch[gus_ptr + 41]] < 0.05) && (gus_sample->modes & SAMPLE_ENVELOPE)) {
+            gus_patch[gus_ptr + 41] = 78;
+        }
 
 		for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);

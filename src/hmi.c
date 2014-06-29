@@ -189,7 +189,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     sample_remainder = sample_count_f - (float) sample_count;
     
     hmi_mdi->events[hmi_mdi->event_count - 1].samples_to_next += sample_count;
-    hmi_mdi->info.approx_total_samples += sample_count;
+    hmi_mdi->extra_info.approx_total_samples += sample_count;
     
     while (hmi_tracks_ended < hmi_track_cnt) {
         smallest_delta = 0;
@@ -338,23 +338,15 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         sample_remainder = sample_count_f - (float) sample_count;
         
         hmi_mdi->events[hmi_mdi->event_count - 1].samples_to_next += sample_count;
-        hmi_mdi->info.approx_total_samples += sample_count;
+        hmi_mdi->extra_info.approx_total_samples += sample_count;
     }
-    
-    /* Set total MIDI time to 1/1000's seconds */
-    hmi_mdi->info.total_midi_time = (hmi_mdi->info.approx_total_samples * 1000) / _WM_SampleRate;
-    /*mdi->info.approx_total_samples += _WM_SampleRate * 3;*/
-    
-    /* Add additional samples needed for decay */
-    // hmp_mdi->info.approx_total_samples += decay_samples;
-    /*printf("decay_samples = %lu\n",decay_samples);*/
-    
+        
     if ((hmi_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _hmi_end;
     }
     
-    hmi_mdi->info.current_sample = 0;
+    hmi_mdi->extra_info.current_sample = 0;
     hmi_mdi->current_event = &hmi_mdi->events[0];
     hmi_mdi->samples_to_mix = 0;
     hmi_mdi->note = NULL;

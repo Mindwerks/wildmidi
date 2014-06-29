@@ -928,15 +928,15 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 			}
 
 			if (!mdi->samples_to_mix) {
-				if (mdi->info.current_sample
-						>= mdi->info.approx_total_samples) {
+				if (mdi->extra_info.current_sample
+						>= mdi->extra_info.approx_total_samples) {
 					break;
-				} else if ((mdi->info.approx_total_samples
-						- mdi->info.current_sample) > (size >> 2)) {
+				} else if ((mdi->extra_info.approx_total_samples
+						- mdi->extra_info.current_sample) > (size >> 2)) {
 					mdi->samples_to_mix = size >> 2;
 				} else {
-					mdi->samples_to_mix = mdi->info.approx_total_samples
-							- mdi->info.current_sample;
+					mdi->samples_to_mix = mdi->extra_info.approx_total_samples
+							- mdi->extra_info.current_sample;
 				}
 			}
 		}
@@ -962,21 +962,11 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 					 * ===================
 					 */
 					data_pos = note_data->sample_pos >> FPBITS;
-					vol_mul = ((note_data->vol_lvl
-							* (note_data->env_level >> 12)) >> FPBITS);
+					premix = note_data->sample->data[data_pos] + (((note_data->sample->data[data_pos + 1] - note_data->sample->data[data_pos]) * (int32_t)(note_data->sample_pos & FPMASK)) / 1024);
 
-					premix = (note_data->sample->data[data_pos]
-							+ ((note_data->sample->data[data_pos + 1]
-									- note_data->sample->data[data_pos])
-									* (int32_t) (note_data->sample_pos
-											& FPMASK)>> FPBITS)) * vol_mul
-							/ 1024;
-
-					left_mix += premix
-							* mdi->channel[note_data->noteid >> 8].left_adjust;
-					right_mix += premix
-							* mdi->channel[note_data->noteid >> 8].right_adjust;
-
+					left_mix += ((premix * (note_data->env_level >> 12)) * (int32_t)note_data->left_mix_volume) / 1024;
+					right_mix += ((premix * (note_data->env_level >> 12)) * (int32_t)note_data->right_mix_volume) / 1024;
+            
 					/*
 					 * ========================
 					 * sample position checking
@@ -1141,13 +1131,13 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 
 		buffer_used += real_samples_to_mix * 4;
 		size -= (real_samples_to_mix << 2);
-		mdi->info.current_sample += real_samples_to_mix;
+		mdi->extra_info.current_sample += real_samples_to_mix;
 		mdi->samples_to_mix -= real_samples_to_mix;
 	} while (size);
 
 	tmp_buffer = out_buffer;
 
-	if (mdi->info.mixer_options & WM_MO_REVERB) {
+	if (mdi->extra_info.mixer_options & WM_MO_REVERB) {
 		_WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
 	}
 
@@ -1234,15 +1224,15 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 			}
 
 			if (!mdi->samples_to_mix) {
-				if (mdi->info.current_sample
-						>= mdi->info.approx_total_samples) {
+				if (mdi->extra_info.current_sample
+						>= mdi->extra_info.approx_total_samples) {
 					break;
-				} else if ((mdi->info.approx_total_samples
-						- mdi->info.current_sample) > (size >> 2)) {
+				} else if ((mdi->extra_info.approx_total_samples
+						- mdi->extra_info.current_sample) > (size >> 2)) {
 					mdi->samples_to_mix = size >> 2;
 				} else {
-					mdi->samples_to_mix = mdi->info.approx_total_samples
-							- mdi->info.current_sample;
+					mdi->samples_to_mix = mdi->extra_info.approx_total_samples
+							- mdi->extra_info.current_sample;
 				}
 			}
 		}
@@ -1268,8 +1258,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 					 * ===================
 					 */
 					data_pos = note_data->sample_pos >> FPBITS;
-					vol_mul = ((note_data->vol_lvl
-							* (note_data->env_level >> 12)) >> FPBITS);
+					vol_mul = (note_data->env_level >> 12);
 
 					/* check to see if we're near one of the ends */
 					left = data_pos;
@@ -1311,10 +1300,8 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 
 					premix = (int32_t) (y * vol_mul / 1024);
 
-					left_mix += premix
-							* mdi->channel[note_data->noteid >> 8].left_adjust;
-					right_mix += premix
-							* mdi->channel[note_data->noteid >> 8].right_adjust;
+					left_mix += (premix * note_data->left_mix_volume) / 1024;
+					right_mix += (premix * note_data->right_mix_volume) / 1024;
 
 					/*
 					 * ========================
@@ -1480,13 +1467,13 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 
 		buffer_used += real_samples_to_mix * 4;
 		size -= (real_samples_to_mix << 2);
-		mdi->info.current_sample += real_samples_to_mix;
+		mdi->extra_info.current_sample += real_samples_to_mix;
 		mdi->samples_to_mix -= real_samples_to_mix;
 	} while (size);
 
 	tmp_buffer = out_buffer;
 
-	if (mdi->info.mixer_options & WM_MO_REVERB) {
+	if (mdi->extra_info.mixer_options & WM_MO_REVERB) {
 		_WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
 	}
 
@@ -1635,10 +1622,6 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mix
 }
 
 WM_SYMBOL int WildMidi_MasterVolume(uint8_t master_volume) {
-	struct _mdi *mdi = NULL;
-	struct _hndl * tmp_handle = first_handle;
-	int i = 0;
-
 	if (!WM_Initialized) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
 		return (-1);
@@ -1650,16 +1633,6 @@ WM_SYMBOL int WildMidi_MasterVolume(uint8_t master_volume) {
 	}
 
 	_WM_MasterVolume = _WM_lin_volume[master_volume];
-
-	if (tmp_handle) {
-		while (tmp_handle) {
-			mdi = (struct _mdi *) tmp_handle->handle;
-			for (i = 0; i < 16; i++) {
-				_WM_do_pan_adjust(mdi, i);
-			}
-			tmp_handle = tmp_handle->next;
-		}
-	}
 
 	return (0);
 }
@@ -1779,7 +1752,7 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 			ret = NULL;
 		}
 	}
-
+    
 	return (ret);
 }
 
@@ -1810,22 +1783,22 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	event = mdi->current_event;
 
 	/* make sure we havent asked for a positions beyond the end of the song. */
-	if (*sample_pos > mdi->info.approx_total_samples) {
+	if (*sample_pos > mdi->extra_info.approx_total_samples) {
 		/* if so set the position to the end of the song */
-		*sample_pos = mdi->info.approx_total_samples;
+		*sample_pos = mdi->extra_info.approx_total_samples;
 	}
 
 	/* was end of song requested and are we are there? */
-	if (*sample_pos == mdi->info.current_sample) {
+	if (*sample_pos == mdi->extra_info.current_sample) {
 		/* yes */
 		_WM_Unlock(&mdi->lock);
 		return (0);
 	}
 
 	/* did we want to fast forward? */
-	if (mdi->info.current_sample < *sample_pos) {
+	if (mdi->extra_info.current_sample < *sample_pos) {
 		/* yes */
-		count = *sample_pos - mdi->info.current_sample;
+		count = *sample_pos - mdi->extra_info.current_sample;
 	} else {
 		/* no, reset values to start as the beginning */
 		count = *sample_pos;
@@ -1847,7 +1820,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 
 			if (!mdi->samples_to_mix) {
 				if (event->do_event == NULL) {
-					mdi->samples_to_mix = mdi->info.approx_total_samples
+					mdi->samples_to_mix = mdi->extra_info.approx_total_samples
 							- *sample_pos;
 				} else {
 					mdi->samples_to_mix = count;
@@ -1866,7 +1839,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 		}
 
 		count -= real_samples_to_mix;
-		mdi->info.current_sample += real_samples_to_mix;
+		mdi->extra_info.current_sample += real_samples_to_mix;
 		mdi->samples_to_mix -= real_samples_to_mix;
 	} while (count);
 
@@ -1909,7 +1882,7 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 				"(size not a multiple of 4)", 0);
 		return (-1);
 	}
-	if (((struct _mdi *) handle)->info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
+	if (((struct _mdi *) handle)->extra_info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 		if (!gauss_table) init_gauss();
 		return (WM_GetOutput_Gauss(handle, buffer, size));
 	}
@@ -1939,7 +1912,6 @@ WM_SYMBOL int WildMidi_GetMidiOutput(midi * handle, int8_t **buffer, uint32_t *s
 WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		uint16_t setting) {
 	struct _mdi *mdi;
-	int i;
 
 	if (!WM_Initialized) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
@@ -1966,26 +1938,12 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 		return (-1);
 	}
 
-	mdi->info.mixer_options = ((mdi->info.mixer_options & (0x00FF ^ options))
+	mdi->extra_info.mixer_options = ((mdi->extra_info.mixer_options & (0x00FF ^ options))
 			| (options & setting));
 
 	if (options & WM_MO_LOG_VOLUME) {
-		struct _note *note_data = mdi->note;
-
-		for (i = 0; i < 16; i++) {
-			_WM_do_pan_adjust(mdi, i);
-		}
-
-		if (note_data) {
-			do {
-				note_data->vol_lvl = _WM_get_volume(mdi, (note_data->noteid >> 8),
-						note_data);
-				if (note_data->replay)
-					note_data->replay->vol_lvl = _WM_get_volume(mdi,
-							(note_data->noteid >> 8), note_data->replay);
-				note_data = note_data->next;
-			} while (note_data);
-		}
+            _WM_AdjustChannelVolumes(mdi, 16);  // Settings greater than 15
+                                                // adjusts all channels
 	} else if (options & WM_MO_REVERB) {
 		_WM_reset_reverb(mdi->reverb);
 	}
@@ -2026,27 +1984,30 @@ WildMidi_GetInfo(midi * handle) {
 		return (NULL);
 	}
 	_WM_Lock(&mdi->lock);
-	if (mdi->tmp_info == NULL) {
-		mdi->tmp_info = malloc(sizeof(struct _WM_Info));
+    if (mdi->tmp_info == NULL) {
+        mdi->tmp_info = malloc(sizeof(struct _WM_Info));
 		if (mdi->tmp_info == NULL) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set info", 0);
 			_WM_Unlock(&mdi->lock);
 			return (NULL);
 		}
-		mdi->tmp_info->copyright = NULL;
 	}
-	mdi->tmp_info->current_sample = mdi->info.current_sample;
-	mdi->tmp_info->approx_total_samples = mdi->info.approx_total_samples;
-	mdi->tmp_info->mixer_options = mdi->info.mixer_options;
-	if (mdi->info.copyright) {
+    mdi->tmp_info->current_sample = mdi->extra_info.current_sample;
+	mdi->tmp_info->approx_total_samples = mdi->extra_info.approx_total_samples;
+	mdi->tmp_info->mixer_options = mdi->extra_info.mixer_options;
+	if (mdi->extra_info.copyright) {
 		free(mdi->tmp_info->copyright);
-		mdi->tmp_info->copyright = malloc(strlen(mdi->info.copyright) + 1);
-		strcpy(mdi->tmp_info->copyright, mdi->info.copyright);
+		mdi->tmp_info->copyright = malloc(strlen(mdi->extra_info.copyright) + 1);
+        if (mdi->tmp_info->copyright == NULL) {
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set copyright", 0);
+        } else {
+            strcpy(mdi->tmp_info->copyright, mdi->extra_info.copyright);
+        }
 	} else {
 		mdi->tmp_info->copyright = NULL;
 	}
 	_WM_Unlock(&mdi->lock);
-	return (mdi->tmp_info);
+	return ((struct _WM_Info *)mdi->tmp_info);
 }
 
 WM_SYMBOL int WildMidi_Shutdown(void) {

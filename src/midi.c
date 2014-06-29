@@ -34,6 +34,7 @@
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "reverb.h"
+#include "sample.h"
 
 
 struct _mdi *
@@ -247,7 +248,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	sample_remainder = sample_count_f - (float) sample_count;
 
 	mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-	mdi->info.approx_total_samples += sample_count;
+	mdi->extra_info.approx_total_samples += sample_count;
 
 	/*
 	 * Handle type 0 & 1 the same, but type 2 differently
@@ -258,10 +259,10 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
             /* Type 0 & 1 can use the same code*/
             while (end_of_tracks != no_tracks) {
                 smallest_delta = 0;
+                decay_samples = 0;
                 for (i = 0; i < no_tracks; i++) {
                     if (track_end[i])
                         continue;
-
                     if (track_delta[i]) {
                         track_delta[i] -= subtract_delta;
                         if (track_delta[i]) {
@@ -310,6 +311,18 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     samples_per_delta_f = (float)_WM_SampleRate / pulses_per_second_f;
                                 }
                             }
+                            if ((running_event[i] & 0x80) == 0x80) {
+                                uint8_t note = 0;
+                                uint32_t tmp_decay = 0;
+                                if (running_event[i] != tracks[i][0]) {
+                                    note = tracks[i][0];
+                                } else {
+                                    note = tracks[i][0];
+                                }
+                                tmp_decay = _WM_get_decay_samples(mdi, ((running_event[i]) & 0x0f), note);
+                                if (tmp_decay > decay_samples)
+                                    decay_samples = tmp_decay;
+                            }
                             tracks[i] += setup_ret;
                         }
 
@@ -335,7 +348,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 sample_remainder = sample_count_f - (float) sample_count;
 
                 mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-                mdi->info.approx_total_samples += sample_count;
+                mdi->extra_info.approx_total_samples += sample_count;
                 /* printf("Decay Samples = %lu\n",decay_samples);*/
                 if (decay_samples > sample_count) {
                     decay_samples -= sample_count;
@@ -343,6 +356,20 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     decay_samples = 0;
                 }
             }
+            if (decay_samples) {
+                if ((mdi->event_count)
+                    && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+                    mdi->events[mdi->event_count - 1].samples_to_next += decay_samples;
+                } else {
+                    _WM_CheckEventMemoryPool(mdi);
+                    mdi->events[mdi->event_count].do_event = NULL;
+                    mdi->events[mdi->event_count].event_data.channel = 0;
+                    mdi->events[mdi->event_count].event_data.data = 0;
+                    mdi->events[mdi->event_count].samples_to_next = decay_samples;
+                    mdi->event_count++;
+                }
+            }
+            mdi->extra_info.approx_total_samples += decay_samples;
             break;
 
 	case 2: /* Type 2 has to be handled differently */
@@ -357,7 +384,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                         sample_count = (uint32_t) sample_count_f;
                         sample_remainder = sample_count_f - (float) sample_count;
                         mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-                        mdi->info.approx_total_samples += sample_count;
+                        mdi->extra_info.approx_total_samples += sample_count;
                         /* printf("Decay Samples = %lu\n",decay_samples);*/
                         if (decay_samples > sample_count) {
                             decay_samples -= sample_count;
@@ -406,6 +433,18 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                 samples_per_delta_f = (float)_WM_SampleRate / pulses_per_second_f;
                             }
                         }
+                        if ((running_event[i] & 0x80) == 0x80) {
+                            uint8_t note = 0;
+                            uint32_t tmp_decay = 0;
+                            if (running_event[i] != tracks[i][0]) {
+                                note = tracks[i][0];
+                            } else {
+                                note = tracks[i][0];
+                            }
+                            tmp_decay = _WM_get_decay_samples(mdi, ((running_event[i]) & 0x0f), note);
+                            if (tmp_decay > decay_samples)
+                                decay_samples = tmp_decay;
+                        }
                         tracks[i] += setup_ret;
                     }
 
@@ -438,6 +477,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                         mdi->event_count++;
                     }
                 }
+                mdi->extra_info.approx_total_samples += decay_samples;
             }
             break;
 
@@ -445,12 +485,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     }
 
 	/* Set total MIDI time to 1/1000's seconds */
-	mdi->info.total_midi_time = (mdi->info.approx_total_samples * 1000) / _WM_SampleRate;
-	/*mdi->info.approx_total_samples += _WM_SampleRate * 3;*/
-
-	/* Add additional samples needed for decay */
-	mdi->info.approx_total_samples += decay_samples;
-	/*printf("decay_samples = %lu\n",decay_samples);*/
+	mdi->extra_info.total_midi_time = (mdi->extra_info.approx_total_samples * 1000) / _WM_SampleRate;
 
 	if ((mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width,
 			_WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy))
@@ -459,7 +494,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		goto _end;
 	}
 
-	mdi->info.current_sample = 0;
+	mdi->extra_info.current_sample = 0;
 	mdi->current_event = &mdi->events[0];
 	mdi->samples_to_mix = 0;
 	mdi->note = NULL;
@@ -813,7 +848,6 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         } else if (mdi->events[i].do_event == _WM_do_meta_timesignature) {
             // DEBUG
             // fprintf(stderr,"Time Signature: %x\r\n",mdi->events[i].event_data.data);
-            tempo = mdi->events[i].event_data.data & 0xffffffff;
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x58;
             (*out)[out_ofs++] = 0x04;

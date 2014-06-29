@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "lock.h"
 #include "patches.h"

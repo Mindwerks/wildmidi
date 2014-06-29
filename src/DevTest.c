@@ -561,7 +561,6 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     uint8_t hmi_running_event = 0;
     uint32_t hmi_track_header_length = 0;
     uint32_t hmi_file_end = hmi_size;
-    uint32_t hmi_tmp = 0;
     
     // Check header
     if (strncmp((char *) hmi_data,"HMI-MIDISONG061595", 18) != 0) {

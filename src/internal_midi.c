@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <math.h>
 
 #include "common.h"
 #include "lock.h"
@@ -46,41 +48,75 @@
 #endif
 
 /* f: ( VOLUME / 127.0 ) * 1024.0 */
-int16_t _WM_lin_volume[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 72,
-    80, 88, 96, 104, 112, 120, 129, 137, 145, 153, 161, 169, 177, 185, 193,
-    201, 209, 217, 225, 233, 241, 249, 258, 266, 274, 282, 290, 298, 306,
-    314, 322, 330, 338, 346, 354, 362, 370, 378, 387, 395, 403, 411, 419,
-    427, 435, 443, 451, 459, 467, 475, 483, 491, 499, 507, 516, 524, 532,
-    540, 548, 556, 564, 572, 580, 588, 596, 604, 612, 620, 628, 636, 645,
-    653, 661, 669, 677, 685, 693, 701, 709, 717, 725, 733, 741, 749, 757,
-    765, 774, 782, 790, 798, 806, 814, 822, 830, 838, 846, 854, 862, 870,
-    878, 886, 894, 903, 911, 919, 927, 935, 943, 951, 959, 967, 975, 983,
-    991, 999, 1007, 1015, 1024 };
+int16_t _WM_lin_volume[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96,
+    104, 112, 120, 129, 137, 145, 153, 161, 169, 177, 185, 193, 201, 209, 217,
+    225, 233, 241, 249, 258, 266, 274, 282, 290, 298, 306, 314, 322, 330, 338,
+    346, 354, 362, 370, 378, 387, 395, 403, 411, 419, 427, 435, 443, 451, 459,
+    467, 475, 483, 491, 499, 507, 516, 524, 532, 540, 548, 556, 564, 572, 580,
+    588, 596, 604, 612, 620, 628, 636, 645, 653, 661, 669, 677, 685, 693, 701,
+    709, 717, 725, 733, 741, 749, 757, 765, 774, 782, 790, 798, 806, 814, 822,
+    830, 838, 846, 854, 862, 870, 878, 886, 894, 903, 911, 919, 927, 935, 943,
+    951, 959, 967, 975, 983, 991, 999, 1007, 1015, 1024 };
 
-/* f: pow(( VOLUME / 127.0 ), 2.0 ) * 1024.0 */
-static int16_t sqr_volume[] = { 0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 9,
-    10, 12, 14, 16, 18, 20, 22, 25, 27, 30, 33, 36, 39, 42, 46, 49, 53, 57,
-    61, 65, 69, 73, 77, 82, 86, 91, 96, 101, 106, 111, 117, 122, 128, 134,
-    140, 146, 152, 158, 165, 171, 178, 185, 192, 199, 206, 213, 221, 228,
-    236, 244, 251, 260, 268, 276, 284, 293, 302, 311, 320, 329, 338, 347,
-    357, 366, 376, 386, 396, 406, 416, 426, 437, 447, 458, 469, 480, 491,
-    502, 514, 525, 537, 549, 560, 572, 585, 597, 609, 622, 634, 647, 660,
-    673, 686, 699, 713, 726, 740, 754, 768, 782, 796, 810, 825, 839, 854,
-    869, 884, 899, 914, 929, 944, 960, 976, 992, 1007, 1024 };
+/* f: As per midi 2 standard */
+static float dBm_volume[] = { -999999.999999, -84.15214884, -72.11094901,
+    -65.06729865, -60.06974919, -56.19334866, -53.02609882, -50.34822724,
+    -48.02854936, -45.98244846, -44.15214884, -42.49644143, -40.984899,
+    -39.59441475, -38.30702741, -37.10849848, -35.98734953, -34.93419198,
+    -33.94124863, -33.0020048, -32.11094901, -31.26337705, -30.45524161,
+    -29.6830354, -28.94369917, -28.23454849, -27.55321492, -26.89759827,
+    -26.26582758, -25.65622892, -25.06729865, -24.49768108, -23.94614971,
+    -23.41159124, -22.89299216, -22.38942706, -21.90004881, -21.42407988,
+    -20.96080497, -20.50956456, -20.06974919, -19.64079457, -19.22217722,
+    -18.81341062, -18.41404178, -18.02364829, -17.64183557, -17.26823452,
+    -16.90249934, -16.54430564, -16.19334866, -15.84934179, -15.51201509,
+    -15.18111405, -14.85639845, -14.53764126, -14.22462776, -13.91715461,
+    -13.6150291, -13.31806837, -13.02609882, -12.73895544, -12.45648126,
+    -12.17852686, -11.90494988, -11.63561457, -11.37039142, -11.10915673,
+    -10.85179233, -10.59818521, -10.34822724, -10.10181489, -9.858848981,
+    -9.619234433, -9.382880049, -9.149698303, -8.919605147, -8.692519831,
+    -8.468364731, -8.247065187, -8.028549359, -7.812748083, -7.599594743,
+    -7.389025143, -7.180977396, -6.97539181, -6.772210788, -6.571378733,
+    -6.372841952, -6.176548572, -5.982448461, -5.790493145, -5.600635744,
+    -5.412830896, -5.227034694, -5.043204627, -4.861299517, -4.681279468,
+    -4.503105811, -4.326741054, -4.152148838, -3.979293887, -3.808141968,
+    -3.63865985, -3.470815266, -3.304576875, -3.139914228, -2.976797731,
+    -2.815198619, -2.655088921, -2.496441432, -2.339229687, -2.183427931,
+    -2.029011099, -1.875954785, -1.724235224, -1.573829269, -1.424714368,
+    -1.276868546, -1.130270383, -0.9848989963, -0.8407340256, -0.6977556112,
+    -0.5559443807, -0.4152814317, -0.2757483179, -0.1373270335, 0.0 };
 
-/* f: pow(( VOLUME / 127.0 ), 0.5 ) * 1024.0 */
-static int16_t pan_volume[] = { 0, 90, 128, 157, 181, 203, 222, 240,
-    257, 272, 287, 301, 314, 327, 339, 351, 363, 374, 385, 396, 406, 416,
-    426, 435, 445, 454, 463, 472, 480, 489, 497, 505, 514, 521, 529, 537,
-    545, 552, 560, 567, 574, 581, 588, 595, 602, 609, 616, 622, 629, 636,
-    642, 648, 655, 661, 667, 673, 679, 686, 692, 697, 703, 709, 715, 721,
-    726, 732, 738, 743, 749, 754, 760, 765, 771, 776, 781, 786, 792, 797,
-    802, 807, 812, 817, 822, 827, 832, 837, 842, 847, 852, 857, 862, 866,
-    871, 876, 880, 885, 890, 894, 899, 904, 908, 913, 917, 922, 926, 931,
-    935, 939, 944, 948, 953, 957, 961, 965, 970, 974, 978, 982, 987, 991,
-    995, 999, 1003, 1007, 1011, 1015, 1019, 1024 };
 
-static uint32_t freq_table[] = { 837201792, 837685632, 838169728,
+/* f: As per midi 2 standard */
+static float dBm_pan_volume[] = { -999999.999999, -38.15389834 -32.13396282,
+    -28.61324502, -26.1160207, -24.179814, -22.5986259, -21.26257033,
+    -20.10605521, -19.08677237, -18.17583419, -17.35263639, -16.60196565,
+    -15.91226889, -15.2745658, -14.6817375, -14.12804519, -13.60879499,
+    -13.12009875, -12.65869962, -12.22184237, -11.80717543, -11.41267571,
+    -11.03659017, -10.67738981, -10.33373306, -10.00443638, -9.6884504,
+    -9.384840381, -9.092770127, -8.811488624, -8.540318866, -8.278648457,
+    -8.025921658, -7.781632628, -7.545319633, -7.316560087, -7.094966257,
+    -6.880181552, -6.671877289, -6.46974987, -6.273518306, -6.082922045,
+    -5.897719045, -5.717684082, -5.542607236, -5.372292553, -5.206556845,
+    -5.045228616, -4.888147106, -4.735161423, -4.586129765, -4.44091872,
+    -4.299402626, -4.161462998, -4.026988004, -3.895871989, -3.76801504,
+    -3.643322591, -3.52170506, -3.403077519, -3.287359388, -3.174474158,
+    -3.064349129, -2.956915181, -2.852106549, -2.749860626, -2.650117773,
+    -2.55282115, -2.457916557, -2.36535228, -2.27507896, -2.187049463,
+    -2.101218759, -2.017543814, -1.935983486,-1.856498429, -1.779051001,
+    -1.703605184, -1.630126502, -1.558581949, -1.48893992, -1.421170148,
+    -1.35524364, -1.291132623, -1.228810491, -1.168251755, -1.109431992,
+    -1.052327808, -0.9969167902, -0.9431774708, -0.8910892898, -0.8406325604,
+    -0.7917884361, -0.7445388804, -0.6988666373, -0.6547552046, -0.612188808,
+    -0.5711523768, -0.5316315211, -0.4936125107, -0.4570822543, -0.4220282808,
+    -0.3884387214, -0.3563022927, -0.3256082808, -0.2963465264, -0.2685074109,
+    -0.2420818435, -0.2170612483, -0.1934375538, -0.1712031815, -0.1503510361,
+    -0.1308744964, -0.1127674066, -0.09602406855, -0.08063923423,
+    -0.06660809932, -0.05392629701, -0.04258989258, -0.03259537844,
+    -0.02393966977, -0.01662010072, -0.01063442111, -0.005980793601,
+    -0.002657791522, -0.000664397052, 0.0 };
+
+uint32_t _WM_freq_table[] = { 837201792, 837685632, 838169728,
     838653568, 839138240, 839623232, 840108480, 840593984, 841079680,
     841565184, 842051648, 842538240, 843025152, 843512320, 843999232,
     844486976, 844975040, 845463360, 845951936, 846440320, 846929536,
@@ -282,6 +318,66 @@ static uint32_t freq_table[] = { 837201792, 837685632, 838169728,
     1665721984, 1666683520, 1667646720, 1668610560, 1669574784, 1670539776,
     1671505024, 1672470016, 1673436544, };
 
+/* Should be called in any function that effects note volumes */
+void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
+    float premix_dBm;
+    float premix_lin;
+    uint8_t pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
+    float premix_dBm_left;
+    float premix_dBm_right;
+    float premix_left;
+    float premix_right;
+    
+    uint8_t voices = 24;
+    
+    if (pan_ofs > 127) pan_ofs = 127;
+    premix_dBm_left = dBm_pan_volume[(127-pan_ofs)];
+    premix_dBm_right = dBm_pan_volume[pan_ofs];
+    
+    
+    if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
+        premix_dBm = dBm_volume[mdi->channel[ch].volume] +
+                     dBm_volume[mdi->channel[ch].expression] +
+                     dBm_volume[mdi->channel[ch].pressure] +
+                     dBm_volume[nte->velocity];
+    
+        premix_dBm_left += premix_dBm;
+        premix_dBm_right += premix_dBm;
+        
+        premix_left = (powf(10.0,(premix_dBm_left/20))) * (float)(_WM_MasterVolume * voices);
+        premix_right = (powf(10.0,(premix_dBm_right/20))) * (float)(_WM_MasterVolume * voices);
+    } else {
+        premix_lin = (float)(_WM_lin_volume[mdi->channel[ch].volume] +
+                             _WM_lin_volume[mdi->channel[ch].expression] +
+                             _WM_lin_volume[mdi->channel[ch].pressure] +
+                             _WM_lin_volume[nte->velocity]) / 4096.0;
+        
+        premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20)) * (float)(_WM_MasterVolume * voices);
+        premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20)) * (float)(_WM_MasterVolume * voices);
+    }
+    nte->left_mix_volume = (int32_t)premix_left / 512;
+    nte->right_mix_volume = (int32_t)premix_right / 512;
+}
+
+/* Should be called in any function that effects channel volumes */
+/* Calling this function with a value > 15 will make it adjust notes on all channels */
+void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch) {
+    struct _note *nte = mdi->note;
+    if (nte != NULL) {
+        do {
+            if (ch <= 15) {
+                if ((nte->noteid >> 8) == ch) {
+                    goto _DO_ADJUST;
+                }
+            } else {
+            _DO_ADJUST:
+                _WM_AdjustNoteVolumes(mdi, ch, nte);
+                if (nte->replay) _WM_AdjustNoteVolumes(mdi, ch, nte->replay);
+            }
+            nte = nte->next;
+        } while (nte != NULL);
+    }
+}
 
 void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
 	if (mdi->event_count >= mdi->events_size) {
@@ -382,26 +478,9 @@ static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
 	} else if (__builtin_expect((note_f > 12700), 0)) {
 		note_f = 12700;
 	}
-	freq = freq_table[(note_f % 1200)] >> (10 - (note_f / 1200));
+	freq = _WM_freq_table[(note_f % 1200)] >> (10 - (note_f / 1200));
 	return (((freq / ((_WM_SampleRate * 100) / 1024)) * 1024
              / nte->sample->inc_div));
-}
-
-uint32_t _WM_get_volume(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
-	int32_t volume;
-    
-	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {
-		volume = (sqr_volume[mdi->channel[ch].volume]
-                  * sqr_volume[mdi->channel[ch].expression]
-                  * sqr_volume[nte->velocity]) / 1048576;
-	} else {
-		volume = (_WM_lin_volume[mdi->channel[ch].volume]
-                  * _WM_lin_volume[mdi->channel[ch].expression]
-                  * _WM_lin_volume[nte->velocity]) / 1048576;
-	}
-    
-	volume = volume * nte->patch->amp / 100;
-	return (volume);
 }
 
 void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
@@ -427,7 +506,7 @@ void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
 		if (patch == NULL) {
 			return;
 		}
-		freq = freq_table[(note % 12) * 100] >> (10 - (note / 12));
+		freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
 	} else {
 		patch = _WM_get_patch_data(mdi,
                                ((mdi->channel[ch].bank << 8) | note | 0x80));
@@ -435,10 +514,10 @@ void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
 			return;
 		}
 		if (patch->note) {
-			freq = freq_table[(patch->note % 12) * 100]
+			freq = _WM_freq_table[(patch->note % 12) * 100]
             >> (10 - (patch->note / 12));
 		} else {
-			freq = freq_table[(note % 12) * 100] >> (10 - (note / 12));
+			freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
 		}
 	}
     
@@ -492,9 +571,9 @@ void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
 	nte->env_level = 0;
 	nte->modes = sample->modes;
 	nte->hold = mdi->channel[ch].hold;
-	nte->vol_lvl = _WM_get_volume(mdi, ch, nte);
 	nte->replay = NULL;
 	nte->is_off = 0;
+    _WM_AdjustNoteVolumes(mdi, ch, nte);
 }
 
 void _WM_do_aftertouch(struct _mdi *mdi, struct _event_data *data) {
@@ -512,37 +591,11 @@ void _WM_do_aftertouch(struct _mdi *mdi, struct _event_data *data) {
 	}
     
 	nte->velocity = data->data & 0xff;
-	nte->vol_lvl = _WM_get_volume(mdi, ch, nte);
-    
+    _WM_AdjustNoteVolumes(mdi, ch, nte);
 	if (nte->replay) {
 		nte->replay->velocity = data->data & 0xff;
-		nte->replay->vol_lvl = _WM_get_volume(mdi, ch, nte->replay);
+        _WM_AdjustNoteVolumes(mdi, ch, nte->replay);
 	}
-}
-
-void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch) {
-	int16_t pan_adjust = mdi->channel[ch].balance
-    + mdi->channel[ch].pan;
-	int16_t left, right;
-	int amp = 32;
-    
-	if (pan_adjust > 63) {
-		pan_adjust = 63;
-	} else if (pan_adjust < -64) {
-		pan_adjust = -64;
-	}
-    
-	pan_adjust += 64;
-    /*	if (mdi->info.mixer_options & WM_MO_LOG_VOLUME) {*/
-	left = (pan_volume[127 - pan_adjust] * _WM_MasterVolume * amp) / 1048576;
-	right = (pan_volume[pan_adjust] * _WM_MasterVolume * amp) / 1048576;
-    /*	} else {
-     left = (_WM_lin_volume[127 - pan_adjust] * _WM_MasterVolume * amp) / 1048576;
-     right= (_WM_lin_volume[pan_adjust] * _WM_MasterVolume * amp) / 1048576;
-     }*/
-    
-	mdi->channel[ch].left_adjust = left;
-	mdi->channel[ch].right_adjust = right;
 }
 
 void _WM_do_control_bank_select(struct _mdi *mdi, struct _event_data *data) {
@@ -566,57 +619,33 @@ void _WM_do_control_data_entry_course(struct _mdi *mdi,
 
 void _WM_do_control_channel_volume(struct _mdi *mdi,
                                       struct _event_data *data) {
-	struct _note *note_data = mdi->note;
 	uint8_t ch = data->channel;
     
 	mdi->channel[ch].volume = data->data;
-    
-	if (note_data) {
-		do {
-			if ((note_data->noteid >> 8) == ch) {
-				note_data->vol_lvl = _WM_get_volume(mdi, ch, note_data);
-				if (note_data->replay)
-					note_data->replay->vol_lvl = _WM_get_volume(mdi, ch,
-                                                            note_data->replay);
-			}
-			note_data = note_data->next;
-		} while (note_data);
-	}
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_balance(struct _mdi *mdi,
                                        struct _event_data *data) {
 	uint8_t ch = data->channel;
     
-	mdi->channel[ch].balance = data->data - 64;
-	_WM_do_pan_adjust(mdi, ch);
+	mdi->channel[ch].balance = data->data;
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_pan(struct _mdi *mdi, struct _event_data *data) {
 	uint8_t ch = data->channel;
     
-	mdi->channel[ch].pan = data->data - 64;
-	_WM_do_pan_adjust(mdi, ch);
+	mdi->channel[ch].pan = data->data;
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_expression(struct _mdi *mdi,
                                           struct _event_data *data) {
-	struct _note *note_data = mdi->note;
 	uint8_t ch = data->channel;
     
 	mdi->channel[ch].expression = data->data;
-    
-	if (note_data) {
-		do {
-			if ((note_data->noteid >> 8) == ch) {
-				note_data->vol_lvl = _WM_get_volume(mdi, ch, note_data);
-				if (note_data->replay)
-					note_data->replay->vol_lvl = _WM_get_volume(mdi, ch,
-                                                            note_data->replay);
-			}
-			note_data = note_data->next;
-		} while (note_data);
-	}
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_data_entry_fine(struct _mdi *mdi,
@@ -758,38 +787,17 @@ void _WM_do_control_channel_sound_off(struct _mdi *mdi,
 
 void _WM_do_control_channel_controllers_off(struct _mdi *mdi,
                                                struct _event_data *data) {
-	struct _note *note_data = mdi->note;
 	uint8_t ch = data->channel;
     
 	mdi->channel[ch].expression = 127;
 	mdi->channel[ch].pressure = 127;
-	mdi->channel[ch].volume = 100;
-	mdi->channel[ch].pan = 0;
-	mdi->channel[ch].balance = 0;
 	mdi->channel[ch].reg_data = 0xffff;
 	mdi->channel[ch].pitch_range = 200;
 	mdi->channel[ch].pitch = 0;
 	mdi->channel[ch].pitch_adjust = 0;
 	mdi->channel[ch].hold = 0;
-	_WM_do_pan_adjust(mdi, ch);
-    
-	if (note_data) {
-		do {
-			if ((note_data->noteid >> 8) == ch) {
-				note_data->sample_inc = get_inc(mdi, note_data);
-				note_data->velocity = 0;
-				note_data->vol_lvl = _WM_get_volume(mdi, ch, note_data);
-				note_data->hold = 0;
-                
-				if (note_data->replay) {
-					note_data->replay->velocity = data->data;
-					note_data->replay->vol_lvl = _WM_get_volume(mdi, ch,
-                                                            note_data->replay);
-				}
-			}
-			note_data = note_data->next;
-		} while (note_data);
-	}
+
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_notes_off(struct _mdi *mdi,
@@ -837,26 +845,12 @@ void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
 }
 
 void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
-	struct _note *note_data = mdi->note;
 	uint8_t ch = data->channel;
     
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
     
-	if (note_data) {
-		do {
-			if ((note_data->noteid >> 8) == ch) {
-				note_data->velocity = data->data;
-				note_data->vol_lvl = _WM_get_volume(mdi, ch, note_data);
-                
-				if (note_data->replay) {
-					note_data->replay->velocity = data->data;
-					note_data->replay->vol_lvl = _WM_get_volume(mdi, ch,
-                                                            note_data->replay);
-				}
-			}
-			note_data = note_data->next;
-		} while (note_data);
-	}
+	mdi->channel[ch].pressure = data->data;
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data) {
@@ -912,16 +906,17 @@ void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
 		mdi->channel[i].volume = 100;
 		mdi->channel[i].pressure = 127;
 		mdi->channel[i].expression = 127;
-		mdi->channel[i].balance = 0;
-		mdi->channel[i].pan = 0;
-		mdi->channel[i].left_adjust = 1;
-		mdi->channel[i].right_adjust = 1;
+		mdi->channel[i].balance = 64;
+		mdi->channel[i].pan = 64;
 		mdi->channel[i].pitch = 0;
 		mdi->channel[i].pitch_range = 200;
 		mdi->channel[i].reg_data = 0xFFFF;
 		mdi->channel[i].isdrum = 0;
-		_WM_do_pan_adjust(mdi, i);
 	}
+    /* Although I would not expect notes to be active when this event
+     triggers but we'll adjust active notes as well just in case */
+    _WM_AdjustChannelVolumes(mdi,16); // A setting > 15 adjusts all channels
+    
 	mdi->channel[9].isdrum = 1;
 	UNUSED(data); /* NOOP, to please the compiler gods */
 }
@@ -965,7 +960,7 @@ void _WM_do_meta_timesignature(struct _mdi *mdi, struct _event_data *data) {
 void _WM_ResetToStart(struct _mdi *mdi) {
 	mdi->current_event = mdi->events;
 	mdi->samples_to_mix = 0;
-	mdi->info.current_sample = 0;
+	mdi->extra_info.current_sample = 0;
     
 	_WM_do_sysex_gm_reset(mdi, NULL);
 }
@@ -1321,8 +1316,8 @@ _WM_initMDI(void) {
 	mdi = malloc(sizeof(struct _mdi));
 	memset(mdi, 0, (sizeof(struct _mdi)));
     
-	mdi->info.copyright = NULL;
-	mdi->info.mixer_options = _WM_MixerOptions;
+	mdi->extra_info.copyright = NULL;
+	mdi->extra_info.mixer_options = _WM_MixerOptions;
     
 	_WM_load_patch(mdi, 0x0000);
     
@@ -1336,9 +1331,9 @@ _WM_initMDI(void) {
     
 	mdi->current_event = mdi->events;
 	mdi->samples_to_mix = 0;
-	mdi->info.current_sample = 0;
-	mdi->info.total_midi_time = 0;
-	mdi->info.approx_total_samples = 0;
+	mdi->extra_info.current_sample = 0;
+	mdi->extra_info.total_midi_time = 0;
+	mdi->extra_info.approx_total_samples = 0;
     
 	_WM_do_sysex_roland_reset(mdi, NULL);
     
@@ -1369,55 +1364,10 @@ void _WM_freeMDI(struct _mdi *mdi) {
 	}
     
 	free(mdi->events);
-	free(mdi->tmp_info);
 	_WM_free_reverb(mdi->reverb);
 	free(mdi->mix_buffer);
 	free(mdi);
 }
-
-#if 0
-static uint32_t get_decay_samples(struct _patch *patch, uint8_t note) {
-    
-	struct _sample *sample = NULL;
-	uint32_t freq = 0;
-	uint32_t decay_samples = 0;
-    
-	if (patch == NULL) return (0);
-    
-	/* first get the freq we need so we can check the right sample */
-	if (patch->patchid & 0x80) {
-		/* is a drum patch */
-		if (patch->note) {
-			freq = freq_table[(patch->note % 12) * 100]
-            >> (10 - (patch->note / 12));
-		} else {
-			freq = freq_table[(note % 12) * 100] >> (10 - (note / 12));
-		}
-	} else {
-		freq = freq_table[(note % 12) * 100] >> (10 - (note / 12));
-	}
-    
-	/* get the sample */
-	sample = _WM_get_sample_data(patch, (freq / 100));
-	if (sample == NULL) return (0);
-    
-	if (patch->patchid & 0x80) {
-		float sratedata = ((float) sample->rate / (float) _WM_SampleRate)
-        * (float) (sample->data_length >> 10);
-		decay_samples = (uint32_t) sratedata;
-        /*	printf("Drums (%i / %i) * %lu = %f\n", sample->rate, _WM_SampleRate, (sample->data_length >> 10), sratedata);*/
-	} else if (sample->modes & SAMPLE_CLAMPED) {
-		decay_samples = (4194303 / sample->env_rate[5]);
-        /*	printf("clamped 4194303 / %lu = %lu\n", sample->env_rate[5], decay_samples);*/
-	} else {
-		decay_samples =
-        ((4194303 - sample->env_target[4]) / sample->env_rate[4])
-        + (sample->env_target[4] / sample->env_rate[5]);
-        /*	printf("NOT clamped ((4194303 - %lu) / %lu) + (%lu / %lu)) = %lu\n", sample->env_target[4], sample->env_rate[4], sample->env_target[4], sample->env_rate[5], decay_samples);*/
-	}
-	return (decay_samples);
-}
-#endif
 
 uint32_t
 _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event) {
@@ -1511,15 +1461,15 @@ _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event
                     ret_cnt++;
                     
                     /* Copy copyright info in the getinfo struct */
-                    if (mdi->info.copyright) {
-                        mdi->info.copyright = realloc(mdi->info.copyright,(strlen(mdi->info.copyright) + 1 + tmp_length + 1));
-                        memcpy(&mdi->info.copyright[strlen(mdi->info.copyright) + 1], event_data, tmp_length);
-                        mdi->info.copyright[strlen(mdi->info.copyright) + 1 + tmp_length] = '\0';
-                        mdi->info.copyright[strlen(mdi->info.copyright)] = '\n';
+                    if (mdi->extra_info.copyright) {
+                        mdi->extra_info.copyright = realloc(mdi->extra_info.copyright,(strlen(mdi->extra_info.copyright) + 1 + tmp_length + 1));
+                        memcpy(&mdi->extra_info.copyright[strlen(mdi->extra_info.copyright) + 1], event_data, tmp_length);
+                        mdi->extra_info.copyright[strlen(mdi->extra_info.copyright) + 1 + tmp_length] = '\0';
+                        mdi->extra_info.copyright[strlen(mdi->extra_info.copyright)] = '\n';
                     } else {
-                        mdi->info.copyright = malloc(tmp_length + 1);
-                        memcpy(mdi->info.copyright, event_data, tmp_length);
-                        mdi->info.copyright[tmp_length] = '\0';
+                        mdi->extra_info.copyright = malloc(tmp_length + 1);
+                        memcpy(mdi->extra_info.copyright, event_data, tmp_length);
+                        mdi->extra_info.copyright[tmp_length] = '\0';
                     }
                     ret_cnt += tmp_length;
                     
