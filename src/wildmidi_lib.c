@@ -1984,25 +1984,26 @@ WildMidi_GetInfo(midi * handle) {
 		return (NULL);
 	}
 	_WM_Lock(&mdi->lock);
-    if (mdi->tmp_info == NULL) {
-        mdi->tmp_info = malloc(sizeof(struct _WM_Info));
+	if (mdi->tmp_info == NULL) {
+		mdi->tmp_info = malloc(sizeof(struct _WM_Info));
 		if (mdi->tmp_info == NULL) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set info", 0);
 			_WM_Unlock(&mdi->lock);
 			return (NULL);
 		}
+		mdi->tmp_info->copyright = NULL;
 	}
-    mdi->tmp_info->current_sample = mdi->extra_info.current_sample;
+	mdi->tmp_info->current_sample = mdi->extra_info.current_sample;
 	mdi->tmp_info->approx_total_samples = mdi->extra_info.approx_total_samples;
 	mdi->tmp_info->mixer_options = mdi->extra_info.mixer_options;
 	if (mdi->extra_info.copyright) {
 		free(mdi->tmp_info->copyright);
 		mdi->tmp_info->copyright = malloc(strlen(mdi->extra_info.copyright) + 1);
-        if (mdi->tmp_info->copyright == NULL) {
-            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set copyright", 0);
-        } else {
-            strcpy(mdi->tmp_info->copyright, mdi->extra_info.copyright);
-        }
+		if (mdi->tmp_info->copyright == NULL) {
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set copyright", 0);
+		} else {
+			strcpy(mdi->tmp_info->copyright, mdi->extra_info.copyright);
+		}
 	} else {
 		mdi->tmp_info->copyright = NULL;
 	}
