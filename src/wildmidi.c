@@ -912,7 +912,7 @@ static void close_oss_output(void) {
 
 #elif defined AUDIODRV_OPENAL
 
-#define NUM_BUFFERS 8
+#define NUM_BUFFERS 4
 
 static ALCdevice *device;
 static ALCcontext *context;
