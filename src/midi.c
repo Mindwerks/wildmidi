@@ -71,7 +71,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 	uint32_t decay_samples = 0;
 
 	uint8_t *cvt = NULL;
-	uint32_t cvt_size;
+//	uint32_t cvt_size;
 
 #if 0
 	/* This will be done using a seperate _WM_ParseNewXmi/Mus

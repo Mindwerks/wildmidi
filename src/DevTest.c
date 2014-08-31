@@ -548,6 +548,23 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
     return rtn_cnt;
 }
 
+static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int verbose) {
+    int32_t mus_data_ofs = 0;
+    
+    // Check Header
+    if (strncmp((char *) mus_data,"MUS", 3) != 0) {
+        printf("Not a valid MUS file: expected MUS\n");
+        return -1;
+    }
+    if (mus_data[3] != 0x1A) {
+        printf("Not a valid MUS file: expected value 0x1A\n");
+        return -1;
+    }
+    mus_data_ofs = 4;
+    
+    return 0;
+}
+    
 static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
     uint16_t hmi_division = 0;
     //uint32_t hmi_duration_secs = 0;
@@ -1526,7 +1543,8 @@ int main(int argc, char ** argv) {
 		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".pat") != 0) &&
 		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".xmi") != 0) &&
 		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmp") != 0) &&
-		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") != 0)) {
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") != 0) &&
+		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mus") != 0)) {
 			printf("Testing of %s is not supported\n", argv[optind]);
 			optind++;
 			continue;
@@ -1548,6 +1566,8 @@ int main(int argc, char ** argv) {
 				testret = test_hmp(filebuffer, filesize, verbose);
 			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") == 0) {
 				testret = test_hmi(filebuffer, filesize, verbose);
+			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mus") == 0) {
+				testret = test_mus(filebuffer, filesize, verbose);
 			}
 			free(filebuffer);
 			if (testret != 0) {

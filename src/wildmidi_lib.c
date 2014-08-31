@@ -892,7 +892,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 	uint32_t real_samples_to_mix = 0;
 	uint32_t data_pos;
 	int32_t premix, left_mix, right_mix;
-	int32_t vol_mul;
+//	int32_t vol_mul;
 	struct _note *note_data = NULL;
 	uint32_t count;
 	struct _event *event = mdi->current_event;
