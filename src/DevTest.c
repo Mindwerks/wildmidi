@@ -557,6 +557,7 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
     uint16_t mus_no_instr = 0;
     uint16_t mus_instr_cnt = 0;
     uint8_t mus_event_size = 0;
+    uint8_t mus_prev_vol[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     uint32_t mus_ticks = 0;
     
     
@@ -614,15 +615,21 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
     do {
         // Read Event
     _WM_READ_MUS_EVENT:
-        printf("@ 0x%.4x (%i) ", mus_data_ofs, (mus_data[mus_data_ofs] & 0x0f));
+        if (verbose) printf("@ 0x%.4x (%i) ", mus_data_ofs, (mus_data[mus_data_ofs] & 0x0f));
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
             case 0: // note off
                 mus_event_size = 2;
                 if (verbose) printf("Note Off %i\n", mus_data[mus_data_ofs + 1]);
                 break;
             case 1: // note on
-                if (verbose) printf("Note On (%i): %i\n", mus_data[mus_data_ofs + 1], mus_data[mus_data_ofs + 2]);
-                mus_event_size = 3;
+                if (mus_data[mus_data_ofs + 1] & 0x80) {
+                    mus_event_size = 3;
+                    if (verbose) printf("Note On (%i): %i\n", (mus_data[mus_data_ofs + 1] & 0x7f), mus_data[mus_data_ofs + 2]);
+                    mus_prev_vol[mus_data[mus_data_ofs] & 0x0f] = mus_data[mus_data_ofs + 2];
+                } else {
+                    mus_event_size = 2;
+                    if (verbose) printf("Note On (%i): [%i]\n", mus_data[mus_data_ofs + 1], mus_prev_vol[mus_data[mus_data_ofs] & 0x0f]);
+                }
                 break;
             case 2: // pitch bend
                 mus_event_size = 2;
@@ -701,14 +708,14 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
             case 6: // End Of Song
                 mus_event_size = 1;
                 if (verbose) printf("End Of Song\n");
-                //goto _WM_MUS_EOS;
+                goto _WM_MUS_EOS;
                 break;
             case 7: // ??
                 mus_event_size = 1;
                 if (verbose) printf("0x%2x\n", mus_data[mus_data_ofs]);
                 break;
         }
-        
+#if 0
         // DEBUG
         if (verbose)
         {
@@ -718,7 +725,7 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
             }
             printf("\n");
         }
-        
+#endif
         if (!(mus_data[mus_data_ofs] & 0x80)) {
             mus_data_ofs += mus_event_size;
             goto _WM_READ_MUS_EVENT;
