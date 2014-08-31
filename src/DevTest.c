@@ -549,7 +549,22 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
 }
 
 static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int verbose) {
-    int32_t mus_data_ofs = 0;
+    uint32_t mus_data_ofs = 0;
+    uint32_t mus_song_ofs = 0;
+    uint32_t mus_song_len = 0;
+    uint16_t mus_ch_cnt1 = 0;
+    uint16_t mus_ch_cnt2 = 0;
+    uint16_t mus_no_instr = 0;
+    uint16_t mus_instr_cnt = 0;
+    uint8_t mus_event_size = 0;
+    uint32_t mus_ticks = 0;
+    
+    
+    // Check that we have enough data to check the header
+    if (mus_size < 17) {
+        printf("Not a valid MUS file: File too short\n");
+        return -1;
+    }
     
     // Check Header
     if (strncmp((char *) mus_data,"MUS", 3) != 0) {
@@ -560,8 +575,168 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
         printf("Not a valid MUS file: expected value 0x1A\n");
         return -1;
     }
-    mus_data_ofs = 4;
     
+    // Get Song Length
+    mus_song_len = (mus_data[5] << 8) | mus_data[4];
+    // Get Song Offset
+    mus_song_ofs = (mus_data[7] << 8) | mus_data[6];
+    
+    if (verbose) printf("Song Offset: %i, Length: %i\n", mus_song_ofs, mus_song_len);
+    
+    // Have yet to determine what this actually is.
+    mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8];
+    mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10];
+    
+    // Number of instruments defined
+    mus_no_instr = (mus_data[13] << 8) | mus_data[12];
+    if (verbose) printf("Number of Instruments: %i\n", mus_no_instr);
+    
+    // Skip next 2 data bytes
+    mus_data_ofs = 16;
+    
+    // Check that we have enough data to check the rest
+    if (mus_size < (mus_data_ofs + (mus_no_instr << 1) + mus_song_len)) {
+        printf("Not a valid MUS file: File too short\n");
+        return -1;
+    }
+    
+    if (verbose) {
+        do {
+            printf("(%i) %i\n",mus_instr_cnt, ((mus_data[mus_data_ofs + 1] << 8) | mus_data[mus_data_ofs]));
+            mus_data_ofs += 2;
+            mus_instr_cnt++;
+        } while (mus_instr_cnt != mus_no_instr);
+    }
+    
+    // make sure we are at song offset
+    mus_data_ofs = mus_song_ofs;
+    
+    do {
+        // Read Event
+    _WM_READ_MUS_EVENT:
+        printf("@ 0x%.4x (%i) ", mus_data_ofs, (mus_data[mus_data_ofs] & 0x0f));
+        switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
+            case 0: // note off
+                mus_event_size = 2;
+                if (verbose) printf("Note Off %i\n", mus_data[mus_data_ofs + 1]);
+                break;
+            case 1: // note on
+                if (verbose) printf("Note On (%i): %i\n", mus_data[mus_data_ofs + 1], mus_data[mus_data_ofs + 2]);
+                mus_event_size = 3;
+                break;
+            case 2: // pitch bend
+                mus_event_size = 2;
+                if (verbose) printf("Pitch Bend %i\n", (mus_data[mus_data_ofs + 1] - 64));
+                break;
+            case 3: // system controller
+                mus_event_size = 2;
+                if (verbose) {
+                    printf("System Controller: ");
+                    switch (mus_data[mus_data_ofs + 1]) {
+                        case 10:
+                            printf("All Sounds Off\n");
+                            break;
+                        case 11:
+                            printf("All Notes Off\n");
+                            break;
+                        case 12: // Not supported by WildMidi. Parsed for compatability
+                            printf("Mono\n");
+                            break;
+                        case 13:  // Not supported by WildMidi. Parsed for compatability
+                            printf("Poly\n");
+                            break;
+                        case 14:
+                            printf("Reset All Controllers\n");
+                            break;
+                        default:
+                            printf("Unsupported %i\n", mus_data[mus_data_ofs + 1]);
+                            
+                    }
+                }
+                break;
+            case 4: // controller
+                mus_event_size = 3;
+                if (verbose) {
+                    printf("Controller: ");
+                    switch (mus_data[mus_data_ofs + 1]) {
+                        case 0:
+                            printf("Patch %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 1:
+                            printf("Bank %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 2:
+                            printf("Modulation %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 3:
+                            printf("Volume %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 4:
+                            printf("Pan %i\n", (mus_data[mus_data_ofs + 2] - 64));
+                            break;
+                        case 5:
+                            printf("Expression %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 6:
+                            printf("Reverb %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 7:
+                            printf("Chorus %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 8:
+                            printf("Sustain %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        case 9:
+                            printf("Soft Pedal %i\n", mus_data[mus_data_ofs + 2]);
+                            break;
+                        default:
+                            printf("Unsupported %i %i\n", mus_data[mus_data_ofs + 1], mus_data[mus_data_ofs + 2]);
+                    }
+                }
+                break;
+            case 5: // ??
+                mus_event_size = 1;
+                if (verbose) printf("0x%2x\n", mus_data[mus_data_ofs]);
+                break;
+            case 6: // End Of Song
+                mus_event_size = 1;
+                if (verbose) printf("End Of Song\n");
+                //goto _WM_MUS_EOS;
+                break;
+            case 7: // ??
+                mus_event_size = 1;
+                if (verbose) printf("0x%2x\n", mus_data[mus_data_ofs]);
+                break;
+        }
+        
+        // DEBUG
+        if (verbose)
+        {
+            uint8_t i = 0;
+            for (i = 0; i < mus_event_size; i++) {
+                printf("0x%.2x ", mus_data[mus_data_ofs + i]);
+            }
+            printf("\n");
+        }
+        
+        if (!(mus_data[mus_data_ofs] & 0x80)) {
+            mus_data_ofs += mus_event_size;
+            goto _WM_READ_MUS_EVENT;
+        }
+        mus_data_ofs += mus_event_size;
+        
+        // Read Time (140 ticks per minute)
+        mus_ticks = 0;
+        do {
+            mus_ticks = (mus_ticks << 7) | (mus_data[mus_data_ofs] & 0x7f);
+            mus_data_ofs++;
+        } while (mus_data[mus_data_ofs - 1] > 0x7f);
+        if (verbose) printf("Ticks: %i\n", mus_ticks);
+        
+    } while (mus_data_ofs < mus_size);
+    
+    // Song End
+_WM_MUS_EOS:
     return 0;
 }
     
