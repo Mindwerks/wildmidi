@@ -833,6 +833,13 @@ void _WM_do_control_channel_notes_off(struct _mdi *mdi,
 	}
 }
 
+void _WM_do_control_dummy(struct _mdi *mdi,
+                                       struct _event_data *data) {
+    UNUSED(mdi);
+    UNUSED(data);
+}
+
+
 void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch);
@@ -1109,19 +1116,28 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
             tmp_event = *_WM_do_control_channel_notes_off;
             break;
         default:
-            return (0);
-	}
+            tmp_event = *_WM_do_control_dummy;
+            break;
+    }
 	if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = tmp_event;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data = setting;
+        if (tmp_event != *_WM_do_control_dummy) {
+            mdi->events[mdi->event_count - 1].event_data.data = setting;
+        } else {
+            mdi->events[mdi->event_count - 1].event_data.data = (controller << 8) | setting;
+        }
 	} else {
 		_WM_CheckEventMemoryPool(mdi);
 		mdi->events[mdi->event_count].do_event = tmp_event;
 		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data = setting;
-		mdi->events[mdi->event_count].samples_to_next = 0;
+		if (tmp_event != *_WM_do_control_dummy) {
+            mdi->events[mdi->event_count - 1].event_data.data = setting;
+        } else {
+            mdi->events[mdi->event_count - 1].event_data.data = (controller << 8) | setting;
+        }
+        mdi->events[mdi->event_count].samples_to_next = 0;
 		mdi->event_count++;
 	}
 	return (0);
@@ -1344,6 +1360,8 @@ _WM_initMDI(void) {
 	mdi->extra_info.approx_total_samples = 0;
     
 	_WM_do_sysex_roland_reset(mdi, NULL);
+    
+    UNUSED(midi_setup_endoftrack(mdi));
     
 	return (mdi);
 }

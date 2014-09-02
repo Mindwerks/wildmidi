@@ -66,7 +66,7 @@
 #include "patches.h"
 #include "sample.h"
 #include "hmi.h"
-
+#include "mus_wm.h"
 
 /*
  * =========================
@@ -1687,6 +1687,7 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
 WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 	uint8_t *mididata = NULL;
 	uint32_t midisize = 0;
+	uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
 	midi * ret = NULL;
 
 	if (!WM_Initialized) {
@@ -1706,6 +1707,8 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 		ret = (void *) _WM_ParseNewHmp(mididata, midisize);
 	} else if (memcmp(mididata, "HMI-MIDISONG061595", 18) == 0) {
 		ret = (void *) _WM_ParseNewHmi(mididata, midisize);
+	} else if (memcmp(mididata, mus_hdr, 4) == 0) {
+		ret = (void *) _WM_ParseNewMus(mididata, midisize);
 	} else {
 		ret = (void *) _WM_ParseNewMidi(mididata, midisize);
 	}
@@ -1722,6 +1725,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 }
 
 WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
+    uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
 	midi * ret = NULL;
 
 	if (!WM_Initialized) {
@@ -1742,6 +1746,8 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 		ret = (void *) _WM_ParseNewHmp(midibuffer, size);
 	} else if (memcmp(midibuffer, "HMI-MIDISONG061595", 18) == 0) {
 		ret = (void *) _WM_ParseNewHmi(midibuffer, size);
+	} else if (memcmp(midibuffer, mus_hdr, 4) == 0) {
+		ret = (void *) _WM_ParseNewMus(midibuffer, size);
 	} else {
 		ret = (void *) _WM_ParseNewMidi(midibuffer, size);
 	}

@@ -759,6 +759,15 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 123;
             (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+        } else if (mdi->events[i].do_event == _WM_do_control_dummy) {
+            // DEBUG
+            // fprintf(stderr,"Control Dummy Event: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            if (running_event != (0xb0 | mdi->events[i].event_data.channel)) {
+                (*out)[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
+                running_event = (*out)[out_ofs - 1];
+            }
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_patch) {
             // DEBUG
             // fprintf(stderr,"Patch: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);

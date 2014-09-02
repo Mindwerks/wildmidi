@@ -150,6 +150,7 @@ extern void _WM_do_control_registered_param_course(struct _mdi *mdi, struct _eve
 extern void _WM_do_control_channel_sound_off(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_control_channel_controllers_off(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_control_channel_notes_off(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_dummy(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_patch(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data);
