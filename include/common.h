@@ -39,6 +39,9 @@ extern float _WM_reverb_room_length;// = 22.5f;
 extern float _WM_reverb_listen_posx;// = 8.4375f;
 extern float _WM_reverb_listen_posy;// = 16.875f;
 
+extern void _cvt_reset_options (void);
+extern uint16_t _cvt_get_option (uint16_t tag);
+
 
 /* Set our global defines here */
 #ifndef M_PI

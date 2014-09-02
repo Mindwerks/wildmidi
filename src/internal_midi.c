@@ -1047,6 +1047,14 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
 	void (*tmp_event)(struct _mdi *mdi, struct _event_data *data) = NULL;
     
 	switch (controller) {
+        /*
+         **********************************************************************
+         FIXME: Need to add dummy events for MIDI events we don't support.
+         
+         There is no reason not to store unsupported events in light of our
+         out to midi option.
+         **********************************************************************
+         */
         case 0:
             tmp_event = *_WM_do_control_bank_select;
             mdi->channel[channel].bank = setting;

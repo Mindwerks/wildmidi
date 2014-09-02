@@ -210,14 +210,14 @@ static struct _hndl * first_handle = NULL;
  * =========================
  */
 
-static void _cvt_reset_options (void) {
+void _cvt_reset_options (void) {
 	_WM_Lock(&WM_ConvertOptions.lock);
 	WM_ConvertOptions.xmi_convert_type = 0;
 	WM_ConvertOptions.frequency = 0;
 	_WM_Unlock(&WM_ConvertOptions.lock);
 }
 
-static uint16_t _cvt_get_option (uint16_t tag) {
+uint16_t _cvt_get_option (uint16_t tag) {
 	uint16_t r = 0;
 	_WM_Lock(&WM_ConvertOptions.lock);
 	switch (tag) {

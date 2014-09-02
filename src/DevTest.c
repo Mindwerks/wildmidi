@@ -557,6 +557,7 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
     uint16_t mus_no_instr = 0;
     uint16_t mus_instr_cnt = 0;
     uint8_t mus_event_size = 0;
+    uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
     uint8_t mus_prev_vol[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     uint32_t mus_ticks = 0;
     
@@ -568,12 +569,8 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
     }
     
     // Check Header
-    if (strncmp((char *) mus_data,"MUS", 3) != 0) {
-        printf("Not a valid MUS file: expected MUS\n");
-        return -1;
-    }
-    if (mus_data[3] != 0x1A) {
-        printf("Not a valid MUS file: expected value 0x1A\n");
+    if (strncmp((char *) mus_data, (char *) mus_hdr, 4) != 0) {
+        printf("Not a valid MUS file: expected MUS followed by 0x1A\n");
         return -1;
     }
     
