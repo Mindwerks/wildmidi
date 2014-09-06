@@ -126,6 +126,19 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     do {
         // Build the event
     _mus_build_event:
+#if 1
+        // Mus drums happen on channel 15, swap channel 9 & 15
+        // DEBUG
+        printf("\r\nBefore: 0x%.2x\r\n", mus_data[mus_data_ofs]);
+
+        if ((mus_data[mus_data_ofs] & 0x0f) == 0x0f) {
+            mus_data[mus_data_ofs] = (mus_data[mus_data_ofs] & 0xf0) | 0x09;
+        } else if ((mus_data[mus_data_ofs] & 0x0f) == 0x09) {
+            mus_data[mus_data_ofs] = (mus_data[mus_data_ofs] & 0xf0) | 0x0f;
+        }
+        // DEBUG
+        printf("\r\nAfter: 0x%.2x\r\n", mus_data[mus_data_ofs]);
+#endif
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
             case 0: // Note Off
                 mus_event_size = 2;
@@ -205,8 +218,8 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
-                    default:
-                        break;
+                    default: // Unsupported
+                        goto _mus_next_data;
                 }
                 break;
             case 4:
@@ -219,7 +232,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                          *************************************************
                          */
                         mus_event[0] = 0xc0 | (mus_data[mus_data_ofs] & 0x0f);
-                        mus_event[1] = mus_data[mus_data_ofs + 1];
+                        mus_event[1] = mus_data[mus_data_ofs + 2];
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
@@ -254,28 +267,24 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[3] = 0;
                         break;
                     case 6: // Reverb (Not supported by WildMidi)
-                        printf("Reverb %i\n", mus_data[mus_data_ofs + 2]);
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 91;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 7: // Chorus (Not supported by WildMidi)
-                        printf("Chorus %i\n", mus_data[mus_data_ofs + 2]);
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 93;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 8: // Sustain
-                        printf("Sustain %i\n", mus_data[mus_data_ofs + 2]);
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 64;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 9: // Soft Peddle (Not supported by WildMidi)
-                        printf("Soft Pedal %i\n", mus_data[mus_data_ofs + 2]);
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 67;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
