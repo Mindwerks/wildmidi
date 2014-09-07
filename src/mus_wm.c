@@ -35,6 +35,14 @@
 #include "reverb.h"
 #include "mus_wm.h"
 
+#ifdef DEBUG_MUS
+#define MUS_EVENT_DEBUG(dx,dy,dz) fprintf(stderr,"\r%s, 0x%.2x, 0x%.8x\n",dx,dy,dz)
+#else
+#define MUS_EVENT_DEBUG(dx,dy,dz)
+#endif
+
+
+
 /*
  Turns hmp file data into an event stream
  */
@@ -129,7 +137,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 #if 1
         // Mus drums happen on channel 15, swap channel 9 & 15
         // DEBUG
-        printf("\r\nBefore: 0x%.2x\r\n", mus_data[mus_data_ofs]);
+        MUS_EVENT_DEBUG("Before", mus_data[mus_data_ofs], 0);
 
         if ((mus_data[mus_data_ofs] & 0x0f) == 0x0f) {
             mus_data[mus_data_ofs] = (mus_data[mus_data_ofs] & 0xf0) | 0x09;
@@ -137,7 +145,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
             mus_data[mus_data_ofs] = (mus_data[mus_data_ofs] & 0xf0) | 0x0f;
         }
         // DEBUG
-        printf("\r\nAfter: 0x%.2x\r\n", mus_data[mus_data_ofs]);
+        MUS_EVENT_DEBUG("After", mus_data[mus_data_ofs], 0);
 #endif
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
             case 0: // Note Off

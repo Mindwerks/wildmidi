@@ -1888,10 +1888,13 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 				"(size not a multiple of 4)", 0);
 		return (-1);
 	}
+#if 0
+    // FIXME: disabled until further notice
 	if (((struct _mdi *) handle)->extra_info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 		if (!gauss_table) init_gauss();
 		return (WM_GetOutput_Gauss(handle, buffer, size));
 	}
+#endif
 	return (WM_GetOutput_Linear(handle, buffer, size));
 }
 

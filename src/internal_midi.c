@@ -329,8 +329,14 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     float premix_dBm_right;
     float premix_left;
     float premix_right;
-    // FIXME: Still need to fine tune.
-    float voices_adj = (float)_WM_MasterVolume * 40.0;
+    /*
+     This value is to reduce the chance of clipping. Lower value means lower overall volume, higher value means higher overall volume.
+     
+     NOTE: The higher the value the higher the chance of clipping.
+     
+     FIXME: May still need fine tuning. Clipping heard at a setting of 43.
+     */
+    float volume_adj = (float)_WM_MasterVolume * 42.0;
     
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
     
@@ -349,16 +355,16 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
         premix_dBm_left += premix_dBm;
         premix_dBm_right += premix_dBm;
         
-        premix_left = (powf(10.0,(premix_dBm_left / 20.0))) * voices_adj;
-        premix_right = (powf(10.0,(premix_dBm_right / 20.0))) * voices_adj;
+        premix_left = (powf(10.0,(premix_dBm_left / 20.0))) * volume_adj;
+        premix_right = (powf(10.0,(premix_dBm_right / 20.0))) * volume_adj;
     } else {
         premix_lin = (float)(_WM_lin_volume[mdi->channel[ch].volume] +
                              _WM_lin_volume[mdi->channel[ch].expression] +
                              _WM_lin_volume[mdi->channel[ch].pressure] +
                              _WM_lin_volume[nte->velocity]) / 4096.0;
         
-        premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20)) * voices_adj;
-        premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20)) * voices_adj;
+        premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20)) * volume_adj;
+        premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20)) * volume_adj;
     }
     nte->left_mix_volume = (int32_t)premix_left / 512;
     nte->right_mix_volume = (int32_t)premix_right / 512;
@@ -1202,9 +1208,9 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
 		mdi->events[mdi->event_count].do_event = tmp_event;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		if (tmp_event != *_WM_do_control_dummy) {
-            mdi->events[mdi->event_count - 1].event_data.data = setting;
+            mdi->events[mdi->event_count].event_data.data = setting;
         } else {
-            mdi->events[mdi->event_count - 1].event_data.data = (controller << 8) | setting;
+            mdi->events[mdi->event_count].event_data.data = (controller << 8) | setting;
         }
         mdi->events[mdi->event_count].samples_to_next = 0;
 		mdi->event_count++;
