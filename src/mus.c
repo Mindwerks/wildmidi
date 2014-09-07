@@ -240,7 +240,7 @@ int _WM_mus2midi(uint8_t *in, uint32_t insize,
 	header.instrCnt = READ_INT16(&in[12]);
 
 	if (memcmp(header.ID, MUS_ID, 4)) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, NULL, 0);
 		return (-1);
 	}
 	if (insize < (uint32_t)header.scoreLen + (uint32_t)header.scoreStart) {

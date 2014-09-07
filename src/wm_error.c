@@ -59,7 +59,7 @@ void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Not a hmp file",
 		"Not a hmi file",
 		"Unable to convert",
-        "Not a mus file",
+		"Not a mus file",
 
 		"Invalid error code"
 	};
