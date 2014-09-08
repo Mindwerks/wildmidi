@@ -1,5 +1,5 @@
 /*
- mus_wm.h
+ xmi.h
  
  Midi Wavetable Processing library
  
@@ -23,9 +23,9 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MUS_WM_H
-#define __MUS_WM_H
+#ifndef __XMI_H
+#define __XMI_H
 
-extern struct _mdi *_WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size);
+extern struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size);
 
-#endif /* __MUS_WM_H */
+#endif /* __XMI_H */

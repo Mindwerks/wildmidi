@@ -1,5 +1,5 @@
 /*
- mus_wm.h
+ xmi.c
  
  Midi Wavetable Processing library
  
@@ -23,9 +23,47 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MUS_WM_H
-#define __MUS_WM_H
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-extern struct _mdi *_WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size);
+#include "common.h"
+#include "wm_error.h"
+#include "wildmidi_lib.h"
+#include "internal_midi.h"
+#include "reverb.h"
+#include "xmi.h"
 
-#endif /* __MUS_WM_H */
+
+struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
+    struct _mdi *xmi_mdi;
+    struct _xmi_noteoff {
+        uint32_t samples;
+        uint8_t channel;
+        uint8_t note;
+        uint8_t velocity;
+    } *xmi_noteoff = NULL;
+    uint32_t xmi_noteoff_count = 0;
+    uint32_t i;
+
+    xmi_mdi = _WM_initMDI();
+
+    
+    /* ... some code here ... */
+    
+    if (xmi_noteoff_count) {
+        // now that we have samples until next, find lowest sample count until
+        // next noteoff event.
+        uint32_t lowest_noteoff_samples = 0;
+        
+        for (i = 0; i < xmi_noteoff_count; i++) {
+        }
+    }
+    
+    /* ... some code here ... */
+    
+    
+    free(xmi_mdi);
+    return NULL;
+}

@@ -1,16 +1,16 @@
 /*
- DevTest.c: Display Information about the folling file formats
+ DevTest.c: Display Information about the following file formats
 
             .pat Gravis Ultrasound patch file.
             .mid MIDI file.
             .xmi Xmidi file.
             .hmp "HMIMIDIP" and "HMIMIDIP013195" file.
+            .mus http://www.vgmpf.com/Wiki/index.php?title=MUS
 
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
  COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
- Copyright (C) Chris Ison  2001-2014
- Copyright (C) Bret Curtis 2013-2014
+ Copyright (C) WildMIDI Developers 2001-2014
 
  This file is part of WildMIDI.
 
@@ -104,7 +104,7 @@ static void do_version(void) {
 	printf("Copyright (C) WildMIDI Developers 2001-2014\n");
 	printf("DevTest comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
-	printf("under the terms and conditions of the GNU General Public License version 3.\n");
+	printf("under the terms and conditions of the GNU Lesser General Public License version 3.\n");
 	printf("For more information see COPYING\n\n");
 	printf("Report bugs to %s\n", PACKAGE_BUGREPORT);
 	printf("WildMIDI homepage at %s\n", PACKAGE_URL);
