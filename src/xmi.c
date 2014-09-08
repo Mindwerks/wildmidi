@@ -39,28 +39,69 @@
 struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     struct _mdi *xmi_mdi;
     struct _xmi_noteoff {
-        uint32_t samples;
+        float samples;
         uint8_t channel;
         uint8_t note;
         uint8_t velocity;
     } *xmi_noteoff = NULL;
     uint32_t xmi_noteoff_count = 0;
+    float xmi_lowest_noteoff_samples = 0;
     uint32_t i;
 
     xmi_mdi = _WM_initMDI();
 
     
     /* ... some code here ... */
-    
-    if (xmi_noteoff_count) {
-        // now that we have samples until next, find lowest sample count until
-        // next noteoff event.
-        uint32_t lowest_noteoff_samples = 0;
-        
-        for (i = 0; i < xmi_noteoff_count; i++) {
-        }
+
+    /* ... Note On code here ... */
+    xmi_note = 0; // placeholder until note on code is done.
+    xmi_channel =0; // placeholder until note on code is done.
+    xmi_velocity =0; // placeholder until note on code is done.
+    xmi_note_duration = 0; // place holder until note on code is done.
+
+    /* ... Convert duration to samples ... */
+    xmi_samples = (float)xmi_duration * samples_per_tick;
+
+    /* Store Note On Duration */
+    xmi_noteoff_count++;
+    xmi_noteoff = realloc(xmi_noteoff, (sizeof(struct _xmi_noteoff) * xmi_noteoff_count));
+    xmi_noteoff[xmi_noteoff_count-1]->samples = xmi_samples;
+    xmi_noteoff[xmi_noteoff_count-1]->note = xmi_note;
+    xmi_noteoff[xmi_noteoff_count-1]->channel = xmi_channel;
+    xmi_noteoff[xmi_noteoff_count-1]->velocity = xmi_velocity;
+
+    /* Check if duration is smallest */
+    if ((xmi_samples < lowest_noteoff_samples) || (lowest_noteoff_samples ==0)) {
+        lowest_noteoff_samples = xmi_samples;
     }
     
+    /* ... Some code here ... */
+
+    /* Get samples until next event */
+    samples_f_till_next = 0.0; // place holder until the code for this is done.
+
+    if ((samples_f_till_next > 0.0) && (lowest_noteoff_samples > 0.0) && (xmi_noteoff_count)) {
+        i = 0;
+        tmp_lowest = 0.0;
+        do {
+            xmi_noteoff[i]->samples -= lowest_noteoff_samples;
+            if (xmi_noteoff[i]->samples <= 0.0) {
+                /* Time to insert noteoff event */
+
+                /* Remove xmi_noteoff entry */
+
+            } else {
+                if ((xmi_noteoff[i]->samples < tmp_lowest) || (tmp_lowest ==0)) {
+                    tmp_lowest = xmi_noteoff[i]->samples;
+                }
+                i++;
+            }
+        } while (i < xmi_noteoff_count);
+        lowest_noteoff_samples = tmp_lowest;
+    }
+    
+    /* Insert time until next event */
+
     /* ... some code here ... */
     
     
