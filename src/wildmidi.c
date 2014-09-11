@@ -1079,7 +1079,7 @@ static void do_help(void) {
 	printf("  -g    --convert     Convert XMI: 0 - No Conversion (default)\n");
 	printf("                                   1 - MT32 to GM\n");
 	printf("                                   2 - MT32 to GS\n");
-	printf("  -f    --frequency   Use a specific Hz (BPM)\n");
+	printf("  -f F  --frequency=F Use frequency F Hz for playback (MUS)\n");
 	printf("Software Wavetable Options:\n");
 	printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 	printf("  -l    --log_vol     Use log volume adjustments\n");
