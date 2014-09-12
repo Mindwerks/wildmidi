@@ -72,6 +72,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     uint32_t sample_count = 0;
     float sample_count_f = 0.0;
     float sample_remainder = 0.0;
+    uint16_t pitchbend_tmp = 0;
     
     if (mus_size < 17) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, "File too short", 0);
@@ -174,13 +175,10 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
             case 2: // Pitch Bend
                 mus_event_size = 2;
                 mus_event[0] = 0xe0 | (mus_data[mus_data_ofs] & 0x0f);
-                /*
-                 ***************************
-                 FIXME: Not MIDI Spec'd Data
-                 ***************************
-                 */
-                mus_event[1] = mus_data[mus_data_ofs + 1];
-                mus_event[2] = 0;
+                
+                pitchbend_tmp = mus_data[mus_data_ofs + 1] << 6;
+                mus_event[1] = pitchbend_tmp & 0x7f;
+                mus_event[2] = (pitchbend_tmp >> 7) & 0x7f;
                 mus_event[3] = 0;
                 break;
             case 3:

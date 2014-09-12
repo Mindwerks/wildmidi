@@ -548,7 +548,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
     return rtn_cnt;
 }
 
-static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int verbose) {
+static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) {
     uint32_t mus_data_ofs = 0;
     uint32_t mus_song_ofs = 0;
     uint32_t mus_song_len = 0;
@@ -616,21 +616,21 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
             case 0: // note off
                 mus_event_size = 2;
-                if (verbose) printf("Note Off %i\n", mus_data[mus_data_ofs + 1]);
+                if (verbose) printf("Note Off 0x%.2x\n", mus_data[mus_data_ofs + 1]);
                 break;
             case 1: // note on
                 if (mus_data[mus_data_ofs + 1] & 0x80) {
                     mus_event_size = 3;
-                    if (verbose) printf("Note On (%i): %i\n", (mus_data[mus_data_ofs + 1] & 0x7f), mus_data[mus_data_ofs + 2]);
+                    if (verbose) printf("Note On (0x%.2x): 0x%.2x\n", (mus_data[mus_data_ofs + 1] & 0x7f), mus_data[mus_data_ofs + 2]);
                     mus_prev_vol[mus_data[mus_data_ofs] & 0x0f] = mus_data[mus_data_ofs + 2];
                 } else {
                     mus_event_size = 2;
-                    if (verbose) printf("Note On (%i): [%i]\n", mus_data[mus_data_ofs + 1], mus_prev_vol[mus_data[mus_data_ofs] & 0x0f]);
+                    if (verbose) printf("Note On (0x%.2x): [0x%.2x]\n", mus_data[mus_data_ofs + 1], mus_prev_vol[mus_data[mus_data_ofs] & 0x0f]);
                 }
                 break;
             case 2: // pitch bend
                 mus_event_size = 2;
-                if (verbose) printf("Pitch Bend %i\n", (mus_data[mus_data_ofs + 1] - 64));
+                if (verbose) printf("Pitch Bend 0x%.2x\n", mus_data[mus_data_ofs + 1]);
                 break;
             case 3: // system controller
                 mus_event_size = 2;
@@ -664,43 +664,43 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
                     printf("Controller: ");
                     switch (mus_data[mus_data_ofs + 1]) {
                         case 0:
-                            printf("Patch %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Patch 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 1:
-                            printf("Bank %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Bank 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 2:
-                            printf("Modulation %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Modulation 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 3:
-                            printf("Volume %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Volume 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 4:
-                            printf("Pan %i\n", (mus_data[mus_data_ofs + 2] - 64));
+                            printf("Pan 0x%.2x\n", (mus_data[mus_data_ofs + 2] - 64));
                             break;
                         case 5:
-                            printf("Expression %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Expression 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 6:
-                            printf("Reverb %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Reverb 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 7:
-                            printf("Chorus %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Chorus 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 8:
-                            printf("Sustain %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Sustain 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         case 9:
-                            printf("Soft Pedal %i\n", mus_data[mus_data_ofs + 2]);
+                            printf("Soft Pedal 0x%.2x\n", mus_data[mus_data_ofs + 2]);
                             break;
                         default:
-                            printf("Unsupported %i %i\n", mus_data[mus_data_ofs + 1], mus_data[mus_data_ofs + 2]);
+                            printf("Unsupported 0x%.2x 0x%.2x\n", mus_data[mus_data_ofs + 1], mus_data[mus_data_ofs + 2]);
                     }
                 }
                 break;
             case 5: // ??
                 mus_event_size = 1;
-                if (verbose) printf("0x%2x\n", mus_data[mus_data_ofs]);
+                if (verbose) printf("0x%.2x\n", mus_data[mus_data_ofs]);
                 break;
             case 6: // End Of Song
                 mus_event_size = 1;
@@ -709,7 +709,7 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
                 break;
             case 7: // ??
                 mus_event_size = 1;
-                if (verbose) printf("0x%2x\n", mus_data[mus_data_ofs]);
+                if (verbose) printf("0x%.2x\n", mus_data[mus_data_ofs]);
                 break;
         }
 #if 0
@@ -735,7 +735,7 @@ static int test_mus(unsigned char * mus_data, unsigned long int mus_size, int ve
             mus_ticks = (mus_ticks << 7) | (mus_data[mus_data_ofs] & 0x7f);
             mus_data_ofs++;
         } while (mus_data[mus_data_ofs - 1] > 0x7f);
-        if (verbose) printf("Ticks: %i\n", mus_ticks);
+        if (verbose) printf("Ticks: 0x%.2x\n", mus_ticks);
         
     } while (mus_data_ofs < mus_size);
     
