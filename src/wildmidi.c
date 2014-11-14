@@ -33,7 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sched.h>
 
 #if defined(__DJGPP__)
 #include "getopt_long.h"
