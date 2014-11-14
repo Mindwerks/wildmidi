@@ -1514,9 +1514,9 @@ int main(int argc, char **argv) {
 end1:	memset(output_buffer, 0, 16384);
 	send_output(output_buffer, 16384);
 	msleep(5);
-#ifdef AUDIODRV_OPENAL
-    // FIXME: Delay needed in OPENAL before exiting to complete the song.
-    msleep(1000);
+#if 0/*#ifdef AUDIODRV_OPENAL*/
+	/* FIXME: Delay needed in OPENAL before exiting to complete the song. */
+	msleep(1000);
 #endif
 end2:	close_output();
 	free(output_buffer);
