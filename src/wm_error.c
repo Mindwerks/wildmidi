@@ -60,6 +60,7 @@ void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Not a hmi file",
 		"Unable to convert",
 		"Not a mus file",
+        "Not a xmi file",
 
 		"Invalid error code"
 	};

@@ -118,6 +118,12 @@ struct _mdi {
 	uint32_t mix_buffer_size;
     
 	struct _rvb *reverb;
+    
+    int32_t dyn_vol_peak;
+    double dyn_vol_adjust;
+    double dyn_vol;
+    double dyn_vol_to_reach;
+    
 };
 
 
@@ -185,6 +191,7 @@ extern void _WM_ResetToStart(struct _mdi *mdi);
 extern void _WM_CheckEventMemoryPool(struct _mdi *mdi);
 extern void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch);
 extern void _WM_do_note_off_extra(struct _note *nte);
+extern void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used);
 extern void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch);
 
 

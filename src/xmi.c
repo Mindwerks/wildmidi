@@ -37,74 +37,310 @@
 
 
 struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
-    struct _mdi *xmi_mdi;
-    struct _xmi_noteoff {
-        float samples;
-        uint8_t channel;
-        uint8_t note;
-        uint8_t velocity;
-    } *xmi_noteoff = NULL;
-    uint32_t xmi_noteoff_count = 0;
-    float xmi_lowest_noteoff_samples = 0;
-    uint32_t i;
+    struct _mdi *xmi_mdi = NULL;
+    uint32_t xmi_tmpdata = 0;
+    uint8_t xmi_formcnt = 0;
+    uint32_t xmi_catlen = 0;
+    uint32_t xmi_subformlen = 0;
+    uint32_t i = 0;
+    uint32_t j = 0;
+    
+    uint32_t xmi_evntlen = 0;
+    uint32_t xmi_divisions = 96;
+    uint32_t xmi_tempo = 500000;
+    uint32_t xmi_sample_count = 0;
+    float xmi_sample_count_f = 0.0;
+    float xmi_sample_remainder = 0.0;
+    float xmi_samples_per_delta_f = 0.0;
+    float xmi_pulses_per_second = 0.0;
+    float xmi_bpm_f = 0.0;
+    uint8_t xmi_ch = 0;
+    uint8_t xmi_note = 0;
+    uint32_t *xmi_notelen = NULL;
+    
+    uint32_t setup_ret = 0;
+    uint32_t xmi_delta = 0;
+    uint32_t xmi_lowestdelta = 0;
+    
+    
+    if (!memcmp(xmi_data,"FORM",4)) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        return NULL;
+    }
+    
+    xmi_data += 4;
+    xmi_size -= 4;
+    
+    // bytes until next entry
+    xmi_tmpdata = *xmi_data << 24;
+    xmi_tmpdata |= *xmi_data++ << 16;
+    xmi_tmpdata |= *xmi_data++ << 8;
+    xmi_tmpdata |= *xmi_data++;
+    xmi_size -= 4;
+
+    if (!memcmp(xmi_data,"XDIRINFO",8)) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        return NULL;
+    }
+    xmi_data += 8;
+    xmi_size -= 8;
+    
+    /*
+     0x00 0x00 0x00 0x02 at this point are unknown
+     so skip over them
+     */
+    xmi_data += 4;
+    xmi_size -= 4;
+    
+    // number of forms contained after this point
+    xmi_formcnt = *xmi_data++;
+    if (xmi_formcnt == 0) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        return NULL;
+    }
+    xmi_size--;
+    
+    /*
+     at this stage unsure if remaining data in
+     this section means anything
+     */
+    xmi_tmpdata -= 13;
+    xmi_data += xmi_tmpdata;
+    xmi_size -= xmi_tmpdata;
+
+/* FIXME: Check: may not even need to process CAT information */
+    if (!memcmp(xmi_data,"CAT ",4)) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        return NULL;
+    }
+    xmi_data += 4;
+    xmi_size -= 4;
+    
+    xmi_catlen = *xmi_data++ << 24;
+    xmi_catlen |= *xmi_data++ << 16;
+    xmi_catlen |= *xmi_data++ << 8;
+    xmi_catlen |= *xmi_data++;
+    xmi_size -= 4;
+    
+    if (!memcmp(xmi_data,"XMID",4)) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        return NULL;
+    }
+    xmi_data += 4;
+    xmi_size -= 4;
 
     xmi_mdi = _WM_initMDI();
+    _WM_midi_setup_divisions(xmi_mdi, xmi_divisions);
+    _WM_midi_setup_tempo(xmi_mdi, xmi_tempo);
 
-    
-    /* ... some code here ... */
-
-    /* ... Note On code here ... */
-    xmi_note = 0; // placeholder until note on code is done.
-    xmi_channel =0; // placeholder until note on code is done.
-    xmi_velocity =0; // placeholder until note on code is done.
-    xmi_note_duration = 0; // place holder until note on code is done.
-
-    /* ... Convert duration to samples ... */
-    xmi_samples = (float)xmi_duration * samples_per_tick;
-
-    /* Store Note On Duration */
-    xmi_noteoff_count++;
-    xmi_noteoff = realloc(xmi_noteoff, (sizeof(struct _xmi_noteoff) * xmi_noteoff_count));
-    xmi_noteoff[xmi_noteoff_count-1]->samples = xmi_samples;
-    xmi_noteoff[xmi_noteoff_count-1]->note = xmi_note;
-    xmi_noteoff[xmi_noteoff_count-1]->channel = xmi_channel;
-    xmi_noteoff[xmi_noteoff_count-1]->velocity = xmi_velocity;
-
-    /* Check if duration is smallest */
-    if ((xmi_samples < lowest_noteoff_samples) || (lowest_noteoff_samples ==0)) {
-        lowest_noteoff_samples = xmi_samples;
+    if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+        xmi_bpm_f = (float) (60000000 / xmi_tempo) + 0.5f;
+    } else {
+        xmi_bpm_f = (float) (60000000 / xmi_tempo);
     }
+    /* Slow but needed for accuracy */
+    xmi_pulses_per_second = ((float)xmi_divisions * xmi_bpm_f) / 60.0;
+    xmi_samples_per_delta_f = (float)_WM_SampleRate / xmi_pulses_per_second;
+
+    xmi_notelen = malloc(sizeof(uint32_t) * 16 * 128);
     
-    /* ... Some code here ... */
-
-    /* Get samples until next event */
-    samples_f_till_next = 0.0; // place holder until the code for this is done.
-
-    if ((samples_f_till_next > 0.0) && (lowest_noteoff_samples > 0.0) && (xmi_noteoff_count)) {
-        i = 0;
-        tmp_lowest = 0.0;
+    for (i = 0; i < xmi_formcnt; i++) {
+        if (!memcmp(xmi_data,"FORM",4)) {
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+            goto xmi_end;
+        }
+        xmi_data += 4;
+        xmi_size -= 4;
+        
+        xmi_subformlen = *xmi_data++ << 24;
+        xmi_subformlen |= *xmi_data++ << 16;
+        xmi_subformlen |= *xmi_data++ << 8;
+        xmi_subformlen |= *xmi_data++;
+        xmi_size -= 4;
+        
+        if (!memcmp(xmi_data,"XMID",4)) {
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+            goto xmi_end;
+        }
+        xmi_data += 4;
+        xmi_size -= 4;
+        xmi_subformlen -= 4;
+        
+        // Process Subform
         do {
-            xmi_noteoff[i]->samples -= lowest_noteoff_samples;
-            if (xmi_noteoff[i]->samples <= 0.0) {
-                /* Time to insert noteoff event */
+            if (memcmp(xmi_data,"TIMB",4)) {
+                // Holds patch information
+                // FIXME: May not be needed for playback as EVNT seems to
+                //        hold patch events
+                xmi_data += 4;
+                
+                xmi_tmpdata = *xmi_data++ << 24;
+                xmi_tmpdata |= *xmi_data++ << 16;
+                xmi_tmpdata |= *xmi_data++ << 8;
+                xmi_tmpdata |= *xmi_data++;
+                xmi_data += xmi_tmpdata;
+                xmi_size -= (8 + xmi_tmpdata);
+                xmi_subformlen -= (8 + xmi_tmpdata);
+                
+            } else if (memcmp(xmi_data,"RBRN",4)) {
+                // Unknown what this is
+                // FIXME: May not be needed for playback
+                xmi_data += 4;
+                
+                xmi_tmpdata = *xmi_data++ << 24;
+                xmi_tmpdata |= *xmi_data++ << 16;
+                xmi_tmpdata |= *xmi_data++ << 8;
+                xmi_tmpdata |= *xmi_data++;
+                xmi_data += xmi_tmpdata;
+                xmi_size -= (8 + xmi_tmpdata);
+                xmi_subformlen -= (8 + xmi_tmpdata);
+                
+            } else if (memcmp(xmi_data,"EVNT",4)) {
+                // EVNT is where all the MIDI music information is stored
+                xmi_data += 4;
+                
+                xmi_evntlen = *xmi_data++ << 24;
+                xmi_evntlen |= *xmi_data++ << 16;
+                xmi_evntlen |= *xmi_data++ << 8;
+                xmi_evntlen |= *xmi_data++;
+                xmi_size -= 8;
+                xmi_subformlen -= 8;
+                
+                do {
+                    if (*xmi_data < 0x80) {
+                        xmi_delta = 0;
+                        if (*xmi_data > 0x7f) {
+                            while (*xmi_data > 0x7f) {
+                                xmi_delta = (xmi_delta << 7) | (*xmi_data++ & 0x7f);
+                                xmi_size--;
+                                xmi_evntlen--;
+                                xmi_subformlen--;
+                            }
+                        }
+                        xmi_delta = (xmi_delta << 7) | (*xmi_data++ & 0x7f);
+                        xmi_size--;
+                        xmi_evntlen--;
+                        xmi_subformlen--;
+                        
+                        do {
+                            // determine delta till next event
+                            if ((xmi_lowestdelta != 0) && (xmi_lowestdelta <= xmi_delta)) {
+                                xmi_tmpdata = xmi_lowestdelta;
+                            } else {
+                                xmi_tmpdata = xmi_delta;
+                            }
+                            
+                            xmi_sample_count_f= (((float) xmi_tmpdata * xmi_samples_per_delta_f) + xmi_sample_remainder);
+                            
+                            xmi_sample_count = (uint32_t) xmi_sample_count_f;
+                            xmi_sample_remainder = xmi_sample_count_f - (float) xmi_sample_count;
+                            
+                            xmi_mdi->events[xmi_mdi->event_count - 1].samples_to_next += xmi_sample_count;
+                            xmi_mdi->extra_info.approx_total_samples += xmi_sample_count;
 
-                /* Remove xmi_noteoff entry */
-
+                            
+                            xmi_lowestdelta = 0;
+                            
+                            // scan through on notes
+                            for (j = 0; j < (16+128); j++) {
+                                // only want notes that are on
+                                if (xmi_notelen[j] == 0) continue;
+                                
+                                // remove delta to next event from on notes
+                                xmi_notelen[j] -= xmi_tmpdata;
+                                
+                                // Check if we need to turn note off
+                                if (xmi_notelen[j] == 0) {
+                                    xmi_ch = j / 128;
+                                    xmi_note = j - (xmi_ch * 128);
+                                    _WM_midi_setup_noteoff(xmi_mdi, xmi_ch, xmi_note, 0);
+                                } else {
+                                    // otherwise work out new lowest delta
+                                    if ((xmi_lowestdelta == 0) || (xmi_lowestdelta > xmi_notelen[j])) {
+                                        xmi_lowestdelta = xmi_notelen[j];
+                                    }
+                                }
+                                
+                            }
+                            xmi_delta -= xmi_tmpdata;
+                            
+                        } while (xmi_delta);
+                        
+                    } else {
+                        if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data,0)) == 0) {
+                            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+                            goto xmi_end;
+                        }
+                        
+                        // FIXME: Add Tempo Check
+                        
+                        if ((*xmi_data & 0xf0) == 0x90) {
+                            // Note on has extra data stating note length
+                            xmi_ch = *xmi_data & 0x0f;
+                            xmi_note = xmi_data[1];
+                            xmi_data += setup_ret;
+                            xmi_size -= setup_ret;
+                            xmi_evntlen -= setup_ret;
+                            xmi_subformlen -= setup_ret;
+                            
+                            xmi_tmpdata = 0;
+                            
+                            if (*xmi_data > 0x7f) {
+                                while (*xmi_data > 0x7f) {
+                                    xmi_tmpdata = (xmi_tmpdata << 7) | (*xmi_data++ & 0x7f);
+                                    xmi_size--;
+                                    xmi_evntlen--;
+                                    xmi_subformlen--;
+                                }
+                            }
+                            xmi_tmpdata = (xmi_tmpdata << 7) | (*xmi_data++ & 0x7f);
+                            xmi_size--;
+                            xmi_evntlen--;
+                            xmi_subformlen--;
+                            
+                            // store length
+                            xmi_notelen[128 * xmi_ch + xmi_note] = xmi_tmpdata;
+                            if ((xmi_tmpdata > 0) && ((xmi_lowestdelta == 0) || (xmi_tmpdata < xmi_lowestdelta))) {
+                                xmi_lowestdelta = xmi_tmpdata;
+                            }
+                            
+                        } else if ((xmi_data[0] == 0xff) && (xmi_data[1] == 0x51) && (xmi_data[2] == 0x03)) {
+                            /* Tempo */
+                            xmi_tempo = (xmi_data[3] << 16) + (xmi_data[4] << 8)+ xmi_data[5];
+                            if (!xmi_tempo)
+                                xmi_tempo = 500000;
+                            
+                            if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+                                xmi_bpm_f = (float) (60000000 / xmi_tempo) + 0.5f;
+                            } else {
+                                xmi_bpm_f = (float) (60000000 / xmi_tempo);
+                            }
+                            
+                            /* Slow but needed for accuracy */
+                            xmi_pulses_per_second = ((float)xmi_divisions * xmi_bpm_f) / 60.0;
+                            xmi_samples_per_delta_f = (float)_WM_SampleRate / xmi_pulses_per_second;
+                            
+                        } else {
+                            xmi_data += setup_ret;
+                            xmi_size -= setup_ret;
+                            xmi_evntlen -= setup_ret;
+                            xmi_subformlen -= setup_ret;
+                        }
+                        
+                    }
+                    
+                } while (xmi_evntlen);
+                
             } else {
-                if ((xmi_noteoff[i]->samples < tmp_lowest) || (tmp_lowest ==0)) {
-                    tmp_lowest = xmi_noteoff[i]->samples;
-                }
-                i++;
-            }
-        } while (i < xmi_noteoff_count);
-        lowest_noteoff_samples = tmp_lowest;
-    }
-    
-    /* Insert time until next event */
+                _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+                goto xmi_end;            }
+            
+        } while (xmi_subformlen);
 
-    /* ... some code here ... */
-    
-    
-    free(xmi_mdi);
+    }
+ 
+xmi_end:
+    _WM_freeMDI(xmi_mdi);
+    if (xmi_notelen != NULL) free(xmi_notelen);
     return NULL;
 }

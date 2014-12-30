@@ -15,6 +15,7 @@ SET(wildmidi_library_SRCS
     patches.c
     sample.c
     mus_wm.c
+    xmi.c
 )
 
 SET(wildmidi_library_HDRS
@@ -35,6 +36,7 @@ SET(wildmidi_library_HDRS
     ../include/common.h
     ../include/filenames.h
     ../include/mus_wm.h
+    ../include/xmi.h
 )
 
 IF(MSVC)

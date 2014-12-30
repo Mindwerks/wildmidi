@@ -45,6 +45,7 @@ enum {
 	WM_ERR_NOT_HMI,
 	WM_ERR_CONVERT,
 	WM_ERR_NOT_MUS,
+    WM_ERR_NOT_XMI,
 
 	WM_ERR_MAX
 };

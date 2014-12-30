@@ -320,6 +320,149 @@ uint32_t _WM_freq_table[] = { 837201792, 837685632, 838169728,
     1665721984, 1666683520, 1667646720, 1668610560, 1669574784, 1670539776,
     1671505024, 1672470016, 1673436544, };
 
+/*
+ 
+ */
+void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used) {
+    
+    uint32_t i = 0;
+    uint32_t j = 0;
+    
+    int8_t peak_set = 0;
+    int32_t prev_buf_val = 0;
+    int32_t prev_val = 0;
+    uint32_t peak_ofs = 0;
+    int32_t peak = mdi->dyn_vol_peak;
+    
+    double volume_to_reach = mdi->dyn_vol_to_reach;
+    double volume = mdi->dyn_vol;
+    double volume_adjust = mdi->dyn_vol_adjust;
+    double tmp_output = 0.0;
+
+    
+    
+    for (i = 0; i < buffer_used; i++) {
+        if ((i == 0) || (i > peak_ofs)) {
+            // Find Next Peak/Troff
+            peak_set = 0;
+            prev_val = peak;
+            peak_ofs = 0;
+            volume_to_reach = 1.0;
+            for (j = i; j < buffer_used; j++) {
+                if (peak_set == 0) {
+                    // find what direction the data is going
+                    if (prev_val > tmp_buffer[j]) {
+                        // Going Down
+                        peak_set = -1;
+                    } else if (prev_val < tmp_buffer[j]) {
+                        // Doing Up
+                        peak_set = 1;
+                    } else {
+                        // No direction, keep looking
+                        prev_val = tmp_buffer[j];
+                        continue;
+                    }
+                }
+                
+                if (peak_set == 1) {
+                    // Data is going up
+                    if (peak < tmp_buffer[j]) {
+                        peak = tmp_buffer[j];
+                        peak_ofs = j;
+                    } else if (peak > tmp_buffer[j]) {
+                        // Data is starting to go down, we found the peak
+                        break;
+                    }
+                } else { // assume peak_set == -1
+                    // Data is going down
+                    if (peak > tmp_buffer[j]) {
+                        peak = tmp_buffer[j];
+                        peak_ofs = j;
+                    } else if (peak < tmp_buffer[j]) {
+                        // Data is starting to go up, we found the troff
+                        break;
+                    }
+                }
+    
+                prev_val = tmp_buffer[j];
+            }
+            
+            
+            if (peak_set != 0) {
+                if (peak_set == 1) {
+                    if (peak > 32767) {
+                        volume_to_reach = 32767.0 / (double)peak;
+                    } else {
+                        volume_to_reach = 1.0;
+                    }
+                } else { // assume peak_set == -1
+                    if (peak < -32768) {
+                        volume_to_reach = -32768.0 / (double)peak;
+                    } else {
+                        volume_to_reach = 1.0;
+                    }
+                }
+            } else {
+                // No peak found, set volume we want to normal
+                volume_to_reach = 1.0;
+            }
+            
+            volume_adjust = (volume_to_reach - volume) / ((double)_WM_SampleRate * 0.02);
+            
+        }
+/*
+        // If we're not at the volume level we want
+        // then keep adjusting the volume
+        if (volume != volume_to_reach) {
+            volume += volume_adjust;
+            if (volume_adjust > 0.0) {
+                // if increasing the volume
+                if (volume >= 1.0) {
+                    // we dont boost volume
+                    volume = 1.0;
+                } else if (volume > volume_to_reach) {
+                    // we dont want to go above the level we wanted
+                    volume = volume_to_reach;
+                }
+            } else {
+                // decreasing the volume
+                if (volume < 0.0) {
+                    // we dont want negative volumes
+                    volume = 0.0;
+                } else if (volume < volume_to_reach) {
+                    // we dont want to go below the level we wanted
+                    volume = volume_to_reach;
+                }
+            }
+        }
+*/
+        if (volume_adjust > 0.0) {
+            volume += volume_adjust;
+            if (volume > volume_to_reach) {
+                volume = volume_to_reach;
+            }
+        } else {
+            volume = volume_to_reach;
+        }
+        
+        // adjust buffer volume
+        prev_buf_val = tmp_buffer[i];
+        tmp_output = (double)tmp_buffer[i] * volume;
+        // DEBUG
+        if (volume_adjust != 0.0) {
+            fprintf(stderr,"\r>>>%i %i %f %f %f %f<<<\n\r", tmp_buffer[i], peak, volume, volume_to_reach, volume_adjust, tmp_output);
+        }
+        tmp_buffer[i] = (int32_t)tmp_output;
+        
+    }
+    
+    // store required values
+    mdi->dyn_vol_adjust = volume_adjust;
+    mdi->dyn_vol_peak = peak;
+    mdi->dyn_vol = volume;
+    mdi->dyn_vol_to_reach = volume_to_reach;
+}
+
 /* Should be called in any function that effects note volumes */
 void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     float premix_dBm;
@@ -371,6 +514,58 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     
     // debug
     //fprintf(stderr, "\r\nVolumes(%i)(%i(%i:%i)): %i, %i : %f %f\r\n", ch, pan_ofs, mdi->channel[ch].balance, mdi->channel[ch].pan, nte->left_mix_volume, nte->right_mix_volume, premix_left, premix_right);
+}
+
+/* Should be called in any function that effects note volumes */
+void _WM_AdjustNoteVolumes_new (struct _mdi *mdi, uint8_t ch, struct _note *nte) {
+    float premix_dBm;
+    float premix_lin;
+    uint8_t pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
+    float premix_dBm_left;
+    float premix_dBm_right;
+    float premix_left;
+    float premix_right;
+    /*
+     This value is to reduce the chance of clipping. Lower value means lower overall volume, higher value means higher overall volume.
+     
+     NOTE: The higher the value the higher the chance of clipping.
+     
+     FIXME: May still need fine tuning. Clipping heard at a setting of 43.
+     */
+//    float volume_adj = (float)_WM_MasterVolume * 42.0;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
+    
+    if (pan_ofs > 127) pan_ofs = 127;
+    if (pan_ofs < 0) pan_ofs = 0;
+    premix_dBm_left = dBm_pan_volume[(127-pan_ofs)] + dBm_volume[_WM_MasterVolume];
+    premix_dBm_right = dBm_pan_volume[pan_ofs] + dBm_volume[_WM_MasterVolume];
+    
+    
+    if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
+        premix_dBm = dBm_volume[mdi->channel[ch].volume] +
+                     dBm_volume[mdi->channel[ch].expression] +
+                     dBm_volume[mdi->channel[ch].pressure] +
+                     dBm_volume[nte->velocity];
+    
+        premix_dBm_left += premix_dBm;
+        premix_dBm_right += premix_dBm;
+        
+        premix_left = (powf(10.0,(premix_dBm_left / 20.0)));
+        premix_right = (powf(10.0,(premix_dBm_right / 20.0)));
+    } else {
+        premix_lin = (float)(_WM_lin_volume[mdi->channel[ch].volume] +
+                             _WM_lin_volume[mdi->channel[ch].expression] +
+                             _WM_lin_volume[mdi->channel[ch].pressure] +
+                             _WM_lin_volume[nte->velocity]) / 4096.0;
+        
+        premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20));
+        premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20));
+    }
+    nte->left_mix_volume = (int32_t)(premix_left * 1024.0);
+    nte->right_mix_volume = (int32_t)(premix_right * 1024.0);
+    
+    // debug
+    fprintf(stderr, "\r\nVolumes(%i)(%i(%i:%i)): %i, %i : %f %f\r\n", ch, pan_ofs, mdi->channel[ch].balance, mdi->channel[ch].pan, nte->left_mix_volume, nte->right_mix_volume, premix_left, premix_right);
 }
 
 /* Should be called in any function that effects channel volumes */
@@ -937,11 +1132,9 @@ void _WM_do_sysex_roland_drum_track(struct _mdi *mdi, struct _event_data *data) 
 
 void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
 	int i;
-	uint8_t ch = 0;
     
     if (data != NULL) {
-        ch = data->channel;
-        MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data);
+        MIDI_EVENT_DEBUG(__FUNCTION__,data->channel, data->data);
     } else {
         MIDI_EVENT_DEBUG(__FUNCTION__,0, 0);
     }
@@ -1444,6 +1637,11 @@ _WM_initMDI(void) {
 	mdi->extra_info.current_sample = 0;
 	mdi->extra_info.total_midi_time = 0;
 	mdi->extra_info.approx_total_samples = 0;
+    
+    mdi->dyn_vol = 1.0;
+    mdi->dyn_vol_adjust = 0.0;
+    mdi->dyn_vol_peak = 0;
+    mdi->dyn_vol_to_reach = 1.0;
     
     _WM_do_sysex_gm_reset(mdi, NULL);
     

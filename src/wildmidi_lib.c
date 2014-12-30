@@ -1141,10 +1141,13 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 		_WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
 	}
 
+//    _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
+    
 	for (i = 0; i < buffer_used; i += 4) {
 		left_mix = *tmp_buffer++;
 		right_mix = *tmp_buffer++;
 
+#if 1
 		if (left_mix > 32767) {
 			left_mix = 32767;
 		} else if (left_mix < -32768) {
@@ -1156,7 +1159,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 		} else if (right_mix < -32768) {
 			right_mix = -32768;
 		}
-
+#endif
 		/*
 		 * ===================
 		 * Write to the buffer
@@ -1688,6 +1691,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 	uint8_t *mididata = NULL;
 	uint32_t midisize = 0;
 	uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
+    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
 	midi * ret = NULL;
 
 	if (!WM_Initialized) {
@@ -1709,7 +1713,9 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 		ret = (void *) _WM_ParseNewHmi(mididata, midisize);
 	} else if (memcmp(mididata, mus_hdr, 4) == 0) {
 		ret = (void *) _WM_ParseNewMus(mididata, midisize);
-	} else {
+    }else if (memcmp(mididata, xmi_hdr, 4) == 0) {
+        ret = (void *) _WM_ParseNewXmi(mididata, midisize);
+    }  else {
 		ret = (void *) _WM_ParseNewMidi(mididata, midisize);
 	}
 	free(mididata);
@@ -1726,7 +1732,8 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 
 WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
     uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
-	midi * ret = NULL;
+    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
+    midi * ret = NULL;
 
 	if (!WM_Initialized) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
@@ -1748,7 +1755,9 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 		ret = (void *) _WM_ParseNewHmi(midibuffer, size);
 	} else if (memcmp(midibuffer, mus_hdr, 4) == 0) {
 		ret = (void *) _WM_ParseNewMus(midibuffer, size);
-	} else {
+    } else if (memcmp(midibuffer, xmi_hdr, 4) == 0) {
+        ret = (void *) _WM_ParseNewXmi(midibuffer, size);
+    } else {
 		ret = (void *) _WM_ParseNewMidi(midibuffer, size);
 	}
 
