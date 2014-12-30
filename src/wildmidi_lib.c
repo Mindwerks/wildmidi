@@ -67,6 +67,7 @@
 #include "sample.h"
 #include "hmi.h"
 #include "mus_wm.h"
+#include "xmi.h"
 
 /*
  * =========================

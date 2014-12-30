@@ -63,7 +63,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     uint32_t xmi_lowestdelta = 0;
     
     
-    if (!memcmp(xmi_data,"FORM",4)) {
+    if (memcmp(xmi_data,"FORM",4)) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
@@ -72,13 +72,13 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_size -= 4;
     
     // bytes until next entry
-    xmi_tmpdata = *xmi_data << 24;
+    xmi_tmpdata = *xmi_data++ << 24;
     xmi_tmpdata |= *xmi_data++ << 16;
     xmi_tmpdata |= *xmi_data++ << 8;
     xmi_tmpdata |= *xmi_data++;
     xmi_size -= 4;
 
-    if (!memcmp(xmi_data,"XDIRINFO",8)) {
+    if (memcmp(xmi_data,"XDIRINFO",8)) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
@@ -109,7 +109,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_size -= xmi_tmpdata;
 
 /* FIXME: Check: may not even need to process CAT information */
-    if (!memcmp(xmi_data,"CAT ",4)) {
+    if (memcmp(xmi_data,"CAT ",4)) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
@@ -122,7 +122,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_catlen |= *xmi_data++;
     xmi_size -= 4;
     
-    if (!memcmp(xmi_data,"XMID",4)) {
+    if (memcmp(xmi_data,"XMID",4)) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
@@ -145,9 +145,9 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_notelen = malloc(sizeof(uint32_t) * 16 * 128);
     
     for (i = 0; i < xmi_formcnt; i++) {
-        if (!memcmp(xmi_data,"FORM",4)) {
+        if (memcmp(xmi_data,"FORM",4)) {
             _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
-            goto xmi_end;
+            goto _xmi_end;
         }
         xmi_data += 4;
         xmi_size -= 4;
@@ -158,9 +158,9 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
         xmi_subformlen |= *xmi_data++;
         xmi_size -= 4;
         
-        if (!memcmp(xmi_data,"XMID",4)) {
+        if (memcmp(xmi_data,"XMID",4)) {
             _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
-            goto xmi_end;
+            goto _xmi_end;
         }
         xmi_data += 4;
         xmi_size -= 4;
@@ -168,7 +168,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
         
         // Process Subform
         do {
-            if (memcmp(xmi_data,"TIMB",4)) {
+            if (!memcmp(xmi_data,"TIMB",4)) {
                 // Holds patch information
                 // FIXME: May not be needed for playback as EVNT seems to
                 //        hold patch events
@@ -182,7 +182,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_size -= (8 + xmi_tmpdata);
                 xmi_subformlen -= (8 + xmi_tmpdata);
                 
-            } else if (memcmp(xmi_data,"RBRN",4)) {
+            } else if (!memcmp(xmi_data,"RBRN",4)) {
                 // Unknown what this is
                 // FIXME: May not be needed for playback
                 xmi_data += 4;
@@ -195,7 +195,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_size -= (8 + xmi_tmpdata);
                 xmi_subformlen -= (8 + xmi_tmpdata);
                 
-            } else if (memcmp(xmi_data,"EVNT",4)) {
+            } else if (!memcmp(xmi_data,"EVNT",4)) {
                 // EVNT is where all the MIDI music information is stored
                 xmi_data += 4;
                 
@@ -263,13 +263,12 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                                 
                             }
                             xmi_delta -= xmi_tmpdata;
-                            
                         } while (xmi_delta);
                         
                     } else {
                         if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data,0)) == 0) {
                             _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
-                            goto xmi_end;
+                            goto _xmi_end;
                         }
                         
                         // FIXME: Add Tempo Check
@@ -320,6 +319,11 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             xmi_pulses_per_second = ((float)xmi_divisions * xmi_bpm_f) / 60.0;
                             xmi_samples_per_delta_f = (float)_WM_SampleRate / xmi_pulses_per_second;
                             
+                            xmi_data += setup_ret;
+                            xmi_size -= setup_ret;
+                            xmi_evntlen -= setup_ret;
+                            xmi_subformlen -= setup_ret;
+                            
                         } else {
                             xmi_data += setup_ret;
                             xmi_size -= setup_ret;
@@ -333,14 +337,28 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 
             } else {
                 _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
-                goto xmi_end;            }
+                goto _xmi_end;
+            }
             
         } while (xmi_subformlen);
 
     }
- 
-xmi_end:
-    _WM_freeMDI(xmi_mdi);
+    
+    // Finalise mdi structure
+    if ((xmi_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+        goto _xmi_end;
+    }
+    xmi_mdi->extra_info.current_sample = 0;
+    xmi_mdi->current_event = &xmi_mdi->events[0];
+    xmi_mdi->samples_to_mix = 0;
+    xmi_mdi->note = NULL;
+    
+    _WM_ResetToStart(xmi_mdi);
+    
+_xmi_end:
     if (xmi_notelen != NULL) free(xmi_notelen);
+    if (xmi_mdi->reverb) return (xmi_mdi);
+    _WM_freeMDI(xmi_mdi);
     return NULL;
 }
