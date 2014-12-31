@@ -46,7 +46,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     uint32_t j = 0;
     
     uint32_t xmi_evntlen = 0;
-    uint32_t xmi_divisions = 96;
+    uint32_t xmi_divisions = 60;
     uint32_t xmi_tempo = 500000;
     uint32_t xmi_sample_count = 0;
     float xmi_sample_count_f = 0.0;
@@ -143,6 +143,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_samples_per_delta_f = (float)_WM_SampleRate / xmi_pulses_per_second;
 
     xmi_notelen = malloc(sizeof(uint32_t) * 16 * 128);
+    memset(xmi_notelen, 0, (sizeof(uint32_t) * 16 * 128));
     
     for (i = 0; i < xmi_formcnt; i++) {
         if (memcmp(xmi_data,"FORM",4)) {
@@ -242,7 +243,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             xmi_lowestdelta = 0;
                             
                             // scan through on notes
-                            for (j = 0; j < (16+128); j++) {
+                            for (j = 0; j < (16*128); j++) {
                                 // only want notes that are on
                                 if (xmi_notelen[j] == 0) continue;
                                 

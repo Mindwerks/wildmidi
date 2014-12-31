@@ -579,6 +579,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             divisions = mdi->events[i].event_data.data;
             (*out)[12] = (divisions >> 8) & 0xff;
             (*out)[13] = divisions & 0xff;
+            continue;
         } else if (mdi->events[i].do_event == _WM_do_note_off) {
             // DEBUG
             // fprintf(stderr,"Note Off: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
