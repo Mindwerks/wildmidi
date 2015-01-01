@@ -545,6 +545,11 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         return -1;
     }
 
+    /*
+     Note: This isn't accurate but will allow enough space for
+            events plus delta values.
+     a
+     */
     (*out) = malloc (sizeof(uint8_t) * (mdi->event_count * 12));
 
     /* Midi Header */
@@ -895,6 +900,21 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = 0x21;
             (*out)[out_ofs++] = 0x01;
             (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+        } else if (mdi->events[i].do_event == _WM_do_meta_smpteoffset) {
+            // DEBUG
+            // fprintf(stderr,"SMPTE Offset: %x\r\n",mdi->events[i].event_data.data);
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x54;
+            (*out)[out_ofs++] = 0x05;
+            /*
+             Remember because of the 5 bytes we stored it a little hacky.
+             */
+            (*out)[out_ofs++] = (mdi->events[i].event_data.channel & 0xff);
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff000000) >> 24;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff0000) >> 16;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+
         } else {
             // DEBUG
             fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);

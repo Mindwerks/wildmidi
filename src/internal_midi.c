@@ -1268,7 +1268,22 @@ void _WM_do_meta_channelprefix(struct _mdi *mdi, struct _event_data *data) {
     UNUSED(mdi);
     return;
 }
+
 void _WM_do_meta_portprefix(struct _mdi *mdi, struct _event_data *data) {
+    // placeholder function so we can record tempo in the event stream
+    // for conversion function _WM_Event2Midi
+#ifdef DEBUG_MIDI
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data);
+#else
+    UNUSED(data);
+#endif
+    
+    UNUSED(mdi);
+    return;
+}
+
+void _WM_do_meta_smpteoffset(struct _mdi *mdi, struct _event_data *data) {
     // placeholder function so we can record tempo in the event stream
     // for conversion function _WM_Event2Midi
 #ifdef DEBUG_MIDI
@@ -1740,6 +1755,24 @@ static int midi_setup_portprefix(struct _mdi *mdi, uint32_t setting) {
     return (0);
 }
 
+static int midi_setup_smpteoffset(struct _mdi *mdi, uint32_t setting) {
+    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_smpteoffset;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_smpteoffset;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
+}
+
 
 struct _mdi *
 _WM_initMDI(void) {
@@ -1953,6 +1986,21 @@ _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event
                      */
                     _WM_midi_setup_tempo(mdi, ((event_data[2] << 16) + (event_data[3] << 8) + event_data[4]));
                     ret_cnt += 5;
+                } else if ((event_data[0] == 0x54) && (event_data[1] == 0x05)) {
+                    /*
+                     SMPTE Offset
+                     
+                     We only setting this up here for WM_Event2Midi function
+                     
+                     */
+                    midi_setup_smpteoffset(mdi, ((event_data[3] << 24) + (event_data[4] << 16) + (event_data[5] << 8) + event_data[6]));
+                    
+                    /* 
+                     Because this has 5 bytes of data we gonna "hack" it a little
+                     */
+                    mdi->events[mdi->events_size - 1].event_data.channel = event_data[2];
+                    
+                    ret_cnt += 7;
                 } else if ((event_data[0] == 0x58) && (event_data[1] == 0x04)) {
                     /*
                      Time Signature
