@@ -511,6 +511,21 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                     if (verbose)
                         printf("BPM: %f, SPD @ 44100: %f\n",
                                beats_per_minute, samples_per_delta_f);
+                } else if (*midi_data == 0x54) {
+                    if (midi_size < 7) {
+                        printf("Data too short: Missing MIDI Data\n");
+                        return -1;
+                    }
+                    
+                    if (midi_data[1] != 0x05) {
+                        printf("Corrupt MIDI Data, Bad SMPTE Offset Prefix\n");
+                        return -1;
+                    }
+                    
+                    if (verbose) {
+                        printf("Meta Event: SMPTE Offset: %.2x %.2x %.2x %.2x %2.x\n", midi_data[2], midi_data[3], midi_data[4], midi_data[5], midi_data[6]);
+                    }
+
                 } else if (*midi_data == 0x58) {
                     if (midi_size < 6) {
                         printf("Data too short: Missing MIDI Data\n");
