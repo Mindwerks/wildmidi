@@ -865,6 +865,36 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff0000) >> 16;
             (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
             (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+        } else if (mdi->events[i].do_event == _WM_do_meta_keysignature) {
+            // DEBUG
+            // fprintf(stderr,"Key Signature: %x\r\n",mdi->events[i].event_data.data);
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x59;
+            (*out)[out_ofs++] = 0x02;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+        } else if (mdi->events[i].do_event == _WM_do_meta_sequenceno) {
+            // DEBUG
+            // fprintf(stderr,"Sequence Number: %x\r\n",mdi->events[i].event_data.data);
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x00;
+            (*out)[out_ofs++] = 0x02;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+        } else if (mdi->events[i].do_event == _WM_do_meta_channelprefix) {
+            // DEBUG
+            // fprintf(stderr,"Channel Prefix: %x\r\n",mdi->events[i].event_data.data);
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x20;
+            (*out)[out_ofs++] = 0x01;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+        } else if (mdi->events[i].do_event == _WM_do_meta_portprefix) {
+            // DEBUG
+            // fprintf(stderr,"Port Prefix: %x\r\n",mdi->events[i].event_data.data);
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x21;
+            (*out)[out_ofs++] = 0x01;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
         } else {
             // DEBUG
             fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);

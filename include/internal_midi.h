@@ -167,6 +167,10 @@ extern void _WM_do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data
 extern void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_meta_tempo(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_meta_timesignature(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_meta_keysignature(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_meta_sequenceno(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_meta_channelprefix(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_meta_portprefix(struct _mdi *mdi, struct _event_data *data);
 
 extern int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);
 

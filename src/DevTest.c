@@ -428,7 +428,22 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 /*
                  * Only including meta events that are supported by wildmidi
                  */
-                if (*midi_data == 0x02) {
+                if (*midi_data == 0x00) {
+                    if (midi_size < 4) {
+                        printf("Data too short: Missing MIDI Data\n");
+                        return -1;
+                    }
+                    
+                    if (midi_data[1] != 0x02) {
+                        printf("Corrupt MIDI Data, Bad Sequence Number Prefix\n");
+                        return -1;
+                    }
+                    
+                    if (verbose) {
+                        printf("Meta Event: Sequence Number: %.2x %.2x\n", midi_data[2], midi_data[3]);
+                    }
+                    
+                } else if (*midi_data == 0x02) {
                     if (verbose)
                         printf("Meta Event: Copyright\n");
                 } else if (*midi_data == 0x2F) {
@@ -444,6 +459,19 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                         printf("Missing or Corrupt MIDI Data\n");
                         return -1;
                     }
+                } else if (*midi_data == 0x20) {
+                    if (verbose)
+                        printf("Meta Event: Channel Prefix: ");
+                    if (midi_size < 3) {
+                        printf("Data too short: Missing MIDI Data\n");
+                        return -1;
+                    }
+                    if (midi_data[1] != 0x01) {
+                        printf("Corrupt MIDI Data, Bad Channel Prefix\n");
+                        return -1;
+                    }
+                    if (verbose)
+                        printf("%i\n", (int) midi_data[2]);
                 } else if (*midi_data == 0x21) {
                     if (verbose)
                         printf("Meta Event: Port Prefix: ");
@@ -496,6 +524,21 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                     
                     if (verbose) {
                         printf("Meta Event: Time Signature: %.2x %.2x %.2x %.2x\n", midi_data[2], midi_data[3], midi_data[4], midi_data[5]);
+                    }
+                    
+                } else if (*midi_data == 0x59) {
+                    if (midi_size < 4) {
+                        printf("Data too short: Missing MIDI Data\n");
+                        return -1;
+                    }
+                    
+                    if (midi_data[1] != 0x02) {
+                        printf("Corrupt MIDI Data, Bad Key Signature Prefix\n");
+                        return -1;
+                    }
+                    
+                    if (verbose) {
+                        printf("Meta Event: Key Signature: %.2x %.2x\n", midi_data[2], midi_data[3]);
                     }
                     
                 } else {

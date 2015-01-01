@@ -1227,6 +1227,62 @@ void _WM_do_meta_timesignature(struct _mdi *mdi, struct _event_data *data) {
     return;
 }
 
+void _WM_do_meta_keysignature(struct _mdi *mdi, struct _event_data *data) {
+    // placeholder function so we can record tempo in the event stream
+    // for conversion function _WM_Event2Midi
+#ifdef DEBUG_MIDI
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data);
+#else
+    UNUSED(data);
+#endif
+    
+    UNUSED(mdi);
+    return;
+}
+
+void _WM_do_meta_sequenceno(struct _mdi *mdi, struct _event_data *data) {
+    // placeholder function so we can record tempo in the event stream
+    // for conversion function _WM_Event2Midi
+#ifdef DEBUG_MIDI
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data);
+#else
+    UNUSED(data);
+#endif
+    
+    UNUSED(mdi);
+    return;
+}
+
+void _WM_do_meta_channelprefix(struct _mdi *mdi, struct _event_data *data) {
+    // placeholder function so we can record tempo in the event stream
+    // for conversion function _WM_Event2Midi
+#ifdef DEBUG_MIDI
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data);
+#else
+    UNUSED(data);
+#endif
+    
+    UNUSED(mdi);
+    return;
+}
+void _WM_do_meta_portprefix(struct _mdi *mdi, struct _event_data *data) {
+    // placeholder function so we can record tempo in the event stream
+    // for conversion function _WM_Event2Midi
+#ifdef DEBUG_MIDI
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data);
+#else
+    UNUSED(data);
+#endif
+    
+    UNUSED(mdi);
+    return;
+}
+
+
 void _WM_ResetToStart(struct _mdi *mdi) {
 	mdi->current_event = mdi->events;
 	mdi->samples_to_mix = 0;
@@ -1612,6 +1668,79 @@ static int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
 	return (0);
 }
 
+static int midi_setup_keysignature(struct _mdi *mdi, uint32_t setting) {
+    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_keysignature;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_keysignature;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
+}
+
+static int midi_setup_sequenceno(struct _mdi *mdi, uint32_t setting) {
+    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_sequenceno;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_sequenceno;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
+}
+
+static int midi_setup_channelprefix(struct _mdi *mdi, uint32_t setting) {
+    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_channelprefix;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_channelprefix;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
+}
+
+static int midi_setup_portprefix(struct _mdi *mdi, uint32_t setting) {
+    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    if ((mdi->event_count)
+        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_portprefix;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_portprefix;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
+}
+
+
 struct _mdi *
 _WM_initMDI(void) {
 	struct _mdi *mdi;
@@ -1753,7 +1882,15 @@ _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event
                  MIDI Meta Events
                  */
                 uint32_t tmp_length = 0;
-                if (event_data[0] == 0x02) {
+                if ((event_data[0] == 0x00) && (event_data[1] == 0x02)) {
+                    /*
+                     Sequence Number
+                     
+                     We only setting this up here for WM_Event2Midi function
+                     */
+                    midi_setup_sequenceno(mdi, ((event_data[2] << 8) + event_data[3]));
+                    ret_cnt += 4;
+                } else if (event_data[0] == 0x02) {
                     /* Copyright Event */
                     
                     /* Get Length */
@@ -1783,6 +1920,22 @@ _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event
                     }
                     ret_cnt += tmp_length;
                     
+                } else if ((event_data[0] == 0x20) && (event_data[1] == 0x01)) {
+                    /*
+                     Channel Prefix
+                     
+                     We only setting this up here for WM_Event2Midi function
+                     */
+                    midi_setup_channelprefix(mdi, event_data[2]);
+                    ret_cnt += 3;
+                } else if ((event_data[0] == 0x21) && (event_data[1] == 0x01)) {
+                    /*
+                     Port Prefix
+                     
+                     We only setting this up here for WM_Event2Midi function
+                     */
+                    midi_setup_portprefix(mdi, event_data[2]);
+                    ret_cnt += 3;
                 } else if ((event_data[0] == 0x2F) && (event_data[1] == 0x00)) {
                     /*
                      End of Track
@@ -1808,6 +1961,14 @@ _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event
                      */
                     midi_setup_timesignature(mdi, ((event_data[2] << 24) + (event_data[3] << 16) + (event_data[4] << 8) + event_data[5]));
                     ret_cnt += 6;
+                } else if ((event_data[0] == 0x59) && (event_data[1] == 0x02)) {
+                    /*
+                     Key Signature
+                     
+                     We only setting this up here for WM_Event2Midi function
+                     */
+                    midi_setup_keysignature(mdi, ((event_data[2] << 8) + event_data[3]));
+                    ret_cnt += 4;
                 } else {
                     /*
                      Unsupported Meta Event
