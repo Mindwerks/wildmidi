@@ -62,6 +62,8 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     uint32_t xmi_delta = 0;
     uint32_t xmi_lowestdelta = 0;
     
+    uint8_t xmi_tempo_set = 0;
+    
     
     if (memcmp(xmi_data,"FORM",4)) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
@@ -208,6 +210,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_evntlen |= *xmi_data++;
                 xmi_size -= 8;
                 xmi_subformlen -= 8;
+                xmi_tempo_set = 0;
                 
                 do {
                     if (*xmi_data < 0x80) {
@@ -269,6 +272,12 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                         } while (xmi_delta);
                         
                     } else {
+                        if (xmi_tempo_set) {
+                            if ((xmi_data[0] == 0xff) && (xmi_data[1] == 0x51) && (xmi_data[2] == 0x03)) {
+                                setup_ret = 6;
+                                goto _XMI_Next_Event;
+                            }
+                        }
                         if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data,0)) == 0) {
                             _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                             goto _xmi_end;
@@ -321,11 +330,14 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             /* Slow but needed for accuracy */
                             xmi_pulses_per_second = ((float)xmi_divisions * xmi_bpm_f) / 60.0;
                             xmi_samples_per_delta_f = (float)_WM_SampleRate / xmi_pulses_per_second;
+
+                        _XMI_Next_Event:
                             
                             xmi_data += setup_ret;
                             xmi_size -= setup_ret;
                             xmi_evntlen -= setup_ret;
                             xmi_subformlen -= setup_ret;
+                            xmi_tempo_set = 1;
                             
                         } else {
                             xmi_data += setup_ret;
@@ -333,6 +345,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             xmi_evntlen -= setup_ret;
                             xmi_subformlen -= setup_ret;
                         }
+
                         
                     }
                     
