@@ -1406,7 +1406,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	}
 
 	if (strncmp((char *) midi_data, "MThd", 4) != 0) {
-		printf("Not a midi file\n");
+		printf("Not a compatable file\n");
 		return -1;
 	}
 
@@ -1749,6 +1749,8 @@ int main(int argc, char ** argv) {
 	int option_index = 0;
 	int verbose = 0;
 	int testret = 0;
+    uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
+    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
 
 	unsigned char *filebuffer = NULL;
 	unsigned long int filesize = 0;
@@ -1777,37 +1779,22 @@ int main(int argc, char ** argv) {
 	}
 
 	while (optind < argc) {
-		if ((strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") != 0) &&
-		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar") != 0) &&
-		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".pat") != 0) &&
-		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".xmi") != 0) &&
-		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmp") != 0) &&
-		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") != 0) &&
-		    (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mus") != 0)) {
-			printf("Testing of %s is not supported\n", argv[optind]);
-			optind++;
-			continue;
-		}
-
 		printf("Testing: %s\n", argv[optind]);
 		testret = 0;
 		if ((filebuffer = DT_BufferFile(argv[optind], &filesize)) != NULL) {
-			if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mid") == 0) {
-				testret = test_midi(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".kar") == 0) {
-				testret = test_midi(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".pat") == 0) {
-				testret = test_guspat(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".xmi") == 0) {
-				testret = test_xmidi(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmp") == 0) {
-			/* Will add .hmq extention if we find hmp files with it */
-				testret = test_hmp(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".hmi") == 0) {
-				testret = test_hmi(filebuffer, filesize, verbose);
-			} else if (strcasecmp((argv[optind] + strlen(argv[optind]) - 4), ".mus") == 0) {
-				testret = test_mus(filebuffer, filesize, verbose);
-			}
+			if (memcmp(filebuffer,"HMIMIDIP", 8) == 0) {
+                testret = test_hmp(filebuffer, filesize, verbose);
+            } else if (memcmp(filebuffer, "HMI-MIDISONG061595", 18) == 0) {
+                testret = test_hmi(filebuffer, filesize, verbose);
+            } else if (memcmp(filebuffer, mus_hdr, 4) == 0) {
+                testret = test_mus(filebuffer, filesize, verbose);
+            } else if (memcmp(filebuffer, xmi_hdr, 4) == 0) {
+                testret = test_xmidi(filebuffer, filesize, verbose);
+            } else  if ((memcmp(filebuffer, "GF1PATCH110\0ID#000002", 22) == 0) || (memcmp(filebuffer, "GF1PATCH100\0ID#000002", 22) == 0)) {
+                testret = test_guspat(filebuffer, filesize, verbose);
+            } else {
+                testret = test_midi(filebuffer, filesize, verbose);
+            }
 			free(filebuffer);
 			if (testret != 0) {
 				printf("FAILED: %s will not work correctly with WildMIDI\n\n",
