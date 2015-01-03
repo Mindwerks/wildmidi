@@ -93,6 +93,10 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8];
     mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10];
     
+    UNUSED(mus_ch_cnt1);
+    UNUSED(mus_ch_cnt2);
+    
+    
     // Number of instruments defined
     mus_no_instr = (mus_data[13] << 8) | mus_data[12];
   

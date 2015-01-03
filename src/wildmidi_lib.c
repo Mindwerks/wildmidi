@@ -118,12 +118,16 @@ struct _mdi_patches {
 #define FPBITS 10
 #define FPMASK ((1L<<FPBITS)-1L)
 
+
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
+static int gauss_lock;
+static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
+
+#ifdef _GAUSSDISABLED
+
 static double newt_coeffs[58][58];	/* for start/end of samples */
 #define MAX_GAUSS_ORDER 34		/* 34 is as high as we can go before errors crop up */
-static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
 static int gauss_n = MAX_GAUSS_ORDER;
-static int gauss_lock;
 
 static void init_gauss(void) {
 	/* init gauss table */
@@ -187,6 +191,7 @@ static void init_gauss(void) {
 	gauss_table = t;
 	_WM_Unlock(&gauss_lock);
 }
+#endif
 
 static void free_gauss(void) {
 	_WM_Lock(&gauss_lock);
@@ -1183,6 +1188,9 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 	return (buffer_used);
 }
 
+#ifdef _GAUSSDISABLED
+// Disabled
+
 static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 	uint32_t buffer_used = 0;
 	uint32_t i;
@@ -1517,6 +1525,8 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 	_WM_Unlock(&mdi->lock);
 	return (buffer_used);
 }
+
+#endif
 
 /*
  * =========================

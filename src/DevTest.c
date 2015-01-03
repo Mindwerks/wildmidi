@@ -610,8 +610,8 @@ static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) 
     uint32_t mus_data_ofs = 0;
     uint32_t mus_song_ofs = 0;
     uint32_t mus_song_len = 0;
-    uint16_t mus_ch_cnt1 = 0;
-    uint16_t mus_ch_cnt2 = 0;
+    //uint16_t mus_ch_cnt1 = 0;
+    //uint16_t mus_ch_cnt2 = 0;
     uint16_t mus_no_instr = 0;
     uint16_t mus_instr_cnt = 0;
     uint8_t mus_event_size = 0;
@@ -640,8 +640,8 @@ static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) 
     if (verbose) printf("Song Offset: %i, Length: %i\n", mus_song_ofs, mus_song_len);
     
     // Have yet to determine what this actually is.
-    mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8];
-    mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10];
+    // mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8];
+    // mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10];
     
     // Number of instruments defined
     mus_no_instr = (mus_data[13] << 8) | mus_data[12];
