@@ -46,6 +46,8 @@
 # include <pwd.h>
 #endif
 
+#define UNUSED(x) (void)(x)
+
 static struct option const long_options[] = {
 	{ "debug-level", 1, 0, 'd' },
 	{ "version", 0, 0, 'v' },
@@ -761,7 +763,7 @@ static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) 
                 if (verbose) printf("0x%.2x\n", mus_data[mus_data_ofs]);
                 break;
             case 6: // End Of Song
-                mus_event_size = 1;
+                //mus_event_size = 1;
                 if (verbose) printf("End Of Song\n");
                 goto _WM_MUS_EOS;
                 break;
