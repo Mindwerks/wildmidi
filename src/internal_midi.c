@@ -1239,11 +1239,27 @@ void _WM_do_meta_smpteoffset(struct _mdi *mdi, struct _event_data *data) {
 
 
 void _WM_ResetToStart(struct _mdi *mdi) {
+    struct _event * event = NULL;
+    
 	mdi->current_event = mdi->events;
 	mdi->samples_to_mix = 0;
 	mdi->extra_info.current_sample = 0;
     
 	_WM_do_sysex_gm_reset(mdi, NULL);
+    
+    if (_WM_MixerOptions & WM_MO_SKIPSILENTSTART) {
+        event = mdi->events;
+        //Scan for first note on
+        if (event->do_event != *_WM_do_note_on) {
+            do {
+                event->do_event(mdi, &event->event_data);
+                mdi->extra_info.current_sample += event->samples_to_next;
+                event++;
+                if (event == NULL) break;
+            } while (event->do_event != *_WM_do_note_on);
+            mdi->current_event = event;
+        }
+    }
 }
 
 int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions) {

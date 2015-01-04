@@ -1061,6 +1061,7 @@ static struct option const long_options[] = {
 	{ "device", 1, 0, 'd' },
 #endif
 	{ "roundtempo", 0, 0, 'n' },
+    { "skipsilentstart", 0, 0, 's' },
 	{ NULL, 0, NULL, 0 }
 };
 
@@ -1072,6 +1073,7 @@ static void do_help(void) {
 #endif
 	printf("MIDI Options:\n");
 	printf("  -n    --roundtempo  Round tempo to nearest whole number\n");
+    printf("  -s    --skipsilentstart Skips any silence at the start of playback\n");
 	printf("  -t    --test_midi   Listen to test MIDI\n");
 	printf("Non-MIDI Options:\n");
 	printf("  -x    --tomidi      Convert file to midi and save to file\n");
@@ -1142,7 +1144,7 @@ int main(int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "vho:tx:g:f:lr:c:m:btk:p:ed:n", long_options,
+		i = getopt_long(argc, argv, "vho:tx:g:f:lr:c:m:btk:p:ed:ns", long_options,
 				&option_index);
 		if (i == -1)
 			break;
@@ -1225,7 +1227,10 @@ int main(int argc, char **argv) {
 		case 'n': /* whole number tempo */
 			mixer_options |= WM_MO_ROUNDTEMPO;
 			break;
-		default:
+        case 's': /* whole number tempo */
+                mixer_options |= WM_MO_SKIPSILENTSTART;
+                break;
+            default:
 			do_syntax();
 			return (1);
 		}
