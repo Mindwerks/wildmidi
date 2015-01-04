@@ -122,9 +122,6 @@ struct _mdi_patches {
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
 static int gauss_lock;
 static double *gauss_table = NULL;	/* *gauss_table[1<<FPBITS] */
-
-#ifdef _GAUSSDISABLED
-
 static double newt_coeffs[58][58];	/* for start/end of samples */
 #define MAX_GAUSS_ORDER 34		/* 34 is as high as we can go before errors crop up */
 static int gauss_n = MAX_GAUSS_ORDER;
@@ -191,7 +188,6 @@ static void init_gauss(void) {
 	gauss_table = t;
 	_WM_Unlock(&gauss_lock);
 }
-#endif
 
 static void free_gauss(void) {
 	_WM_Lock(&gauss_lock);
@@ -1166,9 +1162,6 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 	return (buffer_used);
 }
 
-#ifdef _GAUSSDISABLED
-// Disabled
-
 static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 	uint32_t buffer_used = 0;
 	uint32_t i;
@@ -1176,7 +1169,6 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 	uint32_t real_samples_to_mix = 0;
 	uint32_t data_pos;
 	int32_t premix, left_mix, right_mix;
-	int32_t vol_mul;
 	struct _note *note_data = NULL;
 	uint32_t count;
 	int16_t *sptr;
@@ -1248,7 +1240,6 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 					 * ===================
 					 */
 					data_pos = note_data->sample_pos >> FPBITS;
-					vol_mul = (note_data->env_level >> 12);
 
 					/* check to see if we're near one of the ends */
 					left = data_pos;
@@ -1288,10 +1279,10 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 						} while (gptr <= gend);
 					}
 
-					premix = (int32_t) (y * vol_mul / 1024);
+                    premix = (int32_t)((y * (note_data->env_level >> 12)) / 1024);
 
-					left_mix += (premix * note_data->left_mix_volume) / 1024;
-					right_mix += (premix * note_data->right_mix_volume) / 1024;
+					left_mix += (premix * (int32_t)note_data->left_mix_volume) / 1024;
+					right_mix += (premix * (int32_t)note_data->right_mix_volume) / 1024;
 
 					/*
 					 * ========================
@@ -1441,14 +1432,6 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 					note_data = note_data->next;
 					continue;
 				}
-
-				/*
-				 * =========================
-				 * mix the channels together
-				 * =========================
-				 */
-				left_mix /= 1024;
-				right_mix /= 1024;
 			}
 
 			*tmp_buffer++ = left_mix;
@@ -1467,21 +1450,11 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 		_WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
 	}
 
-	for (i = 0; i < buffer_used; i += 4) {
+    _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
+    
+    for (i = 0; i < buffer_used; i += 4) {
 		left_mix = *tmp_buffer++;
 		right_mix = *tmp_buffer++;
-
-		if (left_mix > 32767) {
-			left_mix = 32767;
-		} else if (left_mix < -32768) {
-			left_mix = -32768;
-		}
-
-		if (right_mix > 32767) {
-			right_mix = 32767;
-		} else if (right_mix < -32768) {
-			right_mix = -32768;
-		}
 
 		/*
 		 * ===================
@@ -1503,8 +1476,6 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 	_WM_Unlock(&mdi->lock);
 	return (buffer_used);
 }
-
-#endif
 
 /*
  * =========================
@@ -1894,13 +1865,11 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
 				"(size not a multiple of 4)", 0);
 		return (-1);
 	}
-#if 0
-    // FIXME: disabled until further notice
-	if (((struct _mdi *) handle)->extra_info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
+
+    if (((struct _mdi *) handle)->extra_info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
 		if (!gauss_table) init_gauss();
 		return (WM_GetOutput_Gauss(handle, buffer, size));
 	}
-#endif
 	return (WM_GetOutput_Linear(handle, buffer, size));
 }
 

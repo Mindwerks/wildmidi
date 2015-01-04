@@ -60,6 +60,8 @@ Description
                 // All events and delta values stored as with standard MIDI,
                 // EXCEPT for there is no "Note Off" and "Note On" extra data after the velocity that states the length of the note in delta ticks stored in MIDI variable length format.
 
+                // ALSO NOTE that only the first TEMPO event is used, all others are ignored.
+
                 // Example Note on may me stored like
                 // uint8_t event_data[] = { 0x90, 0x24, 0x64, 0xA3 }
                 // uint8_t delta_ticks[] = { 0xA3 }
