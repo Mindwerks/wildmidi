@@ -771,6 +771,8 @@ void _WM_do_control_channel_volume(struct _mdi *mdi,
                                       struct _event_data *data) {
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data);
+
+    if (data->data > 0x7f) data->data = 0x7f;
     
 	mdi->channel[ch].volume = data->data;
     _WM_AdjustChannelVolumes(mdi, ch);
@@ -780,6 +782,8 @@ void _WM_do_control_channel_balance(struct _mdi *mdi,
                                        struct _event_data *data) {
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data);
+
+    if (data->data > 0x7f) data->data = 0x7f;
     
 	mdi->channel[ch].balance = data->data;
     _WM_AdjustChannelVolumes(mdi, ch);
@@ -789,6 +793,8 @@ void _WM_do_control_channel_pan(struct _mdi *mdi, struct _event_data *data) {
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data);
     
+    if (data->data > 0x7f) data->data = 0x7f;
+    
 	mdi->channel[ch].pan = data->data;
     _WM_AdjustChannelVolumes(mdi, ch);
 }
@@ -797,6 +803,8 @@ void _WM_do_control_channel_expression(struct _mdi *mdi,
                                           struct _event_data *data) {
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data);
+    
+    if (data->data > 0x7f) data->data = 0x7f;
     
 	mdi->channel[ch].expression = data->data;
     _WM_AdjustChannelVolumes(mdi, ch);
@@ -1025,7 +1033,9 @@ void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
 	uint8_t ch = data->channel;
     
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data);
-    
+
+    if (data->data > 0x7f) data->data = 0x7f;
+
 	mdi->channel[ch].pressure = data->data;
     _WM_AdjustChannelVolumes(mdi, ch);
 }
