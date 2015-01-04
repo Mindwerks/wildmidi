@@ -27,7 +27,7 @@
 #define __GUS_PAT_H
 
 /* Guspat Envelope Rate Timings */
-
+#ifndef _WILDMIDI_LIB_C
 static float env_time_table[] = {
 /* Row 1 = (4095.0 / (x * ( 1.0 / (1.6 * 14.0)         ))) / 1000000.0 */
 	0.0f,         0.091728000f, 0.045864000f, 0.030576000f, 0.022932000f, 0.018345600f, 0.015288000f, 0.013104000f,
@@ -69,6 +69,7 @@ static float env_time_table[] = {
 	0.978432000f, 0.958464000f, 0.939294720f, 0.920877176f, 0.903168000f, 0.886127094f, 0.869717333f, 0.853904291f,
 	0.838656000f, 0.823942737f, 0.809736828f, 0.796012475f, 0.782745600f, 0.769913705f, 0.757495742f, 0.745472000f
 };
+#endif // !_WILDMIDI_LIB_C
 
 extern struct _sample * _WM_load_gus_pat (const char *filename, int _fix_release);
 

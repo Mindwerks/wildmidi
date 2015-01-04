@@ -23,6 +23,8 @@
  <http://www.gnu.org/licenses/>.
  */
 
+#define _WILDMIDI_LIB_C
+
 #include "config.h"
 
 #include <stdint.h>
