@@ -329,7 +329,6 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
     uint32_t j = 0;
     
     int8_t peak_set = 0;
-    int32_t prev_buf_val = 0;
     int32_t prev_val = 0;
     uint32_t peak_ofs = 0;
     int32_t peak = mdi->dyn_vol_peak;
@@ -339,7 +338,7 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
     double volume_adjust = mdi->dyn_vol_adjust;
     double tmp_output = 0.0;
 
-    
+#define MAX_DYN_VOL 1.0
     
     for (i = 0; i < buffer_used; i++) {
         if ((i == 0) || (i > peak_ofs)) {
@@ -347,7 +346,6 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
             peak_set = 0;
             prev_val = peak;
             peak_ofs = 0;
-            volume_to_reach = 1.0;
             for (j = i; j < buffer_used; j++) {
                 if (peak_set == 0) {
                     // find what direction the data is going
@@ -393,65 +391,62 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                     if (peak > 32767) {
                         volume_to_reach = 32767.0 / (double)peak;
                     } else {
-                        volume_to_reach = 1.0;
+                        volume_to_reach = MAX_DYN_VOL;
                     }
                 } else { // assume peak_set == -1
                     if (peak < -32768) {
                         volume_to_reach = -32768.0 / (double)peak;
                     } else {
-                        volume_to_reach = 1.0;
+                        volume_to_reach = MAX_DYN_VOL;
                     }
                 }
             } else {
                 // No peak found, set volume we want to normal
-                volume_to_reach = 1.0;
+                volume_to_reach = MAX_DYN_VOL;
             }
             
-            volume_adjust = (volume_to_reach - volume) / ((double)_WM_SampleRate * 0.02);
-            
-        }
-/*
-        // If we're not at the volume level we want
-        // then keep adjusting the volume
-        if (volume != volume_to_reach) {
-            volume += volume_adjust;
-            if (volume_adjust > 0.0) {
-                // if increasing the volume
-                if (volume >= 1.0) {
-                    // we dont boost volume
-                    volume = 1.0;
-                } else if (volume > volume_to_reach) {
-                    // we dont want to go above the level we wanted
-                    volume = volume_to_reach;
-                }
-            } else {
-                // decreasing the volume
-                if (volume < 0.0) {
-                    // we dont want negative volumes
-                    volume = 0.0;
-                } else if (volume < volume_to_reach) {
-                    // we dont want to go below the level we wanted
-                    volume = volume_to_reach;
+            if (volume != volume_to_reach) {
+                if (volume_to_reach == MAX_DYN_VOL) {
+                    // if we want normal volume then adjust to it slower
+                    volume_adjust = (volume_to_reach - volume) / ((double)_WM_SampleRate * 0.1);
+                } else {
+                    // if we want to clamp the volume then adjust quickly
+                    volume_adjust = (volume_to_reach - volume) / ((double)_WM_SampleRate * 0.0001);
                 }
             }
         }
-*/
-        if (volume_adjust > 0.0) {
-            volume += volume_adjust;
-            if (volume > volume_to_reach) {
-                volume = volume_to_reach;
+
+        // First do we need to do volume adjustments
+        if ((volume_adjust != 0.0) && (volume != volume_to_reach)) {
+                volume += volume_adjust;
+                if (volume_adjust > 0.0) {
+                    // if increasing the volume
+                    if (volume >= MAX_DYN_VOL) {
+                        // we dont boost volume
+                        volume = MAX_DYN_VOL;
+                        volume_adjust = 0.0;
+                    } else if (volume > volume_to_reach) {
+                        // we dont want to go above the level we wanted
+                        volume = volume_to_reach;
+                        volume_adjust = 0.0;
+                    }
+                } else {
+                    // decreasing the volume
+                    if (volume < 0.0) {
+                        // we dont want negative volumes
+                        volume = 0.0;
+                        volume_adjust = 0.0;
+                    } else if (volume < volume_to_reach) {
+                        // we dont want to go below the level we wanted
+                        volume = volume_to_reach;
+                        volume_adjust = 0.0;
+                        
+                    }
+                }
             }
-        } else {
-            volume = volume_to_reach;
-        }
-        
+
         // adjust buffer volume
-        prev_buf_val = tmp_buffer[i];
         tmp_output = (double)tmp_buffer[i] * volume;
-        // DEBUG
-        if (volume_adjust != 0.0) {
-            fprintf(stderr,"\r>>>%i %i %f %f %f %f<<<\n\r", tmp_buffer[i], peak, volume, volume_to_reach, volume_adjust, tmp_output);
-        }
         tmp_buffer[i] = (int32_t)tmp_output;
         
     }
@@ -475,12 +470,13 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     /*
      This value is to reduce the chance of clipping. Lower value means lower overall volume, higher value means higher overall volume.
      
-     NOTE: The higher the value the higher the chance of clipping.
+     NOTE: The lower the value the higher the chance of clipping.
      
-     FIXME: May still need fine tuning. Clipping heard at a setting of 43.
+     FIXME: Still needs tuning. Clipping heard at a value of 2.75
      */
-    float volume_adj = (float)_WM_MasterVolume * 42.0;
-    
+#define VOL_DIVISOR 3
+    float volume_adj = ((float)_WM_MasterVolume / 1024.0) / VOL_DIVISOR;
+
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
     
     if (pan_ofs > 127) pan_ofs = 127;
@@ -509,63 +505,8 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
         premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20)) * volume_adj;
         premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20)) * volume_adj;
     }
-    nte->left_mix_volume = (int32_t)premix_left / 512;
-    nte->right_mix_volume = (int32_t)premix_right / 512;
-    
-    // debug
-    //fprintf(stderr, "\r\nVolumes(%i)(%i(%i:%i)): %i, %i : %f %f\r\n", ch, pan_ofs, mdi->channel[ch].balance, mdi->channel[ch].pan, nte->left_mix_volume, nte->right_mix_volume, premix_left, premix_right);
-}
-
-/* Should be called in any function that effects note volumes */
-void _WM_AdjustNoteVolumes_new (struct _mdi *mdi, uint8_t ch, struct _note *nte) {
-    float premix_dBm;
-    float premix_lin;
-    uint8_t pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
-    float premix_dBm_left;
-    float premix_dBm_right;
-    float premix_left;
-    float premix_right;
-    /*
-     This value is to reduce the chance of clipping. Lower value means lower overall volume, higher value means higher overall volume.
-     
-     NOTE: The higher the value the higher the chance of clipping.
-     
-     FIXME: May still need fine tuning. Clipping heard at a setting of 43.
-     */
-//    float volume_adj = (float)_WM_MasterVolume * 42.0;
-    MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
-    
-    if (pan_ofs > 127) pan_ofs = 127;
-    if (pan_ofs < 0) pan_ofs = 0;
-    premix_dBm_left = dBm_pan_volume[(127-pan_ofs)] + dBm_volume[_WM_MasterVolume];
-    premix_dBm_right = dBm_pan_volume[pan_ofs] + dBm_volume[_WM_MasterVolume];
-    
-    
-    if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
-        premix_dBm = dBm_volume[mdi->channel[ch].volume] +
-                     dBm_volume[mdi->channel[ch].expression] +
-                     dBm_volume[mdi->channel[ch].pressure] +
-                     dBm_volume[nte->velocity];
-    
-        premix_dBm_left += premix_dBm;
-        premix_dBm_right += premix_dBm;
-        
-        premix_left = (powf(10.0,(premix_dBm_left / 20.0)));
-        premix_right = (powf(10.0,(premix_dBm_right / 20.0)));
-    } else {
-        premix_lin = (float)(_WM_lin_volume[mdi->channel[ch].volume] +
-                             _WM_lin_volume[mdi->channel[ch].expression] +
-                             _WM_lin_volume[mdi->channel[ch].pressure] +
-                             _WM_lin_volume[nte->velocity]) / 4096.0;
-        
-        premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20));
-        premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20));
-    }
     nte->left_mix_volume = (int32_t)(premix_left * 1024.0);
     nte->right_mix_volume = (int32_t)(premix_right * 1024.0);
-    
-    // debug
-    fprintf(stderr, "\r\nVolumes(%i)(%i(%i:%i)): %i, %i : %f %f\r\n", ch, pan_ofs, mdi->channel[ch].balance, mdi->channel[ch].pan, nte->left_mix_volume, nte->right_mix_volume, premix_left, premix_right);
 }
 
 /* Should be called in any function that effects channel volumes */

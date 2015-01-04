@@ -968,11 +968,11 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 					 * ===================
 					 */
 					data_pos = note_data->sample_pos >> FPBITS;
-					premix = note_data->sample->data[data_pos] + (((note_data->sample->data[data_pos + 1] - note_data->sample->data[data_pos]) * (int32_t)(note_data->sample_pos & FPMASK)) / 1024);
-
-					left_mix += ((premix * (note_data->env_level >> 12)) * (int32_t)note_data->left_mix_volume) / 1024;
-					right_mix += ((premix * (note_data->env_level >> 12)) * (int32_t)note_data->right_mix_volume) / 1024;
-            
+					premix = ((note_data->sample->data[data_pos] + (((note_data->sample->data[data_pos + 1] - note_data->sample->data[data_pos]) * (int32_t)(note_data->sample_pos & FPMASK)) / 1024)) * (note_data->env_level >> 12)) / 1024;
+                    
+                    left_mix += (premix * (int32_t)note_data->left_mix_volume) / 1024;
+					right_mix += (premix * (int32_t)note_data->right_mix_volume) / 1024;
+                    
 					/*
 					 * ========================
 					 * sample position checking
@@ -1121,16 +1121,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 					note_data = note_data->next;
 					continue;
 				}
-
-				/*
-				 * =========================
-				 * mix the channels together
-				 * =========================
-				 */
-				left_mix /= 1024;
-				right_mix /= 1024;
-			}
-
+            }
 			*tmp_buffer++ = left_mix;
 			*tmp_buffer++ = right_mix;
 		} while (--count);
@@ -1147,26 +1138,13 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 		_WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
 	}
 
-//    _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
+    _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
     
 	for (i = 0; i < buffer_used; i += 4) {
 		left_mix = *tmp_buffer++;
 		right_mix = *tmp_buffer++;
 
-#if 1
-		if (left_mix > 32767) {
-			left_mix = 32767;
-		} else if (left_mix < -32768) {
-			left_mix = -32768;
-		}
-
-		if (right_mix > 32767) {
-			right_mix = 32767;
-		} else if (right_mix < -32768) {
-			right_mix = -32768;
-		}
-#endif
-		/*
+        /*
 		 * ===================
 		 * Write to the buffer
 		 * ===================

@@ -1780,9 +1780,8 @@ int main(int argc, char ** argv) {
 
 	while (optind < argc) {
 		printf("Testing: %s\n", argv[optind]);
-		testret = 0;
 		if ((filebuffer = DT_BufferFile(argv[optind], &filesize)) != NULL) {
-			if (memcmp(filebuffer,"HMIMIDIP", 8) == 0) {
+            if (memcmp(filebuffer,"HMIMIDIP", 8) == 0) {
                 testret = test_hmp(filebuffer, filesize, verbose);
             } else if (memcmp(filebuffer, "HMI-MIDISONG061595", 18) == 0) {
                 testret = test_hmi(filebuffer, filesize, verbose);
