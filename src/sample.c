@@ -30,6 +30,7 @@
 #include "common.h"
 #include "patches.h"
 #include "gus_pat.h"
+#include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "sample.h"
 

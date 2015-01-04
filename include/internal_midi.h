@@ -86,26 +86,9 @@ struct _mdi {
 	struct _event *current_event;
 	uint32_t event_count;
 	uint32_t events_size; /* try to stay optimally ahead to prevent reallocs */
-    struct {
-        /* private info */
-        char *copyright;
-        uint32_t current_sample;
-        uint32_t approx_total_samples;
-        uint16_t mixer_options;
-        uint32_t total_midi_time;
-    } extra_info;
-    struct {
-        /* public info */
-        /* needs to match format of struct _WM_Info in wildmidi_lib.h */
-        char *copyright;
-        uint32_t current_sample;
-        uint32_t approx_total_samples;
-        uint16_t mixer_options;
-        uint32_t total_midi_time;
-    } * tmp_info;
-	uint16_t midi_master_vol;
-//	struct _WM_Info info;
-//	struct _WM_Info *tmp_info;
+    struct _WM_Info extra_info;
+    struct _WM_Info *tmp_info;
+    uint16_t midi_master_vol;
 	struct _channel channel[16];
 	struct _note *note;
 	struct _note note_table[2][16][128];

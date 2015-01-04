@@ -432,11 +432,7 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                     }
                 } else {
                     // decreasing the volume
-                    if (volume < 0.0) {
-                        // we dont want negative volumes
-                        volume = 0.0;
-                        volume_adjust = 0.0;
-                    } else if (volume < volume_to_reach) {
+                    if (volume < volume_to_reach) {
                         // we dont want to go below the level we wanted
                         volume = volume_to_reach;
                         volume_adjust = 0.0;
@@ -448,7 +444,6 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
         // adjust buffer volume
         tmp_output = (double)tmp_buffer[i] * volume;
         tmp_buffer[i] = (int32_t)tmp_output;
-        
     }
     
     // store required values
@@ -456,6 +451,7 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
     mdi->dyn_vol_peak = peak;
     mdi->dyn_vol = volume;
     mdi->dyn_vol_to_reach = volume_to_reach;
+    
 }
 
 /* Should be called in any function that effects note volumes */
