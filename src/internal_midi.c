@@ -472,9 +472,9 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
      
      NOTE: The lower the value the higher the chance of clipping.
      
-     FIXME: Still needs tuning. Clipping heard at a value of 2.75
+     FIXME: Still needs tuning. Clipping heard at a value of 3.75
      */
-#define VOL_DIVISOR 3
+#define VOL_DIVISOR 3.90
     float volume_adj = ((float)_WM_MasterVolume / 1024.0) / VOL_DIVISOR;
 
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
@@ -483,7 +483,6 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     if (pan_ofs < 0) pan_ofs = 0;
     premix_dBm_left = dBm_pan_volume[(127-pan_ofs)];
     premix_dBm_right = dBm_pan_volume[pan_ofs];
-    
     
     if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
         premix_dBm = dBm_volume[mdi->channel[ch].volume] +
