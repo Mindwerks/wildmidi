@@ -480,7 +480,6 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
     
     if (pan_ofs > 127) pan_ofs = 127;
-    if (pan_ofs < 0) pan_ofs = 0;
     premix_dBm_left = dBm_pan_volume[(127-pan_ofs)];
     premix_dBm_right = dBm_pan_volume[pan_ofs];
     
