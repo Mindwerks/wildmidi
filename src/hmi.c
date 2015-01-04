@@ -48,7 +48,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     uint16_t hmi_division = 0;
     
  //   uint32_t hmi_duration_secs = 0;
-    uint8_t hmi_track_cnt = 0;
+    uint32_t hmi_track_cnt = 0;
     uint32_t *hmi_track_offset = NULL;
     uint32_t i = 0;
     uint32_t j = 0;
