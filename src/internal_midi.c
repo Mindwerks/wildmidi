@@ -462,11 +462,19 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
 void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     float premix_dBm;
     float premix_lin;
-    uint8_t pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
+    uint8_t pan_ofs;
     float premix_dBm_left;
     float premix_dBm_right;
     float premix_left;
     float premix_right;
+    
+    /*
+     Pointless CPU heating checks to shoosh up a compiler
+     */
+    if (ch > 0x0f) ch = 0x0f;
+    
+    pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
+    
     /*
      This value is to reduce the chance of clipping. Lower value means lower overall volume, higher value means higher overall volume.
      
