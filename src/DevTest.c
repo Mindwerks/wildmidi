@@ -289,9 +289,64 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 }
 
             }
-            if (verbose)
-                printf("Controller: chan(%i) ctrl(%i) set(%i)\n",
-                       (event & 0x0F), midi_data[0], midi_data[1]);
+            if (verbose) {
+                printf("Controller ");
+                switch(midi_data[0]) {
+                    case 0:
+                        printf("Bank Select: ");
+                        break;
+                    case 6:
+                        printf("Data Entry Course: ");
+                        break;
+                    case 7:
+                        printf("Channel Volume: ");
+                        break;
+                    case 8:
+                        printf("Channel Balance: ");
+                        break;
+                    case 10:
+                        printf("Pan: ");
+                        break;
+                    case 11:
+                        printf("Channel Expression: ");
+                        break;
+                    case 38:
+                        printf("Data Entry Fine: ");
+                        break;
+                    case 64:
+                        printf("Channel Hold: ");
+                        break;
+                    case 96:
+                        printf("Data Increment: ");
+                        break;
+                    case 97:
+                        printf("Data Decrement: ");
+                        break;
+                    case 98:
+                        printf("Non-registered Param Fine: ");
+                        break;
+                    case 99:
+                        printf("Non-registered Param Course: ");
+                        break;
+                    case 100:
+                        printf("Registered Param Fine: ");
+                        break;
+                    case 101:
+                        printf("Registered Param Course: ");
+                        break;
+                    case 120:
+                        printf("Channel Sound Off: ");
+                        break;
+                    case 121:
+                        printf("Channel Controllers Off: ");
+                        break;
+                    case 123:
+                        printf("Channel Notes Off: ");
+                        break;
+                    default: printf(" Unknown(%i): ", midi_data[0]);
+                }
+                printf("chan(%i) set(%i)\n", (event & 0x0F), midi_data[1]);
+            }
             rtn_cnt += 2;
             break;
         case 0xC:
@@ -608,6 +663,35 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
     return rtn_cnt;
 }
 
+static uint32_t time_mins = 0;
+static float time_secs = 0.0f;
+static float secs_per_tick = 0.0f;
+static float frequency = 0.0f;
+
+static void add_time (int add_ticks) {
+    uint32_t add_mins = 0;
+    
+    time_secs += (add_ticks * secs_per_tick);
+    if (time_secs > 60.0f) {
+        add_mins = (uint32_t)(time_secs / 60.0f);
+        time_secs -= (float)(add_mins * 60);
+        time_mins += add_mins;
+    }
+    return;
+}
+
+static void display_time(void) {
+    printf("Time %.2i:%02.05f    ", time_mins, time_secs);
+    return;
+}
+
+static void add_and_display_time(int add_ticks) {
+    add_time(add_ticks);
+    display_time();
+    return;
+}
+
+    
 static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) {
     uint32_t mus_data_ofs = 0;
     uint32_t mus_song_ofs = 0;
@@ -669,10 +753,20 @@ static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) 
     // make sure we are at song offset
     mus_data_ofs = mus_song_ofs;
     
+    if (verbose) {
+        // Setup secs_per_tick
+        if (frequency == 0.0) frequency = 140.0;
+        secs_per_tick = 1.0f / (1000000.0f / ((60000000.0f / frequency) / 60.0f));
+        add_and_display_time(0);
+    }
+    
     do {
         // Read Event
     _WM_READ_MUS_EVENT:
-        if (verbose) printf("@ 0x%.4x (%i) ", mus_data_ofs, (mus_data[mus_data_ofs] & 0x0f));
+        if (verbose) {
+            //printf("@ 0x%.4x (%i) ", mus_data_ofs, (mus_data[mus_data_ofs] & 0x0f));
+            display_time();
+        }
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
             case 0: // note off
                 mus_event_size = 2;
@@ -795,8 +889,9 @@ static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) 
             mus_ticks = (mus_ticks << 7) | (mus_data[mus_data_ofs] & 0x7f);
             mus_data_ofs++;
         } while (mus_data[mus_data_ofs - 1] > 0x7f);
-        if (verbose) printf("Ticks: 0x%.2x\n", mus_ticks);
-        
+        if (verbose) {
+            add_time(mus_ticks);
+        }
     } while (mus_data_ofs < mus_size);
     
     // Song End
@@ -823,14 +918,18 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
         printf("Not a valid HMI file: expected HMI-MIDISONG061595\n");
         return -1;
     }
-    
+        
     hmi_data += 212;
     hmi_size -= 212;
     hmi_dbg += 212;
     
     hmi_division = *hmi_data++;
-    if (verbose) printf("Beats per minute: %u\n",hmi_division);
-   
+    if (verbose) {
+        printf("Beats per minute: %u\n",hmi_division);
+        secs_per_tick = 1.0f / (1000000.0f /((60000000.f / (float)hmi_division) / 60.0f));
+        
+        
+    }
     hmi_data += 15;
     hmi_size -= 16;
     hmi_dbg += 16;
@@ -912,7 +1011,10 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
                 }
             }
             hmi_delta = (hmi_delta << 7) | (*hmi_data & 0x7F);
-            if (verbose) printf("Delta: %u\n",hmi_delta);
+            if (verbose) {
+                // printf("Delta: %u\n",hmi_delta);
+                add_and_display_time(hmi_delta);
+            }
             hmi_data++;
             hmi_size--;
             hmi_dbg++;
@@ -1059,7 +1161,11 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
     hmp_division += (*hmp_data++ << 8);
     hmp_division += (*hmp_data++ << 16);
     hmp_division += (*hmp_data++ << 24);
-    if (verbose) printf("Beats per minute: %u\n", hmp_division);
+    if (verbose) {
+        printf("Beats per minute: %u\n", hmp_division);
+        secs_per_tick = 1.0f / (1000000.0f /((60000000.f / (float)hmp_division) / 60.0f));
+        
+    }
     
     hmp_song_time = *hmp_data++;
     hmp_song_time += (*hmp_data++ << 8);
@@ -1122,10 +1228,10 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
             }
             hmp_var_len_val = hmp_var_len_val | ((*hmp_data++ & 0x7F) << var_len_shift);
             hmp_size--;
-
-//          j++; <- this was causing off by 1 issues
-            
-            if (verbose) printf("delta: %u\n", hmp_var_len_val);
+            if (verbose) {
+                //printf("delta: %u\n", hmp_var_len_val);
+                add_and_display_time(hmp_var_len_val);
+            }
 
             if ((check_ret = check_midi_event(hmp_data, hmp_size, hmp_division, 0, verbose, EVENT_DATA_8BIT)) == -1) {
                 printf("Missing or Corrupt MIDI Data\n");
@@ -1155,6 +1261,11 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     unsigned int subform_len = 0;
     unsigned int event_len = 0;
     unsigned int divisions = 96;
+    unsigned int tempo = 500000;
+    float beats_per_minute = 0.0;
+    float microseconds_per_pulse = 0.0;
+    float pulses_per_second = 0.0;
+    float samples_per_delta_f = 0.0;
     
     if (strncmp((char *) xmidi_data,"FORM", 4) != 0) {
         printf("Not a valid xmidi file: expected FORM\n");
@@ -1254,6 +1365,18 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
         xmidi_data += 4;
         xmidi_size -= 4;
         subform_len -= 4;
+        
+        if (verbose) {
+            /* Slow but needed for accuracy */
+            beats_per_minute = 60000000.0 / (float) tempo;
+            microseconds_per_pulse = (float) tempo / (float) divisions;
+            pulses_per_second = 1000000.0 / microseconds_per_pulse;
+            samples_per_delta_f = 44100.0 / pulses_per_second;
+            
+            printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
+                   samples_per_delta_f);
+            secs_per_tick = 1.0f / pulses_per_second;
+        }
 
         do {
             if (strncmp((char *) xmidi_data,"TIMB", 4) == 0) {
@@ -1330,10 +1453,13 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                         xmidi_size--;
                         event_len--;
                         subform_len--;
-                        if (verbose)
-                            printf ("Intervals: %u\n", tmp_val);
+                        if (verbose) {
+                            // printf ("Intervals: %u\n", tmp_val);
+                            add_time(tmp_val);
+                        }
 
                     } else {
+                        display_time();
                         if ((check_ret = check_midi_event(xmidi_data, xmidi_size, divisions, 0, verbose, 0)) == -1) {
                             printf("Missing or Corrupt MIDI Data\n");
                             return -1;
@@ -1360,6 +1486,24 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                             if (verbose)
                                 printf("Note Length (intervals?): %u\n", tmp_val);
                         } else {
+                            if ((xmidi_data[0] == 0xff) && (xmidi_data[1] == 0x51) && (xmidi_data[2] == 0x03)) {
+                                
+                                /* Tempo */
+                                tempo = (xmidi_data[3] << 16) + (xmidi_data[4] << 8)+ xmidi_data[5];
+                                if (!tempo)
+                                    tempo = 500000;
+                                if (verbose) {
+                                    /* Slow but needed for accuracy */
+                                    beats_per_minute = 60000000.0 / (float) tempo;
+                                    microseconds_per_pulse = (float) tempo / (float) divisions;
+                                    pulses_per_second = 1000000.0 / microseconds_per_pulse;
+                                    samples_per_delta_f = 44100.0 / pulses_per_second;
+                                    
+                                    printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
+                                           samples_per_delta_f);
+                                    secs_per_tick = 1.0f / pulses_per_second;
+                                }
+                            }
                             xmidi_data += check_ret;
                             xmidi_size -= check_ret;
                             event_len -= check_ret;
@@ -1486,16 +1630,23 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			return -1;
 		}
 
-		/* Slow but needed for accuracy */
-		beats_per_minute = 60000000.0 / (float) tempo;
-		microseconds_per_pulse = (float) tempo / (float) divisions;
-		pulses_per_second = 1000000.0 / microseconds_per_pulse;
-		samples_per_delta_f = 44100.0 / pulses_per_second;
-		if (verbose)
+        if (verbose) {
+            /* Slow but needed for accuracy */
+            beats_per_minute = 60000000.0 / (float) tempo;
+            microseconds_per_pulse = (float) tempo / (float) divisions;
+            pulses_per_second = 1000000.0 / microseconds_per_pulse;
+            samples_per_delta_f = 44100.0 / pulses_per_second;
+
 			printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
 					samples_per_delta_f);
+            secs_per_tick = 1.0f / pulses_per_second;
+        }
 	}
 	for (i = 0; i < no_tracks; i++) {
+        
+        time_mins = 0;
+        time_secs = 0.0;
+        
 		if (midi_size < 8) {
 			printf("Midi File Too Short\n");
 			return -1;
@@ -1552,6 +1703,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			}
 			delta = (delta << 7) | (*midi_data & 0x7F);
 //			printf("0x%.2x\n",*midi_data);
+            add_and_display_time(delta);
 			midi_data++;
 			if (midi_size == 0) {
 				printf("Corrupt Midi, Missing or Corrupt Track Data\n");
@@ -1563,10 +1715,11 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			/* tempo microseconds per quarter note
 			 * divisions pulses per quarter note */
 			/*if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));*/
-			if (verbose)
+/*
+            if (verbose)
 				printf("Delta: %i, Accumilated Delta: %ld\n", delta,
 						delta_accum);
-
+*/
 			if (*midi_data < 0x80) {
 				if (running_event == 0) {
 					printf("Currupt Midi: expected event, got data\n");
@@ -1590,6 +1743,27 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 //					printf("Set running_event 0x%2x\n", running_event);
 				}
 			}
+            
+            if ((midi_data[0] == 0xff) && (midi_data[1] == 0x51) && (midi_data[2] == 0x03)) {
+                
+                    /* Tempo */
+                    tempo = (midi_data[3] << 16) + (midi_data[4] << 8)+ midi_data[5];
+                    if (!tempo)
+                        tempo = 500000;
+                if (verbose) {
+                    /* Slow but needed for accuracy */
+                    beats_per_minute = 60000000.0 / (float) tempo;
+                    microseconds_per_pulse = (float) tempo / (float) divisions;
+                    pulses_per_second = 1000000.0 / microseconds_per_pulse;
+                    samples_per_delta_f = 44100.0 / pulses_per_second;
+                    
+                    printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
+                           samples_per_delta_f);
+                    secs_per_tick = 1.0f / pulses_per_second;
+                }
+
+            }
+            
 			midi_size -= check_ret;
 			total_count += check_ret;
 
@@ -1757,13 +1931,16 @@ int main(int argc, char ** argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "d:vh", long_options, &option_index);
+		i = getopt_long(argc, argv, "d:f:vh", long_options, &option_index);
 		if (i == -1)
 			break;
 		switch (i) {
 		case 'd': /* Verbose */
 			verbose = atoi(optarg);
 			break;
+        case 'f': /* Frequency */
+            frequency = atof(optarg);
+            break;
 		case 'v': /* Version */
 			return 0;
 		case 'h': /* help */
