@@ -212,7 +212,7 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 }
 
 static int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
-        unsigned int divisions, unsigned char running_event, int verbose, int options) {
+        unsigned char running_event, int verbose, int options) {
     unsigned int rtn_cnt = 0;
     unsigned char event = 0;
     unsigned int meta_length = 0;
@@ -482,7 +482,6 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 // Added just in case
                 printf("Realtime Event: 0x%.2x ** NOTE: Not expected in midi file type data\n",event);
             } else if (event == 0xFF) {
-                unsigned int tempo = 500000;
                 /*
                  * Only including meta events that are supported by wildmidi
                  */
@@ -656,13 +655,11 @@ static float frequency = 0.0f;
 
 static void set_secs_per_tick (uint32_t divisions, uint32_t tempo) {
     float microseconds_per_tick;
-    float ticks_per_second;
     
     /* Slow but needed for accuracy */
     microseconds_per_tick = (float) tempo / (float) divisions;
-    ticks_per_second = 1000000.0f / microseconds_per_tick;
-    secs_per_tick = 1.0f / ticks_per_second;
-    printf("Secs per tick: %f\n",secs_per_tick);
+    secs_per_tick = microseconds_per_tick / 1000000.0f;
+    printf("Secs per tick: %f, Divisions: %u, tempo: %u\n",secs_per_tick, divisions, tempo);
     
     return;
 }
@@ -676,6 +673,7 @@ static void add_time (int add_ticks) {
         time_secs -= (float)(add_mins * 60);
         time_mins += add_mins;
     }
+    printf("Ticks: %i\n",add_ticks);
     return;
 }
 
@@ -1032,7 +1030,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
                 hmi_size -= 4;
                 hmi_dbg += 4;
             } else {
-                if ((check_ret = check_midi_event(hmi_data, hmi_size, hmi_division, hmi_running_event, verbose, 0)) == -1) {
+                if ((check_ret = check_midi_event(hmi_data, hmi_size, hmi_running_event, verbose, 0)) == -1) {
                     printf("Missing or Corrupt MIDI Data\n");
                     free (hmi_track_offset);
                     return -1;
@@ -1230,7 +1228,7 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
                 add_and_display_time(hmp_var_len_val);
             }
 
-            if ((check_ret = check_midi_event(hmp_data, hmp_size, hmp_division, 0, verbose, EVENT_DATA_8BIT)) == -1) {
+            if ((check_ret = check_midi_event(hmp_data, hmp_size, 0, verbose, EVENT_DATA_8BIT)) == -1) {
                 printf("Missing or Corrupt MIDI Data\n");
                 return -1;
             }
@@ -1257,7 +1255,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     unsigned int cat_len = 0;
     unsigned int subform_len = 0;
     unsigned int event_len = 0;
-    unsigned int divisions = 96;
+    unsigned int divisions = 60;
     unsigned int tempo = 500000;
     uint32_t tempo_set = 0;
     
@@ -1446,7 +1444,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
 
                     } else {
                         display_time();
-                        if ((check_ret = check_midi_event(xmidi_data, xmidi_size, divisions, 0, verbose, 0)) == -1) {
+                        if ((check_ret = check_midi_event(xmidi_data, xmidi_size, 0, verbose, 0)) == -1) {
                             printf("Missing or Corrupt MIDI Data\n");
                             return -1;
                         }
@@ -1695,7 +1693,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			}
 
 //			printf("Event Offset: 0x%.8x\n", total_count);
-			if ((check_ret = check_midi_event(midi_data, midi_size, divisions, running_event, verbose, 0)) == -1) {
+			if ((check_ret = check_midi_event(midi_data, midi_size, running_event, verbose, 0)) == -1) {
 				printf("Missing or Corrupt MIDI Data\n");
 				return -1;
 			}

@@ -151,7 +151,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 		return (NULL);
 	}
     
-    samples_per_delta_f = _WM_GetSamplesPerTick(divisions,tempo);
+    samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
     
 	mdi = _WM_initMDI();
 	_WM_midi_setup_divisions(mdi,divisions);
@@ -271,7 +271,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                         tempo = 500000;
                                     
                                     samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
-
+                                    
                                 }
                             }
                             if ((running_event[i] & 0x80) == 0x80) {
@@ -386,7 +386,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     tempo = 500000;
 
                                 samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
-
+                                
                             }
                         }
                         if ((running_event[i] & 0x80) == 0x80) {

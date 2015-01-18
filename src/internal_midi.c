@@ -532,15 +532,13 @@ void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch) {
 
 float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
     float microseconds_per_tick;
-    float ticks_per_second;
     float secs_per_tick;
     float samples_per_tick;
     
     /* Slow but needed for accuracy */
     microseconds_per_tick = (float) tempo / (float) divisions;
-    ticks_per_second = 1000000.0f / microseconds_per_tick;
-    secs_per_tick = 1.0f / ticks_per_second;
-    samples_per_tick = 44100.0f * secs_per_tick;
+    secs_per_tick = microseconds_per_tick / 1000000.0f;
+    samples_per_tick = _WM_SampleRate * secs_per_tick;
 
     return (samples_per_tick);
 }
