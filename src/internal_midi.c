@@ -465,6 +465,7 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     float premix_left;
     float premix_right;
     float volume_adj;
+    uint32_t vol_ofs;
     
     /*
      Pointless CPU heating checks to shoosh up a compiler
@@ -472,15 +473,17 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     if (ch > 0x0f) ch = 0x0f;
     
     pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
+
+    vol_ofs = (nte->velocity * ((mdi->channel[ch].expression * mdi->channel[ch].volume) / 127)) / 127;
     
     /*
-     This value is to reduce the chance of clipping. Lower value means lower overall volume, higher value means higher overall volume.
+     This value is to reduce the chance of clipping. Higher value means lower overall volume, Lower value means higher overall volume.
      
      NOTE: The lower the value the higher the chance of clipping.
      
      FIXME: Still needs tuning. Clipping heard at a value of 3.75
      */
-#define VOL_DIVISOR 4.5
+#define VOL_DIVISOR 4.0
     volume_adj = ((float)_WM_MasterVolume / 1024.0) / VOL_DIVISOR;
 
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
@@ -489,11 +492,10 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     premix_dBm_left = dBm_pan_volume[(127-pan_ofs)];
     premix_dBm_right = dBm_pan_volume[pan_ofs];
     
+    
+    
     if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
-        premix_dBm = dBm_volume[mdi->channel[ch].volume] +
-                     dBm_volume[mdi->channel[ch].expression] +
-                     dBm_volume[mdi->channel[ch].pressure] +
-                     dBm_volume[nte->velocity];
+        premix_dBm = dBm_volume[vol_ofs];
     
         premix_dBm_left += premix_dBm;
         premix_dBm_right += premix_dBm;
@@ -501,10 +503,7 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
         premix_left = (powf(10.0,(premix_dBm_left / 20.0))) * volume_adj;
         premix_right = (powf(10.0,(premix_dBm_right / 20.0))) * volume_adj;
     } else {
-        premix_lin = (float)(_WM_lin_volume[mdi->channel[ch].volume] +
-                             _WM_lin_volume[mdi->channel[ch].expression] +
-                             _WM_lin_volume[mdi->channel[ch].pressure] +
-                             _WM_lin_volume[nte->velocity]) / 4096.0;
+        premix_lin = (float)(_WM_lin_volume[vol_ofs]) / 1024.0;
         
         premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20)) * volume_adj;
         premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20)) * volume_adj;
@@ -1048,13 +1047,25 @@ void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
 
 void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
 	uint8_t ch = data->channel;
+    struct _note *note_data = mdi->note;
     
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
     if (data->data.value > 0x7f) data->data.value = 0x7f;
 
 	mdi->channel[ch].pressure = data->data.value;
-    _WM_AdjustChannelVolumes(mdi, ch);
+    
+    do {
+        if ((note_data->noteid >> 8) == ch) {
+            note_data->velocity = data->data.value & 0xff;
+            _WM_AdjustNoteVolumes(mdi, ch, note_data);
+            if (note_data->replay) {
+                note_data->replay->velocity = data->data.value & 0xff;
+                _WM_AdjustNoteVolumes(mdi, ch, note_data->replay);
+            }
+        }
+        note_data = note_data->next;
+    } while (note_data);
 }
 
 void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data) {
