@@ -1020,13 +1020,11 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 							note_data->sample->env_target[note_data->env];
 					switch (note_data->env) {
 					case 0:
-#if 0
 						if (!(note_data->modes & SAMPLE_ENVELOPE)) {
 							note_data->env_inc = 0;
 							note_data = note_data->next;
 							continue;
 						}
-#endif
 						break;
 					case 2:
 						if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {
@@ -1338,13 +1336,11 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                     note_data->sample->env_target[note_data->env];
                     switch (note_data->env) {
                         case 0:
-#if 0
                             if (!(note_data->modes & SAMPLE_ENVELOPE)) {
                                 note_data->env_inc = 0;
                                 note_data = note_data->next;
                                 continue;
                             }
-#endif
                             break;
                         case 2:
                             if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {

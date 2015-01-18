@@ -327,7 +327,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     _WM_CheckEventMemoryPool(mdi);
                     mdi->events[mdi->event_count].do_event = NULL;
                     mdi->events[mdi->event_count].event_data.channel = 0;
-                    mdi->events[mdi->event_count].event_data.data = 0;
+                    mdi->events[mdi->event_count].event_data.data.value = 0;
                     mdi->events[mdi->event_count].samples_to_next = decay_samples;
                     mdi->event_count++;
                 }
@@ -428,7 +428,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                         _WM_CheckEventMemoryPool(mdi);
                         mdi->events[mdi->event_count].do_event = NULL;
                         mdi->events[mdi->event_count].event_data.channel = 0;
-                        mdi->events[mdi->event_count].event_data.data = 0;
+                        mdi->events[mdi->event_count].event_data.data.value = 0;
                         mdi->events[mdi->event_count].samples_to_next = decay_samples;
                         mdi->event_count++;
                     }
@@ -488,9 +488,9 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint32_t i = 0;
     uint32_t out_ofs = 0;
     uint8_t running_event = 0;
-    uint32_t divisions = 0;
+    uint32_t divisions = 96;
     uint32_t tempo = 500000;
-    float samples_per_tick;
+    float samples_per_tick = 0.0;
     uint32_t value = 0;
     float value_f = 0.0;
 
@@ -498,6 +498,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CONVERT, "(No events to convert)", 0);
         return -1;
     }
+    
+    samples_per_tick = _WM_GetSamplesPerTick(divisions, tempo);
 
     /*
      Note: This isn't accurate but will allow enough space for
@@ -532,10 +534,11 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     for (i = 0; i < mdi->event_count; i++) {
         /* TODO Is there a better way? */
         if (mdi->events[i].do_event == NULL) {
+            break;
         } else if (mdi->events[i].do_event == _WM_do_midi_divisions) {
             // DEBUG
             // fprintf(stderr,"Division: %u\r\n",mdi->events[i].event_data.data);
-            divisions = mdi->events[i].event_data.data;
+            divisions = mdi->events[i].event_data.data.value;
             (*out)[12] = (divisions >> 8) & 0xff;
             (*out)[13] = divisions & 0xff;
             samples_per_tick = _WM_GetSamplesPerTick(divisions, tempo);
@@ -547,8 +550,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[out_ofs++] = 0x80 | mdi->events[i].event_data.channel;
                 running_event = (*out)[out_ofs - 1];
             }
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value >> 8) & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_note_on) {
             // DEBUG
             // fprintf(stderr,"Note On: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -556,8 +559,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[out_ofs++] = 0x90 | mdi->events[i].event_data.channel;
                 running_event = (*out)[out_ofs - 1];
             }
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value >> 8) & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_aftertouch) {
             // DEBUG
             // fprintf(stderr,"Aftertouch: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -565,8 +568,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[out_ofs++] = 0xa0 | mdi->events[i].event_data.channel;
                 running_event = (*out)[out_ofs - 1];
             }
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value >> 8) & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_bank_select) {
             // DEBUG
             // fprintf(stderr,"Control Bank Select: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -575,7 +578,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 0;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_data_entry_course) {
             // DEBUG
             // fprintf(stderr,"Control Data Entry Course: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -584,7 +587,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 6;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_volume) {
             // DEBUG
             // fprintf(stderr,"Control Channel Volume: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -593,7 +596,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 7;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_balance) {
             // DEBUG
             // fprintf(stderr,"Control Channel Balance: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -602,7 +605,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 8;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_pan) {
             // DEBUG
             // fprintf(stderr,"Control Channel Pan: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -611,7 +614,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 10;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_expression) {
             // DEBUG
             // fprintf(stderr,"Control Channel Expression: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -620,7 +623,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 11;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_data_entry_fine) {
             // DEBUG
             // fprintf(stderr,"Control Data Entry Fine: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -629,7 +632,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 38;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_hold) {
             // DEBUG
             // fprintf(stderr,"Control Channel Hold: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -638,7 +641,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 64;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_data_increment) {
             // DEBUG
             // fprintf(stderr,"Control Data Increment: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -647,7 +650,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 96;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_data_decrement) {
             // DEBUG
             //fprintf(stderr,"Control Data Decrement: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -656,7 +659,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 97;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_non_registered_param_fine) {
             // DEBUG
             // fprintf(stderr,"Control Non Registered Param: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -665,7 +668,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 98;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0x7f;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0x7f;
         } else if (mdi->events[i].do_event == _WM_do_control_non_registered_param_course) {
             // DEBUG
             // fprintf(stderr,"Control Non Registered Param: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -674,7 +677,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 99;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 7) & 0x7f;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value >> 7) & 0x7f;
         } else if (mdi->events[i].do_event == _WM_do_control_registered_param_fine) {
             // DEBUG
             // fprintf(stderr,"Control Registered Param Fine: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -683,7 +686,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 100;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0x7f;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0x7f;
         } else if (mdi->events[i].do_event == _WM_do_control_registered_param_course) {
             // DEBUG
             // fprintf(stderr,"Control Registered Param Course: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -692,7 +695,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 101;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 7) & 0x7f;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value >> 7) & 0x7f;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_sound_off) {
             // DEBUG
             // fprintf(stderr,"Control Channel Sound Off: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -701,7 +704,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 120;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_controllers_off) {
             // DEBUG
             // fprintf(stderr,"Control Channel Controllers Off: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -710,7 +713,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 121;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_channel_notes_off) {
             // DEBUG
             // fprintf(stderr,"Control Channel Notes Off: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -719,7 +722,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = 123;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_control_dummy) {
             // DEBUG
             // fprintf(stderr,"Control Dummy Event: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -727,8 +730,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[out_ofs++] = 0xb0 | mdi->events[i].event_data.channel;
                 running_event = (*out)[out_ofs - 1];
             }
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 8) & 0xff;
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value >> 8) & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_patch) {
             // DEBUG
             // fprintf(stderr,"Patch: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -736,7 +739,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[out_ofs++] = 0xc0 | mdi->events[i].event_data.channel;
                 running_event = (*out)[out_ofs - 1];
             }
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_channel_pressure) {
             // DEBUG
             // fprintf(stderr,"Channel Pressure: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -744,7 +747,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[out_ofs++] = 0xd0 | mdi->events[i].event_data.channel;
                 running_event = (*out)[out_ofs - 1];
             }
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0xff;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0xff;
         } else if (mdi->events[i].do_event == _WM_do_pitch) {
             // DEBUG
             // fprintf(stderr,"Pitch: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -752,8 +755,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[out_ofs++] = 0xe0 | mdi->events[i].event_data.channel;
                 running_event = (*out)[out_ofs - 1];
             }
-            (*out)[out_ofs++] = mdi->events[i].event_data.data & 0x7f;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data >> 7) & 0x7f;
+            (*out)[out_ofs++] = mdi->events[i].event_data.data.value & 0x7f;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value >> 7) & 0x7f;
         } else if (mdi->events[i].do_event == _WM_do_sysex_roland_drum_track) {
             // DEBUG
             // fprintf(stderr,"Sysex Roland Drum Track: %u %.4x\r\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
@@ -765,7 +768,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 foo_ch++;
             }
             foo[7] = 0x10 | foo_ch;
-            foo[9] = mdi->events[i].event_data.data;
+            foo[9] = mdi->events[i].event_data.data.value;
             memcpy(&((*out)[out_ofs]),foo,11);
             out_ofs += 11;
             running_event = 0;
@@ -796,7 +799,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         } else if (mdi->events[i].do_event == _WM_do_meta_tempo) {
             // DEBUG
             // fprintf(stderr,"Tempo: %u\r\n",mdi->events[i].event_data.data);
-            tempo = mdi->events[i].event_data.data & 0xffffff;
+            tempo = mdi->events[i].event_data.data.value & 0xffffff;
             
             samples_per_tick = _WM_GetSamplesPerTick(divisions, tempo);
 
@@ -815,40 +818,40 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x58;
             (*out)[out_ofs++] = 0x04;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff000000) >> 24;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff0000) >> 16;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff000000) >> 24;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff0000) >> 16;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff);
         } else if (mdi->events[i].do_event == _WM_do_meta_keysignature) {
             // DEBUG
             // fprintf(stderr,"Key Signature: %x\r\n",mdi->events[i].event_data.data);
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x59;
             (*out)[out_ofs++] = 0x02;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff);
         } else if (mdi->events[i].do_event == _WM_do_meta_sequenceno) {
             // DEBUG
             // fprintf(stderr,"Sequence Number: %x\r\n",mdi->events[i].event_data.data);
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x00;
             (*out)[out_ofs++] = 0x02;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff);
         } else if (mdi->events[i].do_event == _WM_do_meta_channelprefix) {
             // DEBUG
             // fprintf(stderr,"Channel Prefix: %x\r\n",mdi->events[i].event_data.data);
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x20;
             (*out)[out_ofs++] = 0x01;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff);
         } else if (mdi->events[i].do_event == _WM_do_meta_portprefix) {
             // DEBUG
             // fprintf(stderr,"Port Prefix: %x\r\n",mdi->events[i].event_data.data);
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x21;
             (*out)[out_ofs++] = 0x01;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff);
         } else if (mdi->events[i].do_event == _WM_do_meta_smpteoffset) {
             // DEBUG
             // fprintf(stderr,"SMPTE Offset: %x\r\n",mdi->events[i].event_data.data);
@@ -859,14 +862,70 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
              Remember because of the 5 bytes we stored it a little hacky.
              */
             (*out)[out_ofs++] = (mdi->events[i].event_data.channel & 0xff);
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff000000) >> 24;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff0000) >> 16;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff00) >> 8;
-            (*out)[out_ofs++] = (mdi->events[i].event_data.data & 0xff);
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff000000) >> 24;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff0000) >> 16;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff00) >> 8;
+            (*out)[out_ofs++] = (mdi->events[i].event_data.data.value & 0xff);
 
+        } else if (mdi->events[i].do_event == _WM_do_meta_text) {
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x01;
+            
+            goto _WRITE_TEXT;
+            
+        } else if (mdi->events[i].do_event == _WM_do_meta_copyright) {
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x02;
+            
+            goto _WRITE_TEXT;
+            
+        } else if (mdi->events[i].do_event == _WM_do_meta_trackname) {
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x03;
+            
+            goto _WRITE_TEXT;
+            
+        } else if (mdi->events[i].do_event == _WM_do_meta_instrumentname) {
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x04;
+            
+            goto _WRITE_TEXT;
+            
+        } else if (mdi->events[i].do_event == _WM_do_meta_lyric) {
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x05;
+            
+            goto _WRITE_TEXT;
+            
+        } else if (mdi->events[i].do_event == _WM_do_meta_marker) {
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x06;
+            
+            goto _WRITE_TEXT;
+            
+        } else if (mdi->events[i].do_event == _WM_do_meta_cuepoint) {
+            (*out)[out_ofs++] = 0xff;
+            (*out)[out_ofs++] = 0x07;
+            
+            _WRITE_TEXT:
+            value = strlen(mdi->events[i].event_data.data.string);
+            if (value > 0x0fffffff)
+                (*out)[out_ofs++] = (((value >> 28) &0x7f) | 0x80);
+            if (value > 0x1fffff)
+                (*out)[out_ofs++] = (((value >> 21) &0x7f) | 0x80);
+            if (value > 0x3fff)
+                (*out)[out_ofs++] = (((value >> 14) & 0x7f) | 0x80);
+            if (value > 0x7f)
+                (*out)[out_ofs++] = (((value >> 7) & 0x7f) | 0x80);
+            (*out)[out_ofs++] = (value & 0x7f);
+            
+            memcpy(&(*out)[out_ofs], mdi->events[i].event_data.data.string, value);
+            out_ofs += value;
+            
         } else {
             // DEBUG
-            fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data);
+            fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data.value);
+            continue;
         }
 
         value_f = (float)mdi->events[i].samples_to_next / samples_per_tick;

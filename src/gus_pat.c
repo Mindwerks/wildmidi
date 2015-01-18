@@ -857,11 +857,11 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
          FIXME: Experimental Hacky Fix
          
          Seeing if this fixes the "hard" end to gus sounds.
-         */
+         
         if ((env_time_table[gus_patch[gus_ptr + 41]] < 0.093) && (gus_sample->modes & SAMPLE_ENVELOPE)) {
             gus_patch[gus_ptr + 41] = 191;
         }
-
+         */
 		for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
 			if (gus_sample->modes & SAMPLE_ENVELOPE) {

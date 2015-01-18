@@ -3,8 +3,7 @@
 
  Midi Wavetable Processing library
 
- Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2014
+ Copyright (C) WildMIDI Developers 2001-2015
 
  This file is part of WildMIDI.
 
@@ -133,21 +132,6 @@ _WM_init_reverb(int rate, float room_x, float room_y, float listen_x,
 		double y;
 	};
 
-#if 0
-	struct _coord SPL = {2.5, 5.0}; /* Left Speaker Position */
-	struct _coord SPR = {7.5, 5.0}; /* Right Speaker Position */
-	/* position of the reflective points */
-	struct _coord RFN[] = {
-		{	5.0, 0.0},
-		{	0.0, 6.66666},
-		{	0.0, 13.3333},
-		{	5.0, 20.0},
-		{	10.0, 20.0},
-		{	15.0, 13.3333},
-		{	15.0, 6.66666},
-		{	10.0, 0.0}
-	};
-#else
 	struct _coord SPL; /* Left Speaker Position */
 	struct _coord SPR; /* Right Speaker Position */
 	/* position of the reflective points */
@@ -174,7 +158,6 @@ _WM_init_reverb(int rate, float room_x, float room_y, float listen_x,
 	RFN[6].y = room_y / 3.0;
 	RFN[7].x = room_x / 3.0 * 2.0;
 	RFN[7].y = 0.0;
-#endif
 
 	SPL_LSN_XOFS = SPL.x - listen_x;
 	SPL_LSN_YOFS = SPL.y - listen_y;
@@ -258,7 +241,7 @@ _WM_init_reverb(int rate, float room_x, float room_y, float listen_x,
 			double sn = sin(omega);
 			double cs = cos(omega);
 			double alpha = sn * sinh(M_LN2 / 2 * bandwidth * omega / sn);
-			double A = pow(10.0, ((/*dbAttn[i]*/dbAttn[j][i] +
+			double A = pow(10.0, ((dbAttn[j][i] +
 						(dbAirAbs[i] * RFN_DST[j])) / 40.0) );
 			/*
 			 Peaking band EQ filter

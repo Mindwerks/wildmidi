@@ -500,9 +500,27 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                         printf("Meta Event: Sequence Number: %.2x %.2x\n", midi_data[2], midi_data[3]);
                     }
                     
+                } else if (*midi_data == 0x01) {
+                    if (verbose)
+                        printf("Meta Event: Text\n");
                 } else if (*midi_data == 0x02) {
                     if (verbose)
                         printf("Meta Event: Copyright\n");
+                } else if (*midi_data == 0x03) {
+                    if (verbose)
+                        printf("Meta Event: Trackname\n");
+                } else if (*midi_data == 0x04) {
+                    if (verbose)
+                        printf("Meta Event: Instrument Name\n");
+                } else if (*midi_data == 0x05) {
+                    if (verbose)
+                        printf("Meta Event: Lyric\n");
+                } else if (*midi_data == 0x06) {
+                    if (verbose)
+                        printf("Meta Event: Marker\n");
+                } else if (*midi_data == 0x07) {
+                    if (verbose)
+                        printf("Meta Event: Cue Point\n");
                 } else if (*midi_data == 0x2F) {
                     if (verbose) {
                         printf("Meta Event: End Of Track\n");
@@ -633,6 +651,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                         if ((i % 4) == 0) printf(" ");
                         if ((i % 8) == 0) printf("\n");
                         printf ("0x%.2x ", *midi_data);
+                        if (*midi_data > 32) printf("%c ", *midi_data);
                         midi_data++;
                     }
                     printf("\n");
@@ -1694,7 +1713,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 
 //			printf("Event Offset: 0x%.8x\n", total_count);
 			if ((check_ret = check_midi_event(midi_data, midi_size, running_event, verbose, 0)) == -1) {
-				printf("Missing or Corrupt MIDI Data\n");
+				printf("Missing or Corrupt MIDI Data 0x%.8x\n",total_count);
 				return -1;
 			}
 
