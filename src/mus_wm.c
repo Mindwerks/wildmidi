@@ -3,7 +3,7 @@
  
  Midi Wavetable Processing library
  
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
  
  This file is part of WildMIDI.
  
@@ -59,11 +59,9 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     uint16_t mus_instr_cnt = 0;
     struct _mdi *mus_mdi;
     uint32_t mus_divisions = 60;
-    uint32_t mus_tempo = 0;
+    float tempo_f = 0.0;
     uint16_t mus_freq = 0;
     float samples_per_tick_f = 0.0;
-	float microseconds_per_pulse = 0.0;
-	float pulses_per_second = 0.0;
     uint8_t mus_event[] = { 0, 0, 0, 0 };
     uint8_t mus_event_size = 0;
     uint8_t mus_prev_vol[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -123,17 +121,18 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     mus_freq = _cvt_get_option(WM_CO_FREQUENCY);
     if (mus_freq == 0) mus_freq = 140;
     
-    mus_tempo = 60000000 / mus_freq;
+    if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+        tempo_f = (float) (60000000 / mus_freq) + 0.5f;
+    } else {
+        tempo_f = (float) (60000000 / mus_freq);
+    }
     
-    /* Slow but needed for accuracy */
-    microseconds_per_pulse = (float) mus_tempo / (float) mus_divisions;
-    pulses_per_second = 1000000.0f / microseconds_per_pulse;
-    samples_per_tick_f = (float) _WM_SampleRate / pulses_per_second;
+    samples_per_tick_f = _WM_GetSamplesPerTick(mus_divisions, (uint32_t)tempo_f);
 
     // initialise the mdi structure
     mus_mdi = _WM_initMDI();
     _WM_midi_setup_divisions(mus_mdi, mus_divisions);
-    _WM_midi_setup_tempo(mus_mdi, mus_tempo);
+    _WM_midi_setup_tempo(mus_mdi, (uint32_t)tempo_f);
     
     // lets do this
     do {

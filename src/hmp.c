@@ -3,7 +3,7 @@
  
  Midi Wavetable Processing library
  
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
  
  This file is part of WildMIDI.
  
@@ -64,10 +64,8 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     uint32_t end_of_chunks = 0;
     uint32_t var_len_shift = 0;
     
-    uint32_t tempo = 500000;
+    float tempo_f = 500000.0;
 	float samples_per_delta_f = 0.0;
-	float microseconds_per_pulse = 0.0;
-	float pulses_per_second = 0.0;
     
     //uint8_t hmp_event = 0;
     //uint8_t hmp_channel = 0;
@@ -144,10 +142,13 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     
     
     /* Slow but needed for accuracy */
-    tempo = 60000000 / hmp_bpm;
-    microseconds_per_pulse = (float) tempo / (float) hmp_divisions;
-    pulses_per_second = 1000000.0f / microseconds_per_pulse;
-    samples_per_delta_f = (float) _WM_SampleRate / pulses_per_second;
+    if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+        tempo_f = (float) (60000000 / hmp_bpm) + 0.5f;
+    } else {
+        tempo_f = (float) (60000000 / hmp_bpm);
+    }
+    
+    samples_per_delta_f = _WM_GetSamplesPerTick(hmp_divisions, tempo_f);
     
     //DEBUG
     //fprintf(stderr, "DEBUG: Samples Per Delta Tick: %f\r\n",samples_per_delta_f);
@@ -175,7 +176,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_mdi = _WM_initMDI();
     
     _WM_midi_setup_divisions(hmp_mdi, hmp_divisions);
-    _WM_midi_setup_tempo(hmp_mdi, tempo);
+    _WM_midi_setup_tempo(hmp_mdi, (uint32_t)tempo_f);
     
     hmp_chunk = malloc(sizeof(uint8_t *) * hmp_chunks);
     chunk_length = malloc(sizeof(uint32_t) * hmp_chunks);
@@ -295,26 +296,12 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                         
                         if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x51) && (hmp_chunk[i][2] == 0x03)) {
                             /* Tempo */
-                            tempo = (hmp_chunk[i][3] << 16) + (hmp_chunk[i][4] << 8)+ hmp_chunk[i][5];
-                            if (!tempo)
-                                tempo = 500000;
+                            tempo_f = (float)((hmp_chunk[i][3] << 16) + (hmp_chunk[i][4] << 8)+ hmp_chunk[i][5]);
+                            if (tempo_f == 0.0)
+                                tempo_f = 500000.0;
                             
                             // DEBUG
-                            fprintf(stderr,"DEBUG: Tempo change %u\r\n", tempo);
-#if 0
-                            
-                            if ((_WM_MixerOptions & WM_MO_WHOLETEMPO)) {
-                                float bpm_f = (float) (60000000 / tempo);
-                                tempo = 60000000 / (uint32_t) bpm_f;
-                            } else if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-                                float bpm_fr = (float) (60000000 / tempo) + 0.5f;
-                                tempo = 60000000 / (uint32_t) bpm_fr;
-                            }
-                            /* Slow but needed for accuracy */
-                            microseconds_per_pulse = (float) tempo / (float) hmp_divisions;
-                            pulses_per_second = 1000000.0f / microseconds_per_pulse;
-                            samples_per_delta_f = (float) _WM_SampleRate / pulses_per_second;
-#endif
+                            fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);
                         }
                         hmp_chunk[i] += setup_ret;
                     }

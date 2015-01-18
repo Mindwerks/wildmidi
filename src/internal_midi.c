@@ -3,7 +3,7 @@
 
  Midi Wavetable Processing library
 
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
 
  This file is part of WildMIDI.
 
@@ -37,7 +37,6 @@
 #include "wildmidi_lib.h"
 #include "patches.h"
 #include "internal_midi.h"
-
 
 #define HOLD_OFF 0x02
 
@@ -529,6 +528,21 @@ void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch) {
             nte = nte->next;
         } while (nte != NULL);
     }
+}
+
+float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
+    float microseconds_per_tick;
+    float ticks_per_second;
+    float secs_per_tick;
+    float samples_per_tick;
+    
+    /* Slow but needed for accuracy */
+    microseconds_per_tick = (float) tempo / (float) divisions;
+    ticks_per_second = 1000000.0f / microseconds_per_tick;
+    secs_per_tick = 1.0f / ticks_per_second;
+    samples_per_tick = 44100.0f * secs_per_tick;
+
+    return (samples_per_tick);
 }
 
 void _WM_CheckEventMemoryPool(struct _mdi *mdi) {

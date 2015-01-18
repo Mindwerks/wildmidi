@@ -3,7 +3,7 @@
  
  Midi Wavetable Processing library
  
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
  
  This file is part of WildMIDI.
  
@@ -181,6 +181,7 @@ extern void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch);
 extern void _WM_do_note_off_extra(struct _note *nte);
 extern void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used);
 extern void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch);
+extern float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo);
 
 
 #endif /* __INTERNAL_MIDI_H */

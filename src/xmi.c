@@ -3,7 +3,7 @@
  
  Midi Wavetable Processing library
  
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
  
  This file is part of WildMIDI.
  
@@ -52,8 +52,6 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     float xmi_sample_count_f = 0.0;
     float xmi_sample_remainder = 0.0;
     float xmi_samples_per_delta_f = 0.0;
-    float xmi_pulses_per_second = 0.0;
-    float xmi_bpm_f = 0.0;
     uint8_t xmi_ch = 0;
     uint8_t xmi_note = 0;
     uint32_t *xmi_notelen = NULL;
@@ -136,15 +134,8 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_mdi = _WM_initMDI();
     _WM_midi_setup_divisions(xmi_mdi, xmi_divisions);
     _WM_midi_setup_tempo(xmi_mdi, xmi_tempo);
-
-    if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-        xmi_bpm_f = (float) (60000000 / xmi_tempo) + 0.5f;
-    } else {
-        xmi_bpm_f = (float) (60000000 / xmi_tempo);
-    }
-    /* Slow but needed for accuracy */
-    xmi_pulses_per_second = ((float)xmi_divisions * xmi_bpm_f) / 60.0;
-    xmi_samples_per_delta_f = (float)_WM_SampleRate / xmi_pulses_per_second;
+    
+    xmi_samples_per_delta_f = _WM_GetSamplesPerTick(xmi_divisions, xmi_tempo);
 
     xmi_notelen = malloc(sizeof(uint32_t) * 16 * 128);
     memset(xmi_notelen, 0, (sizeof(uint32_t) * 16 * 128));
@@ -321,15 +312,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             if (!xmi_tempo)
                                 xmi_tempo = 500000;
                             
-                            if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
-                                xmi_bpm_f = (float) (60000000 / xmi_tempo) + 0.5f;
-                            } else {
-                                xmi_bpm_f = (float) (60000000 / xmi_tempo);
-                            }
-                            
-                            /* Slow but needed for accuracy */
-                            xmi_pulses_per_second = ((float)xmi_divisions * xmi_bpm_f) / 60.0;
-                            xmi_samples_per_delta_f = (float)_WM_SampleRate / xmi_pulses_per_second;
+                            xmi_samples_per_delta_f = _WM_GetSamplesPerTick(xmi_divisions, xmi_tempo);
 
                         _XMI_Next_Event:
                             

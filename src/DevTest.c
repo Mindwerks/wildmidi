@@ -4,13 +4,14 @@
             .pat Gravis Ultrasound patch file.
             .mid MIDI file.
             .xmi Xmidi file.
-            .hmp "HMIMIDIP" and "HMIMIDIP013195" file.
+            .hmp "HMIMIDIP" file
+            .hmi "HMIMIDIP013195" file.
             .mus http://www.vgmpf.com/Wiki/index.php?title=MUS
 
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
  COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
 
  This file is part of WildMIDI.
 
@@ -542,12 +543,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                     }
                     if (verbose)
                         printf("%i\n", (int) midi_data[2]);
-                } else if (*midi_data == 0x51) {
-                    float beats_per_minute = 0.0;
-                    float microseconds_per_pulse = 0.0;
-                    float pulses_per_second = 0.0;
-                    float samples_per_delta_f = 0.0;
-                    
+                } else if (*midi_data == 0x51) {                    
                     if (verbose)
                         printf("Meta Event: Tempo\n");
                     if (midi_size < 5) {
@@ -558,16 +554,6 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                         printf("Corrupt MIDI Data, Bad Tempo\n");
                         return -1;
                     }
-                    tempo = (midi_data[2] << 16) | (midi_data[3] << 8)
-                    | midi_data[4];
-                    beats_per_minute = 60000000.0 / (float) tempo;
-                    microseconds_per_pulse = (float) tempo
-                    / (float) divisions;
-                    pulses_per_second = 1000000.0 / microseconds_per_pulse;
-                    samples_per_delta_f = 44100.0 / pulses_per_second;
-                    if (verbose)
-                        printf("BPM: %f, SPD @ 44100: %f\n",
-                               beats_per_minute, samples_per_delta_f);
                 } else if (*midi_data == 0x54) {
                     if (midi_size < 7) {
                         printf("Data too short: Missing MIDI Data\n");
@@ -668,6 +654,19 @@ static float time_secs = 0.0f;
 static float secs_per_tick = 0.0f;
 static float frequency = 0.0f;
 
+static void set_secs_per_tick (uint32_t divisions, uint32_t tempo) {
+    float microseconds_per_tick;
+    float ticks_per_second;
+    
+    /* Slow but needed for accuracy */
+    microseconds_per_tick = (float) tempo / (float) divisions;
+    ticks_per_second = 1000000.0f / microseconds_per_tick;
+    secs_per_tick = 1.0f / ticks_per_second;
+    printf("Secs per tick: %f\n",secs_per_tick);
+    
+    return;
+}
+
 static void add_time (int add_ticks) {
     uint32_t add_mins = 0;
     
@@ -756,7 +755,7 @@ static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) 
     if (verbose) {
         // Setup secs_per_tick
         if (frequency == 0.0) frequency = 140.0;
-        secs_per_tick = 1.0f / (1000000.0f / ((60000000.0f / frequency) / 60.0f));
+        set_secs_per_tick (60, (uint32_t)(60000000.0f / frequency));
         add_and_display_time(0);
     }
     
@@ -926,10 +925,9 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     hmi_division = *hmi_data++;
     if (verbose) {
         printf("Beats per minute: %u\n",hmi_division);
-        secs_per_tick = 1.0f / (1000000.0f /((60000000.f / (float)hmi_division) / 60.0f));
-        
-        
+        set_secs_per_tick (60, (uint32_t)(60000000.0f / (float)hmi_division));
     }
+    
     hmi_data += 15;
     hmi_size -= 16;
     hmi_dbg += 16;
@@ -1076,7 +1074,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
                         }
                     }
                     hmi_delta = (hmi_delta << 7) | (*hmi_data & 0x7F);
-                    if (verbose) printf("Note Length (ticks?): %u\n",hmi_delta);
+                    if (verbose) printf("Note Length: %f secs\n", ((float)hmi_delta * secs_per_tick));
                     hmi_data++;
                     hmi_size--;
                     hmi_dbg++;
@@ -1163,8 +1161,7 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
     hmp_division += (*hmp_data++ << 24);
     if (verbose) {
         printf("Beats per minute: %u\n", hmp_division);
-        secs_per_tick = 1.0f / (1000000.0f /((60000000.f / (float)hmp_division) / 60.0f));
-        
+        set_secs_per_tick(60,(uint32_t)(60000000.0f / (float)hmp_division));
     }
     
     hmp_song_time = *hmp_data++;
@@ -1262,10 +1259,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     unsigned int event_len = 0;
     unsigned int divisions = 96;
     unsigned int tempo = 500000;
-    float beats_per_minute = 0.0;
-    float microseconds_per_pulse = 0.0;
-    float pulses_per_second = 0.0;
-    float samples_per_delta_f = 0.0;
+    uint32_t tempo_set = 0;
     
     if (strncmp((char *) xmidi_data,"FORM", 4) != 0) {
         printf("Not a valid xmidi file: expected FORM\n");
@@ -1367,15 +1361,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
         subform_len -= 4;
         
         if (verbose) {
-            /* Slow but needed for accuracy */
-            beats_per_minute = 60000000.0 / (float) tempo;
-            microseconds_per_pulse = (float) tempo / (float) divisions;
-            pulses_per_second = 1000000.0 / microseconds_per_pulse;
-            samples_per_delta_f = 44100.0 / pulses_per_second;
-            
-            printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
-                   samples_per_delta_f);
-            secs_per_tick = 1.0f / pulses_per_second;
+            set_secs_per_tick (divisions, tempo);
         }
 
         do {
@@ -1484,24 +1470,18 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                             event_len--;
                             subform_len--;
                             if (verbose)
-                                printf("Note Length (intervals?): %u\n", tmp_val);
+                                printf("Note Length: %f secs\n", ((float)tmp_val * secs_per_tick));
                         } else {
                             if ((xmidi_data[0] == 0xff) && (xmidi_data[1] == 0x51) && (xmidi_data[2] == 0x03)) {
-                                
-                                /* Tempo */
-                                tempo = (xmidi_data[3] << 16) + (xmidi_data[4] << 8)+ xmidi_data[5];
-                                if (!tempo)
-                                    tempo = 500000;
-                                if (verbose) {
-                                    /* Slow but needed for accuracy */
-                                    beats_per_minute = 60000000.0 / (float) tempo;
-                                    microseconds_per_pulse = (float) tempo / (float) divisions;
-                                    pulses_per_second = 1000000.0 / microseconds_per_pulse;
-                                    samples_per_delta_f = 44100.0 / pulses_per_second;
-                                    
-                                    printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
-                                           samples_per_delta_f);
-                                    secs_per_tick = 1.0f / pulses_per_second;
+                                if (!tempo_set) {
+                                    tempo_set = 1;
+                                    /* Tempo */
+                                    tempo = (xmidi_data[3] << 16) + (xmidi_data[4] << 8)+ xmidi_data[5];
+                                    if (!tempo)
+                                        tempo = 500000;
+                                    if (verbose) {
+                                        set_secs_per_tick (divisions, tempo);
+                                    }
                                 }
                             }
                             xmidi_data += check_ret;
@@ -1536,10 +1516,6 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 	unsigned int divisions = 96;
 	unsigned char running_event = 0;
 	unsigned long int tempo = 500000;
-	float beats_per_minute = 0.0;
-	float microseconds_per_pulse = 0.0;
-	float pulses_per_second = 0.0;
-	float samples_per_delta_f = 0.0;
 	int check_ret = 0;
 	unsigned int total_count = 0;
 
@@ -1630,18 +1606,9 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 			return -1;
 		}
 
-        if (verbose) {
-            /* Slow but needed for accuracy */
-            beats_per_minute = 60000000.0 / (float) tempo;
-            microseconds_per_pulse = (float) tempo / (float) divisions;
-            pulses_per_second = 1000000.0 / microseconds_per_pulse;
-            samples_per_delta_f = 44100.0 / pulses_per_second;
-
-			printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
-					samples_per_delta_f);
-            secs_per_tick = 1.0f / pulses_per_second;
-        }
+        set_secs_per_tick (divisions, tempo);
 	}
+    
 	for (i = 0; i < no_tracks; i++) {
         
         time_mins = 0;
@@ -1752,14 +1719,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                         tempo = 500000;
                 if (verbose) {
                     /* Slow but needed for accuracy */
-                    beats_per_minute = 60000000.0 / (float) tempo;
-                    microseconds_per_pulse = (float) tempo / (float) divisions;
-                    pulses_per_second = 1000000.0 / microseconds_per_pulse;
-                    samples_per_delta_f = 44100.0 / pulses_per_second;
-                    
-                    printf("BPM: %f, SPD @ 44100: %f\n", beats_per_minute,
-                           samples_per_delta_f);
-                    secs_per_tick = 1.0f / pulses_per_second;
+                    set_secs_per_tick (divisions, tempo);
                 }
 
             }

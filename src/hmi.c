@@ -3,7 +3,7 @@
  
  Midi Wavetable Processing library
  
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
  
  This file is part of WildMIDI.
  
@@ -55,7 +55,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     uint8_t *hmi_addr = NULL;
     uint32_t *hmi_track_header_length = NULL;
     struct _mdi *hmi_mdi = NULL;
-    uint32_t tempo = 5000000;
+    uint32_t tempo_f = 5000000.0;
     uint32_t *hmi_track_end = NULL;
     uint8_t hmi_tracks_ended = 0;
     uint8_t *hmi_running_event = NULL;
@@ -70,8 +70,6 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 	float sample_remainder = 0;
     
     float samples_per_delta_f = 0.0;
-	float microseconds_per_pulse = 0.0;
-	float pulses_per_second = 0.0;
     
     struct _note {
         uint32_t length;
@@ -98,15 +96,15 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     
     _WM_midi_setup_divisions(hmi_mdi, hmi_division);
     
-    tempo = 60000000 / hmi_bpm;
+    if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
+        tempo_f = (float) (60000000 / hmi_bpm) + 0.5f;
+    } else {
+        tempo_f = (float) (60000000 / hmi_bpm);
+    }
+    samples_per_delta_f = _WM_GetSamplesPerTick(hmi_division, (uint32_t)tempo_f);
     
-    _WM_midi_setup_tempo(hmi_mdi, tempo);
-
-    /* Slow but needed for accuracy */
-    microseconds_per_pulse = (float) tempo / (float) hmi_division;
-    pulses_per_second = 1000000.0f / microseconds_per_pulse;
-    samples_per_delta_f = (float) _WM_SampleRate / pulses_per_second;
-
+    _WM_midi_setup_tempo(hmi_mdi, (uint32_t)tempo_f);
+        
     hmi_track_offset = (uint32_t *)malloc(sizeof(uint32_t) * hmi_track_cnt);
     hmi_track_header_length = malloc(sizeof(uint32_t) * hmi_track_cnt);
     hmi_track_end = malloc(sizeof(uint32_t) * hmi_track_cnt);
