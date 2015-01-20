@@ -778,8 +778,8 @@ void _WM_do_control_data_entry_course(struct _mdi *mdi,
         && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
 		data_tmp = mdi->channel[ch].pitch_range % 100;
 		mdi->channel[ch].pitch_range = data->data.value * 100 + data_tmp;
-        /*	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
-        /*	printf("Data Entry Course: data %li\n\r",data->data.value);*/
+	/*	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
+	/*	printf("Data Entry Course: data %li\n\r",data->data.value);*/
 	}
 }
 
@@ -788,10 +788,8 @@ void _WM_do_control_channel_volume(struct _mdi *mdi,
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-    if (data->data.value > 0x7f) data->data.value = 0x7f;
-    
 	mdi->channel[ch].volume = data->data.value;
-    _WM_AdjustChannelVolumes(mdi, ch);
+	_WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_balance(struct _mdi *mdi,
@@ -799,31 +797,25 @@ void _WM_do_control_channel_balance(struct _mdi *mdi,
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-    if (data->data.value > 0x7f) data->data.value = 0x7f;
-    
 	mdi->channel[ch].balance = data->data.value;
-    _WM_AdjustChannelVolumes(mdi, ch);
+	_WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_pan(struct _mdi *mdi, struct _event_data *data) {
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-    if (data->data.value > 0x7f) data->data.value = 0x7f;
-    
+
 	mdi->channel[ch].pan = data->data.value;
-    _WM_AdjustChannelVolumes(mdi, ch);
+	_WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_expression(struct _mdi *mdi,
                                           struct _event_data *data) {
 	uint8_t ch = data->channel;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-    if (data->data.value > 0x7f) data->data.value = 0x7f;
-    
+
 	mdi->channel[ch].expression = data->data.value;
-    _WM_AdjustChannelVolumes(mdi, ch);
+	_WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_data_entry_fine(struct _mdi *mdi,
@@ -831,15 +823,14 @@ void _WM_do_control_data_entry_fine(struct _mdi *mdi,
 	uint8_t ch = data->channel;
 	int data_tmp;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
+
 	if ((mdi->channel[ch].reg_non == 0)
-        && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
+	  && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
 		data_tmp = mdi->channel[ch].pitch_range / 100;
 		mdi->channel[ch].pitch_range = (data_tmp * 100) + data->data.value;
-        /*	printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
-        /*	printf("Data Entry Fine: data: %li\n\r", data->data.value);*/
+	/*	printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
+	/*	printf("Data Entry Fine: data: %li\n\r", data->data.value);*/
 	}
-    
 }
 
 void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) {
@@ -1047,14 +1038,11 @@ void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
 
 void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
 	uint8_t ch = data->channel;
-    struct _note *note_data = mdi->note;
-    
+	struct _note *note_data = mdi->note;
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-    if (data->data.value > 0x7f) data->data.value = 0x7f;
-
 	mdi->channel[ch].pressure = data->data.value;
-    
+
     do {
         if ((note_data->noteid >> 8) == ch) {
             note_data->velocity = data->data.value & 0xff;
