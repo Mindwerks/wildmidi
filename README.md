@@ -46,6 +46,12 @@ CHANGELOG
 * Support for loading MUS (MUS Id format) files, such as from Doom.
 * Build requires cmake-2.8.11 or newer now.
 
+0.3.8
+* Library: Fixed a seek-to-0 bug in order to cure an issue of truncated
+  start (bug #100, gnome/gstreamer bug #694811.)
+* Player, OpenAL: reduced buffers from 8 to 4 so as to cure some output
+  delay issues (bug #85.)
+
 0.3.7
 * Plug a memory leak in case of broken midis.
 * Properly reset global state upon library shutdown.
