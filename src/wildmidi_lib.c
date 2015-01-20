@@ -1791,8 +1791,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	/* clear the reverb buffers since we not gonna be using them here */
 	_WM_reset_reverb(mdi->reverb);
 
-    if (count) {
-        do {
+	while (count) {
             if (__builtin_expect((!mdi->samples_to_mix), 0)) {
                 while ((!mdi->samples_to_mix) && (event->do_event)) {
                     event->do_event(mdi, &event->event_data);
@@ -1823,9 +1822,8 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
             count -= real_samples_to_mix;
             mdi->extra_info.current_sample += real_samples_to_mix;
             mdi->samples_to_mix -= real_samples_to_mix;
-        } while (count);
-    }
-    
+	}
+
 	note_data = mdi->note;
 	if (note_data) {
 		do {
