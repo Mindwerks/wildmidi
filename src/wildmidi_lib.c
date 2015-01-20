@@ -1778,13 +1778,13 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 		/* no, reset values to start as the beginning */
 		count = *sample_pos;
 		_WM_ResetToStart(handle);
-        if (_WM_MixerOptions & WM_MO_SKIPSILENTSTART) {
-            if (count < mdi->extra_info.current_sample) {
-                count = 0;
-            } else {
-                count -= mdi->extra_info.current_sample;
-            }
-        }
+		if (_WM_MixerOptions & WM_MO_SKIPSILENTSTART) {
+			if (count < mdi->extra_info.current_sample) {
+				count = 0;
+			} else {
+				count -= mdi->extra_info.current_sample;
+			}
+		}
 		event = mdi->current_event;
 	}
 
@@ -1792,36 +1792,37 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 	_WM_reset_reverb(mdi->reverb);
 
 	while (count) {
-            if (__builtin_expect((!mdi->samples_to_mix), 0)) {
-                while ((!mdi->samples_to_mix) && (event->do_event)) {
-                    event->do_event(mdi, &event->event_data);
-                    event++;
-                    mdi->samples_to_mix = event->samples_to_next;
-                    mdi->current_event = event;
-                }
+		if (__builtin_expect((!mdi->samples_to_mix), 0)) {
+			while ((!mdi->samples_to_mix) && (event->do_event)) {
+				event->do_event(mdi, &event->event_data);
+				event++;
+				mdi->samples_to_mix = event->samples_to_next;
+				mdi->current_event = event;
+			}
 
-                if (!mdi->samples_to_mix) {
-                    if (event->do_event == NULL) {
-                        mdi->samples_to_mix = mdi->extra_info.approx_total_samples - *sample_pos;
-                    } else {
-                        mdi->samples_to_mix = count;
-                    }
-                }
-            }
+			if (!mdi->samples_to_mix) {
+				if (event->do_event == NULL) {
+					mdi->samples_to_mix = mdi->extra_info.approx_total_samples
+							- *sample_pos;
+				} else {
+					mdi->samples_to_mix = count;
+				}
+			}
+		}
 
-            if (__builtin_expect((mdi->samples_to_mix > count), 0)) {
-                real_samples_to_mix = count;
-            } else {
-                real_samples_to_mix = mdi->samples_to_mix;
-            }
+		if (__builtin_expect((mdi->samples_to_mix > count), 0)) {
+			real_samples_to_mix = count;
+		} else {
+			real_samples_to_mix = mdi->samples_to_mix;
+		}
 
-            if (real_samples_to_mix == 0) {
-                break;
-            }
+		if (real_samples_to_mix == 0) {
+			break;
+		}
 
-            count -= real_samples_to_mix;
-            mdi->extra_info.current_sample += real_samples_to_mix;
-            mdi->samples_to_mix -= real_samples_to_mix;
+		count -= real_samples_to_mix;
+		mdi->extra_info.current_sample += real_samples_to_mix;
+		mdi->samples_to_mix -= real_samples_to_mix;
 	}
 
 	note_data = mdi->note;
