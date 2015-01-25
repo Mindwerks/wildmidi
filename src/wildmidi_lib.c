@@ -1688,7 +1688,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 	uint8_t *mididata = NULL;
 	uint32_t midisize = 0;
 	uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
-    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
+	uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
 	midi * ret = NULL;
 
 	if (!WM_Initialized) {
@@ -1710,9 +1710,9 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 		ret = (void *) _WM_ParseNewHmi(mididata, midisize);
 	} else if (memcmp(mididata, mus_hdr, 4) == 0) {
 		ret = (void *) _WM_ParseNewMus(mididata, midisize);
-    }else if (memcmp(mididata, xmi_hdr, 4) == 0) {
-        ret = (void *) _WM_ParseNewXmi(mididata, midisize);
-    }  else {
+	} else if (memcmp(mididata, xmi_hdr, 4) == 0) {
+		ret = (void *) _WM_ParseNewXmi(mididata, midisize);
+	} else {
 		ret = (void *) _WM_ParseNewMidi(mididata, midisize);
 	}
 	free(mididata);
@@ -1723,16 +1723,17 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 			ret = NULL;
 		}
 	}
-    
-    _WM_Add_Silence_To_End((struct _mdi *)ret);
+	if (ret) {
+		_WM_Add_Silence_To_End((struct _mdi *)ret);
+	}
 
 	return (ret);
 }
 
 WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
-    uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
-    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
-    midi * ret = NULL;
+	uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
+	uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
+	midi * ret = NULL;
 
 	if (!WM_Initialized) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
@@ -1754,9 +1755,9 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 		ret = (void *) _WM_ParseNewHmi(midibuffer, size);
 	} else if (memcmp(midibuffer, mus_hdr, 4) == 0) {
 		ret = (void *) _WM_ParseNewMus(midibuffer, size);
-    } else if (memcmp(midibuffer, xmi_hdr, 4) == 0) {
-        ret = (void *) _WM_ParseNewXmi(midibuffer, size);
-    } else {
+	} else if (memcmp(midibuffer, xmi_hdr, 4) == 0) {
+		ret = (void *) _WM_ParseNewXmi(midibuffer, size);
+	} else {
 		ret = (void *) _WM_ParseNewMidi(midibuffer, size);
 	}
 
@@ -1766,9 +1767,10 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 			ret = NULL;
 		}
 	}
-    
-    _WM_Add_Silence_To_End((struct _mdi *)ret);
-    
+	if (ret) {
+		_WM_Add_Silence_To_End((struct _mdi *)ret);
+	}
+
 	return (ret);
 }
 
