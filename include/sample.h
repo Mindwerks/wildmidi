@@ -60,6 +60,8 @@ struct _sample {
 	uint32_t inc_div;
 	int16_t *data;
 	struct _sample *next;
+    
+    uint32_t note_off_decay;
 };
 
 extern int _WM_fix_release;

@@ -853,15 +853,6 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             }
         }
         
-        /*
-         FIXME: Experimental Hacky Fix
-         
-         Seeing if this fixes the "hard" end to gus sounds.
-         
-        if ((env_time_table[gus_patch[gus_ptr + 41]] < 0.093) && (gus_sample->modes & SAMPLE_ENVELOPE)) {
-            gus_patch[gus_ptr + 41] = 191;
-        }
-         */
 		for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
 			if (gus_sample->modes & SAMPLE_ENVELOPE) {
@@ -900,6 +891,33 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 			return NULL;
 		}
 
+        /* 
+         Test and set decay expected decay time after a note off
+         NOTE: This sets samples for full range decay
+         */
+        if (gus_sample->modes & SAMPLE_ENVELOPE) {
+            float samples_f = 0.0;
+            
+            if (gus_sample->modes & SAMPLE_CLAMPED) {
+                samples_f = (4194301.0 - (float)gus_sample->env_target[5]) / gus_sample->env_rate[5];
+            } else {
+                if (gus_sample->modes & SAMPLE_SUSTAIN) {
+                    samples_f = (4194301.0 - (float)gus_sample->env_target[3]) / gus_sample->env_rate[3];
+                    samples_f += (float)(gus_sample->env_target[3] - gus_sample->env_target[4]) / gus_sample->env_rate[4];
+                } else {
+                    samples_f = (4194301.0 - (float)gus_sample->env_target[4]) / gus_sample->env_rate[4];
+                }
+                samples_f += (float)(gus_sample->env_target[4] - gus_sample->env_target[5]) / gus_sample->env_rate[5];
+            }
+            samples_f += (float)gus_sample->env_target[5] / gus_sample->env_rate[6];
+            
+            gus_sample->note_off_decay = (uint32_t)samples_f;
+            
+        } else {
+            gus_sample->note_off_decay = gus_sample->data_length * _WM_SampleRate / gus_sample->rate;
+        }
+
+        
 		gus_ptr += tmp_cnt;
 		gus_sample->loop_start = (gus_sample->loop_start << 10)
 				| (((gus_sample->loop_fraction & 0x0f) << 10) / 16);
@@ -908,6 +926,8 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 		gus_sample->loop_size = gus_sample->loop_end - gus_sample->loop_start;
 		gus_sample->data_length = gus_sample->data_length << 10;
 		no_of_samples--;
+        
+        
 	}
 	free(gus_patch);
 	return first_gus_sample;

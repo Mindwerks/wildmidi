@@ -955,10 +955,16 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 
 		/* do mixing here */
 		count = real_samples_to_mix;
+        
 		do {
 			note_data = mdi->note;
 			left_mix = right_mix = 0;
+            //DEBUG*********
+            //fprintf(stderr,"\r\nSAMPLES_TO_MIX %i\r\n",count);
+
 			if (__builtin_expect((note_data != NULL), 1)) {
+                //DEBUG*********
+                //fprintf(stderr,"\r\nProcessing Notes\r\n");
 				while (note_data) {
 					/*
 					 * ===================
@@ -995,27 +1001,40 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 					}
 
 					if (__builtin_expect((note_data->env_inc == 0), 0)) {
-						note_data = note_data->next;
+/*                        fprintf(stderr,"\r\nINC = 0, ENV %i, LEVEL %i, TARGET %d, RATE %i\r\n",
+                                note_data->env, note_data->env_level,
+                                note_data->sample->env_target[note_data->env],
+                                note_data->sample->env_rate[note_data->env]);
+*/
+                        note_data = note_data->next;
 						continue;
 					}
 
 					note_data->env_level += note_data->env_inc;
-					if (__builtin_expect((note_data->env_level > 4194304), 0)) {
-						note_data->env_level =
-								note_data->sample->env_target[note_data->env];
-					}
-					if (__builtin_expect(
-							((note_data->env_inc < 0)
-									&& (note_data->env_level
-											> note_data->sample->env_target[note_data->env]))
-							|| ((note_data->env_inc > 0)
-									&& (note_data->env_level
-											< note_data->sample->env_target[note_data->env])),
-							1)) {
-						note_data = note_data->next;
-						continue;
-					}
-
+                    //DEBUG*************
+/*                    fprintf(stderr,"\r\nENV %i, LEVEL %i, TARGET %d, RATE %i, INC %i\r\n",
+                            note_data->env, note_data->env_level,
+                            note_data->sample->env_target[note_data->env],
+                            note_data->sample->env_rate[note_data->env],
+                            note_data->env_inc
+                            );
+*/
+                    if (note_data->env_inc < 0) {
+                        if (note_data->env_level
+                            > note_data->sample->env_target[note_data->env]) {
+                            note_data = note_data->next;
+                            continue;
+                        }
+                    } else if (note_data->env_inc > 0) {
+                        if (note_data->env_level
+                            < note_data->sample->env_target[note_data->env]) {
+                            note_data = note_data->next;
+                            continue;
+                        }
+                    }
+                    
+                    // Yes could have a condition here but
+                    // it would crete another bottleneck
 					note_data->env_level =
 							note_data->sample->env_target[note_data->env];
 					switch (note_data->env) {
@@ -1027,8 +1046,9 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 						}
 						break;
 					case 2:
-						if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {
-							note_data->env_inc = 0;
+						//if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {
+                        if (note_data->modes & SAMPLE_SUSTAIN) {
+                            note_data->env_inc = 0;
 							note_data = note_data->next;
 							continue;
 						} else if (note_data->modes & SAMPLE_CLAMPED) {
@@ -1104,15 +1124,16 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
  
  					if (note_data->is_off == 1) {
 						_WM_do_note_off_extra(note_data);
-					}
+                    } else {
 
-					if (note_data->env_level
-							>= note_data->sample->env_target[note_data->env]) {
-						note_data->env_inc =
-								-note_data->sample->env_rate[note_data->env];
-					} else {
- 						note_data->env_inc =
+                        if (note_data->env_level
+                            >= note_data->sample->env_target[note_data->env]) {
+                            note_data->env_inc =
+                                -note_data->sample->env_rate[note_data->env];
+                        } else {
+                            note_data->env_inc =
 								note_data->sample->env_rate[note_data->env];
+                        }
 					}
 					note_data = note_data->next;
 					continue;
@@ -1311,27 +1332,41 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                     }
                     
                     if (__builtin_expect((note_data->env_inc == 0), 0)) {
+                        /*                        fprintf(stderr,"\r\nINC = 0, ENV %i, LEVEL %i, TARGET %d, RATE %i\r\n",
+                         note_data->env, note_data->env_level,
+                         note_data->sample->env_target[note_data->env],
+                         note_data->sample->env_rate[note_data->env]);
+                         */
                         note_data = note_data->next;
                         continue;
                     }
                     
                     note_data->env_level += note_data->env_inc;
-                    if (__builtin_expect((note_data->env_level > 4194304), 0)) {
-                        note_data->env_level =
-                        note_data->sample->env_target[note_data->env];
-                    }
-                    if (__builtin_expect(
-                                         ((note_data->env_inc < 0)
-                                          && (note_data->env_level
-                                              > note_data->sample->env_target[note_data->env]))
-                                         || ((note_data->env_inc > 0)
-                                             && (note_data->env_level
-                                                 < note_data->sample->env_target[note_data->env])),
-                                         1)) {
-                        note_data = note_data->next;
-                        continue;
+                    //DEBUG*************
+                    /*                    fprintf(stderr,"\r\nENV %i, LEVEL %i, TARGET %d, RATE %i, INC %i\r\n",
+                     note_data->env, note_data->env_level,
+                     note_data->sample->env_target[note_data->env],
+                     note_data->sample->env_rate[note_data->env],
+                     note_data->env_inc
+                     );
+                     */
+                    if (note_data->env_inc < 0) {
+                        if (note_data->env_level
+                            > note_data->sample->env_target[note_data->env]) {
+                            note_data = note_data->next;
+                            continue;
+                        }
+                    } else if (note_data->env_inc > 0) {
+                        if (note_data->env_level
+                            < note_data->sample->env_target[note_data->env]) {
+                            note_data = note_data->next;
+                            continue;
+                        }
                     }
                     
+                    // Yes could have a condition here but
+                    // it would crete another bottleneck
+
                     note_data->env_level =
                     note_data->sample->env_target[note_data->env];
                     switch (note_data->env) {
@@ -1343,7 +1378,8 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                             }
                             break;
                         case 2:
-                            if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {
+                            //if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {
+                            if (note_data->modes & SAMPLE_SUSTAIN) {
                                 note_data->env_inc = 0;
                                 note_data = note_data->next;
                                 continue;
@@ -1420,15 +1456,16 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                     
                     if (note_data->is_off == 1) {
                         _WM_do_note_off_extra(note_data);
-                    }
-                    
-                    if (note_data->env_level
-                        >= note_data->sample->env_target[note_data->env]) {
-                        note_data->env_inc =
-                        -note_data->sample->env_rate[note_data->env];
                     } else {
-                        note_data->env_inc =
-                        note_data->sample->env_rate[note_data->env];
+                    
+                        if (note_data->env_level
+                            >= note_data->sample->env_target[note_data->env]) {
+                            note_data->env_inc =
+                            -note_data->sample->env_rate[note_data->env];
+                        } else {
+                            note_data->env_inc =
+                            note_data->sample->env_rate[note_data->env];
+                        }
                     }
                     note_data = note_data->next;
                     continue;
@@ -1686,6 +1723,8 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 			ret = NULL;
 		}
 	}
+    
+    _WM_Add_Silence_To_End((struct _mdi *)ret);
 
 	return (ret);
 }
@@ -1727,6 +1766,8 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 			ret = NULL;
 		}
 	}
+    
+    _WM_Add_Silence_To_End((struct _mdi *)ret);
     
 	return (ret);
 }
@@ -1980,6 +2021,7 @@ WildMidi_GetInfo(midi * handle) {
 	mdi->tmp_info->current_sample = mdi->extra_info.current_sample;
 	mdi->tmp_info->approx_total_samples = mdi->extra_info.approx_total_samples;
 	mdi->tmp_info->mixer_options = mdi->extra_info.mixer_options;
+    mdi->tmp_info->total_midi_time = (mdi->tmp_info->approx_total_samples * 1000) / _WM_SampleRate;
 	if (mdi->extra_info.copyright) {
 		free(mdi->tmp_info->copyright);
 		mdi->tmp_info->copyright = malloc(strlen(mdi->extra_info.copyright) + 1);

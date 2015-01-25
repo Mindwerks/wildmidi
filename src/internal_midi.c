@@ -555,7 +555,8 @@ void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
 
 void _WM_do_note_off_extra(struct _note *nte) {
     
-	nte->is_off = 0;
+	MIDI_EVENT_DEBUG(__FUNCTION__,0, 0);
+    nte->is_off = 0;
         {
 		if (!(nte->modes & SAMPLE_ENVELOPE)) {
 			if (nte->modes & SAMPLE_LOOP) {
@@ -563,22 +564,24 @@ void _WM_do_note_off_extra(struct _note *nte) {
 			}
 			nte->env_inc = 0;
             
-		} else if (nte->modes & SAMPLE_CLAMPED) {
+        } else if (nte->hold) {
+            nte->hold |= HOLD_OFF;
+        } else if (nte->modes & SAMPLE_SUSTAIN) {
+            if (nte->env < 3) {
+                nte->env = 3;
+                if (nte->env_level > nte->sample->env_target[3]) {
+                    nte->env_inc = -nte->sample->env_rate[3];
+                } else {
+                    nte->env_inc = nte->sample->env_rate[3];
+                }
+            }
+        } else if (nte->modes & SAMPLE_CLAMPED) {
 			if (nte->env < 5) {
 				nte->env = 5;
 				if (nte->env_level > nte->sample->env_target[5]) {
 					nte->env_inc = -nte->sample->env_rate[5];
 				} else {
 					nte->env_inc = nte->sample->env_rate[5];
-				}
-			}
-		} else if ((nte->modes & SAMPLE_SUSTAIN) && (nte->hold)) {
-			if (nte->env < 3) {
-				nte->env = 3;
-				if (nte->env_level > nte->sample->env_target[3]) {
-					nte->env_inc = -nte->sample->env_rate[3];
-				} else {
-					nte->env_inc = nte->sample->env_rate[3];
 				}
 			}
 		} else if (nte->env < 4) {
@@ -609,19 +612,23 @@ void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data) {
 	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
     
 	nte = &mdi->note_table[0][ch][(data->data.value >> 8)];
-	if (!nte->active)
+    if (!nte->active) {
 		nte = &mdi->note_table[1][ch][(data->data.value >> 8)];
-	if (!nte->active) {
-		return;
-	}
+        if (!nte->active) {
+            return;
+        }
+    }
     
 	if ((mdi->channel[ch].isdrum) && (!(nte->modes & SAMPLE_LOOP))) {
 		return;
 	}
     
-	if (nte->env == 0) {
-		nte->is_off = 1;
-	} else {
+    if ((nte->modes & SAMPLE_ENVELOPE) && (nte->env == 0)) {
+        // This is a fix for notes that end before the
+        // initial step of the envelope has completed
+        // making it impossible to hear them at times.
+        nte->is_off = 1;
+    } else {
 		_WM_do_note_off_extra(nte);
 	}
 }
@@ -868,7 +875,19 @@ void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) {
                                         note_data->sample->env_rate[5];
 									}
 								}
-							} else if (note_data->env < 4) {
+                            } else if (note_data->modes & SAMPLE_SUSTAIN) {
+                                if (note_data->env < 3) {
+                                    note_data->env = 3;
+                                    if (note_data->env_level
+                                        > note_data->sample->env_target[5]) {
+                                        note_data->env_inc =
+                                        -note_data->sample->env_rate[5];
+                                    } else {
+                                        note_data->env_inc =
+                                        note_data->sample->env_rate[5];
+                                    }
+                                }
+                            } else if (note_data->env < 4) {
 								note_data->env = 4;
 								if (note_data->env_level
                                     > note_data->sample->env_target[4]) {
@@ -1864,7 +1883,7 @@ static int midi_setup_smpteoffset(struct _mdi *mdi, uint32_t setting) {
 }
 
 static int midi_setup_text(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_text;
@@ -1882,7 +1901,7 @@ static int midi_setup_text(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_copyright(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_copyright;
@@ -1900,7 +1919,7 @@ static int midi_setup_copyright(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_trackname(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_trackname;
@@ -1918,7 +1937,7 @@ static int midi_setup_trackname(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_instrumentname(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_instrumentname;
@@ -1936,7 +1955,7 @@ static int midi_setup_instrumentname(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_lyric(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_lyric;
@@ -1954,7 +1973,7 @@ static int midi_setup_lyric(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_marker(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_marker;
@@ -1972,7 +1991,7 @@ static int midi_setup_marker(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_cuepoint(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
+    MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_cuepoint;
@@ -2079,8 +2098,47 @@ void _WM_freeMDI(struct _mdi *mdi) {
 	free(mdi);
 }
 
-uint32_t
-_WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event) {
+void _WM_Add_Silence_To_End(struct _mdi *mdi) {
+    uint32_t count = 0;
+    uint32_t last_noteoff = 0;
+    
+    uint32_t samples_from_last_note_off = 0;
+    uint32_t sample_decay = 0;
+    uint32_t largest_sample_decay = 0;
+
+    // Get Number of samples from last Note Off
+    // to end of song.
+    while (count != mdi->event_count) {
+        if (mdi->events[count].do_event == _WM_do_note_off) {
+            samples_from_last_note_off = 0;
+            sample_decay = _WM_get_decay_samples(mdi, mdi->events[count].event_data.channel, mdi->events[count].event_data.data.value);
+            // Add a second to allow space between songs;
+            sample_decay += _WM_SampleRate;
+            if (sample_decay > largest_sample_decay) {
+                largest_sample_decay = (uint32_t)sample_decay;
+            }
+            last_noteoff = count;
+        }
+        samples_from_last_note_off += mdi->events[count].samples_to_next;
+        if (largest_sample_decay > 0) {
+            if (mdi->events[count].samples_to_next > largest_sample_decay) {
+                largest_sample_decay = 0;
+            } else {
+                largest_sample_decay -= (uint32_t)mdi->events[count].samples_to_next;
+            }
+        }
+        count++;
+    }
+    
+    if (largest_sample_decay) {
+        mdi->events[last_noteoff].samples_to_next += largest_sample_decay;
+        mdi->extra_info.approx_total_samples += largest_sample_decay;
+    }
+    
+    return;
+}
+
+uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event) {
     /*
      Only add standard MIDI and Sysex events in here.
      Non-standard events need to be handled by calling function
