@@ -1062,6 +1062,7 @@ static struct option const long_options[] = {
 #endif
 	{ "roundtempo", 0, 0, 'n' },
     { "skipsilentstart", 0, 0, 's' },
+    { "textaslyric", 0, 0, 'a' },
 	{ NULL, 0, NULL, 0 }
 };
 
@@ -1134,6 +1135,18 @@ int main(int argc, char **argv) {
 	unsigned long int seek_to_sample;
 	int inpause = 0;
 	long libraryver;
+    char * lyric = NULL;
+    char *last_lyric = NULL;
+    uint32_t last_lyric_length = 0;
+    int8_t kareoke = 0;
+#define MAX_LYRIC_CHAR 128
+    char lyrics[MAX_LYRIC_CHAR + 1];
+#define MAX_DISPLAY_LYRICS 24
+    char display_lyrics[MAX_DISPLAY_LYRICS + 1];
+    
+    memset(lyrics,' ',MAX_LYRIC_CHAR);
+    memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
+    
 
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
 	pcmname[0] = 0;
@@ -1144,7 +1157,7 @@ int main(int argc, char **argv) {
 
 	do_version();
 	while (1) {
-		i = getopt_long(argc, argv, "vho:tx:g:f:lr:c:m:btk:p:ed:ns", long_options,
+		i = getopt_long(argc, argv, "vho:tx:g:f:lr:c:m:btak:p:ed:ns", long_options,
 				&option_index);
 		if (i == -1)
 			break;
@@ -1227,6 +1240,9 @@ int main(int argc, char **argv) {
 		case 'n': /* whole number tempo */
 			mixer_options |= WM_MO_ROUNDTEMPO;
 			break;
+        case 'a': /* whole number tempo */
+            mixer_options |= WM_MO_TEXTASLYRIC;
+            break;
         case 's': /* whole number tempo */
                 mixer_options |= WM_MO_SKIPSILENTSTART;
                 break;
@@ -1317,12 +1333,12 @@ int main(int argc, char **argv) {
 
 			if (!real_file) real_file = argv[optind];
 			else real_file++;
-			printf("Playing %s \r\n", real_file);
+			printf("Playing %s ", real_file);
 
 			midi_ptr = WildMidi_Open(argv[optind]);
 			optind++;
 			if (midi_ptr == NULL) {
-				fprintf(stderr, "\rSkipping %s\r\n", real_file);
+				fprintf(stderr, " Skipping\r\n");
 				continue;
 			}
 		} else {
@@ -1340,10 +1356,12 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "\rFailed loading test midi no. %i\r\n", test_count);
 				continue;
 			}
-			printf("Playing test midi no. %i\r\n", test_count);
+			printf("Playing test midi no. %i ", test_count);
 		}
 
 		wm_info = WildMidi_GetInfo(midi_ptr);
+        lyric = WildMidi_GetLyric(midi_ptr);
+        
 		apr_mins = wm_info->approx_total_samples / (rate * 60);
 		apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
 		mixer_options = wm_info->mixer_options;
@@ -1351,7 +1369,10 @@ int main(int argc, char **argv) {
 		modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
 		modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
 		modes[3] = '\0';
-		fprintf(stderr, "\r");
+		
+        fprintf(stderr, " [Approx %2um %2us Total]\r\n",
+                apr_mins, apr_secs);
+        fprintf(stderr, "\r");
 
 		while (1) {
 			count_diff = wm_info->approx_total_samples
@@ -1445,7 +1466,7 @@ int main(int argc, char **argv) {
 					WildMidi_FastSeek(midi_ptr, &seek_to_sample);
 					break;
 				case 'm': /* save as midi */ {
-					int8_t *getmidibuffer = NULL;
+                    int8_t *getmidibuffer = NULL;
 					uint32_t getmidisize = 0;
 					int32_t getmidiret = 0;
 
@@ -1468,6 +1489,9 @@ int main(int argc, char **argv) {
 						free(getmidibuffer);
 					}
 				    }	break;
+                case 'k': /* Kareoke */
+                    kareoke ^= 1;
+                    break;
 				default:
 					break;
 				}
@@ -1475,16 +1499,14 @@ int main(int argc, char **argv) {
 
 			if (inpause) {
 				wm_info = WildMidi_GetInfo(midi_ptr);
-				perc_play = (wm_info->current_sample * 100)
+                perc_play = (wm_info->current_sample * 100)
 						/ wm_info->approx_total_samples;
 				pro_mins = wm_info->current_sample / (rate * 60);
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
-				fprintf(stderr,
-					"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] 0  \r",
-					apr_mins, apr_secs, modes, master_volume, pro_mins,
-					pro_secs, perc_play);
-
-				msleep(5);
+                fprintf(stderr,
+                        "%s [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
+                        display_lyrics, modes, master_volume, pro_mins,
+                        pro_secs, perc_play, spinner[spinpoint++ % 4]);				msleep(5);
 				continue;
 			}
 
@@ -1494,13 +1516,35 @@ int main(int argc, char **argv) {
 				break;
 
 			wm_info = WildMidi_GetInfo(midi_ptr);
+            lyric = WildMidi_GetLyric(midi_ptr);
+            
+            memcpy(lyrics, &lyrics[1], MAX_LYRIC_CHAR - 1);
+            lyrics[MAX_LYRIC_CHAR - 1] = ' ';
+
+            if ((lyric != NULL) && (lyric != last_lyric) && (kareoke)) {
+                last_lyric = lyric;
+                if (last_lyric_length != 0) {
+                    memcpy(lyrics, &lyrics[last_lyric_length], MAX_LYRIC_CHAR - last_lyric_length);
+                }
+                memcpy(&lyrics[MAX_DISPLAY_LYRICS], lyric, strlen(lyric));
+                last_lyric_length = strlen(lyric);
+            } else {
+                memcpy(lyrics, &lyrics[1], MAX_LYRIC_CHAR - 1);
+                lyrics[MAX_LYRIC_CHAR - 1] = ' ';
+                if (last_lyric_length != 0) last_lyric_length--;
+            }
+            
+            memcpy(display_lyrics,lyrics,MAX_DISPLAY_LYRICS);
+            display_lyrics[MAX_DISPLAY_LYRICS] = '\0';
+            
+            
 			perc_play = (wm_info->current_sample * 100)
 						/ wm_info->approx_total_samples;
 			pro_mins = wm_info->current_sample / (rate * 60);
 			pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 			fprintf(stderr,
-				"        [Approx %2um %2us Total] [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
-				apr_mins, apr_secs, modes, master_volume, pro_mins,
+				"%s [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
+				display_lyrics, modes, master_volume, pro_mins,
 				pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
 			if (send_output(output_buffer, res) < 0) {

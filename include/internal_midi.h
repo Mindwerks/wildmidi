@@ -110,6 +110,8 @@ struct _mdi {
     double dyn_vol;
     double dyn_vol_to_reach;
     
+    char *lyric;
+    
 };
 
 

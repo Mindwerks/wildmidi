@@ -1597,7 +1597,7 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mix
 		return (-1);
 	}
 
-	if (mixer_options & 0x9FF8) {
+	if (mixer_options & 0x1FF8) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
 				0);
 		WM_FreePatches();
@@ -2064,4 +2064,23 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 	WM_Initialized = 0;
 
 	return (0);
+}
+
+WM_SYMBOL char * WildMidi_GetLyric (midi * handle) {
+    struct _mdi *mdi = (struct _mdi *) handle;
+    char * lyric = NULL;
+    
+    if (!WM_Initialized) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
+        return (NULL);
+    }
+    if (handle == NULL) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL handle)",
+                  0);
+        return (NULL);
+    }
+    _WM_Lock(&mdi->lock);
+    lyric = mdi->lyric;
+    _WM_Unlock(&mdi->lock);
+    return (lyric);
 }

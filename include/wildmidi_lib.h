@@ -42,6 +42,7 @@
 #define WM_MO_REVERB		0x0004
 #define WM_MO_ROUNDTEMPO	0x2000
 #define WM_MO_SKIPSILENTSTART 0x4000
+#define WM_MO_TEXTASLYRIC 0x8000
 
 /* conversion options */
 #define WM_CO_XMI_TYPE		0x0010
@@ -113,6 +114,7 @@ WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
 WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
 WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
+WM_SYMBOL char * WildMidi_GetLyric (midi * handle);
 
 /* NOTE: Not Yet Implemented Or Tested Properly */
 /* Due to delay in audio output in the player, this is not being developed
