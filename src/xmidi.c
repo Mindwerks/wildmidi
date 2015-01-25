@@ -475,7 +475,7 @@ int _WM_xmi2midi(uint8_t *in, uint32_t insize,
 	ctx.convert_type = convert_type;
 
 	if (ParseXMI(&ctx) < 0) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
 		goto _end;
 	}
 
@@ -1096,3 +1096,4 @@ static int ExtractTracks(struct xmi_ctx *ctx) {
 
 	return (0);
 }
+

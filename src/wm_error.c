@@ -44,6 +44,7 @@ void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
 
 	static const char *errors[WM_ERR_MAX+1] = {
 		"No error",
+
 		"Unable to obtain memory",
 		"Unable to stat",
 		"Unable to load",
@@ -56,11 +57,11 @@ void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
 		"Library Already Initialized",
 		"Not a midi file",
 		"Refusing to load unusually long file",
-		"Not a hmp file",
-		"Not a hmi file",
+		"Not an hmp file",
+		"Not an hmi file",
 		"Unable to convert",
 		"Not a mus file",
-        "Not a xmi file",
+		"Not an xmi file",
 
 		"Invalid error code"
 	};
