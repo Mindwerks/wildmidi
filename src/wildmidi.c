@@ -1370,7 +1370,7 @@ int main(int argc, char **argv) {
 		modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
 		modes[3] = '\0';
 		
-        fprintf(stderr, " [Approx %2um %2us Total]\r\n",
+        printf(" [Approx %2um %2us Total]\r\n",
                 apr_mins, apr_secs);
         fprintf(stderr, "\r");
 
