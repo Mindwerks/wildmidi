@@ -1422,7 +1422,13 @@ int main(int argc, char **argv) {
 					mixer_options ^= WM_MO_ENHANCED_RESAMPLING;
 					modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
 					break;
-				case 'n':
+                case 'a':
+                        WildMidi_SetOption(midi_ptr, WM_MO_TEXTASLYRIC,
+                                           ((mixer_options & WM_MO_TEXTASLYRIC)
+                                            ^ WM_MO_TEXTASLYRIC));
+                        mixer_options ^= WM_MO_TEXTASLYRIC;
+                        break;
+                case 'n':
 					goto NEXTMIDI;
 				case 'p':
 					if (inpause) {

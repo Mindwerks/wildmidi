@@ -1949,20 +1949,20 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options,
 
 	mdi = (struct _mdi *) handle;
 	_WM_Lock(&mdi->lock);
-	if ((!(options & 0x0007)) || (options & 0xFFF8)) {
+	if ((!(options & 0x8007)) || (options & 0x7FF8)) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
 				0);
 		_WM_Unlock(&mdi->lock);
 		return (-1);
 	}
-	if (setting & 0xFFF8) {
+	if (setting & 0x7FF8) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 				"(invalid setting)", 0);
 		_WM_Unlock(&mdi->lock);
 		return (-1);
 	}
 
-	mdi->extra_info.mixer_options = ((mdi->extra_info.mixer_options & (0x00FF ^ options))
+	mdi->extra_info.mixer_options = ((mdi->extra_info.mixer_options & (0x80FF ^ options))
 			| (options & setting));
 
 	if (options & WM_MO_LOG_VOLUME) {
