@@ -840,6 +840,26 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
          Lets make this automatic ...
          */
         {
+            if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) {
+                uint8_t tmp_hack_rate = 0;
+                /*
+                 After studying faulty gus_pats this way may work better
+                 
+                 Testing to determine if any further adjustments are required
+                 */
+                
+                if (env_time_table[gus_patch[gus_ptr + 41]] < env_time_table[gus_patch[gus_ptr + 42]]) {
+                    tmp_hack_rate = gus_patch[gus_ptr + 40];
+                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
+                    gus_patch[gus_ptr + 42] = tmp_hack_rate;
+                } else {
+                    tmp_hack_rate = gus_patch[gus_ptr + 40];
+                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
+                    gus_patch[gus_ptr + 41] = tmp_hack_rate;
+                }
+                
+            }
+#if 0
             if ((env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) && (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]])) {
                 uint8_t tmp_hack_rate = 0;
                 tmp_hack_rate = gus_patch[gus_ptr + 41];
@@ -851,6 +871,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                 gus_patch[gus_ptr + 48] = gus_patch[gus_ptr + 46];
                 gus_patch[gus_ptr + 46] = tmp_hack_rate;
             }
+#endif
         }
         
 		for (i = 0; i < 6; i++) {

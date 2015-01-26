@@ -1371,9 +1371,12 @@ int main(int argc, char **argv) {
 		modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
 		modes[3] = '\0';
 		
-        printf(" [Approx %2um %2us Total]\r\n",
+        printf("\r\n[Approx %2um %2us Total]\r\n",
                 apr_mins, apr_secs);
         fprintf(stderr, "\r");
+        
+        memset(lyrics,' ',MAX_LYRIC_CHAR);
+        memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
 
 		while (1) {
 			count_diff = wm_info->approx_total_samples
@@ -1506,9 +1509,10 @@ int main(int argc, char **argv) {
 				pro_mins = wm_info->current_sample / (rate * 60);
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
                 fprintf(stderr,
-                        "%s [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
+                        "%s [%s] [%3i] [%2um %2us Processed] [%2u%%] P  \r",
                         display_lyrics, modes, master_volume, pro_mins,
-                        pro_secs, perc_play, spinner[spinpoint++ % 4]);				msleep(5);
+                        pro_secs, perc_play);
+                msleep(5);
 				continue;
 			}
 
@@ -1531,8 +1535,6 @@ int main(int argc, char **argv) {
                 memcpy(&lyrics[MAX_DISPLAY_LYRICS], lyric, strlen(lyric));
                 last_lyric_length = strlen(lyric);
             } else {
-                memcpy(lyrics, &lyrics[1], MAX_LYRIC_CHAR - 1);
-                lyrics[MAX_LYRIC_CHAR - 1] = ' ';
                 if (last_lyric_length != 0) last_lyric_length--;
             }
             

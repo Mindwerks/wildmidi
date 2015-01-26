@@ -1066,7 +1066,8 @@ void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
 
 	mdi->channel[ch].pressure = data->data.value;
 
-    do {
+    
+    while (note_data) {
         if ((note_data->noteid >> 8) == ch) {
             note_data->velocity = data->data.value & 0xff;
             _WM_AdjustNoteVolumes(mdi, ch, note_data);
@@ -1076,7 +1077,7 @@ void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
             }
         }
         note_data = note_data->next;
-    } while (note_data);
+    }
 }
 
 void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data) {
@@ -1873,8 +1874,24 @@ static int midi_setup_smpteoffset(struct _mdi *mdi, uint32_t setting) {
     return (0);
 }
 
+static void strip_text(char * text) {
+    char * ch_loc = NULL;
+    
+    ch_loc = strrchr(text, '\n');
+    while (ch_loc != NULL) {
+        *ch_loc = ' ';
+        ch_loc = strrchr(text, '\n');
+    }
+    ch_loc = strrchr(text, '\r');
+    while (ch_loc != NULL) {
+        *ch_loc = ' ';
+        ch_loc = strrchr(text, '\r');
+    }
+}
+
 static int midi_setup_text(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
+    strip_text(text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_text;
@@ -1893,6 +1910,7 @@ static int midi_setup_text(struct _mdi *mdi, char * text) {
 
 static int midi_setup_copyright(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
+    strip_text(text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_copyright;
@@ -1911,6 +1929,7 @@ static int midi_setup_copyright(struct _mdi *mdi, char * text) {
 
 static int midi_setup_trackname(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
+    strip_text(text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_trackname;
@@ -1929,6 +1948,7 @@ static int midi_setup_trackname(struct _mdi *mdi, char * text) {
 
 static int midi_setup_instrumentname(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
+    strip_text(text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_instrumentname;
@@ -1947,6 +1967,7 @@ static int midi_setup_instrumentname(struct _mdi *mdi, char * text) {
 
 static int midi_setup_lyric(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
+    strip_text(text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_lyric;
@@ -1965,6 +1986,7 @@ static int midi_setup_lyric(struct _mdi *mdi, char * text) {
 
 static int midi_setup_marker(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
+    strip_text(text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_marker;
@@ -1983,6 +2005,7 @@ static int midi_setup_marker(struct _mdi *mdi, char * text) {
 
 static int midi_setup_cuepoint(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
+    strip_text(text);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
         mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_cuepoint;
