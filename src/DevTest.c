@@ -1859,8 +1859,14 @@ static int test_guspat(unsigned char * gus_patch, unsigned long int filesize,
 				< env_time_table[gus_patch[gus_ptr + 41]]) {
 			printf("WARNING!! Normal release envelope longer than sustained release envelope\n");
 			printf("          Caused by patch editor not following the file format set by Gravis\n");
-			printf("          Add guspat_editor_author_cant_read_so_fix_release_time_for_me to top of wildmidi.cfg\n");
+			printf("          WildMIDI will attempt to compensate for it on playback\n");
 		}
+        if (env_time_table[gus_patch[gus_ptr + 41]]
+            < env_time_table[gus_patch[gus_ptr + 42]]) {
+            printf("WARNING!! Clamped release envelope longer than normal release envelope\n");
+            printf("          Caused by patch editor not following the file format set by Gravis\n");
+            printf("          WildMIDI will attempt to compensate for it on playback\n");
+        }
 
 		if (verbose) {
 			printf("Modes: ");
