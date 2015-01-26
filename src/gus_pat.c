@@ -3,7 +3,7 @@
 
  Midi Wavetable Processing library
 
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
 
  This file is part of WildMIDI.
 

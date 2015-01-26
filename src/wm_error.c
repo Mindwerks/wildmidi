@@ -2,9 +2,8 @@
  wm_error.c
  error reporting
 
- Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2014
-
+ Copyright (C) WildMIDI Developers  2001-2015
+ 
  This file is part of WildMIDI.
 
  WildMIDI is free software: you can redistribute and/or modify the player

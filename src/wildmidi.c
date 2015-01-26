@@ -2,7 +2,7 @@
  wildmidi.c
  Midi Player using the WildMidi Midi Processing Library
 
- Copyright (C) WildMidi Developers 2001-2014
+ Copyright (C) WildMidi Developers 2001-2015
 
  This file is part of WildMIDI.
 
@@ -1094,7 +1094,7 @@ static void do_help(void) {
 
 static void do_version(void) {
 	printf("\nWildMidi %s Open Source Midi Sequencer\n", PACKAGE_VERSION);
-	printf("Copyright (C) WildMIDI Developers 2001-2014\n\n");
+	printf("Copyright (C) WildMIDI Developers 2001-2015\n\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it under\n");
 	printf("the terms and conditions of the GNU General Public License version 3.\n");
@@ -1141,7 +1141,7 @@ int main(int argc, char **argv) {
     int8_t kareoke = 0;
 #define MAX_LYRIC_CHAR 128
     char lyrics[MAX_LYRIC_CHAR + 1];
-#define MAX_DISPLAY_LYRICS 24
+#define MAX_DISPLAY_LYRICS 29
     char display_lyrics[MAX_DISPLAY_LYRICS + 1];
     
     memset(lyrics,' ',MAX_LYRIC_CHAR);
@@ -1240,7 +1240,9 @@ int main(int argc, char **argv) {
 		case 'n': /* whole number tempo */
 			mixer_options |= WM_MO_ROUNDTEMPO;
 			break;
-        case 'a': /* whole number tempo */
+        case 'a': /* 
+                   Some files have the lyrics in the text meta event. This option reads lyrics from there instead.
+                   */
             mixer_options |= WM_MO_TEXTASLYRIC;
             break;
         case 's': /* whole number tempo */
@@ -1333,12 +1335,12 @@ int main(int argc, char **argv) {
 
 			if (!real_file) real_file = argv[optind];
 			else real_file++;
-			printf("Playing %s ", real_file);
+			printf("\rPlaying %s ", real_file);
 
 			midi_ptr = WildMidi_Open(argv[optind]);
 			optind++;
 			if (midi_ptr == NULL) {
-				fprintf(stderr, " Skipping\r\n");
+				printf(" Skipping\r\n");
 				continue;
 			}
 		} else {
@@ -1356,11 +1358,10 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "\rFailed loading test midi no. %i\r\n", test_count);
 				continue;
 			}
-			printf("Playing test midi no. %i ", test_count);
+			printf("\rPlaying test midi no. %i ", test_count);
 		}
 
 		wm_info = WildMidi_GetInfo(midi_ptr);
-        lyric = WildMidi_GetLyric(midi_ptr);
         
 		apr_mins = wm_info->approx_total_samples / (rate * 60);
 		apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
@@ -1490,6 +1491,7 @@ int main(int argc, char **argv) {
 					}
 				    }	break;
                 case 'k': /* Kareoke */
+                        /* Enables/Disables the display of lyrics */
                     kareoke ^= 1;
                     break;
 				default:

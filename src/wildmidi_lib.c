@@ -3,7 +3,7 @@
 
  Midi Wavetable Processing library
 
- Copyright (C) WildMIDI Developers 2001-2014
+ Copyright (C) WildMIDI Developers 2001-2015
 
  This file is part of WildMIDI.
 
@@ -1721,10 +1721,9 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 		if (add_handle(ret) != 0) {
 			WildMidi_Close(ret);
 			ret = NULL;
-		}
-	}
-	if (ret) {
-		_WM_Add_Silence_To_End((struct _mdi *)ret);
+        } else {
+            _WM_Add_Silence_To_End((struct _mdi *)ret);
+        }
 	}
 
 	return (ret);
@@ -1765,12 +1764,11 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
 		if (add_handle(ret) != 0) {
 			WildMidi_Close(ret);
 			ret = NULL;
-		}
+        } else {
+            _WM_Add_Silence_To_End((struct _mdi *)ret);
+        }
 	}
-	if (ret) {
-		_WM_Add_Silence_To_End((struct _mdi *)ret);
-	}
-
+    
 	return (ret);
 }
 
@@ -2067,6 +2065,19 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 	return (0);
 }
 
+/*
+    char * WildMidi_GetLyric(midi * handle)
+ 
+    
+    Returns points to a \0 terminated string that contains the data contained in the last read lyric or text meta event. Or returns NULL if no lyric is waiting to be read.
+ 
+    Force read from text meta event by including WM_MO_TEXTASLYRIC in the options in WildMidi_Init.
+ 
+    Programs calling this only need to read the pointer. Cleanup is done by the lib.
+ 
+    Once WildMidi_GetLyric is called it will return NULL on subsiquent calls until the next lyric event is processed during a WildMidi_GetOutput call.
+ 
+ */
 WM_SYMBOL char * WildMidi_GetLyric (midi * handle) {
     struct _mdi *mdi = (struct _mdi *) handle;
     char * lyric = NULL;
@@ -2082,6 +2093,7 @@ WM_SYMBOL char * WildMidi_GetLyric (midi * handle) {
     }
     _WM_Lock(&mdi->lock);
     lyric = mdi->lyric;
+    mdi->lyric = NULL;
     _WM_Unlock(&mdi->lock);
     return (lyric);
 }
