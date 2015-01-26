@@ -35,7 +35,7 @@
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "reverb.h"
-#include "hmi.h"
+#include "f_hmi.h"
 
 /*
  Turns hmp file data into an event stream

@@ -30,7 +30,7 @@
 
 #include "common.h"
 #include "wm_error.h"
-#include "midi.h"
+#include "f_midi.h"
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "reverb.h"

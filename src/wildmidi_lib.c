@@ -61,15 +61,15 @@
 #include "wildmidi_lib.h"
 #include "filenames.h"
 #include "internal_midi.h"
-#include "midi.h"
-#include "hmp.h"
-#include "xmidi.h"
-#include "mus.h"
+#include "f_hmi.h"
+#include "f_hmp.h"
+#include "f_midi.h"
+#include "f_mus.h"
+#include "f_xmidi.h"
 #include "patches.h"
 #include "sample.h"
-#include "hmi.h"
-#include "mus_wm.h"
-#include "xmi.h"
+#include "mus2mid.h"
+#include "xmi2mid.h"
 
 /*
  * =========================

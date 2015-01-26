@@ -33,7 +33,7 @@
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "reverb.h"
-#include "xmi.h"
+#include "f_xmidi.h"
 
 
 struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {

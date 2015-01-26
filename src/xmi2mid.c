@@ -27,7 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "xmidi.h"
+#include "xmi2mid.h"
 #include "wm_error.h"
 
 /* Midi Status Bytes */

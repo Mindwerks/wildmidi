@@ -33,7 +33,7 @@
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "reverb.h"
-#include "mus_wm.h"
+#include "f_mus.h"
 
 #ifdef DEBUG_MUS
 #define MUS_EVENT_DEBUG(dx,dy,dz) fprintf(stderr,"\r%s, 0x%.2x, 0x%.8x\n",dx,dy,dz)

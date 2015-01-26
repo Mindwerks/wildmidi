@@ -6,16 +6,16 @@ SET(wildmidi_library_SRCS
     wildmidi_lib.c
     reverb.c
     gus_pat.c
-    xmidi.c
-    mus.c
-    hmp.c
-    midi.c
-    hmi.c
     internal_midi.c
     patches.c
+    f_xmidi.c
+    f_mus.c
+    f_hmp.c
+    f_midi.c
+    f_hmi.c
     sample.c
-    mus_wm.c
-    xmi.c
+    mus2mid.c
+    xmi2mid.c
 )
 
 SET(wildmidi_library_HDRS
@@ -25,18 +25,18 @@ SET(wildmidi_library_HDRS
     ../include/wildmidi_lib.h
     ../include/reverb.h
     ../include/gus_pat.h
-    ../include/xmidi.h
-    ../include/mus.h
-    ../include/hmp.h
-    ../include/midi.h
-    ../include/hmi.h
+    ../include/f_xmidi.h
+    ../include/f_mus.h
+    ../include/f_hmp.h
+    ../include/f_midi.h
+    ../include/f_hmi.h
     ../include/internal_midi.h
     ../include/patches.h
     ../include/sample.h
     ../include/common.h
     ../include/filenames.h
-    ../include/mus_wm.h
-    ../include/xmi.h
+    ../include/mus2mid.h
+    ../include/xmi2mid.h
 )
 
 IF(MSVC)

@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mus.h"
+#include "mus2mid.h"
 #include "wm_error.h"
 
 #define FREQUENCY					140 /* default Hz or BPM */
