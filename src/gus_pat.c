@@ -840,25 +840,64 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
          Lets make this automatic ...
          */
         {
+            /*
+             After studying faulty gus_pats this way may work better
+             
+             Testing to determine if any further adjustments are required
+             */
             if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) {
                 uint8_t tmp_hack_rate = 0;
-                /*
-                 After studying faulty gus_pats this way may work better
-                 
-                 Testing to determine if any further adjustments are required
-                 */
+                
+                //DEBUG
+                //printf("\r\n 40 < 41 %s\r\n",filename);
                 
                 if (env_time_table[gus_patch[gus_ptr + 41]] < env_time_table[gus_patch[gus_ptr + 42]]) {
+                    // 40 < 41  && 41 < 42
                     tmp_hack_rate = gus_patch[gus_ptr + 40];
                     gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
                     gus_patch[gus_ptr + 42] = tmp_hack_rate;
+                } else if (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]]) {
+                    // 40 < 41 && 41 == 42
+                    tmp_hack_rate = gus_patch[gus_ptr + 41];
+                    gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 40];
+                    gus_patch[gus_ptr + 42] = gus_patch[gus_ptr + 40];
+                    gus_patch[gus_ptr + 40] = tmp_hack_rate;
                 } else {
-                    tmp_hack_rate = gus_patch[gus_ptr + 40];
-                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
-                    gus_patch[gus_ptr + 41] = tmp_hack_rate;
+                    // 40 < 41  && 41 > 42
+                    if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 42]]) {
+                        // 40 < 41  && 41 > 42 && 40 < 42
+                        tmp_hack_rate = gus_patch[gus_ptr + 40];
+                        gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
+                        gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
+                        gus_patch[gus_ptr + 42] = tmp_hack_rate;
+                    } else {
+                        // 40 < 41  && 41 > 42 && ((40 > 42) || (40 == 42))
+                        tmp_hack_rate = gus_patch[gus_ptr + 40];
+                        gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
+                        gus_patch[gus_ptr + 41] = tmp_hack_rate;
+                    }
                 }
+            } else if (env_time_table[gus_patch[gus_ptr + 41]] < env_time_table[gus_patch[gus_ptr + 42]]) {
+                uint8_t tmp_hack_rate = 0;
                 
+                //DEBUG
+                //printf("\r\n 41 < 42 %s\r\n",filename);
+                
+                if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 42]]) {
+                    // 40 > 41 && 40 < 42 && 41 < 42
+                    tmp_hack_rate = gus_patch[gus_ptr + 40];
+                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
+                    gus_patch[gus_ptr + 42] = gus_patch[gus_ptr + 41];
+                    gus_patch[gus_ptr + 41] = tmp_hack_rate;
+                } else {
+                    // 40 > 41 && 40 > 42 && 41 < 42
+                    tmp_hack_rate = gus_patch[gus_ptr + 41];
+                    gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
+                    gus_patch[gus_ptr + 42] = tmp_hack_rate;
+                }
+
             }
+
 #if 0
             if ((env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) && (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]])) {
                 uint8_t tmp_hack_rate = 0;
