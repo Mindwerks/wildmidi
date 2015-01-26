@@ -1,26 +1,24 @@
 /*
- midi.c
-
- Midi Wavetable Processing library
-
- Copyright (C) WildMIDI Developers 2001-2015
-
- This file is part of WildMIDI.
-
- WildMIDI is free software: you can redistribute and/or modify the player
- under the terms of the GNU General Public License and you can redistribute
- and/or modify the library under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation, either version 3 of
- the licenses, or(at your option) any later version.
-
- WildMIDI is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
- the GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU General Public License and the
- GNU Lesser General Public License along with WildMIDI.  If not,  see
- <http://www.gnu.org/licenses/>.
+ * midi.c -- Midi Wavetable Processing library
+ *
+ * Copyright (C) WildMIDI Developers 2001-2015
+ *
+ * This file is part of WildMIDI.
+ *
+ * WildMIDI is free software: you can redistribute and/or modify the player
+ * under the terms of the GNU General Public License and you can redistribute
+ * and/or modify the library under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either version 3 of
+ * the licenses, or(at your option) any later version.
+ *
+ * WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+ * the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License and the
+ * GNU Lesser General Public License along with WildMIDI.  If not,  see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #include <stdint.h>
@@ -39,290 +37,214 @@
 
 struct _mdi *
 _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
-	struct _mdi *mdi;
+    struct _mdi *mdi;
 
-	uint32_t tmp_val;
-	uint32_t midi_type;
-	uint32_t track_size;
-	uint8_t **tracks;
-	uint32_t end_of_tracks = 0;
-	uint32_t no_tracks;
-	uint32_t i;
-	uint32_t divisions = 96;
-	uint32_t tempo = 500000;
-	float samples_per_delta_f = 0.0;
+    uint32_t tmp_val;
+    uint32_t midi_type;
+    uint32_t track_size;
+    uint8_t **tracks;
+    uint32_t end_of_tracks = 0;
+    uint32_t no_tracks;
+    uint32_t i;
+    uint32_t divisions = 96;
+    uint32_t tempo = 500000;
+    float samples_per_delta_f = 0.0;
 
-	uint32_t sample_count = 0;
-	float sample_count_f = 0.0;
-	float sample_remainder = 0.0;
-	uint8_t *sysex_store = NULL;
-	//uint32_t sysex_store_len = 0;
+    uint32_t sample_count = 0;
+    float sample_count_f = 0.0;
+    float sample_remainder = 0.0;
+    uint8_t *sysex_store = NULL;
+//  uint32_t sysex_store_len = 0;
 
-	uint32_t *track_delta;
-	uint8_t *track_end;
-	uint32_t smallest_delta = 0;
-	uint32_t subtract_delta = 0;
-	//uint32_t tmp_length = 0;
-	//uint8_t current_event = 0;
-	//uint8_t current_event_ch = 0;
-	uint8_t *running_event;
-	uint8_t *cvt = NULL;
-//	uint32_t cvt_size;
+    uint32_t *track_delta;
+    uint8_t *track_end;
+    uint32_t smallest_delta = 0;
+    uint32_t subtract_delta = 0;
+//  uint32_t tmp_length = 0;
+//  uint8_t current_event = 0;
+//  uint8_t current_event_ch = 0;
+    uint8_t *running_event;
+    uint8_t *cvt = NULL;
+//  uint32_t cvt_size;
 
-	if (!memcmp(midi_data, "RIFF", 4)) {
-		midi_data += 20;
-		midi_size -= 20;
-	}
+    if (!memcmp(midi_data, "RIFF", 4)) {
+        midi_data += 20;
+        midi_size -= 20;
+    }
 
-	if (memcmp(midi_data, "MThd", 4)) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
-		free(cvt);
-		return (NULL);
-	}
-	midi_data += 4;
-	midi_size -= 4;
+    if (memcmp(midi_data, "MThd", 4)) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+        free(cvt);
+        return (NULL);
+    }
+    midi_data += 4;
+    midi_size -= 4;
 
-	if (midi_size < 10) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-		free(cvt);
-		return (NULL);
-	}
+    if (midi_size < 10) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        free(cvt);
+        return (NULL);
+    }
 
-	/*
-	 * Get Midi Header Size - must always be 6
-	 */
-	tmp_val = *midi_data++ << 24;
-	tmp_val |= *midi_data++ << 16;
-	tmp_val |= *midi_data++ << 8;
-	tmp_val |= *midi_data++;
-	midi_size -= 4;
-	if (tmp_val != 6) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
-		free(cvt);
-		return (NULL);
-	}
+    /*
+     * Get Midi Header Size - must always be 6
+     */
+    tmp_val = *midi_data++ << 24;
+    tmp_val |= *midi_data++ << 16;
+    tmp_val |= *midi_data++ << 8;
+    tmp_val |= *midi_data++;
+    midi_size -= 4;
+    if (tmp_val != 6) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        free(cvt);
+        return (NULL);
+    }
 
-	/*
-	 * Get Midi Format - we only support 0, 1 & 2
-	 */
-	tmp_val = *midi_data++ << 8;
-	tmp_val |= *midi_data++;
-	midi_size -= 2;
-	if (tmp_val > 2) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
-		free(cvt);
-		return (NULL);
-	}
-	midi_type = tmp_val;
+    /*
+     * Get Midi Format - we only support 0, 1 & 2
+     */
+    tmp_val = *midi_data++ << 8;
+    tmp_val |= *midi_data++;
+    midi_size -= 2;
+    if (tmp_val > 2) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
+        free(cvt);
+        return (NULL);
+    }
+    midi_type = tmp_val;
 
-	/*
-	 * Get No. of Tracks
-	 */
-	tmp_val = *midi_data++ << 8;
-	tmp_val |= *midi_data++;
-	midi_size -= 2;
-	if (tmp_val < 1) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
-		free(cvt);
-		return (NULL);
-	}
-	no_tracks = tmp_val;
+    /*
+     * Get No. of Tracks
+     */
+    tmp_val = *midi_data++ << 8;
+    tmp_val |= *midi_data++;
+    midi_size -= 2;
+    if (tmp_val < 1) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
+        free(cvt);
+        return (NULL);
+    }
+    no_tracks = tmp_val;
 
-	/*
-	 * Check that type 0 midi file has only 1 track
-	 */
-	if ((midi_type == 0) && (no_tracks > 1)) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(expected 1 track for type 0 midi file, found more)", 0);
-		free(cvt);
-		return (NULL);
-	}
+    /*
+     * Check that type 0 midi file has only 1 track
+     */
+    if ((midi_type == 0) && (no_tracks > 1)) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(expected 1 track for type 0 midi file, found more)", 0);
+        free(cvt);
+        return (NULL);
+    }
 
-	/*
-	 * Get Divisions
-	 */
-	divisions = *midi_data++ << 8;
-	divisions |= *midi_data++;
-	midi_size -= 2;
-	if (divisions & 0x00008000) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
-		free(cvt);
-		return (NULL);
-	}
-    
+    /*
+     * Get Divisions
+     */
+    divisions = *midi_data++ << 8;
+    divisions |= *midi_data++;
+    midi_size -= 2;
+    if (divisions & 0x00008000) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
+        free(cvt);
+        return (NULL);
+    }
+
     samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
-    
-	mdi = _WM_initMDI();
-	_WM_midi_setup_divisions(mdi,divisions);
 
-	tracks = malloc(sizeof(uint8_t *) * no_tracks);
-	track_delta = malloc(sizeof(uint32_t) * no_tracks);
-	track_end = malloc(sizeof(uint8_t) * no_tracks);
-	running_event = malloc(sizeof(uint8_t) * no_tracks);
+    mdi = _WM_initMDI();
+    _WM_midi_setup_divisions(mdi,divisions);
 
-	smallest_delta = 0xffffffff;
-	for (i = 0; i < no_tracks; i++) {
-		if (midi_size < 8) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-			goto _end;
-		}
-		if (memcmp(midi_data, "MTrk", 4) != 0) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing track header)", 0);
-			goto _end;
-		}
-		midi_data += 4;
-		midi_size -= 4;
+    tracks = malloc(sizeof(uint8_t *) * no_tracks);
+    track_delta = malloc(sizeof(uint32_t) * no_tracks);
+    track_end = malloc(sizeof(uint8_t) * no_tracks);
+    running_event = malloc(sizeof(uint8_t) * no_tracks);
 
-		track_size = *midi_data++ << 24;
-		track_size |= *midi_data++ << 16;
-		track_size |= *midi_data++ << 8;
-		track_size |= *midi_data++;
-		midi_size -= 4;
-		if (midi_size < track_size) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-			goto _end;
-		}
-		if ((midi_data[track_size - 3] != 0xFF)
-				|| (midi_data[track_size - 2] != 0x2F)
-				|| (midi_data[track_size - 1] != 0x00)) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing EOT)", 0);
-			goto _end;
-		}
-		tracks[i] = midi_data;
-		midi_data += track_size;
-		midi_size -= track_size;
-		track_end[i] = 0;
-		running_event[i] = 0;
-		track_delta[i] = 0;
+    smallest_delta = 0xffffffff;
+    for (i = 0; i < no_tracks; i++) {
+        if (midi_size < 8) {
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+            goto _end;
+        }
+        if (memcmp(midi_data, "MTrk", 4) != 0) {
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing track header)", 0);
+            goto _end;
+        }
+        midi_data += 4;
+        midi_size -= 4;
+
+        track_size = *midi_data++ << 24;
+        track_size |= *midi_data++ << 16;
+        track_size |= *midi_data++ << 8;
+        track_size |= *midi_data++;
+        midi_size -= 4;
+        if (midi_size < track_size) {
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+            goto _end;
+        }
+        if ((midi_data[track_size - 3] != 0xFF)
+                || (midi_data[track_size - 2] != 0x2F)
+                || (midi_data[track_size - 1] != 0x00)) {
+            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing EOT)", 0);
+            goto _end;
+        }
+        tracks[i] = midi_data;
+        midi_data += track_size;
+        midi_size -= track_size;
+        track_end[i] = 0;
+        running_event[i] = 0;
+        track_delta[i] = 0;
 
         while (*tracks[i] > 0x7F) {
-			track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
-			tracks[i]++;
-		}
-		track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
-		tracks[i]++;
-		if (midi_type < 2 ) {
-			if (track_delta[i] < smallest_delta) {
-				smallest_delta = track_delta[i];
-			}
-		} else {
-			/* Type 2 midi only needs delta from 1st track. */
-			if (i == 0) smallest_delta = track_delta[i];
-		}
-	}
-
-	subtract_delta = smallest_delta;
-	sample_count_f = (((float) smallest_delta * samples_per_delta_f) + sample_remainder);
-	sample_count = (uint32_t) sample_count_f;
-	sample_remainder = sample_count_f - (float) sample_count;
-
-	mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-	mdi->extra_info.approx_total_samples += sample_count;
-
-	/*
-	 * Handle type 0 & 1 the same, but type 2 differently
-	 */
-	switch (midi_type) {
-	case 0:
-	case 1:
-            /* Type 0 & 1 can use the same code*/
-            while (end_of_tracks != no_tracks) {
-                smallest_delta = 0;
-                for (i = 0; i < no_tracks; i++) {
-                    if (track_end[i])
-                        continue;
-                    if (track_delta[i]) {
-                        track_delta[i] -= subtract_delta;
-                        if (track_delta[i]) {
-                            if ((!smallest_delta)
-                                || (smallest_delta > track_delta[i])) {
-                                smallest_delta = track_delta[i];
-                            }
-                            continue;
-                        }
-                    }
-                    do {
-                        if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x2f) && (tracks[i][2] == 0x00)) {
-                            /* End of Track */
-                            end_of_tracks++;
-                            track_end[i] = 1;
-                            tracks[i] += 3;
-                            goto NEXT_TRACK;
-                        } else {
-                            uint32_t setup_ret = 0;
-                            setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], running_event[i]);
-                            if (setup_ret == 0) {
-                                _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
-                                goto _end;
-                            }
-                            if (tracks[i][0] > 0x7f) {
-                                if (tracks[i][0] < 0xf0) {
-                                    // Events 0x80 - 0xef set running event
-                                    running_event[i] = tracks[i][0];
-                                } else if ((tracks[i][0] == 0xf0) || (tracks[i][0] == 0xf7)) {
-                                    // Sysex resets running event
-                                    running_event[i] = 0;
-                                } else if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x51) && (tracks[i][2] == 0x03)) {
-                                    /* Tempo */
-                                    tempo = (tracks[i][3] << 16) + (tracks[i][4] << 8)+ tracks[i][5];
-                                    if (!tempo)
-                                        tempo = 500000;
-                                    
-                                    samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
-                                    
-                                }
-                            }
-                            tracks[i] += setup_ret;
-                        }
-
-                        if (*tracks[i] > 0x7f) {
-                            do {
-                                track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
-                                tracks[i]++;
-                            } while (*tracks[i] > 0x7f);
-                        }
-                        track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
-                        tracks[i]++;
-                    } while (!track_delta[i]);
-                    if ((!smallest_delta) || (smallest_delta > track_delta[i])) {
-                        smallest_delta = track_delta[i];
-                    }
-                NEXT_TRACK: continue;
-                }
-
-                subtract_delta = smallest_delta;
-                sample_count_f = (((float) smallest_delta * samples_per_delta_f)
-                                  + sample_remainder);
-                sample_count = (uint32_t) sample_count_f;
-                sample_remainder = sample_count_f - (float) sample_count;
-
-                mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-                mdi->extra_info.approx_total_samples += sample_count;
+            track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
+            tracks[i]++;
+        }
+        track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
+        tracks[i]++;
+        if (midi_type < 2 ) {
+            if (track_delta[i] < smallest_delta) {
+                smallest_delta = track_delta[i];
             }
-            break;
+        } else {
+            /* Type 2 midi only needs delta from 1st track. */
+            if (i == 0) smallest_delta = track_delta[i];
+        }
+    }
 
-	case 2: /* Type 2 has to be handled differently */
+    subtract_delta = smallest_delta;
+    sample_count_f = (((float) smallest_delta * samples_per_delta_f) + sample_remainder);
+    sample_count = (uint32_t) sample_count_f;
+    sample_remainder = sample_count_f - (float) sample_count;
+
+    mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
+    mdi->extra_info.approx_total_samples += sample_count;
+
+    /*
+     * Handle type 0 & 1 the same, but type 2 differently
+     */
+    switch (midi_type) {
+    case 0:
+    case 1:
+        /* Type 0 & 1 can use the same code*/
+        while (end_of_tracks != no_tracks) {
+            smallest_delta = 0;
             for (i = 0; i < no_tracks; i++) {
-                sample_remainder = 0.0;
-                track_delta[i] = 0;
-                do {
-                    if(track_delta[i]) {
-                        sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
-                                          + sample_remainder);
-                        sample_count = (uint32_t) sample_count_f;
-                        sample_remainder = sample_count_f - (float) sample_count;
-                        mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
-                        mdi->extra_info.approx_total_samples += sample_count;
+                if (track_end[i])
+                    continue;
+                if (track_delta[i]) {
+                    track_delta[i] -= subtract_delta;
+                    if (track_delta[i]) {
+                        if ((!smallest_delta)
+                             || (smallest_delta > track_delta[i])) {
+                            smallest_delta = track_delta[i];
+                        }
+                        continue;
                     }
+                }
+                do {
                     if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x2f) && (tracks[i][2] == 0x00)) {
                         /* End of Track */
-
-                        /* TODO: add call to midi_setup_endoftrack as marker
-                         * to be used by _WM_Event2Midi */
-
                         end_of_tracks++;
                         track_end[i] = 1;
                         tracks[i] += 3;
-                        goto NEXT_TRACK2;
+                        goto NEXT_TRACK;
                     } else {
                         uint32_t setup_ret = 0;
                         setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], running_event[i]);
@@ -332,10 +254,10 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                         }
                         if (tracks[i][0] > 0x7f) {
                             if (tracks[i][0] < 0xf0) {
-                                /* Events 0x80 - 0xef set running event */
+                                // Events 0x80 - 0xef set running event
                                 running_event[i] = tracks[i][0];
                             } else if ((tracks[i][0] == 0xf0) || (tracks[i][0] == 0xf7)) {
-                                /* Sysex resets running event */
+                                // Sysex resets running event
                                 running_event[i] = 0;
                             } else if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x51) && (tracks[i][2] == 0x03)) {
                                 /* Tempo */
@@ -344,7 +266,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                                     tempo = 500000;
 
                                 samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
-                                
                             }
                         }
                         tracks[i] += setup_ret;
@@ -356,42 +277,117 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                             tracks[i]++;
                         } while (*tracks[i] > 0x7f);
                     }
-
                     track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
                     tracks[i]++;
-                NEXT_TRACK2:
-                    smallest_delta = track_delta[i]; /* Added just to keep Xcode happy */
-                    UNUSED(smallest_delta); /* Added to just keep clang happy */
-                } while (track_end[i] == 0);
+                } while (!track_delta[i]);
+                if ((!smallest_delta) || (smallest_delta > track_delta[i])) {
+                    smallest_delta = track_delta[i];
+                }
+            NEXT_TRACK: continue;
             }
-            break;
 
-        default: break; /* Don't expect to get here, added for completeness */
+            subtract_delta = smallest_delta;
+            sample_count_f = (((float) smallest_delta * samples_per_delta_f)
+                              + sample_remainder);
+            sample_count = (uint32_t) sample_count_f;
+            sample_remainder = sample_count_f - (float) sample_count;
+
+            mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
+            mdi->extra_info.approx_total_samples += sample_count;
+        }
+        break;
+
+    case 2: /* Type 2 has to be handled differently */
+        for (i = 0; i < no_tracks; i++) {
+            sample_remainder = 0.0;
+            track_delta[i] = 0;
+            do {
+                if(track_delta[i]) {
+                    sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
+                                      + sample_remainder);
+                    sample_count = (uint32_t) sample_count_f;
+                    sample_remainder = sample_count_f - (float) sample_count;
+                    mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
+                    mdi->extra_info.approx_total_samples += sample_count;
+                }
+                if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x2f) && (tracks[i][2] == 0x00)) {
+                    /* End of Track */
+
+                    /* TODO: add call to midi_setup_endoftrack as marker
+                     * to be used by _WM_Event2Midi */
+
+                    end_of_tracks++;
+                    track_end[i] = 1;
+                    tracks[i] += 3;
+                    goto NEXT_TRACK2;
+                } else {
+                    uint32_t setup_ret = 0;
+                    setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], running_event[i]);
+                    if (setup_ret == 0) {
+                        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+                        goto _end;
+                    }
+                    if (tracks[i][0] > 0x7f) {
+                        if (tracks[i][0] < 0xf0) {
+                            /* Events 0x80 - 0xef set running event */
+                            running_event[i] = tracks[i][0];
+                        } else if ((tracks[i][0] == 0xf0) || (tracks[i][0] == 0xf7)) {
+                            /* Sysex resets running event */
+                            running_event[i] = 0;
+                        } else if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x51) && (tracks[i][2] == 0x03)) {
+                            /* Tempo */
+                            tempo = (tracks[i][3] << 16) + (tracks[i][4] << 8)+ tracks[i][5];
+                            if (!tempo)
+                                tempo = 500000;
+
+                            samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
+                        }
+                    }
+                    tracks[i] += setup_ret;
+                }
+
+                if (*tracks[i] > 0x7f) {
+                    do {
+                        track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
+                        tracks[i]++;
+                    } while (*tracks[i] > 0x7f);
+                }
+
+                track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
+                tracks[i]++;
+            NEXT_TRACK2:
+                smallest_delta = track_delta[i]; /* Added just to keep Xcode happy */
+                UNUSED(smallest_delta); /* Added to just keep clang happy */
+            } while (track_end[i] == 0);
+        }
+        break;
+
+    default: break; /* Don't expect to get here, added for completeness */
     }
 
-	if ((mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width,
-			_WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy))
-			== NULL) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
-		goto _end;
-	}
+    if ((mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width,
+            _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy))
+          == NULL) {
+        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+        goto _end;
+    }
 
-	mdi->extra_info.current_sample = 0;
-	mdi->current_event = &mdi->events[0];
-	mdi->samples_to_mix = 0;
-	mdi->note = NULL;
+    mdi->extra_info.current_sample = 0;
+    mdi->current_event = &mdi->events[0];
+    mdi->samples_to_mix = 0;
+    mdi->note = NULL;
 
-	_WM_ResetToStart(mdi);
+    _WM_ResetToStart(mdi);
 
-_end:	free(sysex_store);
-	free(cvt);
-	free(track_end);
-	free(track_delta);
-	free(running_event);
-	free(tracks);
-	if (mdi->reverb) return (mdi);
-	_WM_freeMDI(mdi);
-	return (NULL);
+_end:   free(sysex_store);
+    free(cvt);
+    free(track_end);
+    free(track_delta);
+    free(running_event);
+    free(tracks);
+    if (mdi->reverb) return (mdi);
+    _WM_freeMDI(mdi);
+    return (NULL);
 }
 
 /*
@@ -407,7 +403,9 @@ _end:	free(sysex_store);
  NOTE: This will only write out events that we do support.
 
  *** CAUTION ***
- This will output type 0 midi file reguardless of the original file type. Type 2 midi files will have each original track play on the same track one after the other in the type 0 file.
+ This will output type 0 midi file reguardless of the original file type.
+ Type 2 midi files will have each original track play on the same track one
+ after the other in the type 0 file.
  */
 int
 _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
@@ -424,13 +422,12 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CONVERT, "(No events to convert)", 0);
         return -1;
     }
-    
+
     samples_per_tick = _WM_GetSamplesPerTick(divisions, tempo);
 
     /*
      Note: This isn't accurate but will allow enough space for
             events plus delta values.
-     a
      */
     (*out) = malloc (sizeof(uint8_t) * (mdi->event_count * 12));
 
@@ -726,7 +723,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             // DEBUG
             // fprintf(stderr,"Tempo: %u\r\n",mdi->events[i].event_data.data);
             tempo = mdi->events[i].event_data.data.value & 0xffffff;
-            
+
             samples_per_tick = _WM_GetSamplesPerTick(divisions, tempo);
 
             //DEBUG
@@ -796,43 +793,43 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         } else if (mdi->events[i].do_event == _WM_do_meta_text) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x01;
-            
+
             goto _WRITE_TEXT;
-            
+
         } else if (mdi->events[i].do_event == _WM_do_meta_copyright) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x02;
-            
+
             goto _WRITE_TEXT;
-            
+
         } else if (mdi->events[i].do_event == _WM_do_meta_trackname) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x03;
-            
+
             goto _WRITE_TEXT;
-            
+
         } else if (mdi->events[i].do_event == _WM_do_meta_instrumentname) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x04;
-            
+
             goto _WRITE_TEXT;
-            
+
         } else if (mdi->events[i].do_event == _WM_do_meta_lyric) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x05;
-            
+
             goto _WRITE_TEXT;
-            
+
         } else if (mdi->events[i].do_event == _WM_do_meta_marker) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x06;
-            
+
             goto _WRITE_TEXT;
-            
+
         } else if (mdi->events[i].do_event == _WM_do_meta_cuepoint) {
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x07;
-            
+
             _WRITE_TEXT:
             value = strlen(mdi->events[i].event_data.data.string);
             if (value > 0x0fffffff)
@@ -844,10 +841,10 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             if (value > 0x7f)
                 (*out)[out_ofs++] = (((value >> 7) & 0x7f) | 0x80);
             (*out)[out_ofs++] = (value & 0x7f);
-            
+
             memcpy(&(*out)[out_ofs], mdi->events[i].event_data.data.string, value);
             out_ofs += value;
-            
+
         } else {
             // DEBUG
             fprintf(stderr,"Unknown Event %.2x %.4x\n",mdi->events[i].event_data.channel, mdi->events[i].event_data.data.value);

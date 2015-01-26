@@ -1,52 +1,50 @@
 /*
- internal_midi.h
- 
- Midi Wavetable Processing library
- 
- Copyright (C) WildMIDI Developers 2001-2015
- 
- This file is part of WildMIDI.
- 
- WildMIDI is free software: you can redistribute and/or modify the player
- under the terms of the GNU General Public License and you can redistribute
- and/or modify the library under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation, either version 3 of
- the licenses, or(at your option) any later version.
- 
- WildMIDI is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
- the GNU Lesser General Public License for more details.
- 
- You should have received a copy of the GNU General Public License and the
- GNU Lesser General Public License along with WildMIDI.  If not,  see
- <http://www.gnu.org/licenses/>.
+ * internal_midi.h -- Midi Wavetable Processing library
+ *
+ * Copyright (C) WildMIDI Developers 2001-2015
+ *
+ * This file is part of WildMIDI.
+ *
+ * WildMIDI is free software: you can redistribute and/or modify the player
+ * under the terms of the GNU General Public License and you can redistribute
+ * and/or modify the library under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either version 3 of
+ * the licenses, or(at your option) any later version.
+ *
+ * WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+ * the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License and the
+ * GNU Lesser General Public License along with WildMIDI.  If not,  see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #ifndef __INTERNAL_MIDI_H
 #define __INTERNAL_MIDI_H
 
 struct _channel {
-	uint8_t bank;
-	struct _patch *patch;
-	uint8_t hold;
-	uint8_t volume;
-	uint8_t pressure;
-	uint8_t expression;
-	int8_t  balance;
-	int8_t  pan;
-	int16_t left_adjust;
-	int16_t right_adjust;
-	int16_t pitch;
-	int16_t pitch_range;
-	int32_t pitch_adjust;
-	uint16_t reg_data;
-	uint8_t reg_non;
-	uint8_t isdrum;
+    uint8_t bank;
+    struct _patch *patch;
+    uint8_t hold;
+    uint8_t volume;
+    uint8_t pressure;
+    uint8_t expression;
+    int8_t  balance;
+    int8_t  pan;
+    int16_t left_adjust;
+    int16_t right_adjust;
+    int16_t pitch;
+    int16_t pitch_range;
+    int32_t pitch_adjust;
+    uint16_t reg_data;
+    uint8_t reg_non;
+    uint8_t isdrum;
 };
 
 struct _event_data {
-	uint8_t channel;
+    uint8_t channel;
     union Data {
         uint32_t value;
         char * string;
@@ -54,74 +52,73 @@ struct _event_data {
 };
 
 struct _note {
-	uint16_t noteid;
-	uint8_t velocity;
-	struct _patch *patch;
-	struct _sample *sample;
-	uint32_t sample_pos;
-	uint32_t sample_inc;
-	int32_t env_inc;
-	uint8_t env;
-	int32_t env_level;
-	uint8_t modes;
-	uint8_t hold;
-	uint8_t active;
-	struct _note *replay;
-	struct _note *next;
+    uint16_t noteid;
+    uint8_t velocity;
+    struct _patch *patch;
+    struct _sample *sample;
+    uint32_t sample_pos;
+    uint32_t sample_inc;
+    int32_t env_inc;
+    uint8_t env;
+    int32_t env_level;
+    uint8_t modes;
+    uint8_t hold;
+    uint8_t active;
+    struct _note *replay;
+    struct _note *next;
     uint32_t left_mix_volume;
     uint32_t right_mix_volume;
-	uint8_t is_off;
+    uint8_t is_off;
 };
 
 struct _mdi;
 
 struct _event {
-	void (*do_event)(struct _mdi *mdi, struct _event_data *data);
-	struct _event_data event_data;
-	uint32_t samples_to_next;
-	uint32_t samples_to_next_fixed;
+    void (*do_event)(struct _mdi *mdi, struct _event_data *data);
+    struct _event_data event_data;
+    uint32_t samples_to_next;
+    uint32_t samples_to_next_fixed;
 };
 
 struct _mdi {
-	int lock;
-	uint32_t samples_to_mix;
-	struct _event *events;
-	struct _event *current_event;
-	uint32_t event_count;
-	uint32_t events_size; /* try to stay optimally ahead to prevent reallocs */
+    int lock;
+    uint32_t samples_to_mix;
+    struct _event *events;
+    struct _event *current_event;
+    uint32_t event_count;
+    uint32_t events_size; /* try to stay optimally ahead to prevent reallocs */
     struct _WM_Info extra_info;
     struct _WM_Info *tmp_info;
     uint16_t midi_master_vol;
-	struct _channel channel[16];
-	struct _note *note;
-	struct _note note_table[2][16][128];
-    
-	struct _patch **patches;
-	uint32_t patch_count;
-	int16_t amp;
-    
-	int32_t *mix_buffer;
-	uint32_t mix_buffer_size;
-    
-	struct _rvb *reverb;
-    
+    struct _channel channel[16];
+    struct _note *note;
+    struct _note note_table[2][16][128];
+
+    struct _patch **patches;
+    uint32_t patch_count;
+    int16_t amp;
+
+    int32_t *mix_buffer;
+    uint32_t mix_buffer_size;
+
+    struct _rvb *reverb;
+
     int32_t dyn_vol_peak;
     double dyn_vol_adjust;
     double dyn_vol;
     double dyn_vol_to_reach;
-    
+
     char *lyric;
-    
 };
 
 
 extern int16_t _WM_lin_volume[];
 extern uint32_t _WM_freq_table[];
 
-// =====================
+/* ===================== */
 
-/* 
-    All "do" functions need to be "extern" for playback
+/*
+ * All "do" functions need to be "extern" for playback
  */
 extern void _WM_do_midi_divisions(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data);
@@ -170,18 +167,18 @@ extern void _WM_do_meta_cuepoint(struct _mdi *mdi, struct _event_data *data);
 
 extern int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);
 
-// =====================
+/* ===================== */
 
 /*
-    Only non-standard midi event or non-track event setup functions need to be here
+ * Only non-standard midi event or non-track event setup functions need to be here
  */
 extern int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions);
 extern int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting);
 
-// =====================
+/* ===================== */
 
 /*
-    All other declirations
+ * All other declarations
  */
 
 extern struct _mdi * _WM_initMDI(void);

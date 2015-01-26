@@ -1,26 +1,24 @@
 /*
- internal_midi.c
-
- Midi Wavetable Processing library
-
- Copyright (C) WildMIDI Developers 2001-2015
-
- This file is part of WildMIDI.
-
- WildMIDI is free software: you can redistribute and/or modify the player
- under the terms of the GNU General Public License and you can redistribute
- and/or modify the library under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation, either version 3 of
- the licenses, or(at your option) any later version.
-
- WildMIDI is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
- the GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU General Public License and the
- GNU Lesser General Public License along with WildMIDI.  If not,  see
- <http://www.gnu.org/licenses/>.
+ * internal_midi.c -- Midi Wavetable Processing library
+ *
+ * Copyright (C) WildMIDI Developers 2001-2015
+ *
+ * This file is part of WildMIDI.
+ *
+ * WildMIDI is free software: you can redistribute and/or modify the player
+ * under the terms of the GNU General Public License and you can redistribute
+ * and/or modify the library under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either version 3 of
+ * the licenses, or(at your option) any later version.
+ *
+ * WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+ * the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License and the
+ * GNU Lesser General Public License along with WildMIDI.  If not,  see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #include <stdint.h>
@@ -88,7 +86,6 @@ static float dBm_volume[] = { -999999.999999, -84.15214884, -72.11094901,
     -2.029011099, -1.875954785, -1.724235224, -1.573829269, -1.424714368,
     -1.276868546, -1.130270383, -0.9848989963, -0.8407340256, -0.6977556112,
     -0.5559443807, -0.4152814317, -0.2757483179, -0.1373270335, 0.0 };
-
 
 /* f: As per midi 2 standard */
 static float dBm_pan_volume[] = { -999999.999999, -38.15389834 -32.13396282,
@@ -322,25 +319,24 @@ uint32_t _WM_freq_table[] = { 837201792, 837685632, 838169728,
     1671505024, 1672470016, 1673436544, };
 
 /*
- 
  */
 void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used) {
-    
+
     uint32_t i = 0;
     uint32_t j = 0;
-    
+
     int8_t peak_set = 0;
     int32_t prev_val = 0;
     uint32_t peak_ofs = 0;
     int32_t peak = mdi->dyn_vol_peak;
-    
+
     double volume_to_reach = mdi->dyn_vol_to_reach;
     double volume = mdi->dyn_vol;
     double volume_adjust = mdi->dyn_vol_adjust;
     double tmp_output = 0.0;
 
 #define MAX_DYN_VOL 1.0
-    
+
     for (i = 0; i < buffer_used; i++) {
         if ((i == 0) || (i > peak_ofs)) {
             // Find Next Peak/Troff
@@ -362,7 +358,7 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                         continue;
                     }
                 }
-                
+
                 if (peak_set == 1) {
                     // Data is going up
                     if (peak < tmp_buffer[j]) {
@@ -382,11 +378,10 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                         break;
                     }
                 }
-    
+
                 prev_val = tmp_buffer[j];
             }
-            
-            
+
             if (peak_set != 0) {
                 if (peak_set == 1) {
                     if (peak > 32767) {
@@ -405,7 +400,7 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                 // No peak found, set volume we want to normal
                 volume_to_reach = MAX_DYN_VOL;
             }
-            
+
             if (volume != volume_to_reach) {
                 if (volume_to_reach == MAX_DYN_VOL) {
                     // if we want normal volume then adjust to it slower
@@ -437,7 +432,6 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                         // we dont want to go below the level we wanted
                         volume = volume_to_reach;
                         volume_adjust = 0.0;
-                        
                     }
                 }
             }
@@ -446,13 +440,12 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
         tmp_output = (double)tmp_buffer[i] * volume;
         tmp_buffer[i] = (int32_t)tmp_output;
     }
-    
+
     // store required values
     mdi->dyn_vol_adjust = volume_adjust;
     mdi->dyn_vol_peak = peak;
     mdi->dyn_vol = volume;
     mdi->dyn_vol_to_reach = volume_to_reach;
-    
 }
 
 /* Should be called in any function that effects note volumes */
@@ -466,45 +459,43 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
     float premix_right;
     float volume_adj;
     uint32_t vol_ofs;
-    
+
     /*
      Pointless CPU heating checks to shoosh up a compiler
      */
     if (ch > 0x0f) ch = 0x0f;
-    
+
     pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
 
     vol_ofs = (nte->velocity * ((mdi->channel[ch].expression * mdi->channel[ch].volume) / 127)) / 127;
-    
+
     /*
-     This value is to reduce the chance of clipping. Higher value means lower overall volume, Lower value means higher overall volume.
-     
+     This value is to reduce the chance of clipping.
+     Higher value means lower overall volume,
+     Lower value means higher overall volume.
      NOTE: The lower the value the higher the chance of clipping.
-     
      FIXME: Still needs tuning. Clipping heard at a value of 3.75
      */
 #define VOL_DIVISOR 4.0
     volume_adj = ((float)_WM_MasterVolume / 1024.0) / VOL_DIVISOR;
 
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
-    
+
     if (pan_ofs > 127) pan_ofs = 127;
     premix_dBm_left = dBm_pan_volume[(127-pan_ofs)];
     premix_dBm_right = dBm_pan_volume[pan_ofs];
-    
-    
-    
+
     if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
         premix_dBm = dBm_volume[vol_ofs];
-    
+
         premix_dBm_left += premix_dBm;
         premix_dBm_right += premix_dBm;
-        
+
         premix_left = (powf(10.0,(premix_dBm_left / 20.0))) * volume_adj;
         premix_right = (powf(10.0,(premix_dBm_right / 20.0))) * volume_adj;
     } else {
         premix_lin = (float)(_WM_lin_volume[vol_ofs]) / 1024.0;
-        
+
         premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20)) * volume_adj;
         premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20)) * volume_adj;
     }
@@ -536,7 +527,7 @@ float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
     float microseconds_per_tick;
     float secs_per_tick;
     float samples_per_tick;
-    
+
     /* Slow but needed for accuracy */
     microseconds_per_tick = (float) tempo / (float) divisions;
     secs_per_tick = microseconds_per_tick / 1000000.0f;
@@ -546,24 +537,24 @@ float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
 }
 
 void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
-	if (mdi->event_count >= mdi->events_size) {
-		mdi->events_size += MEM_CHUNK;
-		mdi->events = realloc(mdi->events,
+    if (mdi->event_count >= mdi->events_size) {
+        mdi->events_size += MEM_CHUNK;
+        mdi->events = realloc(mdi->events,
                               (mdi->events_size * sizeof(struct _event)));
-	}
+    }
 }
 
 void _WM_do_note_off_extra(struct _note *nte) {
-    
-	MIDI_EVENT_DEBUG(__FUNCTION__,0, 0);
+
+    MIDI_EVENT_DEBUG(__FUNCTION__,0, 0);
     nte->is_off = 0;
         {
-		if (!(nte->modes & SAMPLE_ENVELOPE)) {
-			if (nte->modes & SAMPLE_LOOP) {
-				nte->modes ^= SAMPLE_LOOP;
-			}
-			nte->env_inc = 0;
-            
+        if (!(nte->modes & SAMPLE_ENVELOPE)) {
+            if (nte->modes & SAMPLE_LOOP) {
+                nte->modes ^= SAMPLE_LOOP;
+            }
+            nte->env_inc = 0;
+
         } else if (nte->hold) {
             nte->hold |= HOLD_OFF;
 /*
@@ -578,297 +569,296 @@ void _WM_do_note_off_extra(struct _note *nte) {
             }
 */
         } else if (nte->modes & SAMPLE_CLAMPED) {
-			if (nte->env < 5) {
-				nte->env = 5;
-				if (nte->env_level > nte->sample->env_target[5]) {
-					nte->env_inc = -nte->sample->env_rate[5];
-				} else {
-					nte->env_inc = nte->sample->env_rate[5];
-				}
-			}
-		} else if (nte->env < 4) {
-			nte->env = 4;
-			if (nte->env_level > nte->sample->env_target[4]) {
-				nte->env_inc = -nte->sample->env_rate[4];
-			} else {
-				nte->env_inc = nte->sample->env_rate[4];
-			}
-		}
-	}
+            if (nte->env < 5) {
+                nte->env = 5;
+                if (nte->env_level > nte->sample->env_target[5]) {
+                    nte->env_inc = -nte->sample->env_rate[5];
+                } else {
+                    nte->env_inc = nte->sample->env_rate[5];
+                }
+            }
+        } else if (nte->env < 4) {
+            nte->env = 4;
+            if (nte->env_level > nte->sample->env_target[4]) {
+                nte->env_inc = -nte->sample->env_rate[4];
+            } else {
+                nte->env_inc = nte->sample->env_rate[4];
+            }
+        }
+    }
 }
 
 
 void _WM_do_midi_divisions(struct _mdi *mdi, struct _event_data *data) {
     // placeholder function so we can record divisions in the event stream
     // for conversion function _WM_Event2Midi()
-    
     UNUSED(mdi);
     UNUSED(data);
     return;
 }
 
 void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data) {
-	struct _note *nte;
-	uint8_t ch = data->channel;
+    struct _note *nte;
+    uint8_t ch = data->channel;
 
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	nte = &mdi->note_table[0][ch][(data->data.value >> 8)];
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    nte = &mdi->note_table[0][ch][(data->data.value >> 8)];
     if (!nte->active) {
-		nte = &mdi->note_table[1][ch][(data->data.value >> 8)];
+        nte = &mdi->note_table[1][ch][(data->data.value >> 8)];
         if (!nte->active) {
             return;
         }
     }
-    
-	if ((mdi->channel[ch].isdrum) && (!(nte->modes & SAMPLE_LOOP))) {
-		return;
-	}
-    
+
+    if ((mdi->channel[ch].isdrum) && (!(nte->modes & SAMPLE_LOOP))) {
+        return;
+    }
+
     if ((nte->modes & SAMPLE_ENVELOPE) && (nte->env == 0)) {
         // This is a fix for notes that end before the
         // initial step of the envelope has completed
         // making it impossible to hear them at times.
         nte->is_off = 1;
     } else {
-		_WM_do_note_off_extra(nte);
-	}
+        _WM_do_note_off_extra(nte);
+    }
 }
 
 static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
-	int ch = nte->noteid >> 8;
-	int32_t note_f;
-	uint32_t freq;
-    
-	if (__builtin_expect((nte->patch->note != 0), 0)) {
-		note_f = nte->patch->note * 100;
-	} else {
-		note_f = (nte->noteid & 0x7f) * 100;
-	}
-	note_f += mdi->channel[ch].pitch_adjust;
-	if (__builtin_expect((note_f < 0), 0)) {
-		note_f = 0;
-	} else if (__builtin_expect((note_f > 12700), 0)) {
-		note_f = 12700;
-	}
-	freq = _WM_freq_table[(note_f % 1200)] >> (10 - (note_f / 1200));
-	return (((freq / ((_WM_SampleRate * 100) / 1024)) * 1024
+    int ch = nte->noteid >> 8;
+    int32_t note_f;
+    uint32_t freq;
+
+    if (__builtin_expect((nte->patch->note != 0), 0)) {
+        note_f = nte->patch->note * 100;
+    } else {
+        note_f = (nte->noteid & 0x7f) * 100;
+    }
+    note_f += mdi->channel[ch].pitch_adjust;
+    if (__builtin_expect((note_f < 0), 0)) {
+        note_f = 0;
+    } else if (__builtin_expect((note_f > 12700), 0)) {
+        note_f = 12700;
+    }
+    freq = _WM_freq_table[(note_f % 1200)] >> (10 - (note_f / 1200));
+    return (((freq / ((_WM_SampleRate * 100) / 1024)) * 1024
              / nte->sample->inc_div));
 }
 
 void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
-	struct _note *nte;
-	struct _note *prev_nte;
-	struct _note *nte_array;
-	uint32_t freq = 0;
-	struct _patch *patch;
-	struct _sample *sample;
-	uint8_t ch = data->channel;
-	uint8_t note = (data->data.value >> 8);
-	uint8_t velocity = (data->data.value & 0xFF);
-    
-	if (velocity == 0x00) {
-		_WM_do_note_off(mdi, data);
-		return;
-	}
-    
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if (!mdi->channel[ch].isdrum) {
-		patch = mdi->channel[ch].patch;
-		if (patch == NULL) {
-			return;
-		}
-		freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
-	} else {
-		patch = _WM_get_patch_data(mdi,
+    struct _note *nte;
+    struct _note *prev_nte;
+    struct _note *nte_array;
+    uint32_t freq = 0;
+    struct _patch *patch;
+    struct _sample *sample;
+    uint8_t ch = data->channel;
+    uint8_t note = (data->data.value >> 8);
+    uint8_t velocity = (data->data.value & 0xFF);
+
+    if (velocity == 0x00) {
+        _WM_do_note_off(mdi, data);
+        return;
+    }
+
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if (!mdi->channel[ch].isdrum) {
+        patch = mdi->channel[ch].patch;
+        if (patch == NULL) {
+            return;
+        }
+        freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
+    } else {
+        patch = _WM_get_patch_data(mdi,
                                ((mdi->channel[ch].bank << 8) | note | 0x80));
-		if (patch == NULL) {
-			return;
-		}
-		if (patch->note) {
-			freq = _WM_freq_table[(patch->note % 12) * 100]
+        if (patch == NULL) {
+            return;
+        }
+        if (patch->note) {
+            freq = _WM_freq_table[(patch->note % 12) * 100]
             >> (10 - (patch->note / 12));
-		} else {
-			freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
-		}
-	}
-    
-	sample = _WM_get_sample_data(patch, (freq / 100));
-	if (sample == NULL) {
-		return;
-	}
-    
-	nte = &mdi->note_table[0][ch][note];
-    
-	if (nte->active) {
-		if ((nte->modes & SAMPLE_ENVELOPE) && (nte->env < 3)
+        } else {
+            freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
+        }
+    }
+
+    sample = _WM_get_sample_data(patch, (freq / 100));
+    if (sample == NULL) {
+        return;
+    }
+
+    nte = &mdi->note_table[0][ch][note];
+
+    if (nte->active) {
+        if ((nte->modes & SAMPLE_ENVELOPE) && (nte->env < 3)
             && (!(nte->hold & HOLD_OFF)))
-			return;
-		nte->replay = &mdi->note_table[1][ch][note];
-		nte->env = 6;
-		nte->env_inc = -nte->sample->env_rate[6];
-		nte = nte->replay;
-	} else {
-		if (mdi->note_table[1][ch][note].active) {
-			if ((nte->modes & SAMPLE_ENVELOPE) && (nte->env < 3)
+            return;
+        nte->replay = &mdi->note_table[1][ch][note];
+        nte->env = 6;
+        nte->env_inc = -nte->sample->env_rate[6];
+        nte = nte->replay;
+    } else {
+        if (mdi->note_table[1][ch][note].active) {
+            if ((nte->modes & SAMPLE_ENVELOPE) && (nte->env < 3)
                 && (!(nte->hold & HOLD_OFF)))
-				return;
-			mdi->note_table[1][ch][note].replay = nte;
-			mdi->note_table[1][ch][note].env = 6;
-			mdi->note_table[1][ch][note].env_inc =
+                return;
+            mdi->note_table[1][ch][note].replay = nte;
+            mdi->note_table[1][ch][note].env = 6;
+            mdi->note_table[1][ch][note].env_inc =
             -mdi->note_table[1][ch][note].sample->env_rate[6];
-		} else {
-			nte_array = mdi->note;
-			if (nte_array == NULL) {
-				mdi->note = nte;
-			} else {
-				do {
-					prev_nte = nte_array;
-					nte_array = nte_array->next;
-				} while (nte_array);
-				prev_nte->next = nte;
-			}
-			nte->active = 1;
-			nte->next = NULL;
-		}
-	}
-	nte->noteid = (ch << 8) | note;
-	nte->patch = patch;
-	nte->sample = sample;
-	nte->sample_pos = 0;
-	nte->sample_inc = get_inc(mdi, nte);
-	nte->velocity = velocity;
-	nte->env = 0;
-	nte->env_inc = nte->sample->env_rate[0];
-	nte->env_level = 0;
-	nte->modes = sample->modes;
-	nte->hold = mdi->channel[ch].hold;
-	nte->replay = NULL;
-	nte->is_off = 0;
+        } else {
+            nte_array = mdi->note;
+            if (nte_array == NULL) {
+                mdi->note = nte;
+            } else {
+                do {
+                    prev_nte = nte_array;
+                    nte_array = nte_array->next;
+                } while (nte_array);
+                prev_nte->next = nte;
+            }
+            nte->active = 1;
+            nte->next = NULL;
+        }
+    }
+    nte->noteid = (ch << 8) | note;
+    nte->patch = patch;
+    nte->sample = sample;
+    nte->sample_pos = 0;
+    nte->sample_inc = get_inc(mdi, nte);
+    nte->velocity = velocity;
+    nte->env = 0;
+    nte->env_inc = nte->sample->env_rate[0];
+    nte->env_level = 0;
+    nte->modes = sample->modes;
+    nte->hold = mdi->channel[ch].hold;
+    nte->replay = NULL;
+    nte->is_off = 0;
     _WM_AdjustNoteVolumes(mdi, ch, nte);
 }
 
 void _WM_do_aftertouch(struct _mdi *mdi, struct _event_data *data) {
-	struct _note *nte;
-	uint8_t ch = data->channel;
-    
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	nte = &mdi->note_table[0][ch][(data->data.value >> 8)];
-	if (!nte->active) {
-		nte = &mdi->note_table[1][ch][(data->data.value >> 8)];
-		if (!nte->active) {
-			return;
-		}
-	}
-    
-	nte->velocity = data->data.value & 0xff;
+    struct _note *nte;
+    uint8_t ch = data->channel;
+
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    nte = &mdi->note_table[0][ch][(data->data.value >> 8)];
+    if (!nte->active) {
+        nte = &mdi->note_table[1][ch][(data->data.value >> 8)];
+        if (!nte->active) {
+            return;
+        }
+    }
+
+    nte->velocity = data->data.value & 0xff;
     _WM_AdjustNoteVolumes(mdi, ch, nte);
-	if (nte->replay) {
-		nte->replay->velocity = data->data.value & 0xff;
+    if (nte->replay) {
+        nte->replay->velocity = data->data.value & 0xff;
         _WM_AdjustNoteVolumes(mdi, ch, nte->replay);
-	}
+    }
 }
 
 void _WM_do_control_bank_select(struct _mdi *mdi, struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-	mdi->channel[ch].bank = data->data.value;
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    mdi->channel[ch].bank = data->data.value;
 }
 
 void _WM_do_control_data_entry_course(struct _mdi *mdi,
                                          struct _event_data *data) {
-	uint8_t ch = data->channel;
-	int data_tmp;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if ((mdi->channel[ch].reg_non == 0)
+    uint8_t ch = data->channel;
+    int data_tmp;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if ((mdi->channel[ch].reg_non == 0)
         && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
-		data_tmp = mdi->channel[ch].pitch_range % 100;
-		mdi->channel[ch].pitch_range = data->data.value * 100 + data_tmp;
-	/*	printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
-	/*	printf("Data Entry Course: data %li\n\r",data->data.value);*/
-	}
+        data_tmp = mdi->channel[ch].pitch_range % 100;
+        mdi->channel[ch].pitch_range = data->data.value * 100 + data_tmp;
+    /*  printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
+    /*  printf("Data Entry Course: data %li\n\r",data->data.value);*/
+    }
 }
 
 void _WM_do_control_channel_volume(struct _mdi *mdi,
                                       struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-	mdi->channel[ch].volume = data->data.value;
-	_WM_AdjustChannelVolumes(mdi, ch);
+    mdi->channel[ch].volume = data->data.value;
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_balance(struct _mdi *mdi,
                                        struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-	mdi->channel[ch].balance = data->data.value;
-	_WM_AdjustChannelVolumes(mdi, ch);
+    mdi->channel[ch].balance = data->data.value;
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_pan(struct _mdi *mdi, struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-	mdi->channel[ch].pan = data->data.value;
-	_WM_AdjustChannelVolumes(mdi, ch);
+    mdi->channel[ch].pan = data->data.value;
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_expression(struct _mdi *mdi,
                                           struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-	mdi->channel[ch].expression = data->data.value;
-	_WM_AdjustChannelVolumes(mdi, ch);
+    mdi->channel[ch].expression = data->data.value;
+    _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_data_entry_fine(struct _mdi *mdi,
                                        struct _event_data *data) {
-	uint8_t ch = data->channel;
-	int data_tmp;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    uint8_t ch = data->channel;
+    int data_tmp;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-	if ((mdi->channel[ch].reg_non == 0)
-	  && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
-		data_tmp = mdi->channel[ch].pitch_range / 100;
-		mdi->channel[ch].pitch_range = (data_tmp * 100) + data->data.value;
-	/*	printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
-	/*	printf("Data Entry Fine: data: %li\n\r", data->data.value);*/
-	}
+    if ((mdi->channel[ch].reg_non == 0)
+      && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
+        data_tmp = mdi->channel[ch].pitch_range / 100;
+        mdi->channel[ch].pitch_range = (data_tmp * 100) + data->data.value;
+    /*  printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
+    /*  printf("Data Entry Fine: data: %li\n\r", data->data.value);*/
+    }
 }
 
 void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) {
-	struct _note *note_data = mdi->note;
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if (data->data.value > 63) {
-		mdi->channel[ch].hold = 1;
-	} else {
-		mdi->channel[ch].hold = 0;
-		if (note_data) {
-			do {
-				if ((note_data->noteid >> 8) == ch) {
-					if (note_data->hold & HOLD_OFF) {
-						if (note_data->modes & SAMPLE_ENVELOPE) {
-							if (note_data->modes & SAMPLE_CLAMPED) {
-								if (note_data->env < 5) {
-									note_data->env = 5;
-									if (note_data->env_level
+    struct _note *note_data = mdi->note;
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if (data->data.value > 63) {
+        mdi->channel[ch].hold = 1;
+    } else {
+        mdi->channel[ch].hold = 0;
+        if (note_data) {
+            do {
+                if ((note_data->noteid >> 8) == ch) {
+                    if (note_data->hold & HOLD_OFF) {
+                        if (note_data->modes & SAMPLE_ENVELOPE) {
+                            if (note_data->modes & SAMPLE_CLAMPED) {
+                                if (note_data->env < 5) {
+                                    note_data->env = 5;
+                                    if (note_data->env_level
                                         > note_data->sample->env_target[5]) {
-										note_data->env_inc =
+                                        note_data->env_inc =
                                         -note_data->sample->env_rate[5];
-									} else {
-										note_data->env_inc =
+                                    } else {
+                                        note_data->env_inc =
                                         note_data->sample->env_rate[5];
-									}
-								}
-/*
+                                    }
+                                }
+                            /*
                             } else if (note_data->modes & SAMPLE_SUSTAIN) {
                                 if (note_data->env < 3) {
                                     note_data->env = 3;
@@ -881,159 +871,159 @@ void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) {
                                         note_data->sample->env_rate[5];
                                     }
                                 }
- */
+                            */
                             } else if (note_data->env < 4) {
-								note_data->env = 4;
-								if (note_data->env_level
+                                note_data->env = 4;
+                                if (note_data->env_level
                                     > note_data->sample->env_target[4]) {
-									note_data->env_inc =
+                                    note_data->env_inc =
                                     -note_data->sample->env_rate[4];
-								} else {
-									note_data->env_inc =
+                                } else {
+                                    note_data->env_inc =
                                     note_data->sample->env_rate[4];
-								}
-							}
-						} else {
-							if (note_data->modes & SAMPLE_LOOP) {
-								note_data->modes ^= SAMPLE_LOOP;
-							}
-							note_data->env_inc = 0;
-						}
-					}
-					note_data->hold = 0x00;
-				}
-				note_data = note_data->next;
-			} while (note_data);
-		}
-	}
+                                }
+                            }
+                        } else {
+                            if (note_data->modes & SAMPLE_LOOP) {
+                                note_data->modes ^= SAMPLE_LOOP;
+                            }
+                            note_data->env_inc = 0;
+                        }
+                    }
+                    note_data->hold = 0x00;
+                }
+                note_data = note_data->next;
+            } while (note_data);
+        }
+    }
 }
 
 void _WM_do_control_data_increment(struct _mdi *mdi,
                                       struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if ((mdi->channel[ch].reg_non == 0)
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if ((mdi->channel[ch].reg_non == 0)
         && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
-		if (mdi->channel[ch].pitch_range < 0x3FFF)
-			mdi->channel[ch].pitch_range++;
-	}
+        if (mdi->channel[ch].pitch_range < 0x3FFF)
+            mdi->channel[ch].pitch_range++;
+    }
 }
 
 void _WM_do_control_data_decrement(struct _mdi *mdi,
                                       struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if ((mdi->channel[ch].reg_non == 0)
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if ((mdi->channel[ch].reg_non == 0)
         && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
-		if (mdi->channel[ch].pitch_range > 0)
-			mdi->channel[ch].pitch_range--;
-	}
+        if (mdi->channel[ch].pitch_range > 0)
+            mdi->channel[ch].pitch_range--;
+    }
 }
 void _WM_do_control_non_registered_param_fine(struct _mdi *mdi,
                                             struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-	mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x3F80)
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x3F80)
     | data->data.value;
     mdi->channel[ch].reg_non = 1;
 }
 
 void _WM_do_control_non_registered_param_course(struct _mdi *mdi,
                                      struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-	mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x7F)
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x7F)
     | (data->data.value << 7);
-	mdi->channel[ch].reg_non = 1;
+    mdi->channel[ch].reg_non = 1;
 }
 
 void _WM_do_control_registered_param_fine(struct _mdi *mdi,
-                                             struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-	mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x3F80)
+                                          struct _event_data *data) {
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x3F80)
     | data->data.value;
-	mdi->channel[ch].reg_non = 0;
+    mdi->channel[ch].reg_non = 0;
 }
 
 void _WM_do_control_registered_param_course(struct _mdi *mdi,
-                                               struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-	mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x7F)
+                                            struct _event_data *data) {
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x7F)
     | (data->data.value << 7);
-	mdi->channel[ch].reg_non = 0;
+    mdi->channel[ch].reg_non = 0;
 }
 
 void _WM_do_control_channel_sound_off(struct _mdi *mdi,
-                                         struct _event_data *data) {
-	struct _note *note_data = mdi->note;
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if (note_data) {
-		do {
-			if ((note_data->noteid >> 8) == ch) {
-				note_data->active = 0;
-				if (note_data->replay) {
-					note_data->replay = NULL;
-				}
-			}
-			note_data = note_data->next;
-		} while (note_data);
-	}
+                                      struct _event_data *data) {
+    struct _note *note_data = mdi->note;
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if (note_data) {
+        do {
+            if ((note_data->noteid >> 8) == ch) {
+                note_data->active = 0;
+                if (note_data->replay) {
+                    note_data->replay = NULL;
+                }
+            }
+            note_data = note_data->next;
+        } while (note_data);
+    }
 }
 
 void _WM_do_control_channel_controllers_off(struct _mdi *mdi,
-                                               struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	mdi->channel[ch].expression = 127;
-	mdi->channel[ch].pressure = 127;
-	mdi->channel[ch].reg_data = 0xffff;
-	mdi->channel[ch].pitch_range = 200;
-	mdi->channel[ch].pitch = 0;
-	mdi->channel[ch].pitch_adjust = 0;
-	mdi->channel[ch].hold = 0;
+                                            struct _event_data *data) {
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    mdi->channel[ch].expression = 127;
+    mdi->channel[ch].pressure = 127;
+    mdi->channel[ch].reg_data = 0xffff;
+    mdi->channel[ch].pitch_range = 200;
+    mdi->channel[ch].pitch = 0;
+    mdi->channel[ch].pitch_adjust = 0;
+    mdi->channel[ch].hold = 0;
 
     _WM_AdjustChannelVolumes(mdi, ch);
 }
 
 void _WM_do_control_channel_notes_off(struct _mdi *mdi,
-                                         struct _event_data *data) {
-	struct _note *note_data = mdi->note;
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if (mdi->channel[ch].isdrum)
-		return;
-	if (note_data) {
-		do {
-			if ((note_data->noteid >> 8) == ch) {
-				if (!note_data->hold) {
-					if (note_data->modes & SAMPLE_ENVELOPE) {
-						if (note_data->env < 5) {
-							if (note_data->env_level
+                                      struct _event_data *data) {
+    struct _note *note_data = mdi->note;
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if (mdi->channel[ch].isdrum)
+        return;
+    if (note_data) {
+        do {
+            if ((note_data->noteid >> 8) == ch) {
+                if (!note_data->hold) {
+                    if (note_data->modes & SAMPLE_ENVELOPE) {
+                        if (note_data->env < 5) {
+                            if (note_data->env_level
                                 > note_data->sample->env_target[5]) {
-								note_data->env_inc =
+                                note_data->env_inc =
                                 -note_data->sample->env_rate[5];
-							} else {
-								note_data->env_inc =
+                            } else {
+                                note_data->env_inc =
                                 note_data->sample->env_rate[5];
-							}
-							note_data->env = 5;
-						}
-					}
-				} else {
-					note_data->hold |= HOLD_OFF;
-				}
-			}
-			note_data = note_data->next;
-		} while (note_data);
-	}
+                            }
+                            note_data->env = 5;
+                        }
+                    }
+                } else {
+                    note_data->hold |= HOLD_OFF;
+                }
+            }
+            note_data = note_data->next;
+        } while (note_data);
+    }
 }
 
 void _WM_do_control_dummy(struct _mdi *mdi, struct _event_data *data) {
@@ -1043,30 +1033,28 @@ void _WM_do_control_dummy(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
 }
 
 
 void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
-	uint8_t ch = data->channel;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-	if (!mdi->channel[ch].isdrum) {
-		mdi->channel[ch].patch = _WM_get_patch_data(mdi,
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    if (!mdi->channel[ch].isdrum) {
+        mdi->channel[ch].patch = _WM_get_patch_data(mdi,
                                                 ((mdi->channel[ch].bank << 8) | data->data.value));
-	} else {
-		mdi->channel[ch].bank = data->data.value;
-	}
+    } else {
+        mdi->channel[ch].bank = data->data.value;
+    }
 }
 
 void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
-	uint8_t ch = data->channel;
-	struct _note *note_data = mdi->note;
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    uint8_t ch = data->channel;
+    struct _note *note_data = mdi->note;
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
 
-	mdi->channel[ch].pressure = data->data.value;
+    mdi->channel[ch].pressure = data->data.value;
 
-    
     while (note_data) {
         if ((note_data->noteid >> 8) == ch) {
             note_data->velocity = data->data.value & 0xff;
@@ -1081,76 +1069,76 @@ void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
 }
 
 void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data) {
-	struct _note *note_data = mdi->note;
-	uint8_t ch = data->channel;
-    
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-	mdi->channel[ch].pitch = data->data.value - 0x2000;
-    
-	if (mdi->channel[ch].pitch < 0) {
-		mdi->channel[ch].pitch_adjust = mdi->channel[ch].pitch_range
+    struct _note *note_data = mdi->note;
+    uint8_t ch = data->channel;
+
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+    mdi->channel[ch].pitch = data->data.value - 0x2000;
+
+    if (mdi->channel[ch].pitch < 0) {
+        mdi->channel[ch].pitch_adjust = mdi->channel[ch].pitch_range
         * mdi->channel[ch].pitch / 8192;
-	} else {
-		mdi->channel[ch].pitch_adjust = mdi->channel[ch].pitch_range
+    } else {
+        mdi->channel[ch].pitch_adjust = mdi->channel[ch].pitch_range
         * mdi->channel[ch].pitch / 8191;
-	}
-    
-	if (note_data) {
-		do {
-			if ((note_data->noteid >> 8) == ch) {
-				note_data->sample_inc = get_inc(mdi, note_data);
-			}
-			note_data = note_data->next;
-		} while (note_data);
-	}
+    }
+
+    if (note_data) {
+        do {
+            if ((note_data->noteid >> 8) == ch) {
+                note_data->sample_inc = get_inc(mdi, note_data);
+            }
+            note_data = note_data->next;
+        } while (note_data);
+    }
 }
 
 void _WM_do_sysex_roland_drum_track(struct _mdi *mdi, struct _event_data *data) {
-	uint8_t ch = data->channel;
-    
-	MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
-    
-	if (data->data.value > 0) {
-		mdi->channel[ch].isdrum = 1;
-		mdi->channel[ch].patch = NULL;
-	} else {
-		mdi->channel[ch].isdrum = 0;
-		mdi->channel[ch].patch = _WM_get_patch_data(mdi, 0);
-	}
+    uint8_t ch = data->channel;
+
+    MIDI_EVENT_DEBUG(__FUNCTION__,ch, data->data.value);
+
+    if (data->data.value > 0) {
+        mdi->channel[ch].isdrum = 1;
+        mdi->channel[ch].patch = NULL;
+    } else {
+        mdi->channel[ch].isdrum = 0;
+        mdi->channel[ch].patch = _WM_get_patch_data(mdi, 0);
+    }
 }
 
 void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
-	int i;
-    
+    int i;
+
     if (data != NULL) {
         MIDI_EVENT_DEBUG(__FUNCTION__,data->channel, data->data.value);
     } else {
         MIDI_EVENT_DEBUG(__FUNCTION__,0, 0);
     }
 
-	for (i = 0; i < 16; i++) {
-		mdi->channel[i].bank = 0;
-		if (i != 9) {
-			mdi->channel[i].patch = _WM_get_patch_data(mdi, 0);
-		} else {
-			mdi->channel[i].patch = NULL;
-		}
-		mdi->channel[i].hold = 0;
-		mdi->channel[i].volume = 100;
-		mdi->channel[i].pressure = 127;
-		mdi->channel[i].expression = 127;
-		mdi->channel[i].balance = 64;
-		mdi->channel[i].pan = 64;
-		mdi->channel[i].pitch = 0;
-		mdi->channel[i].pitch_range = 200;
-		mdi->channel[i].reg_data = 0xFFFF;
-		mdi->channel[i].isdrum = 0;
-	}
+    for (i = 0; i < 16; i++) {
+        mdi->channel[i].bank = 0;
+        if (i != 9) {
+            mdi->channel[i].patch = _WM_get_patch_data(mdi, 0);
+        } else {
+            mdi->channel[i].patch = NULL;
+        }
+        mdi->channel[i].hold = 0;
+        mdi->channel[i].volume = 100;
+        mdi->channel[i].pressure = 127;
+        mdi->channel[i].expression = 127;
+        mdi->channel[i].balance = 64;
+        mdi->channel[i].pan = 64;
+        mdi->channel[i].pitch = 0;
+        mdi->channel[i].pitch_range = 200;
+        mdi->channel[i].reg_data = 0xFFFF;
+        mdi->channel[i].isdrum = 0;
+    }
     /* I would not expect notes to be active when this event
      triggers but we'll adjust active notes as well just in case */
     _WM_AdjustChannelVolumes(mdi,16); // A setting > 15 adjusts all channels
-    
-	mdi->channel[9].isdrum = 1;
+
+    mdi->channel[9].isdrum = 1;
 }
 
 void _WM_do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
@@ -1183,7 +1171,6 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1197,7 +1184,6 @@ void _WM_do_meta_tempo(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1211,7 +1197,6 @@ void _WM_do_meta_timesignature(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1225,7 +1210,6 @@ void _WM_do_meta_keysignature(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1239,7 +1223,6 @@ void _WM_do_meta_sequenceno(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1253,7 +1236,6 @@ void _WM_do_meta_channelprefix(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1267,7 +1249,6 @@ void _WM_do_meta_portprefix(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1281,7 +1262,6 @@ void _WM_do_meta_smpteoffset(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1309,7 +1289,6 @@ void _WM_do_meta_copyright(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1323,7 +1302,6 @@ void _WM_do_meta_trackname(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1337,7 +1315,6 @@ void _WM_do_meta_instrumentname(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1364,7 +1341,6 @@ void _WM_do_meta_marker(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
@@ -1378,20 +1354,19 @@ void _WM_do_meta_cuepoint(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    
     UNUSED(mdi);
     return;
 }
 
 void _WM_ResetToStart(struct _mdi *mdi) {
     struct _event * event = NULL;
-    
-	mdi->current_event = mdi->events;
-	mdi->samples_to_mix = 0;
-	mdi->extra_info.current_sample = 0;
-    
-	_WM_do_sysex_gm_reset(mdi, NULL);
-    
+
+    mdi->current_event = mdi->events;
+    mdi->samples_to_mix = 0;
+    mdi->extra_info.current_sample = 0;
+
+    _WM_do_sysex_gm_reset(mdi, NULL);
+
     if (_WM_MixerOptions & WM_MO_SKIPSILENTSTART) {
         event = mdi->events;
         //Scan for first note on
@@ -1409,95 +1384,92 @@ void _WM_ResetToStart(struct _mdi *mdi) {
 
 int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_midi_divisions;
-		mdi->events[mdi->event_count - 1].event_data.channel = 0;
-		mdi->events[mdi->event_count - 1].event_data.data.value = divisions;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_midi_divisions;
-		mdi->events[mdi->event_count].event_data.channel = 0;
-		mdi->events[mdi->event_count].event_data.data.value = divisions;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_midi_divisions;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data.value = divisions;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_midi_divisions;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data.value = divisions;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel,
-                              uint8_t note, uint8_t velocity) {
+                           uint8_t note, uint8_t velocity) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_note_off;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8)
-        | velocity;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_note_off;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_note_off;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8) | velocity;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_note_off;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_noteon(struct _mdi *mdi, uint8_t channel,
                              uint8_t note, uint8_t velocity) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_note_on;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8)
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_note_on;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8)
         | velocity;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_note_on;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-    
-	if (mdi->channel[channel].isdrum)
-		_WM_load_patch(mdi, ((mdi->channel[channel].bank << 8) | (note | 0x80)));
-	return (0);
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_note_on;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+
+    if (mdi->channel[channel].isdrum)
+        _WM_load_patch(mdi, ((mdi->channel[channel].bank << 8) | (note | 0x80)));
+    return (0);
 }
 
 static int midi_setup_aftertouch(struct _mdi *mdi, uint8_t channel,
                                  uint8_t note, uint8_t pressure) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_aftertouch;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8)
-        | pressure;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_aftertouch;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data.value = (note << 8) | pressure;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_aftertouch;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8) | pressure;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_aftertouch;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data.value = (note << 8) | pressure;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
                               uint8_t controller, uint8_t setting) {
-	void (*tmp_event)(struct _mdi *mdi, struct _event_data *data) = NULL;
+    void (*tmp_event)(struct _mdi *mdi, struct _event_data *data) = NULL;
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, controller);
-    
-	switch (controller) {
+
+    switch (controller) {
         /*
          **********************************************************************
          FIXME: Need to add dummy events for MIDI events we don't support.
-         
          There is no reason not to store unsupported events in light of our
          out to midi option.
          **********************************************************************
@@ -1559,229 +1531,226 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
             tmp_event = *_WM_do_control_dummy;
             break;
     }
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = tmp_event;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].do_event = tmp_event;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
         if (tmp_event != *_WM_do_control_dummy) {
             mdi->events[mdi->event_count - 1].event_data.data.value = setting;
         } else {
             mdi->events[mdi->event_count - 1].event_data.data.value = (controller << 8) | setting;
         }
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = tmp_event;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		if (tmp_event != *_WM_do_control_dummy) {
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = tmp_event;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        if (tmp_event != *_WM_do_control_dummy) {
             mdi->events[mdi->event_count].event_data.data.value = setting;
         } else {
             mdi->events[mdi->event_count].event_data.data.value = (controller << 8) | setting;
         }
         mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_patch(struct _mdi *mdi, uint8_t channel, uint8_t patch) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, patch);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_patch;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data.value = patch;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_patch;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data.value = patch;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	if (mdi->channel[channel].isdrum) {
-		mdi->channel[channel].bank = patch;
-	} else {
-		_WM_load_patch(mdi, ((mdi->channel[channel].bank << 8) | patch));
-		mdi->channel[channel].patch = _WM_get_patch_data(mdi,
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_patch;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data.value = patch;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_patch;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data.value = patch;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    if (mdi->channel[channel].isdrum) {
+        mdi->channel[channel].bank = patch;
+    } else {
+        _WM_load_patch(mdi, ((mdi->channel[channel].bank << 8) | patch));
+        mdi->channel[channel].patch = _WM_get_patch_data(mdi,
                                                      ((mdi->channel[channel].bank << 8) | patch));
-	}
-	return (0);
+    }
+    return (0);
 }
 
 static int midi_setup_channel_pressure(struct _mdi *mdi, uint8_t channel,
                                        uint8_t pressure) {
-    
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, pressure);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_channel_pressure;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data.value = pressure;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_channel_pressure;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data.value = pressure;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-    
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_channel_pressure;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data.value = pressure;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_channel_pressure;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data.value = pressure;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_pitch(struct _mdi *mdi, uint8_t channel, uint16_t pitch) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, pitch);
     if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_pitch;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data.value = pitch;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_pitch;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data.value = pitch;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_pitch;
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data.value = pitch;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_pitch;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data.value = pitch;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
                                               uint8_t channel, uint16_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, setting);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event =
+        mdi->events[mdi->event_count - 1].do_event =
         *_WM_do_sysex_roland_drum_track;
-		mdi->events[mdi->event_count - 1].event_data.channel = channel;
-		mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_drum_track;
-		mdi->events[mdi->event_count].event_data.channel = channel;
-		mdi->events[mdi->event_count].event_data.data.value = setting;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-    
-	if (setting > 0) {
-		mdi->channel[channel].isdrum = 1;
-	} else {
-		mdi->channel[channel].isdrum = 0;
-	}
-    
-	return (0);
+        mdi->events[mdi->event_count - 1].event_data.channel = channel;
+        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_drum_track;
+        mdi->events[mdi->event_count].event_data.channel = channel;
+        mdi->events[mdi->event_count].event_data.data.value = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+
+    if (setting > 0) {
+        mdi->channel[channel].isdrum = 1;
+    } else {
+        mdi->channel[channel].isdrum = 0;
+    }
+    return (0);
 }
 
 static int midi_setup_sysex_gm_reset(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
 
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_gm_reset;
-		mdi->events[mdi->event_count - 1].event_data.channel = 0;
-		mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
-		mdi->events[mdi->event_count].event_data.channel = 0;
-		mdi->events[mdi->event_count].event_data.data.value = 0;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_gm_reset;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data.value = 0;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_roland_reset;
-		mdi->events[mdi->event_count - 1].event_data.channel = 0;
-		mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
-		mdi->events[mdi->event_count].event_data.channel = 0;
-		mdi->events[mdi->event_count].event_data.data.value = 0;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_roland_reset;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data.value = 0;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_sysex_yamaha_reset(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_yamaha_reset;
-		mdi->events[mdi->event_count - 1].event_data.channel = 0;
-		mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
-		mdi->events[mdi->event_count].event_data.channel = 0;
-		mdi->events[mdi->event_count].event_data.data.value = 0;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_yamaha_reset;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data.value = 0;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 
 static int midi_setup_endoftrack(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-   	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_endoftrack;
-		mdi->events[mdi->event_count - 1].event_data.channel = 0;
-		mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_meta_endoftrack;
-		mdi->events[mdi->event_count].event_data.channel = 0;
-		mdi->events[mdi->event_count].event_data.data.value = 0;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_endoftrack;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_endoftrack;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data.value = 0;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,setting);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_tempo;
-		mdi->events[mdi->event_count - 1].event_data.channel = 0;
-		mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_meta_tempo;
-		mdi->events[mdi->event_count].event_data.channel = 0;
-		mdi->events[mdi->event_count].event_data.data.value = setting;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_tempo;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_tempo;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data.value = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
-	if ((mdi->event_count)
+    if ((mdi->event_count)
         && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_timesignature;
-		mdi->events[mdi->event_count - 1].event_data.channel = 0;
-		mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-	} else {
-		_WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *_WM_do_meta_timesignature;
-		mdi->events[mdi->event_count].event_data.channel = 0;
-		mdi->events[mdi->event_count].event_data.data.value = setting;
-		mdi->events[mdi->event_count].samples_to_next = 0;
-		mdi->event_count++;
-	}
-	return (0);
+        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_timesignature;
+        mdi->events[mdi->event_count - 1].event_data.channel = 0;
+        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
+    } else {
+        _WM_CheckEventMemoryPool(mdi);
+        mdi->events[mdi->event_count].do_event = *_WM_do_meta_timesignature;
+        mdi->events[mdi->event_count].event_data.channel = 0;
+        mdi->events[mdi->event_count].event_data.data.value = setting;
+        mdi->events[mdi->event_count].samples_to_next = 0;
+        mdi->event_count++;
+    }
+    return (0);
 }
 
 static int midi_setup_keysignature(struct _mdi *mdi, uint32_t setting) {
@@ -1876,7 +1845,7 @@ static int midi_setup_smpteoffset(struct _mdi *mdi, uint32_t setting) {
 
 static void strip_text(char * text) {
     char * ch_loc = NULL;
-    
+
     ch_loc = strrchr(text, '\n');
     while (ch_loc != NULL) {
         *ch_loc = ' ';
@@ -2024,67 +1993,67 @@ static int midi_setup_cuepoint(struct _mdi *mdi, char * text) {
 
 struct _mdi *
 _WM_initMDI(void) {
-	struct _mdi *mdi;
-    
-	mdi = malloc(sizeof(struct _mdi));
-	memset(mdi, 0, (sizeof(struct _mdi)));
-    
-	mdi->extra_info.copyright = NULL;
-	mdi->extra_info.mixer_options = _WM_MixerOptions;
-    
-	_WM_load_patch(mdi, 0x0000);
-    
-	mdi->events_size = MEM_CHUNK;
-	mdi->events = malloc(mdi->events_size * sizeof(struct _event));
-	mdi->events[0].do_event = NULL;
-	mdi->events[0].event_data.channel = 0;
-	mdi->events[0].event_data.data.value = 0;
-	mdi->events[0].samples_to_next = 0;
-	mdi->event_count++;
-    
-	mdi->current_event = mdi->events;
-	mdi->samples_to_mix = 0;
-	mdi->extra_info.current_sample = 0;
-	mdi->extra_info.total_midi_time = 0;
-	mdi->extra_info.approx_total_samples = 0;
-    
+    struct _mdi *mdi;
+
+    mdi = malloc(sizeof(struct _mdi));
+    memset(mdi, 0, (sizeof(struct _mdi)));
+
+    mdi->extra_info.copyright = NULL;
+    mdi->extra_info.mixer_options = _WM_MixerOptions;
+
+    _WM_load_patch(mdi, 0x0000);
+
+    mdi->events_size = MEM_CHUNK;
+    mdi->events = malloc(mdi->events_size * sizeof(struct _event));
+    mdi->events[0].do_event = NULL;
+    mdi->events[0].event_data.channel = 0;
+    mdi->events[0].event_data.data.value = 0;
+    mdi->events[0].samples_to_next = 0;
+    mdi->event_count++;
+
+    mdi->current_event = mdi->events;
+    mdi->samples_to_mix = 0;
+    mdi->extra_info.current_sample = 0;
+    mdi->extra_info.total_midi_time = 0;
+    mdi->extra_info.approx_total_samples = 0;
+
     mdi->dyn_vol = 1.0;
     mdi->dyn_vol_adjust = 0.0;
     mdi->dyn_vol_peak = 0;
     mdi->dyn_vol_to_reach = 1.0;
-    
+
     mdi->lyric = NULL;
-    
+
     _WM_do_sysex_gm_reset(mdi, NULL);
-    
+
     UNUSED(midi_setup_endoftrack(mdi));
-    
-	return (mdi);
+
+    return (mdi);
 }
 
 void _WM_freeMDI(struct _mdi *mdi) {
-	struct _sample *tmp_sample;
-	uint32_t i;
-    
-	if (mdi->patch_count != 0) {
-		_WM_Lock(&_WM_patch_lock);
-		for (i = 0; i < mdi->patch_count; i++) {
-			mdi->patches[i]->inuse_count--;
-			if (mdi->patches[i]->inuse_count == 0) {
-				/* free samples here */
-				while (mdi->patches[i]->first_sample) {
-					tmp_sample = mdi->patches[i]->first_sample->next;
-					free(mdi->patches[i]->first_sample->data);
-					free(mdi->patches[i]->first_sample);
-					mdi->patches[i]->first_sample = tmp_sample;
-				}
-				mdi->patches[i]->loaded = 0;
-			}
-		}
-		_WM_Unlock(&_WM_patch_lock);
-		free(mdi->patches);
-	}
-    
+    struct _sample *tmp_sample;
+    uint32_t i;
+
+    if (mdi->patch_count != 0) {
+        _WM_Lock(&_WM_patch_lock);
+        for (i = 0; i < mdi->patch_count; i++) {
+            mdi->patches[i]->inuse_count--;
+            if (mdi->patches[i]->inuse_count == 0) {
+                /* free samples here */
+                while (mdi->patches[i]->first_sample) {
+                    tmp_sample = mdi->patches[i]->first_sample->next;
+                    free(mdi->patches[i]->first_sample->data);
+                    free(mdi->patches[i]->first_sample);
+                    mdi->patches[i]->first_sample = tmp_sample;
+                }
+                mdi->patches[i]->loaded = 0;
+            }
+        }
+        _WM_Unlock(&_WM_patch_lock);
+        free(mdi->patches);
+    }
+
     if (mdi->event_count != 0) {
         for (i = 0; i < mdi->event_count; i++) {
             // Free up the string event storage
@@ -2107,17 +2076,17 @@ void _WM_freeMDI(struct _mdi *mdi) {
             }
         }
     }
-    
-	free(mdi->events);
-	_WM_free_reverb(mdi->reverb);
-	free(mdi->mix_buffer);
-	free(mdi);
+
+    free(mdi->events);
+    _WM_free_reverb(mdi->reverb);
+    free(mdi->mix_buffer);
+    free(mdi);
 }
 
 void _WM_Add_Silence_To_End(struct _mdi *mdi) {
     uint32_t count = 0;
     uint32_t last_noteoff = 0;
-    
+
     uint32_t samples_from_last_note_off = 0;
     uint32_t sample_decay = 0;
     uint32_t largest_sample_decay = 0;
@@ -2145,12 +2114,12 @@ void _WM_Add_Silence_To_End(struct _mdi *mdi) {
         }
         count++;
     }
-    
+
     if (largest_sample_decay) {
         mdi->events[last_noteoff].samples_to_next += largest_sample_decay;
         mdi->extra_info.approx_total_samples += largest_sample_decay;
     }
-    
+
     return;
 }
 
@@ -2159,7 +2128,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
      Only add standard MIDI and Sysex events in here.
      Non-standard events need to be handled by calling function
      to avoid compatibility issues.
-     
+
      TODO:
      Add value limit checks
      */
@@ -2169,7 +2138,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
     uint8_t data_1 = 0;
     uint8_t data_2 = 0;
     char *text = NULL;
-    
+
     if (event_data[0] >= 0x80) {
         command = *event_data & 0xf0;
         channel = *event_data++ & 0x0f;
@@ -2178,7 +2147,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
         command = running_event & 0xf0;
         channel = running_event & 0x0f;
     }
-    
+
     switch(command) {
         case 0x80:
         _SETUP_NOTEOFF:
@@ -2231,14 +2200,12 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 if ((event_data[0] == 0x00) && (event_data[1] == 0x02)) {
                     /*
                      Sequence Number
-                     
                      We only setting this up here for WM_Event2Midi function
                      */
                     midi_setup_sequenceno(mdi, ((event_data[2] << 8) + event_data[3]));
                     ret_cnt += 4;
                 } else if (event_data[0] == 0x01) {
                     /* Text Event */
-                    
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
@@ -2252,17 +2219,16 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    
+
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_text(mdi, text);
-                    
+
                     ret_cnt += tmp_length;
-                    
+
                 } else if (event_data[0] == 0x02) {
                     /* Copyright Event */
-                    
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
@@ -2276,7 +2242,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    
+
                     /* Copy copyright info in the getinfo struct */
                     if (mdi->extra_info.copyright) {
                         mdi->extra_info.copyright = realloc(mdi->extra_info.copyright,(strlen(mdi->extra_info.copyright) + 1 + tmp_length + 1));
@@ -2288,18 +2254,17 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                         memcpy(mdi->extra_info.copyright, event_data, tmp_length);
                         mdi->extra_info.copyright[tmp_length] = '\0';
                     }
-                    
+
                     // NOTE: free'd when events are cleared during closure of mdi
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_copyright(mdi, text);
-                    
+
                     ret_cnt += tmp_length;
-                    
+
                 } else if (event_data[0] == 0x03) {
                     /* Track Name Event */
-                    
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
@@ -2313,17 +2278,16 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    
+
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_trackname(mdi, text);
-                    
+
                     ret_cnt += tmp_length;
-                    
+
                 } else if (event_data[0] == 0x04) {
                     /* Instrument Name Event */
-                    
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
@@ -2337,17 +2301,16 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    
+
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_instrumentname(mdi, text);
-                    
+
                     ret_cnt += tmp_length;
-                    
+
                 } else if (event_data[0] == 0x05) {
                     /* Lyric Event */
-                    
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
@@ -2361,17 +2324,16 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    
+
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_lyric(mdi, text);
-                    
+
                     ret_cnt += tmp_length;
-                    
+
                 } else if (event_data[0] == 0x06) {
                     /* Marker Event */
-                    
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
@@ -2385,17 +2347,16 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    
+
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_marker(mdi, text);
-                    
+
                     ret_cnt += tmp_length;
-                    
+
                 } else if (event_data[0] == 0x07) {
                     /* Cue Point Event */
-                    
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
@@ -2409,18 +2370,17 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    
+
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_cuepoint(mdi, text);
-                    
+
                     ret_cnt += tmp_length;
-                    
+
                 } else if ((event_data[0] == 0x20) && (event_data[1] == 0x01)) {
                     /*
                      Channel Prefix
-                     
                      We only setting this up here for WM_Event2Midi function
                      */
                     midi_setup_channelprefix(mdi, event_data[2]);
@@ -2428,7 +2388,6 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 } else if ((event_data[0] == 0x21) && (event_data[1] == 0x01)) {
                     /*
                      Port Prefix
-                     
                      We only setting this up here for WM_Event2Midi function
                      */
                     midi_setup_portprefix(mdi, event_data[2]);
@@ -2436,16 +2395,13 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 } else if ((event_data[0] == 0x2F) && (event_data[1] == 0x00)) {
                     /*
                      End of Track
-                     
                      Deal with this inside calling function
                      */
                     ret_cnt += 2;
                 } else if ((event_data[0] == 0x51) && (event_data[1] == 0x03)) {
                     /*
                      Tempo
-                     
                      Deal with this inside calling function.
-                     
                      We only setting this up here for _WM_Event2Midi function
                      */
                     _WM_midi_setup_tempo(mdi, ((event_data[2] << 16) + (event_data[3] << 8) + event_data[4]));
@@ -2453,22 +2409,19 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 } else if ((event_data[0] == 0x54) && (event_data[1] == 0x05)) {
                     /*
                      SMPTE Offset
-                     
                      We only setting this up here for WM_Event2Midi function
-                     
                      */
                     midi_setup_smpteoffset(mdi, ((event_data[3] << 24) + (event_data[4] << 16) + (event_data[5] << 8) + event_data[6]));
-                    
-                    /* 
+
+                    /*
                      Because this has 5 bytes of data we gonna "hack" it a little
                      */
                     mdi->events[mdi->events_size - 1].event_data.channel = event_data[2];
-                    
+
                     ret_cnt += 7;
                 } else if ((event_data[0] == 0x58) && (event_data[1] == 0x04)) {
                     /*
                      Time Signature
-                                          
                      We only setting this up here for WM_Event2Midi function
                      */
                     midi_setup_timesignature(mdi, ((event_data[2] << 24) + (event_data[3] << 16) + (event_data[4] << 8) + event_data[5]));
@@ -2476,7 +2429,6 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 } else if ((event_data[0] == 0x59) && (event_data[1] == 0x02)) {
                     /*
                      Key Signature
-                     
                      We only setting this up here for WM_Event2Midi function
                      */
                     midi_setup_keysignature(mdi, ((event_data[2] << 8) + event_data[3]));
@@ -2498,7 +2450,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     ret_cnt++;
                     ret_cnt += tmp_length;
                 }
-                
+
             } else if ((channel == 0) || (channel == 7)) {
                 /*
                  Sysex Events
@@ -2506,8 +2458,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 uint32_t sysex_len = 0;
                 uint8_t *sysex_store = NULL;
                 uint32_t sysex_store_len = 0;
-                
-                
+
                 if (*event_data > 0x7f) {
                     do {
                         sysex_len = (sysex_len << 7) + (*event_data & 0x7F);
@@ -2518,11 +2469,11 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 sysex_len = (sysex_len << 7) + (*event_data & 0x7F);
                 event_data++;
                 ret_cnt++;
-                
+
                 sysex_store = realloc(sysex_store,sizeof(uint8_t) * (sysex_store_len + sysex_len));
                 memcpy(&sysex_store[sysex_store_len], event_data, sysex_len);
                 sysex_store_len += sysex_len;
-                
+
                 if (sysex_store[sysex_store_len - 1] == 0xF7) {
                     uint8_t rolandsysexid[] = { 0x41, 0x10, 0x42, 0x12 };
                     if (memcmp(rolandsysexid, sysex_store, 4) == 0) {
@@ -2561,7 +2512,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                         // For non-Roland Sysex Messages
                         int8_t gm_reset[] = {0x7e, 0x7f, 0x09, 0x01, 0xf7};
                         int8_t yamaha_reset[] = {0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
-                        
+
                         if (memcmp(gm_reset, sysex_store, 5) == 0) {
                             // GM Reset
                             midi_setup_sysex_gm_reset(mdi);
@@ -2573,19 +2524,17 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 }
                 free(sysex_store);
                 sysex_store = NULL;
-                //                sysex_store_len = 0;
-                //                event_data += sysex_len;
+            //  sysex_store_len = 0;
+            //  event_data += sysex_len;
                 ret_cnt += sysex_len;
             } else {
                 _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
                 return 0;
             }
-            
             break;
-        default:
-            // Should NEVER get here
+
+        default: /* Should NEVER get here */
             return 0;
-            
     }
     return ret_cnt;
 }
