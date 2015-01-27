@@ -21,12 +21,12 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <unistd.h> // DEBUG
 
 #include "common.h"
 #include "wm_error.h"

@@ -213,6 +213,7 @@ ENDIF(WANT_PLAYERSTATIC)
 
 IF(WANT_DEVTEST)
     SET(wildmidi-devtest_executable_SRCS
+        ${GETOPT}
         DevTest.c
     )
     ADD_EXECUTABLE(wildmidi-devtest
@@ -245,4 +246,3 @@ IF(UNIX AND NOT APPLE)
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
 ENDIF(UNIX AND NOT APPLE)
-

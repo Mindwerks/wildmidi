@@ -22,6 +22,8 @@
 
 /* XMIDI Converter */
 
+#include "config.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

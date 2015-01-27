@@ -32,20 +32,30 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/*#include "config.h"*/
+
 #include <errno.h>
 #include <fcntl.h>
-#include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
-#ifndef _WIN32
-# include <pwd.h>
+#ifdef _WIN32
+#include <getopt_long.h>
+#include <io.h>
+#undef close
+#define close _close
+#undef open
+#define open _open
+#undef read
+#define read _read
+#else /* unixish: */
+#include <unistd.h>
+#include <pwd.h>
+#include <getopt.h>
 #endif
 
 #define UNUSED(x) (void)(x)
