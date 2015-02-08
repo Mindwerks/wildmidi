@@ -559,7 +559,7 @@ void _WM_do_note_off_extra(struct _note *nte) {
 
         } else if (nte->hold) {
             nte->hold |= HOLD_OFF;
-/*
+
         } else if (nte->modes & SAMPLE_SUSTAIN) {
             if (nte->env < 3) {
                 nte->env = 3;
@@ -569,7 +569,7 @@ void _WM_do_note_off_extra(struct _note *nte) {
                     nte->env_inc = nte->sample->env_rate[3];
                 }
             }
-*/
+
         } else if (nte->modes & SAMPLE_CLAMPED) {
             if (nte->env < 5) {
                 nte->env = 5;

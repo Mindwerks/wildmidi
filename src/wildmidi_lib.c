@@ -781,6 +781,19 @@ static int add_handle(void * handle) {
     return (0);
 }
 
+//#define DEBUG_RESAMPLE
+
+#ifdef DEBUG_RESAMPLE
+#define RESAMPLE_DEBUGI(dx,dy) fprintf(stderr,"\r%s, %i\n",dx,dy)
+#define RESAMPLE_DEBUGS(dx) fprintf(stderr,"\r%s\n",dx)
+
+#else
+#define RESAMPLE_DEBUGI(dx,dy)
+#define RESAMPLE_DEBUGS(dx)
+
+#endif
+
+
 
 static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
     uint32_t buffer_used = 0;
@@ -851,12 +864,9 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         do {
             note_data = mdi->note;
             left_mix = right_mix = 0;
-            //DEBUG*********
-            //fprintf(stderr,"\r\nSAMPLES_TO_MIX %i\r\n",count);
-
+            RESAMPLE_DEBUGI("SAMPLES_TO_MIX",count);
             if (__builtin_expect((note_data != NULL), 1)) {
-                //DEBUG*********
-                //fprintf(stderr,"\r\nProcessing Notes\r\n");
+                RESAMPLE_DEBUGS("Processing Notes");
                 while (note_data) {
                     /*
                      * ===================
@@ -874,53 +884,63 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                      * sample position checking
                      * ========================
                      */
+#ifdef DEBUG_RESAMPLE
+                    fprintf(stderr,"\r\n%d -> INC %i, ENV %i, LEVEL %i, TARGET %d, RATE %i, SAMPLE POS %i, SAMPLE LENGTH %i, PREMIX %i (%i:%i)",
+                            (uint32_t)note_data,
+                            note_data->env_inc,
+                            note_data->env, note_data->env_level,
+                            note_data->sample->env_target[note_data->env],
+                            note_data->sample->env_rate[note_data->env],
+                            note_data->sample_pos,
+                            note_data->sample->data_length,
+                            premix, left_mix, right_mix);
+                    if (note_data->modes & SAMPLE_LOOP)
+                        fprintf(stderr,", LOOP %i + %i",
+                                note_data->sample->loop_start,
+                                note_data->sample->loop_size);
+                    fprintf(stderr,"\r\n");
+#endif
+
                     note_data->sample_pos += note_data->sample_inc;
-                    if (__builtin_expect(
-                            (note_data->sample_pos > note_data->sample->loop_end),
-                            0)) {
-                        if (note_data->modes & SAMPLE_LOOP) {
-                            note_data->sample_pos =
-                                    note_data->sample->loop_start
-                                            + ((note_data->sample_pos
-                                                    - note_data->sample->loop_start)
-                                                    % note_data->sample->loop_size);
-                        } else if (__builtin_expect(
-                                (note_data->sample_pos
-                                        >= note_data->sample->data_length),
-                                0)) {
-                            goto _END_THIS_NOTE;
+                    
+                    if (note_data->modes & SAMPLE_LOOP) {
+                        if (__builtin_expect(
+                                             (note_data->sample_pos > note_data->sample->loop_end),
+                                             0)) {
+                            note_data->sample_pos = note_data->sample->loop_start
+                                + ((note_data->sample_pos
+                                    - note_data->sample->loop_start)
+                                % note_data->sample->loop_size);
                         }
+
+                    } else if (__builtin_expect(
+                                                  (note_data->sample_pos
+                                                   >= note_data->sample->data_length),
+                                                  0)) {
+                        goto _END_THIS_NOTE;
                     }
 
+
                     if (__builtin_expect((note_data->env_inc == 0), 0)) {
-/*                        fprintf(stderr,"\r\nINC = 0, ENV %i, LEVEL %i, TARGET %d, RATE %i\r\n",
-                                note_data->env, note_data->env_level,
-                                note_data->sample->env_target[note_data->env],
-                                note_data->sample->env_rate[note_data->env]);
-*/
                         note_data = note_data->next;
+                        RESAMPLE_DEBUGS("Next Note: 0 env_inc");
                         continue;
                     }
 
                     note_data->env_level += note_data->env_inc;
-                    //DEBUG*************
-/*                    fprintf(stderr,"\r\nENV %i, LEVEL %i, TARGET %d, RATE %i, INC %i\r\n",
-                            note_data->env, note_data->env_level,
-                            note_data->sample->env_target[note_data->env],
-                            note_data->sample->env_rate[note_data->env],
-                            note_data->env_inc
-                            );
-*/
+
                     if (note_data->env_inc < 0) {
                         if (note_data->env_level
                             > note_data->sample->env_target[note_data->env]) {
                             note_data = note_data->next;
+                            RESAMPLE_DEBUGS("Next Note: env_lvl > env_target");
                             continue;
                         }
                     } else if (note_data->env_inc > 0) {
                         if (note_data->env_level
                             < note_data->sample->env_target[note_data->env]) {
                             note_data = note_data->next;
+                            RESAMPLE_DEBUGS("Next Note: env_lvl < env_target");
                             continue;
                         }
                     }
@@ -934,6 +954,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                         if (!(note_data->modes & SAMPLE_ENVELOPE)) {
                             note_data->env_inc = 0;
                             note_data = note_data->next;
+                            RESAMPLE_DEBUGS("Next Note: No Envelope");
                             continue;
                         }
                         break;
@@ -942,6 +963,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                         if (note_data->modes & SAMPLE_SUSTAIN) {
                             note_data->env_inc = 0;
                             note_data = note_data->next;
+                            RESAMPLE_DEBUGS("Next Note: SAMPLE_SUSTAIN");
                             continue;
                         } else if (note_data->modes & SAMPLE_CLAMPED) {
                             note_data->env = 5;
@@ -965,6 +987,8 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                             note_data->modes ^= SAMPLE_LOOP;
                         note_data->env_inc = 0;
                         note_data = note_data->next;
+                        RESAMPLE_DEBUGS("Next Note: Sample Release");
+
                         continue;
                     case 6:
                         _END_THIS_NOTE:
@@ -1010,6 +1034,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                                 note_data = note_data->next;
                             }
                         }
+                        RESAMPLE_DEBUGS("Next Note: Killed Off Note");
                         continue;
                     }
                     note_data->env++;
@@ -1028,6 +1053,12 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                         }
                     }
                     note_data = note_data->next;
+#ifdef DEBUG_RESAMPLE
+                    if (note_data != NULL)
+                        RESAMPLE_DEBUGI("Next Note: Next ENV ", note_data->env);
+                    else
+                        RESAMPLE_DEBUGS("Next Note: Next ENV");
+#endif
                     continue;
                 }
             }

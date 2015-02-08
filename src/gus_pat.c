@@ -851,30 +851,20 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) {
                 uint8_t tmp_hack_rate = 0;
 
-                //DEBUG
-                //printf("\r\n 40 < 41 %s\r\n",filename);
-
                 if (env_time_table[gus_patch[gus_ptr + 41]] < env_time_table[gus_patch[gus_ptr + 42]]) {
-                    // 40 < 41  && 41 < 42
+                    // 1 2 3
                     tmp_hack_rate = gus_patch[gus_ptr + 40];
                     gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
                     gus_patch[gus_ptr + 42] = tmp_hack_rate;
-                } else if (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]]) {
-                    // 40 < 41 && 41 == 42
-                    tmp_hack_rate = gus_patch[gus_ptr + 41];
-                    gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 40];
-                    gus_patch[gus_ptr + 42] = gus_patch[gus_ptr + 40];
-                    gus_patch[gus_ptr + 40] = tmp_hack_rate;
                 } else {
-                    // 40 < 41  && 41 > 42
                     if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 42]]) {
-                        // 40 < 41  && 41 > 42 && 40 < 42
+                        // 1 3 2
                         tmp_hack_rate = gus_patch[gus_ptr + 40];
                         gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
                         gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
                         gus_patch[gus_ptr + 42] = tmp_hack_rate;
                     } else {
-                        // 40 < 41  && 41 > 42 && ((40 > 42) || (40 == 42))
+                        // 2 3 1
                         tmp_hack_rate = gus_patch[gus_ptr + 40];
                         gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
                         gus_patch[gus_ptr + 41] = tmp_hack_rate;
@@ -883,17 +873,14 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             } else if (env_time_table[gus_patch[gus_ptr + 41]] < env_time_table[gus_patch[gus_ptr + 42]]) {
                 uint8_t tmp_hack_rate = 0;
 
-                //DEBUG
-                //printf("\r\n 41 < 42 %s\r\n",filename);
-
                 if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 42]]) {
-                    // 40 > 41 && 40 < 42 && 41 < 42
+                    // 2 1 3
                     tmp_hack_rate = gus_patch[gus_ptr + 40];
                     gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
                     gus_patch[gus_ptr + 42] = gus_patch[gus_ptr + 41];
                     gus_patch[gus_ptr + 41] = tmp_hack_rate;
                 } else {
-                    // 40 > 41 && 40 > 42 && 41 < 42
+                    // 3 1 2
                     tmp_hack_rate = gus_patch[gus_ptr + 41];
                     gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
                     gus_patch[gus_ptr + 42] = tmp_hack_rate;
