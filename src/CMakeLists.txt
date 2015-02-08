@@ -222,8 +222,7 @@ IF(WANT_DEVTEST)
     )
 ENDIF(WANT_DEVTEST)
 
-# add install target:
-# *nix OSes
+# install target (*nix OSes)
 IF(UNIX AND NOT APPLE)
     # install our libraries
     IF(WANT_STATIC)
@@ -249,8 +248,7 @@ IF(UNIX AND NOT APPLE)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
 ENDIF(UNIX AND NOT APPLE)
 
-# add install target:
-# WINDOWS and MINGW-w64
+# install target (Windows: MinGW or MinGW-w64)
 IF(WIN32 AND CMAKE_COMPILER_IS_MINGW)
     IF("${CMAKE_INSTALL_PREFIX}" STREQUAL "")
         MESSAGE("INSTALL PREFIX IS EMPTY")
@@ -281,4 +279,3 @@ IF(WIN32 AND CMAKE_COMPILER_IS_MINGW)
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/man/ DESTINATION share/man)
 ENDIF(WIN32 AND CMAKE_COMPILER_IS_MINGW)
-
