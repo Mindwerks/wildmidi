@@ -539,7 +539,7 @@ float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
 }
 
 void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
-    if (mdi->event_count >= mdi->events_size) {
+    if ((mdi->event_count + 1) >= mdi->events_size) {
         mdi->events_size += MEM_CHUNK;
         mdi->events = realloc(mdi->events,
                               (mdi->events_size * sizeof(struct _event)));
@@ -1368,7 +1368,14 @@ void _WM_ResetToStart(struct _mdi *mdi) {
     mdi->extra_info.current_sample = 0;
 
     _WM_do_sysex_gm_reset(mdi, NULL);
-
+    
+    // Ensure last event is NULL
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = NULL;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = 0;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    
     if (_WM_MixerOptions & WM_MO_SKIPSILENTSTART) {
         event = mdi->events;
         //Scan for first note on
@@ -1386,59 +1393,37 @@ void _WM_ResetToStart(struct _mdi *mdi) {
 
 int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_midi_divisions;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = divisions;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_midi_divisions;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = divisions;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_midi_divisions;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = divisions;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel,
                            uint8_t note, uint8_t velocity) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_note_off;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8) | velocity;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_note_off;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_note_off;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_noteon(struct _mdi *mdi, uint8_t channel,
                              uint8_t note, uint8_t velocity) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_note_on;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8)
-        | velocity;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_note_on;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
-
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_note_on;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
+    
     if (mdi->channel[channel].isdrum)
         _WM_load_patch(mdi, ((mdi->channel[channel].bank << 8) | (note | 0x80)));
     return (0);
@@ -1447,19 +1432,12 @@ static int midi_setup_noteon(struct _mdi *mdi, uint8_t channel,
 static int midi_setup_aftertouch(struct _mdi *mdi, uint8_t channel,
                                  uint8_t note, uint8_t pressure) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_aftertouch;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        mdi->events[mdi->event_count - 1].event_data.data.value = (note << 8) | pressure;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_aftertouch;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        mdi->events[mdi->event_count].event_data.data.value = (note << 8) | pressure;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_aftertouch;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    mdi->events[mdi->event_count].event_data.data.value = (note << 8) | pressure;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
@@ -1533,45 +1511,29 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
             tmp_event = *_WM_do_control_dummy;
             break;
     }
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = tmp_event;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        if (tmp_event != *_WM_do_control_dummy) {
-            mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-        } else {
-            mdi->events[mdi->event_count - 1].event_data.data.value = (controller << 8) | setting;
-        }
+    
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = tmp_event;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    if (tmp_event != *_WM_do_control_dummy) {
+        mdi->events[mdi->event_count].event_data.data.value = setting;
     } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = tmp_event;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        if (tmp_event != *_WM_do_control_dummy) {
-            mdi->events[mdi->event_count].event_data.data.value = setting;
-        } else {
-            mdi->events[mdi->event_count].event_data.data.value = (controller << 8) | setting;
-        }
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
+        mdi->events[mdi->event_count].event_data.data.value = (controller << 8) | setting;
     }
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_patch(struct _mdi *mdi, uint8_t channel, uint8_t patch) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, patch);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_patch;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        mdi->events[mdi->event_count - 1].event_data.data.value = patch;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_patch;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        mdi->events[mdi->event_count].event_data.data.value = patch;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_patch;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    mdi->events[mdi->event_count].event_data.data.value = patch;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
+    
     if (mdi->channel[channel].isdrum) {
         mdi->channel[channel].bank = patch;
     } else {
@@ -1585,58 +1547,36 @@ static int midi_setup_patch(struct _mdi *mdi, uint8_t channel, uint8_t patch) {
 static int midi_setup_channel_pressure(struct _mdi *mdi, uint8_t channel,
                                        uint8_t pressure) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, pressure);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_channel_pressure;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        mdi->events[mdi->event_count - 1].event_data.data.value = pressure;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_channel_pressure;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        mdi->events[mdi->event_count].event_data.data.value = pressure;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_channel_pressure;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    mdi->events[mdi->event_count].event_data.data.value = pressure;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_pitch(struct _mdi *mdi, uint8_t channel, uint16_t pitch) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, pitch);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_pitch;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        mdi->events[mdi->event_count - 1].event_data.data.value = pitch;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_pitch;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        mdi->events[mdi->event_count].event_data.data.value = pitch;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_pitch;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    mdi->events[mdi->event_count].event_data.data.value = pitch;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
                                               uint8_t channel, uint16_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event =
-        *_WM_do_sysex_roland_drum_track;
-        mdi->events[mdi->event_count - 1].event_data.channel = channel;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_drum_track;
-        mdi->events[mdi->event_count].event_data.channel = channel;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
-
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = _WM_do_sysex_roland_drum_track;
+    mdi->events[mdi->event_count].event_data.channel = channel;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
+    
     if (setting > 0) {
         mdi->channel[channel].isdrum = 1;
     } else {
@@ -1648,200 +1588,123 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 static int midi_setup_sysex_gm_reset(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
 
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_gm_reset;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = 0;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = 0;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_roland_reset;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = 0;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = 0;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_sysex_yamaha_reset(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_sysex_yamaha_reset;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = 0;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_sysex_roland_reset;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = 0;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 
 static int midi_setup_endoftrack(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_endoftrack;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = 0;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_endoftrack;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = 0;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_endoftrack;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = 0;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_tempo;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_tempo;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_tempo;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_timesignature;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_timesignature;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_timesignature;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_keysignature(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_keysignature;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_keysignature;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_keysignature;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_sequenceno(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_sequenceno;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_sequenceno;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_sequenceno;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_channelprefix(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_channelprefix;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_channelprefix;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_channelprefix;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_portprefix(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_portprefix;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_portprefix;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_portprefix;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_smpteoffset(struct _mdi *mdi, uint32_t setting) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0, setting);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_smpteoffset;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.value = setting;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_smpteoffset;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.value = setting;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_smpteoffset;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.value = setting;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
@@ -1863,133 +1726,84 @@ static void strip_text(char * text) {
 static int midi_setup_text(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     strip_text(text);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_text;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.string = text;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_text;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.string = text;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_text;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.string = text;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_copyright(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     strip_text(text);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_copyright;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.string = text;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_copyright;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.string = text;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_copyright;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.string = text;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_trackname(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     strip_text(text);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_trackname;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.string = text;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_trackname;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.string = text;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_trackname;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.string = text;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_instrumentname(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     strip_text(text);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_instrumentname;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.string = text;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_instrumentname;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.string = text;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_instrumentname;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.string = text;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_lyric(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     strip_text(text);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_lyric;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.string = text;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_lyric;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.string = text;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_lyric;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.string = text;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_marker(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     strip_text(text);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_marker;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.string = text;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_marker;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.string = text;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_marker;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.string = text;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
 static int midi_setup_cuepoint(struct _mdi *mdi, char * text) {
     MIDI_EVENT_SDEBUG(__FUNCTION__,0, text);
     strip_text(text);
-    if ((mdi->event_count)
-        && (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-        mdi->events[mdi->event_count - 1].do_event = *_WM_do_meta_cuepoint;
-        mdi->events[mdi->event_count - 1].event_data.channel = 0;
-        mdi->events[mdi->event_count - 1].event_data.data.string = text;
-    } else {
-        _WM_CheckEventMemoryPool(mdi);
-        mdi->events[mdi->event_count].do_event = *_WM_do_meta_cuepoint;
-        mdi->events[mdi->event_count].event_data.channel = 0;
-        mdi->events[mdi->event_count].event_data.data.string = text;
-        mdi->events[mdi->event_count].samples_to_next = 0;
-        mdi->event_count++;
-    }
+    _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].do_event = *_WM_do_meta_cuepoint;
+    mdi->events[mdi->event_count].event_data.channel = 0;
+    mdi->events[mdi->event_count].event_data.data.string = text;
+    mdi->events[mdi->event_count].samples_to_next = 0;
+    mdi->event_count++;
     return (0);
 }
 
