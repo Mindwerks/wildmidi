@@ -188,7 +188,7 @@ extern void _WM_ResetToStart(struct _mdi *mdi);
 extern void _WM_CheckEventMemoryPool(struct _mdi *mdi);
 extern void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch);
 extern void _WM_do_note_off_extra(struct _note *nte);
-extern void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used);
+// extern void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used);
 extern void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch);
 extern float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo);
 extern void _WM_Add_Silence_To_End(struct _mdi *mdi);

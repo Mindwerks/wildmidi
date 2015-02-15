@@ -320,6 +320,9 @@ uint32_t _WM_freq_table[] = { 837201792, 837685632, 838169728,
     1665721984, 1666683520, 1667646720, 1668610560, 1669574784, 1670539776,
     1671505024, 1672470016, 1673436544, };
 
+
+
+#if 0 // NOT NEEDED USES TOO MUCH CPU
 /*
  */
 void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used) {
@@ -449,6 +452,8 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
     mdi->dyn_vol = volume;
     mdi->dyn_vol_to_reach = volume_to_reach;
 }
+
+#endif
 
 /* Should be called in any function that effects note volumes */
 void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
@@ -1821,13 +1826,9 @@ _WM_initMDI(void) {
 
     mdi->events_size = MEM_CHUNK;
     mdi->events = malloc(mdi->events_size * sizeof(struct _event));
-    mdi->events[0].do_event = NULL;
-    mdi->events[0].event_data.channel = 0;
-    mdi->events[0].event_data.data.value = 0;
-    mdi->events[0].samples_to_next = 0;
-    mdi->event_count++;
-
+    mdi->event_count = 0;
     mdi->current_event = mdi->events;
+    
     mdi->samples_to_mix = 0;
     mdi->extra_info.current_sample = 0;
     mdi->extra_info.total_midi_time = 0;

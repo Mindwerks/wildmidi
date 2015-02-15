@@ -837,7 +837,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                 mdi->current_event = event;
             }
 
-            if (!mdi->samples_to_mix) {
+            if (__builtin_expect((!mdi->samples_to_mix), 0)) {
                 if (mdi->extra_info.current_sample >= mdi->extra_info.approx_total_samples) {
                     break;
                 } else if ((mdi->extra_info.approx_total_samples
@@ -903,7 +903,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 
                     note_data->sample_pos += note_data->sample_inc;
                     
-                    if (note_data->modes & SAMPLE_LOOP) {
+                    if (__builtin_expect((note_data->modes & SAMPLE_LOOP), 1)) {
                         if (__builtin_expect(
                                              (note_data->sample_pos > note_data->sample->loop_end),
                                              0)) {
@@ -930,15 +930,15 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                     note_data->env_level += note_data->env_inc;
 
                     if (note_data->env_inc < 0) {
-                        if (note_data->env_level
-                            > note_data->sample->env_target[note_data->env]) {
+                        if (__builtin_expect((note_data->env_level
+                            > note_data->sample->env_target[note_data->env]), 0)) {
                             note_data = note_data->next;
                             RESAMPLE_DEBUGS("Next Note: env_lvl > env_target");
                             continue;
                         }
                     } else if (note_data->env_inc > 0) {
-                        if (note_data->env_level
-                            < note_data->sample->env_target[note_data->env]) {
+                        if (__builtin_expect((note_data->env_level
+                            < note_data->sample->env_target[note_data->env]), 0)) {
                             note_data = note_data->next;
                             RESAMPLE_DEBUGS("Next Note: env_lvl < env_target");
                             continue;
@@ -1078,7 +1078,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         _WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
     }
 
-    _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
+    //_WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
 
     for (i = 0; i < buffer_used; i += 4) {
         left_mix = *tmp_buffer++;
@@ -1410,7 +1410,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
         _WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
     }
 
-    _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
+    // _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
 
     for (i = 0; i < buffer_used; i += 4) {
         left_mix = *tmp_buffer++;
