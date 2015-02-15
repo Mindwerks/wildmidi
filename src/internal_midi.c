@@ -543,7 +543,7 @@ float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
     return (samples_per_tick);
 }
 
-void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
+static void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
     if ((mdi->event_count + 1) >= mdi->events_size) {
         mdi->events_size += MEM_CHUNK;
         mdi->events = realloc(mdi->events,
@@ -1381,18 +1381,32 @@ void _WM_ResetToStart(struct _mdi *mdi) {
     mdi->events[mdi->event_count].event_data.data.value = 0;
     mdi->events[mdi->event_count].samples_to_next = 0;
     
-    if (_WM_MixerOptions & WM_MO_SKIPSILENTSTART) {
+    if (_WM_MixerOptions & WM_MO_STRIPSILENCE) {
         event = mdi->events;
-        //Scan for first note on
+        //Scan for first note on removing any samples as we go
         if (event->do_event != *_WM_do_note_on) {
             do {
-                event->do_event(mdi, &event->event_data);
-                mdi->extra_info.current_sample += event->samples_to_next;
+                if (event->samples_to_next != 0) {
+                    mdi->extra_info.approx_total_samples -= event->samples_to_next;
+                    event->samples_to_next = 0;
+                }
                 event++;
                 if (event == NULL) break;
             } while (event->do_event != *_WM_do_note_on);
-            mdi->current_event = event;
         }
+        
+        // Reverse scan for last note off removing any samples as we go
+        event = &mdi->events[mdi->event_count - 1];
+        if (event->do_event != *_WM_do_note_off) {
+            do {
+                mdi->extra_info.approx_total_samples -= event->samples_to_next;
+                event->samples_to_next = 0;
+                if (event == mdi->events) break; // just to be safe
+                event--;
+            } while (event->do_event != *_WM_do_note_off);
+        }
+        mdi->extra_info.approx_total_samples -= event->samples_to_next;
+        event->samples_to_next = 0;
     }
 }
 

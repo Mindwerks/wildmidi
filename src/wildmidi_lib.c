@@ -1736,7 +1736,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
         /* no, reset values to start as the beginning */
         count = *sample_pos;
         _WM_ResetToStart(handle);
-        if (_WM_MixerOptions & WM_MO_SKIPSILENTSTART) {
+        if (_WM_MixerOptions & WM_MO_STRIPSILENCE) {
             if (count < mdi->extra_info.current_sample) {
                 count = 0;
             } else {

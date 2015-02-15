@@ -1240,7 +1240,7 @@ int main(int argc, char **argv) {
             mixer_options |= WM_MO_TEXTASLYRIC;
             break;
         case 's': /* whole number tempo */
-            mixer_options |= WM_MO_SKIPSILENTSTART;
+            mixer_options |= WM_MO_STRIPSILENCE;
             break;
         default:
             do_syntax();

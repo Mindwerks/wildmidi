@@ -38,7 +38,7 @@
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB            0x0004
 #define WM_MO_ROUNDTEMPO        0x2000
-#define WM_MO_SKIPSILENTSTART   0x4000
+#define WM_MO_STRIPSILENCE      0x4000
 #define WM_MO_TEXTASLYRIC       0x8000
 
 /* conversion options */

@@ -856,6 +856,13 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                     tmp_hack_rate = gus_patch[gus_ptr + 40];
                     gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
                     gus_patch[gus_ptr + 42] = tmp_hack_rate;
+                } else if (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]]) {
+                    // 1 2 2
+                    tmp_hack_rate = gus_patch[gus_ptr + 40];
+                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
+                    gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
+                    gus_patch[gus_ptr + 42] = tmp_hack_rate;
+
                 } else {
                     if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 42]]) {
                         // 1 3 2
@@ -864,7 +871,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                         gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
                         gus_patch[gus_ptr + 42] = tmp_hack_rate;
                     } else {
-                        // 2 3 1
+                        // 2 3 1 or 1 2 1
                         tmp_hack_rate = gus_patch[gus_ptr + 40];
                         gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
                         gus_patch[gus_ptr + 41] = tmp_hack_rate;

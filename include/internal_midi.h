@@ -165,6 +165,10 @@ extern void _WM_do_meta_lyric(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_meta_marker(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_meta_cuepoint(struct _mdi *mdi, struct _event_data *data);
 
+/*
+ * We need to expose these fuctions for use on some or the parsers due to some
+ * formats not being able to trigger these events via _WM_Setup_Midi_Event.
+ */
 extern int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);
 
 /* ===================== */
@@ -185,7 +189,6 @@ extern struct _mdi * _WM_initMDI(void);
 extern void _WM_freeMDI(struct _mdi *mdi);
 extern uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event);
 extern void _WM_ResetToStart(struct _mdi *mdi);
-extern void _WM_CheckEventMemoryPool(struct _mdi *mdi);
 extern void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch);
 extern void _WM_do_note_off_extra(struct _note *nte);
 // extern void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buffer_used);
