@@ -40,7 +40,7 @@
 
 #define HOLD_OFF 0x02
 
-//#define DEBUG_MIDI
+// #define DEBUG_MIDI
 
 #ifdef DEBUG_MIDI
 #define MIDI_EVENT_DEBUG(dx,dy,dz) fprintf(stderr,"\r%s, 0x%.2x, 0x%.8x\n",dx,dy,dz)
@@ -1853,11 +1853,11 @@ _WM_initMDI(void) {
     mdi->dyn_vol_peak = 0;
     mdi->dyn_vol_to_reach = 1.0;
 
+    mdi->is_type2 = 0;
+    
     mdi->lyric = NULL;
 
     _WM_do_sysex_gm_reset(mdi, NULL);
-
-    UNUSED(midi_setup_endoftrack(mdi));
 
     return (mdi);
 }
@@ -2227,7 +2227,9 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                     /*
                      End of Track
                      Deal with this inside calling function
+                     We only setting this up here for _WM_Event2Midi function
                      */
+                    midi_setup_endoftrack(mdi);
                     ret_cnt += 2;
                 } else if ((event_data[0] == 0x51) && (event_data[1] == 0x03)) {
                     /*
@@ -2359,7 +2361,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
             //  event_data += sysex_len;
                 ret_cnt += sysex_len;
             } else {
-                _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta event)", 0);
+                _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta type event)", 0);
                 return 0;
             }
             break;

@@ -1151,7 +1151,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "vho:tx:g:f:lr:c:m:btak:p:ed:ns", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:f:lr:c:m:btak:p:ed:ns", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -1241,6 +1241,9 @@ int main(int argc, char **argv) {
             break;
         case 's': /* whole number tempo */
             mixer_options |= WM_MO_STRIPSILENCE;
+            break;
+        case '0': /* treat as type 2 midi when writing to file */
+            mixer_options |= WM_MO_SAVEASTYPE0;
             break;
         default:
             do_syntax();
@@ -1464,6 +1467,15 @@ int main(int argc, char **argv) {
                         seek_to_sample = wm_info->current_sample + rate;
                     }
                     WildMidi_FastSeek(midi_ptr, &seek_to_sample);
+                    break;
+                case '<':
+                    WildMidi_SongSeek (midi_ptr, -1);
+                    break;
+                case '>':
+                    WildMidi_SongSeek (midi_ptr, 1);
+                    break;
+                case '/':
+                    WildMidi_SongSeek (midi_ptr, 0);
                     break;
                 case 'm': /* save as midi */ {
                     int8_t *getmidibuffer = NULL;

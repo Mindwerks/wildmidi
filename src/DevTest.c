@@ -678,8 +678,7 @@ static void set_secs_per_tick (uint32_t divisions, uint32_t tempo) {
     /* Slow but needed for accuracy */
     microseconds_per_tick = (float) tempo / (float) divisions;
     secs_per_tick = microseconds_per_tick / 1000000.0f;
-    printf("Secs per tick: %f, Divisions: %u, tempo: %u\n",secs_per_tick, divisions, tempo);
-
+    
     return;
 }
 
@@ -692,7 +691,6 @@ static void add_time (int add_ticks) {
         time_secs -= (float)(add_mins * 60);
         time_mins += add_mins;
     }
-    printf("Ticks: %i\n",add_ticks);
     return;
 }
 
@@ -779,7 +777,6 @@ static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) 
         // Read Event
     _WM_READ_MUS_EVENT:
         if (verbose) {
-            //printf("@ 0x%.4x (%i) ", mus_data_ofs, (mus_data[mus_data_ofs] & 0x0f));
             display_time();
         }
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
@@ -1025,7 +1022,6 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
             }
             hmi_delta = (hmi_delta << 7) | (*hmi_data & 0x7F);
             if (verbose) {
-            //  printf("Delta: %u\n",hmi_delta);
                 add_and_display_time(hmi_delta);
             }
             hmi_data++;
@@ -1241,7 +1237,6 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
             hmp_var_len_val = hmp_var_len_val | ((*hmp_data++ & 0x7F) << var_len_shift);
             hmp_size--;
             if (verbose) {
-                //printf("delta: %u\n", hmp_var_len_val);
                 add_and_display_time(hmp_var_len_val);
             }
 
@@ -1460,7 +1455,8 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                         }
 
                     } else {
-                        display_time();
+                        if (verbose)
+                            display_time();
                         if ((check_ret = check_midi_event(xmidi_data, xmidi_size, 0, verbose, 0)) == -1) {
                             printf("Missing or Corrupt MIDI Data\n");
                             return -1;
@@ -1683,8 +1679,8 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 }
             }
             delta = (delta << 7) | (*midi_data & 0x7F);
-//          printf("0x%.2x\n",*midi_data);
-            add_and_display_time(delta);
+            if (verbose)
+                add_and_display_time(delta);
             midi_data++;
             if (midi_size == 0) {
                 printf("Corrupt Midi, Missing or Corrupt Track Data\n");

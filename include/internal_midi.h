@@ -107,6 +107,8 @@ struct _mdi {
     double dyn_vol_adjust;
     double dyn_vol;
     double dyn_vol_to_reach;
+    
+    uint8_t is_type2;
 
     char *lyric;
 };

@@ -61,6 +61,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     uint32_t xmi_lowestdelta = 0;
 
     uint8_t xmi_tempo_set = 0;
+    uint32_t xmi_evnt_cnt = 0;
 
 
     if (memcmp(xmi_data,"FORM",4)) {
@@ -194,6 +195,8 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
             } else if (!memcmp(xmi_data,"EVNT",4)) {
                 // EVNT is where all the MIDI music information is stored
                 xmi_data += 4;
+                
+                xmi_evnt_cnt++;
 
                 xmi_evntlen = *xmi_data++ << 24;
                 xmi_evntlen |= *xmi_data++ << 16;
@@ -346,7 +349,10 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_mdi->current_event = &xmi_mdi->events[0];
     xmi_mdi->samples_to_mix = 0;
     xmi_mdi->note = NULL;
-
+    /* More than 1 event form in XMI means treat as type 2 */
+    if (xmi_evnt_cnt > 1) {
+        xmi_mdi->is_type2 = 1;
+    }
     _WM_ResetToStart(xmi_mdi);
 
 _xmi_end:

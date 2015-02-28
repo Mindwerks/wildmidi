@@ -37,6 +37,7 @@
 #define WM_MO_LOG_VOLUME        0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB            0x0004
+#define WM_MO_SAVEASTYPE0       0x1000
 #define WM_MO_ROUNDTEMPO        0x2000
 #define WM_MO_STRIPSILENCE      0x4000
 #define WM_MO_TEXTASLYRIC       0x8000
@@ -109,6 +110,7 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
                                             uint8_t **out, uint32_t *size);
 WM_SYMBOL struct _WM_Info * WildMidi_GetInfo (midi * handle);
 WM_SYMBOL int WildMidi_FastSeek (midi * handle, unsigned long int *sample_pos);
+WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong);
 WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
 WM_SYMBOL char * WildMidi_GetLyric (midi * handle);
