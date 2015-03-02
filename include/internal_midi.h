@@ -172,6 +172,8 @@ extern void _WM_do_meta_cuepoint(struct _mdi *mdi, struct _event_data *data);
  * formats not being able to trigger these events via _WM_Setup_Midi_Event.
  */
 extern int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);
+extern int _WM_midi_setup_endoftrack(struct _mdi *mdi);
+extern int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting);
 
 /* ===================== */
 
@@ -179,7 +181,6 @@ extern int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t not
  * Only non-standard midi event or non-track event setup functions need to be here
  */
 extern int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions);
-extern int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting);
 
 /* ===================== */
 

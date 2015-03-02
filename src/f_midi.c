@@ -748,9 +748,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                     
                     running_event = 0;
                 }
-            } else {
-                goto NEXT_EVENT;
             }
+            goto NEXT_EVENT;
         } else if (event->do_event == _WM_do_meta_tempo) {
             // DEBUG
             // fprintf(stderr,"Tempo: %u\r\n",event->event_data.data);

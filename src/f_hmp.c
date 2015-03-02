@@ -270,37 +270,34 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                 }
             }
             do {
-                if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x2f) && (hmp_chunk[i][2] == 0x00)) {
-                    /* End of Chunk */
-                    end_of_chunks++;
-                    chunk_end[i] = 1;
+                if (((hmp_chunk[i][0] & 0xf0) == 0xb0 ) && ((hmp_chunk[i][1] == 110) || (hmp_chunk[i][1] == 111)) && (hmp_chunk[i][2] > 0x7f)) {
+                    // Reserved for loop markers
+                    // TODO: still deciding what to do about these
                     hmp_chunk[i] += 3;
-                    goto NEXT_CHUNK;
                 } else {
-                    if (((hmp_chunk[i][0] & 0xf0) == 0xb0 ) && ((hmp_chunk[i][1] == 110) || (hmp_chunk[i][1] == 111)) && (hmp_chunk[i][2] > 0x7f)) {
-                        // Reserved for loop markers
-                        // TODO: still deciding what to do about these
-                        hmp_chunk[i] += 3;
-                    } else {
-                        uint32_t setup_ret = 0;
+                    uint32_t setup_ret = 0;
 
-                        setup_ret = _WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], 0);
-                        if (setup_ret == 0) {
-                            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
-                            goto _hmp_end;
-                        }
-
-                        if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x51) && (hmp_chunk[i][2] == 0x03)) {
-                            /* Tempo */
-                            tempo_f = (float)((hmp_chunk[i][3] << 16) + (hmp_chunk[i][4] << 8)+ hmp_chunk[i][5]);
-                            if (tempo_f == 0.0)
-                                tempo_f = 500000.0;
-
-                            // DEBUG
-                            fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);
-                        }
-                        hmp_chunk[i] += setup_ret;
+                    if ((setup_ret = _WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], 0)) == 0) {
+                        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+                        goto _hmp_end;
                     }
+
+                    if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x2f) && (hmp_chunk[i][2] == 0x00)) {
+                        /* End of Chunk */
+                        end_of_chunks++;
+                        chunk_end[i] = 1;
+                        hmp_chunk[i] += 3;
+                        goto NEXT_CHUNK;
+                    } else if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x51) && (hmp_chunk[i][2] == 0x03)) {
+                        /* Tempo */
+                        tempo_f = (float)((hmp_chunk[i][3] << 16) + (hmp_chunk[i][4] << 8)+ hmp_chunk[i][5]);
+                        if (tempo_f == 0.0)
+                            tempo_f = 500000.0;
+
+                        // DEBUG
+                        fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);
+                    }
+                    hmp_chunk[i] += setup_ret;
                 }
                 var_len_shift = 0;
                 chunk_delta[i] = 0;

@@ -1638,8 +1638,7 @@ static int midi_setup_sysex_yamaha_reset(struct _mdi *mdi) {
     return (0);
 }
 
-
-static int midi_setup_endoftrack(struct _mdi *mdi) {
+int _WM_midi_setup_endoftrack(struct _mdi *mdi) {
     MIDI_EVENT_DEBUG(__FUNCTION__,0,0);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].do_event = *_WM_do_meta_endoftrack;
@@ -2229,7 +2228,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                      Deal with this inside calling function
                      We only setting this up here for _WM_Event2Midi function
                      */
-                    midi_setup_endoftrack(mdi);
+                    _WM_midi_setup_endoftrack(mdi);
                     ret_cnt += 2;
                 } else if ((event_data[0] == 0x51) && (event_data[1] == 0x03)) {
                     /*

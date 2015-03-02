@@ -217,19 +217,6 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                 hmi_data = hmi_base + hmi_track_offset[i];
                 hmi_delta[i] = 0;
 
-                if ((hmi_data[0] == 0xff) && (hmi_data[1] == 0x2f) && (hmi_data[2] == 0x00)) {
-                    hmi_track_end[i] = 1;
-                    hmi_tracks_ended++;
-                    for(j = 0; j < 128; j++) {
-                        hmi_tmp = (128 * i) + j;
-                        if (note[hmi_tmp].length) {
-                            _WM_midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
-                            note[hmi_tmp].length = 0;
-                        }
-                    }
-                    goto _hmi_next_track;
-                }
-
                 if (hmi_data[0] == 0xfe) {
                     // HMI only event of some sort.
                     if (hmi_data[1] == 0x10) {
@@ -246,6 +233,18 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     if ((setup_ret = _WM_SetupMidiEvent(hmi_mdi,hmi_data,hmi_running_event[i])) == 0) {
                         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                         goto _hmi_end;
+                    }
+                    if ((hmi_data[0] == 0xff) && (hmi_data[1] == 0x2f) && (hmi_data[2] == 0x00)) {
+                        hmi_track_end[i] = 1;
+                        hmi_tracks_ended++;
+                        for(j = 0; j < 128; j++) {
+                            hmi_tmp = (128 * i) + j;
+                            if (note[hmi_tmp].length) {
+                                _WM_midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
+                                note[hmi_tmp].length = 0;
+                            }
+                        }
+                        goto _hmi_next_track;
                     }
                     // Running event
                     // 0xff does not alter running event

@@ -348,6 +348,7 @@ _mus_end_of_song:
         _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _mus_end;
     }
+    _WM_midi_setup_endoftrack(mus_mdi);
     mus_mdi->extra_info.current_sample = 0;
     mus_mdi->current_event = &mus_mdi->events[0];
     mus_mdi->samples_to_mix = 0;
