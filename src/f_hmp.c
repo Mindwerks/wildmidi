@@ -75,7 +75,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     float sample_remainder = 0;
 
     if (memcmp(hmp_data, "HMIMIDIP", 8)) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
         return NULL;
     }
     hmp_data += 8;
@@ -95,7 +95,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     }
     for (i = 0; i < zero_cnt; i++) {
         if (hmp_data[i] != 0) {
-            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
             return NULL;
         }
     }
@@ -204,7 +204,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_ofs[i] += 4;
 
         if (chunk_length[i] > hmp_size) {
-            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
             goto _hmp_end;
         }
         hmp_size -= chunk_length[i];
@@ -278,7 +278,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                     uint32_t setup_ret = 0;
 
                     if ((setup_ret = _WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], 0)) == 0) {
-                        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+                        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                         goto _hmp_end;
                     }
 
@@ -332,7 +332,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     }
 
     if ((hmp_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _hmp_end;
     }
 

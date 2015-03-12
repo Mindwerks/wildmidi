@@ -65,7 +65,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
 
 
     if (memcmp(xmi_data,"FORM",4)) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
 
@@ -80,7 +80,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_size -= 4;
 
     if (memcmp(xmi_data,"XDIRINFO",8)) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
     xmi_data += 8;
@@ -96,7 +96,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     // number of forms contained after this point
     xmi_formcnt = *xmi_data++;
     if (xmi_formcnt == 0) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
     xmi_size--;
@@ -111,7 +111,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
 
 /* FIXME: Check: may not even need to process CAT information */
     if (memcmp(xmi_data,"CAT ",4)) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
     xmi_data += 4;
@@ -126,7 +126,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     UNUSED(xmi_catlen);
 
     if (memcmp(xmi_data,"XMID",4)) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
     }
     xmi_data += 4;
@@ -143,7 +143,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
 
     for (i = 0; i < xmi_formcnt; i++) {
         if (memcmp(xmi_data,"FORM",4)) {
-            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
             goto _xmi_end;
         }
         xmi_data += 4;
@@ -156,7 +156,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
         xmi_size -= 4;
 
         if (memcmp(xmi_data,"XMID",4)) {
-            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
             goto _xmi_end;
         }
         xmi_data += 4;
@@ -271,7 +271,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             }
                         }
                         if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data,0)) == 0) {
-                            _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+                            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                             goto _xmi_end;
                         }
 
@@ -333,7 +333,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 } while (xmi_evntlen);
 
             } else {
-                _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+                _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
                 goto _xmi_end;
             }
 
@@ -342,7 +342,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
 
     // Finalise mdi structure
     if ((xmi_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
-        _WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _xmi_end;
     }
     xmi_mdi->extra_info.current_sample = 0;

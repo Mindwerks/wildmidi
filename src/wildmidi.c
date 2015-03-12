@@ -1148,6 +1148,7 @@ int main(int argc, char **argv) {
     static int spinpoint = 0;
     unsigned long int seek_to_sample;
     int inpause = 0;
+    char * ret_err = NULL;
     long libraryver;
     char * lyric = NULL;
     char *last_lyric = NULL;
@@ -1346,6 +1347,7 @@ int main(int argc, char **argv) {
     WildMidi_MasterVolume(master_volume);
 
     while (optind < argc || test_midi) {
+        WildMidi_ClearError();
         if (!test_midi) {
             const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
 
@@ -1356,7 +1358,8 @@ int main(int argc, char **argv) {
             midi_ptr = WildMidi_Open(argv[optind]);
             optind++;
             if (midi_ptr == NULL) {
-                printf(" Skipping\r\n");
+                ret_err = WildMidi_GetError();
+                printf(" Skipping: %s\r\n",ret_err);
                 continue;
             }
         } else {
@@ -1504,6 +1507,9 @@ int main(int argc, char **argv) {
                     getmidiret = WildMidi_GetMidiOutput(midi_ptr, &getmidibuffer, &getmidisize);
                     if (getmidiret == -1) {
                         fprintf(stderr, "\r\n\nFAILED to convert events to midi\r\n");
+                        ret_err = WildMidi_GetError();
+                        fprintf(stderr, "%s\r\n",ret_err);
+                        WildMidi_ClearError();
                     } else {
                         char *real_file = FIND_LAST_DIRSEP(argv[optind-1]);
                         if (!real_file) real_file = argv[optind];
@@ -1585,7 +1591,8 @@ int main(int argc, char **argv) {
         }
         NEXTMIDI: fprintf(stderr, "\r\n");
         if (WildMidi_Close(midi_ptr) == -1) {
-            fprintf(stderr, "OOPS: failed closing midi handle!\r\n");
+            ret_err = WildMidi_GetError();
+            fprintf(stderr, "OOPS: failed closing midi handle!\r\n%s\r\n",ret_err);
         }
         memset(output_buffer, 0, 16384);
         send_output(output_buffer, 16384);
@@ -1599,8 +1606,11 @@ end1: memset(output_buffer, 0, 16384);
 #endif
 end2: close_output();
     free(output_buffer);
-    if (WildMidi_Shutdown() == -1)
-        fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n");
+    if (WildMidi_Shutdown() == -1) {
+        ret_err = WildMidi_GetError();
+        fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n%s\r\n", ret_err);
+        WildMidi_ClearError();
+    }
     wm_resetty();
 
     printf("\r\n");

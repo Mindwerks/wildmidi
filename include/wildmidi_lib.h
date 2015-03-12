@@ -114,6 +114,10 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong);
 WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
 WM_SYMBOL char * WildMidi_GetLyric (midi * handle);
+    
+WM_SYMBOL char * WildMidi_GetError (void);
+WM_SYMBOL void WildMidi_ClearError (void);
+
 
 /* NOTE: Not Yet Implemented Or Tested Properly */
 /* Due to delay in audio output in the player, this is not being developed

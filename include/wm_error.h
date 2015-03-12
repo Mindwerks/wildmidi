@@ -47,6 +47,11 @@ enum {
     WM_ERR_MAX
 };
 
+extern char * _WM_Global_ErrorS;
+extern int _WM_Global_ErrorI;
+
+extern void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, int wmerno, const char * wmfor, int error);
+
 extern void _WM_ERROR_NEW(const char * wmfmt, ...)
 #ifdef __GNUC__
         __attribute__((format(printf, 1, 2)))
