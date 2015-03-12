@@ -221,9 +221,28 @@ static void resume_output_nop(void) {
 static char midi_file[1024];
 
 static int write_midi_output(void *output_data, int output_size) {
+#ifdef __DJGPP__
+    struct ffblk f;
+#else
+    struct stat buffer_stat;
+#endif
+
+    
     if (midi_file[0] == '\0')
         return (-1);
 
+/*
+ * Test if file already exists 
+ */
+#ifdef __DJGPP__
+    if (findfirst(midi_file, &f, FA_ARCH | FA_RDONLY) == 0) {
+#else
+    if (stat(midi_file, &buffer_stat) == 0) {
+#endif
+        fprintf(stderr, "\rError: %s already exists\r\n", midi_file);
+        return (-1);
+    }
+    
 #if defined(_WIN32) || defined(__DJGPP__)
     audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
 #else
@@ -1496,7 +1515,7 @@ int main(int argc, char **argv) {
                         midi_file[strlen(real_file)-2] = 'i';
                         midi_file[strlen(real_file)-1] = 'd';
 
-                        printf("Writing %s: %u bytes.\r\n", midi_file, getmidisize);
+                        printf("\rWriting %s: %u bytes.\r\n", midi_file, getmidisize);
                         write_midi_output(getmidibuffer,getmidisize);
                         free(getmidibuffer);
                     }
