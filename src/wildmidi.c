@@ -40,6 +40,7 @@
 #undef getopt
 #define msleep(s) usleep((s)*1000)
 #include <io.h>
+#include <dir.h>
 #ifdef AUDIODRV_DOSSB
 #include "dossb.h"
 #endif
@@ -224,10 +225,9 @@ static int write_midi_output(void *output_data, int output_size) {
 #ifdef __DJGPP__
     struct ffblk f;
 #else
-    struct stat buffer_stat;
+    struct stat st;
 #endif
 
-    
     if (midi_file[0] == '\0')
         return (-1);
 
@@ -237,12 +237,12 @@ static int write_midi_output(void *output_data, int output_size) {
 #ifdef __DJGPP__
     if (findfirst(midi_file, &f, FA_ARCH | FA_RDONLY) == 0) {
 #else
-    if (stat(midi_file, &buffer_stat) == 0) {
+    if (stat(midi_file, &st) == 0) {
 #endif
         fprintf(stderr, "\rError: %s already exists\r\n", midi_file);
         return (-1);
     }
-    
+
 #if defined(_WIN32) || defined(__DJGPP__)
     audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
 #else
