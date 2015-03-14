@@ -832,9 +832,15 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                mdi->samples_to_mix = event->samples_to_next;
-                event++;
-                mdi->current_event = event;
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[1].do_event == NULL)) {
+                    _WM_ResetToStart(mdi);
+                    event = mdi->current_event;
+                
+                } else {
+                    mdi->samples_to_mix = event->samples_to_next;
+                    event++;
+                    mdi->current_event = event;
+                }
             }
 
             if (__builtin_expect((!mdi->samples_to_mix), 0)) {
@@ -1147,7 +1153,15 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                mdi->samples_to_mix = event->samples_to_next;
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[1].do_event == NULL)) {
+                    _WM_ResetToStart(mdi);
+                    event = mdi->current_event;
+                    
+                } else {
+                    mdi->samples_to_mix = event->samples_to_next;
+                    event++;
+                    mdi->current_event = event;
+                }
                 event++;
                 mdi->current_event = event;
             }
@@ -1975,12 +1989,12 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options, uint16_t setti
 
     mdi = (struct _mdi *) handle;
     _WM_Lock(&mdi->lock);
-    if ((!(options & 0x8007)) || (options & 0x7FF8)) {
+    if ((!(options & 0x800F)) || (options & 0x7FF0)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)", 0);
         _WM_Unlock(&mdi->lock);
         return (-1);
     }
-    if (setting & 0x7FF8) {
+    if (setting & 0x7FF0) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID_ARG, "(invalid setting)", 0);
         _WM_Unlock(&mdi->lock);
         return (-1);

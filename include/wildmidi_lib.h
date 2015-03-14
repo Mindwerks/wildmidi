@@ -37,6 +37,7 @@
 #define WM_MO_LOG_VOLUME        0x0001
 #define WM_MO_ENHANCED_RESAMPLING 0x0002
 #define WM_MO_REVERB            0x0004
+#define WM_MO_LOOP              0x0008
 #define WM_MO_SAVEASTYPE0       0x1000
 #define WM_MO_ROUNDTEMPO        0x2000
 #define WM_MO_STRIPSILENCE      0x4000

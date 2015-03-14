@@ -1530,6 +1530,12 @@ int main(int argc, char **argv) {
                           /* Enables/Disables the display of lyrics */
                     kareoke ^= 1;
                     break;
+                case 'o':
+                    WildMidi_SetOption(midi_ptr, WM_MO_LOOP,
+                                        ((mixer_options & WM_MO_LOOP) ^ WM_MO_LOOP));
+                    mixer_options ^= WM_MO_LOOP;
+                    break;
+    
                 default:
                     break;
                 }

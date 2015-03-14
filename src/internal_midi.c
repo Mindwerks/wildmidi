@@ -1915,7 +1915,6 @@ void _WM_freeMDI(struct _mdi *mdi) {
 
 void _WM_Add_Silence_To_End(struct _mdi *mdi) {
     uint32_t count = 0;
-    uint32_t last_noteoff = 0;
 
     uint32_t samples_from_last_note_off = 0;
     uint32_t sample_decay = 0;
@@ -1932,7 +1931,6 @@ void _WM_Add_Silence_To_End(struct _mdi *mdi) {
             if (sample_decay > largest_sample_decay) {
                 largest_sample_decay = (uint32_t)sample_decay;
             }
-            last_noteoff = count;
         }
         samples_from_last_note_off += mdi->events[count].samples_to_next;
         if (largest_sample_decay > 0) {
@@ -1946,7 +1944,7 @@ void _WM_Add_Silence_To_End(struct _mdi *mdi) {
     }
 
     if (largest_sample_decay) {
-        mdi->events[last_noteoff].samples_to_next += largest_sample_decay;
+        mdi->events[mdi->event_count - 1].samples_to_next += largest_sample_decay;
         mdi->extra_info.approx_total_samples += largest_sample_decay;
     }
 
