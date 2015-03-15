@@ -1534,7 +1534,7 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mix
         return (-1);
     }
 
-    if (mixer_options & 0x0FF8) {
+    if (mixer_options & 0x0FF0) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
                 0);
         WM_FreePatches();
