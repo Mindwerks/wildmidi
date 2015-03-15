@@ -222,6 +222,29 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
     return data;
 }
 
+static char check_notes[16][128];
+
+static void zero_check_notes(void) {
+        
+}
+    
+static int count_check_notes(void) {
+    int ch = 0;
+    int nt = 0;
+    
+    int notes_still_on = 0;
+    
+    for (ch = 0; ch < 16; ch++) {
+        for (nt = 0; nt < 128; nt++) {
+            if (check_notes[ch][nt] == 1) {
+                notes_still_on++;
+            }
+        }
+    }
+    
+    return notes_still_on;
+}
+    
 static int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
                              unsigned char running_event, int verbose, int options) {
     unsigned int rtn_cnt = 0;
@@ -263,6 +286,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 printf("Note Off: chan(%i) note(%i) vel(%i)\n",
                        (event & 0x0F), midi_data[0], midi_data[1]);
             rtn_cnt += 2;
+            check_notes[(event & 0x0F)][midi_data[0]] = 0;
             break;
         case 0x9:
             if ((midi_size < 2) || (midi_data[0] > 0x7F)
@@ -274,6 +298,11 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 printf("Note On: chan(%i) note(%i) vel(%i)\n",
                        (event & 0x0F), midi_data[0], midi_data[1]);
             rtn_cnt += 2;
+            if (midi_data[1] == 0) {
+                check_notes[(event & 0x0F)][midi_data[0]] = 0;
+            } else {
+                check_notes[(event & 0x0F)][midi_data[0]] = 1;
+            }
             break;
         case 0xA:
             if ((midi_size < 2) || (midi_data[0] > 0x7F)
@@ -1900,6 +1929,7 @@ int main(int argc, char ** argv) {
     int testret = 0;
     uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
     uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
+    int notes_still_on = 0;
 
     unsigned char *filebuffer = NULL;
     unsigned long int filesize = 0;
@@ -1932,22 +1962,31 @@ int main(int argc, char ** argv) {
 
     while (optind < argc) {
         printf("Testing: %s\n", argv[optind]);
+        zero_check_notes();
         if ((filebuffer = DT_BufferFile(argv[optind], &filesize)) != NULL) {
             if (memcmp(filebuffer,"HMIMIDIP", 8) == 0) {
                 testret = test_hmp(filebuffer, filesize, verbose);
+                notes_still_on = count_check_notes();
             } else if (memcmp(filebuffer, "HMI-MIDISONG061595", 18) == 0) {
                 testret = test_hmi(filebuffer, filesize, verbose);
+                notes_still_on = count_check_notes();
             } else if (memcmp(filebuffer, mus_hdr, 4) == 0) {
                 testret = test_mus(filebuffer, filesize, verbose);
+                notes_still_on = count_check_notes();
             } else if (memcmp(filebuffer, xmi_hdr, 4) == 0) {
                 testret = test_xmidi(filebuffer, filesize, verbose);
+                notes_still_on = count_check_notes();
             } else  if ((memcmp(filebuffer, "GF1PATCH110\0ID#000002", 22) == 0) ||
                         (memcmp(filebuffer, "GF1PATCH100\0ID#000002", 22) == 0)) {
                 testret = test_guspat(filebuffer, filesize, verbose);
             } else {
                 testret = test_midi(filebuffer, filesize, verbose);
+                notes_still_on = count_check_notes();
             }
             free(filebuffer);
+            if (notes_still_on) {
+                printf("%i notes still on after end of file\n");
+            }
             if (testret != 0) {
                 printf("FAILED: %s will not work correctly with WildMIDI\n\n",
                         argv[optind]);

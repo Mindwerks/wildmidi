@@ -1136,7 +1136,7 @@ int main(int argc, char **argv) {
     uint32_t pro_secs;
     uint32_t apr_mins;
     uint32_t apr_secs;
-    char modes[4];
+    char modes[5];
     uint32_t count_diff;
     uint8_t ch;
     uint8_t test_midi = 0;
@@ -1388,7 +1388,8 @@ int main(int argc, char **argv) {
         modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
         modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
         modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
-        modes[3] = '\0';
+        modes[3] = ' ';
+        modes[4] = '\0';
 
         printf("\r\n[Approx %2um %2us Total]\r\n", apr_mins, apr_secs);
         fprintf(stderr, "\r");
@@ -1534,6 +1535,7 @@ int main(int argc, char **argv) {
                     WildMidi_SetOption(midi_ptr, WM_MO_LOOP,
                                         ((mixer_options & WM_MO_LOOP) ^ WM_MO_LOOP));
                     mixer_options ^= WM_MO_LOOP;
+                    modes[3] = (mixer_options & WM_MO_LOOP)? 'o' : ' ';
                     break;
     
                 default:
