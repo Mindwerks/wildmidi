@@ -1985,7 +1985,7 @@ int main(int argc, char ** argv) {
             }
             free(filebuffer);
             if (notes_still_on) {
-                printf("%i notes still on after end of file\n");
+                printf("%i notes still on after end of file\n",notes_still_on);
             }
             if (testret != 0) {
                 printf("FAILED: %s will not work correctly with WildMIDI\n\n",
