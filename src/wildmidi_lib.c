@@ -835,7 +835,6 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                 if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[1].do_event == NULL)) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
-                
                 } else {
                     mdi->samples_to_mix = event->samples_to_next;
                     event++;
@@ -1156,14 +1155,11 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                 if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[1].do_event == NULL)) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
-                    
                 } else {
                     mdi->samples_to_mix = event->samples_to_next;
                     event++;
                     mdi->current_event = event;
                 }
-                event++;
-                mdi->current_event = event;
             }
 
             if (!mdi->samples_to_mix) {
