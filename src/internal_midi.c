@@ -472,6 +472,8 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
      */
     if (ch > 0x0f) ch = 0x0f;
 
+    if (nte->ignore_chan_events) return;
+    
     pan_ofs = mdi->channel[ch].balance + mdi->channel[ch].pan - 64;
 
     vol_ofs = (nte->velocity * ((mdi->channel[ch].expression * mdi->channel[ch].volume) / 127)) / 127;
@@ -522,8 +524,10 @@ void _WM_AdjustChannelVolumes(struct _mdi *mdi, uint8_t ch) {
                 }
             } else {
             _DO_ADJUST:
-                _WM_AdjustNoteVolumes(mdi, ch, nte);
-                if (nte->replay) _WM_AdjustNoteVolumes(mdi, ch, nte->replay);
+                if (!nte->ignore_chan_events) {
+                    _WM_AdjustNoteVolumes(mdi, ch, nte);
+                    if (nte->replay) _WM_AdjustNoteVolumes(mdi, ch, nte->replay);
+                }
             }
             nte = nte->next;
         } while (nte != NULL);
@@ -743,6 +747,7 @@ void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
     nte->hold = mdi->channel[ch].hold;
     nte->replay = NULL;
     nte->is_off = 0;
+    nte->ignore_chan_events = 0;
     _WM_AdjustNoteVolumes(mdi, ch, nte);
 }
 
@@ -1063,12 +1068,14 @@ void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
     mdi->channel[ch].pressure = data->data.value;
 
     while (note_data) {
-        if ((note_data->noteid >> 8) == ch) {
-            note_data->velocity = data->data.value & 0xff;
-            _WM_AdjustNoteVolumes(mdi, ch, note_data);
-            if (note_data->replay) {
-                note_data->replay->velocity = data->data.value & 0xff;
-                _WM_AdjustNoteVolumes(mdi, ch, note_data->replay);
+        if (!note_data->ignore_chan_events) {
+            if ((note_data->noteid >> 8) == ch) {
+                note_data->velocity = data->data.value & 0xff;
+                _WM_AdjustNoteVolumes(mdi, ch, note_data);
+                if (note_data->replay) {
+                    note_data->replay->velocity = data->data.value & 0xff;
+                    _WM_AdjustNoteVolumes(mdi, ch, note_data->replay);
+                }
             }
         }
         note_data = note_data->next;

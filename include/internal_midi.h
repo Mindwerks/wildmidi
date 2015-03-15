@@ -69,6 +69,7 @@ struct _note {
     uint32_t left_mix_volume;
     uint32_t right_mix_volume;
     uint8_t is_off;
+    uint8_t ignore_chan_events;
 };
 
 struct _mdi;
