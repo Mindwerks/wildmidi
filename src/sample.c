@@ -59,7 +59,7 @@ uint32_t _WM_get_decay_samples(struct _mdi * mdi, uint8_t channel, uint8_t note)
         /* is a drum patch */
         if (patch->note) {
             freq = _WM_freq_table[(patch->note % 12) * 100]
-            >> (10 - (patch->note / 12));
+                                              >> (10 - (patch->note / 12));
         } else {
             freq = _WM_freq_table[(note % 12) * 100] >> (10 - (note / 12));
         }
@@ -214,8 +214,7 @@ _WM_load_sample(struct _patch *sample_patch) {
             if (guspat->modes & SAMPLE_ENVELOPE) {
                 if (sample_patch->env[i].set & 0x02) {
                     guspat->env_target[i] = 16448
-                    * (int32_t) (255.0
-                                 * sample_patch->env[i].level);
+                                                * (int32_t) (255.0 * sample_patch->env[i].level);
                 }
                 if (sample_patch->env[i].set & 0x01) {
                     guspat->env_rate[i] = (int32_t) (4194303.0

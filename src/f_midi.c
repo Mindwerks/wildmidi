@@ -201,13 +201,13 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
         }
         track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
         tracks[i]++;
-        
+
         if (midi_type == 1 ) {
             if (track_delta[i] < smallest_delta) {
                 smallest_delta = track_delta[i];
             }
         } else {
-            /* 
+            /*
              * Type 0 & 2 midi only needs delta from 1st track
              * for initial sample calculations.
              */
@@ -327,12 +327,12 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                         tempo = (tracks[i][3] << 16) + (tracks[i][4] << 8)+ tracks[i][5];
                         if (!tempo)
                             tempo = 500000;
-                        
+
                         samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
                     }
                 }
                 tracks[i] += setup_ret;
-                
+
                 track_delta[i] = 0;
                 if (*tracks[i] > 0x7f) {
                     do {
@@ -342,7 +342,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 }
                 track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
                 tracks[i]++;
-                
+
                 sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
                                   + sample_remainder);
                 sample_count = (uint32_t) sample_count_f;
@@ -411,7 +411,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint32_t track_size = 0;
     uint32_t track_start = 0;
     uint32_t track_count = 0;
-   
+
     if (!mdi->event_count) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CONVERT, "(No events to convert)", 0);
         return -1;
@@ -727,7 +727,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[track_start - 3] = (track_size >> 16) & 0xff;
                 (*out)[track_start - 2] = (track_size >> 8) & 0xff;
                 (*out)[track_start - 1] = track_size & 0xff;
-            
+
                 if (event[1].do_event != NULL) {
                     (*out)[out_ofs++] = 'M';
                     (*out)[out_ofs++] = 'T';
@@ -736,10 +736,10 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                     track_count++;
                     out_ofs += 4;
                     track_start = out_ofs;
-                    
+
                     /* write out a 0 delta */
                     (*out)[out_ofs++] = 0;
-                    
+
                     running_event = 0;
                 }
             }
@@ -895,8 +895,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     NEXT_EVENT:
         event++;
     } while (event->do_event != NULL);
-    
-    
+
     if ((_WM_MixerOptions & WM_MO_SAVEASTYPE0) || (!mdi->is_type2)) {
         /* Write end of track marker */
         (*out)[out_ofs++] = 0xff;
@@ -913,7 +912,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     /* write track count */
     (*out)[10] = (track_count >> 8) & 0xff;
     (*out)[11] = track_count & 0xff;
-        
+
     (*out) = realloc((*out), out_ofs);
     (*outsize) = out_ofs;
 

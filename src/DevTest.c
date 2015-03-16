@@ -225,15 +225,14 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 static char check_notes[16][128];
 
 static void zero_check_notes(void) {
-        
+
 }
-    
+
 static int count_check_notes(void) {
     int ch = 0;
     int nt = 0;
-    
     int notes_still_on = 0;
-    
+
     for (ch = 0; ch < 16; ch++) {
         for (nt = 0; nt < 128; nt++) {
             if (check_notes[ch][nt] == 1) {
@@ -241,10 +240,10 @@ static int count_check_notes(void) {
             }
         }
     }
-    
+
     return notes_still_on;
 }
-    
+
 static int check_midi_event (unsigned char *midi_data, unsigned long int midi_size,
                              unsigned char running_event, int verbose, int options) {
     unsigned int rtn_cnt = 0;
@@ -707,7 +706,7 @@ static void set_secs_per_tick (uint32_t divisions, uint32_t tempo) {
     /* Slow but needed for accuracy */
     microseconds_per_tick = (float) tempo / (float) divisions;
     secs_per_tick = microseconds_per_tick / 1000000.0f;
-    
+
     return;
 }
 
@@ -1759,7 +1758,6 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                     /* Slow but needed for accuracy */
                     set_secs_per_tick (divisions, tempo);
                 }
-
             }
 
             midi_size -= check_ret;

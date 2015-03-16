@@ -40,7 +40,7 @@ void _WM_ERROR_NEW(const char * wmfmt, ...) {
 
 static const char *errors[WM_ERR_MAX+1] = {
     "System Error",
-    
+
     "Unable to obtain memory",
     "Unable to stat",
     "Unable to load",
@@ -58,7 +58,7 @@ static const char *errors[WM_ERR_MAX+1] = {
     "Unable to convert",
     "Not a mus file",
     "Not an xmi file",
-    
+
     "Invalid error code"
 };
 
@@ -68,18 +68,18 @@ char * _WM_Global_ErrorS = NULL;
 int _WM_Global_ErrorI = 0;
 
 void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, int wmerno, const char * wmfor, int error) {
-    
+
     char * errorstring = NULL;
-    
+
     if ((wmerno < 0) || (wmerno >= WM_ERR_MAX)) return;
-    
+
     _WM_Global_ErrorI = wmerno;
-    
+
     if (_WM_Global_ErrorS != NULL) free(_WM_Global_ErrorS);
-    
+
     errorstring = malloc(MAX_ERROR_LEN+1);
     bzero(errorstring, MAX_ERROR_LEN+1);
-    
+
     if (error == 0) {
         if (wmfor == NULL) {
             sprintf(errorstring,"Error (%s:%s:%i) %s",
@@ -97,9 +97,9 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
                     func, file, lne, wmfor, errors[wmerno], strerror(error));
         }
     }
-    
+
     _WM_Global_ErrorS = errorstring;
-    
+
     return;
 }
 

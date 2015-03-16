@@ -75,7 +75,7 @@ static int convert_8s(uint8_t *data, struct _sample *gus_sample) {
     }
 
     _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, 0, "calloc failed", errno);
-    
+
     return -1;
 }
 
@@ -892,7 +892,6 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                     gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
                     gus_patch[gus_ptr + 42] = tmp_hack_rate;
                 }
-
             }
 
 #if 0
@@ -948,7 +947,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             return NULL;
         }
 
-        /* 
+        /*
          Test and set decay expected decay time after a note off
          NOTE: This sets samples for full range decay
          */

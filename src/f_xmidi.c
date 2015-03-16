@@ -195,7 +195,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
             } else if (!memcmp(xmi_data,"EVNT",4)) {
                 // EVNT is where all the MIDI music information is stored
                 xmi_data += 4;
-                
+
                 xmi_evnt_cnt++;
 
                 xmi_evntlen = *xmi_data++ << 24;

@@ -115,7 +115,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong);
 WM_SYMBOL int WildMidi_Close (midi * handle);
 WM_SYMBOL int WildMidi_Shutdown (void);
 WM_SYMBOL char * WildMidi_GetLyric (midi * handle);
-    
+
 WM_SYMBOL char * WildMidi_GetError (void);
 WM_SYMBOL void WildMidi_ClearError (void);
 
@@ -140,4 +140,3 @@ WM_SYMBOL int WildMidi_MoveMidiEvent (midi * handle, , uint8_t char midi_cmd, un
 #endif
 
 #endif /* WILDMIDI_LIB_H */
-

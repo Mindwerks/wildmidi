@@ -185,7 +185,6 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     smallest_delta = 0xffffffff;
     // store chunk info for use, and check chunk lengths
     for (i = 0; i < hmp_chunks; i++) {
-
         hmp_chunk[i] = hmp_data;
         chunk_ofs[i] = 0;
 

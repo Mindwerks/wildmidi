@@ -794,7 +794,6 @@ static int add_handle(void * handle) {
 #endif
 
 
-
 static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
     uint32_t buffer_used = 0;
     uint32_t i;
@@ -912,7 +911,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 #endif
 
                     note_data->sample_pos += note_data->sample_inc;
-                    
+
                     if (__builtin_expect((note_data->modes & SAMPLE_LOOP), 1)) {
                         if (__builtin_expect(
                                              (note_data->sample_pos > note_data->sample->loop_end),
@@ -929,7 +928,6 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                                                   0)) {
                         goto _END_THIS_NOTE;
                     }
-
 
                     if (__builtin_expect((note_data->env_inc == 0), 0)) {
                         note_data = note_data->next;
@@ -969,8 +967,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                         }
                         break;
                     case 2:
-                        //if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {
-                        if (note_data->modes & SAMPLE_SUSTAIN) {
+                        if (note_data->modes & SAMPLE_SUSTAIN /*|| note_data->hold*/) {
                             note_data->env_inc = 0;
                             note_data = note_data->next;
                             RESAMPLE_DEBUGS("Next Note: SAMPLE_SUSTAIN");
@@ -1048,7 +1045,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                         continue;
                     }
                     note_data->env++;
- 
+
                     if (note_data->is_off == 1) {
                         _WM_do_note_off_extra(note_data);
                     } else {
@@ -1275,23 +1272,23 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                     }
 
                     if (__builtin_expect((note_data->env_inc == 0), 0)) {
-                        /*                        fprintf(stderr,"\r\nINC = 0, ENV %i, LEVEL %i, TARGET %d, RATE %i\r\n",
-                         note_data->env, note_data->env_level,
-                         note_data->sample->env_target[note_data->env],
-                         note_data->sample->env_rate[note_data->env]);
+                        /*
+                         fprintf(stderr,"\r\nINC = 0, ENV %i, LEVEL %i, TARGET %d, RATE %i\r\n",
+                                 note_data->env, note_data->env_level,
+                                 note_data->sample->env_target[note_data->env],
+                                 note_data->sample->env_rate[note_data->env]);
                          */
                         note_data = note_data->next;
                         continue;
                     }
 
                     note_data->env_level += note_data->env_inc;
-                    //DEBUG*************
-                    /*                    fprintf(stderr,"\r\nENV %i, LEVEL %i, TARGET %d, RATE %i, INC %i\r\n",
-                     note_data->env, note_data->env_level,
-                     note_data->sample->env_target[note_data->env],
-                     note_data->sample->env_rate[note_data->env],
-                     note_data->env_inc
-                     );
+                    /*
+                     fprintf(stderr,"\r\nENV %i, LEVEL %i, TARGET %d, RATE %i, INC %i\r\n",
+                             note_data->env, note_data->env_level,
+                             note_data->sample->env_target[note_data->env],
+                             note_data->sample->env_rate[note_data->env],
+                             note_data->env_inc);
                      */
                     if (note_data->env_inc < 0) {
                         if (note_data->env_level
@@ -1321,8 +1318,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                             }
                             break;
                         case 2:
-                            //if ((note_data->modes & SAMPLE_SUSTAIN) || (note_data->hold)) {
-                            if (note_data->modes & SAMPLE_SUSTAIN) {
+                            if (note_data->modes & SAMPLE_SUSTAIN /*|| note_data->hold*/) {
                                 note_data->env_inc = 0;
                                 note_data = note_data->next;
                                 continue;
@@ -1754,7 +1750,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
         mdi->extra_info.current_sample = 0;
         mdi->samples_to_mix = 0;
     }
-    
+
     if (mdi->samples_to_mix > (*sample_pos - mdi->extra_info.current_sample)) {
         mdi->samples_to_mix -= *sample_pos - mdi->extra_info.current_sample;
         mdi->extra_info.current_sample = *sample_pos;
@@ -1769,13 +1765,12 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
                 mdi->samples_to_mix = 0;
             }
             event++;
-                
         }
         mdi->current_event = event;
     }
 
-    /* 
-     * Clear notes as this is a fast seek so we only care 
+    /*
+     * Clear notes as this is a fast seek so we only care
      * about new notes.
      *
      * NOTE: This function is for performance only.
@@ -1795,7 +1790,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 
     /* clear the reverb buffers since we not gonna be using them here */
     _WM_reset_reverb(mdi->reverb);
-    
+
     _WM_Unlock(&mdi->lock);
     return (0);
 }
@@ -1805,8 +1800,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
     struct _event *event;
     struct _event *event_new;
     struct _note *note_data;
-    
-    
+
     if (!WM_Initialized) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_INIT, NULL, 0);
         return (-1);
@@ -1817,7 +1811,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
     }
     mdi = (struct _mdi *) handle;
     _WM_Lock(&mdi->lock);
-    
+
     if ((!mdi->is_type2) && (nextsong != 0)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID_ARG, "(Illegal use. Only usable with files detected to be type 2 compatable.", 0);
         _WM_Unlock(&mdi->lock);
@@ -1828,14 +1822,13 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         _WM_Unlock(&mdi->lock);
         return (-1);
     }
-    
+
     event = mdi->current_event;
-    
+
     if (nextsong == -1) {
         /* goto start of previous song */
-        
         /*
-         * So with this one we have to go back 2 eof's 
+         * So with this one we have to go back 2 eof's
          * then forward 1 event to get to the start of
          * the previous song.
          * NOTE: We will automatically stop at the start 
@@ -1860,7 +1853,6 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         while (event->do_event != NULL) {
             if (event->do_event == _WM_do_meta_endoftrack) {
                 event++;
-                
                 if (event->do_event == NULL) {
                     event--;
                     goto START_THIS_SONG;
@@ -1876,7 +1868,6 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
     } else {
     START_THIS_SONG:
         /* goto start of this song */
-        
         /* first find the offset */
         while (event != mdi->events) {
             if (event[-1].do_event == _WM_do_meta_endoftrack) {
@@ -1894,9 +1885,9 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         mdi->extra_info.current_sample += event->samples_to_next;
         event++;
     }
-    
+
     mdi->current_event = event;
-    
+
     note_data = mdi->note;
     if (note_data) {
         do {
@@ -1908,7 +1899,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         } while (note_data);
     }
     mdi->note = NULL;
-    
+
     _WM_Unlock(&mdi->lock);
     return (0);
 }
@@ -2081,7 +2072,7 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
     _WM_reverb_listen_posy = 16.875f;
 
     WM_Initialized = 0;
-    
+
     if (_WM_Global_ErrorS != NULL) free(_WM_Global_ErrorS);
 
     return (0);
@@ -2140,5 +2131,4 @@ WM_SYMBOL void WildMidi_ClearError (void) {
     }
     return;
 }
-
 

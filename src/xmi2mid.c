@@ -195,7 +195,8 @@ static uint32_t getdstpos(struct xmi_ctx *ctx) {
 /* This is a default set of patches to convert from MT32 to GM
  * The index is the MT32 Patch number and the value is the GM Patch
  * This is only suitable for music that doesn't do timbre changes
- * XMIDIs that contain Timbre changes will not convert properly. */
+ * XMIDIs that contain Timbre changes will not convert properly.
+ */
 static const char mt32asgm[128] = {
     0,  /* 0   Piano 1 */
     1,  /* 1   Piano 2 */
