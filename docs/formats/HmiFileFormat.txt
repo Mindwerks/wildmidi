@@ -1,8 +1,5 @@
 HMP File Format
-(incomplete)
-
-Under Construction
-
+(Incomplete - Under Construction)
 
 Document version 1
 Authored by Chris Ison chrisisonwildcode@gmail.com
@@ -10,14 +7,21 @@ Authored by Chris Ison chrisisonwildcode@gmail.com
 Last Edited 24 May 2014
 
 Copyright (C) 2014 WildMidi Developers
-This document is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
-
+This document is licensed under the
+Creative Commons Attribution-ShareAlike 4.0 International License.
+To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/4.0/
 
 
 Introduction
 
-This document describes the HMI format as used by the WildMIDI project. It is not a complete description of the HMI file format and only those parts that have been decyphered and are  relevant to the WildMidi project are described here. Unfortunately we cannot answer questions about the format that are not described within this document. If you feel there is an error in this document please feel free to report it as a bug at https://github.com/Mindwerks/wildmidi/issues?direction=desc&sort=updated&state=open.
-
+This document describes the HMI format as used by the WildMIDI project.
+It is not a complete description of the HMI file format and only those
+parts that have been decyphered and are relevant to the WildMidi project
+are described here. Unfortunately we cannot answer questions about the
+format that are not described within this document.  If you feel there
+is an error in this document please feel free to report it as a bug at
+https://github.com/Mindwerks/wildmidi/issues/
 
 
 Description
@@ -34,7 +38,8 @@ Description
         // Repeat for number of tracks in track_count
         char track_offset[4]; // Stored as little endian;
     }
-    char no_idea_4[??]; // this is the remaining amout up to the first track chunk marked by the first track offset.
+    char no_idea_4[??]; // this is the remaining amout up to the first
+                        // track chunk marked by the first track offset.
 }
 
 // Track Chunk
@@ -43,28 +48,36 @@ Description
     char no_idea_4[74];
     char track_header_size[4];
     char no_idea_5[(track_header_size - 91];
-    
+
     {
         // Repeat until end of track detected
-        // ** NOTE ** Since track chunk has no length details you need to scan for end of track marker.
+        // ** NOTE ** Since track chunk has no length details,
+        //           you need to scan for end of track marker.
         char midi_delta[] = ???; // See MIDI Delta
         char midi_event[] = ???; // See MIDI Events
-                                 // ** NOTE ** Note On event is slightly different to the normal MIDI note on event. See MIDI Events below.
-                                 // Last event in track chunk is end of track meta event, defined as 0xff 0x2f 0x00.
+                // ** NOTE ** Note On event is slightly different to the
+                // normal MIDI note on event. See MIDI Events below.
+                // Last event in track chunk is end of track meta event,
+                // defined as 0xff 0x2f 0x00.
     }
 {
 
 // Extra Data
 {
-    // Some HMI files have data after the tracks. Details are unknown about these bytes of data.
+    // Some HMI files have data after the tracks.
+    // Details are unknown about these bytes of data.
     char no_idea_6[] = ???;
 }
 
 
-
 MIDI Delta
 
-This is a variable length value that determins how time (in MIDI ticks) is to pass before the following MIDI event is to be processed. Just like MIDI's variable length values, HMI files have bit 7 set on the each value in the variable length value except the last one. A value of 255 would be stored as 0x81 0x7f, or a value of 1 would be stored as 0x01 in the HMI variable length format.
+This is a variable length value that determins how time (in MIDI ticks)
+is to pass before the following MIDI event is to be processed.
+Just like MIDI's variable length values, HMI files have bit 7 set
+on the each value in the variable length value except the last one.
+A value of 255 would be stored as 0x81 0x7f, or a value of 1 would
+be stored as 0x01 in the HMI variable length format.
 
     Examples:
     Delta of 255: < midi event > 0x81 0x7f < midi event>
@@ -72,19 +85,25 @@ This is a variable length value that determins how time (in MIDI ticks) is to pa
     Delta of 65537: < midi event > 0x82 0x80 0x71 < midi event >
 
 
-
 MIDI Events
 
-The first byte of a midi events is split into 2 x 4bits. Bits 7-4 is the command while bits 3-0 is the MIDI channel the command is to occur on. For example 0x94 means do command 9 on channel 4. The only exception to this is where bits 7-4 = F in hexidecimal as these are a special group of commands.
+The first byte of a midi events is split into 2 x 4bits. Bits 7-4 is the
+command while bits 3-0 is the MIDI channel the command is to occur on.
+For example 0x94 means do command 9 on channel 4. The only exception to
+this is where bits 7-4 = F in hexidecimal as these are a special group
+of commands.
 
-The following commands are detailed in this document with the channel information (bits 3 - 0) set to 0, example 0x80. However the channel information could have a value anywhere from 0 to F in hexidecimal.
+The following commands are detailed in this document with the channel
+information (bits 3 - 0) set to 0, example 0x80.  However the channel
+information could have a value anywhere from 0 to F in hexidecimal.
 
 // Note On Event
 {
     char cmd = 0x90;
     char note = 32; // Could be a value of 0 - 127
-    char velocity = 100; // Could be a value of 0 - 127. 
-                         // If this value is 0 then it is treated as a note of
+    char velocity = 100; // Could be a value of 0 - 127.
+                         // If this value is 0 then it
+                         //   is treated as a note off
     char length[] = < variable length value >; // See MIDI Delta for example
 }
 
@@ -120,9 +139,10 @@ The following commands are detailed in this document with the channel informatio
 
 // HMI Events
 {
-    // This is undocumented in specifications others have put together so nothing other than the following is known about it.
+    // This is undocumented in specifications others have put together
+    // so nothing other than the following is known about it.
     char cmd = 0xfe;
-    
+
     {
         char type = 0x10;
         char data_1[2];
@@ -147,6 +167,4 @@ The following commands are detailed in this document with the channel informatio
 {
     // See "Meta Events" MidFileFormat.txt
 }
-
-
 

@@ -1,8 +1,5 @@
 HMP File Format
-(incomplete)
-
-Under Construction
-
+(Incomplete - Under Construction)
 
 Document version 1
 Written by Chris Ison
@@ -10,16 +7,24 @@ Written by Chris Ison
 Last Edited 24 May 2014
 
 Copyright (C) 2014 WildMidi Developers
-This document is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
-
+This document is licensed under the
+Creative Commons Attribution-ShareAlike 4.0 International License.
+To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/4.0/
 
 
 Introduction
 
-This document describes the HMP format as used by the WildMIDI project. It is not a complete description of the HMP file format and only those parts that are relevant to the WildMidi project are described here. Unfortunately we cannot answer questions about the format that are not described within this document. If you feel there is an error in this document please feel free to report it as a bug at https://github.com/Mindwerks/wildmidi/issues?direction=desc&sort=updated&state=open.
+This document describes the HMP format as used by the WildMIDI project.
+It is not a complete description of the HMP file format and only those
+parts that are relevant to the WildMidi project are described here.
+Unfortunately we cannot answer questions about the format that are not
+described within this document.  If you feel there is an error in this
+document please feel free to report it as a bug at
+https://github.com/Mindwerks/wildmidi/issues/
 
-The HMP format comes in 2 versions. Apart from the file header there is no difference beteen the 2 versions as far WildMIDI is concerned.
-
+The HMP format comes in 2 versions. Apart from the file header there is
+no difference between the 2 versions as far WildMIDI is concerned.
 
 
 Description
@@ -43,7 +48,8 @@ Description
     char no_idea_2[16];        // All zeros
     char number_of_chunks[4];  // Number of chunks stored as little-endian
     char no_idea_3[4];         // Unknown
-    char beats_per_minute[4];   // beats per minute stored as little-endian *** NOTE: Using a division of 60 ***
+    char beats_per_minute[4];  // beats per minute stored as little-endian
+                                   // *** NOTE: Using a division of 60 ***
     char song_length_s[4];     // length of song in seconds as little-endian
 }
 
@@ -60,7 +66,7 @@ Description
     char no_idea4[840];        // Unknown
     // chunks start here
 }
-    
+
 // Chunk information
 {
     char chunk_number[4];      // Stored as little-endian
@@ -75,10 +81,14 @@ Description
 }
 
 
-
 MIDI Delta
 
-This is a variable length value that determins how time (in MIDI ticks) is to pass before the following MIDI event is to be processed. Opposite to MIDI variable length values. In HMP files the variable length value is stored in LSB with bit 7 set off for all except the last 7 bit value. A value of 255 would be stored as 0x7f 0x81, or a value of 1 would be stored as 0x81 in the HMP variable length format.
+This is a variable length value that determins how time (in MIDI ticks)
+is to pass before the following MIDI event is to be processed. Opposite
+to MIDI variable length values. In HMP files the variable length value
+is stored in LSB with bit 7 set off for all except the last 7 bit value.
+A value of 255 would be stored as 0x7f 0x81, or a value of 1 would be
+stored as 0x81 in the HMP variable length format.
 
     Examples:
     Delta of 255: < midi event > 0x7f 0x81 < midi event>
@@ -86,14 +96,20 @@ This is a variable length value that determins how time (in MIDI ticks) is to pa
     Delta of 65537: < midi event > 0x7f 0x00 0x82 < midi event >
 
 
-
 MIDI Events
 
-The first byte of a midi events is split into 2 x 4bits. Bits 7-4 is the command while bits 3-0 is the MIDI channel the command is to occur on. For example 0x94 means do command 9 on channel 4. The only exception to this is where bits 7-4 = F in hexidecimal as these are a special group of commands.
+The first byte of a midi events is split into 2 x 4bits. Bits 7-4 is the
+command while bits 3-0 is the MIDI channel the command is to occur on.
+For example 0x94 means do command 9 on channel 4. The only exception to
+this is where bits 7-4 = F in hexidecimal as these are a special group
+of commands.
 
-The following commands are detailed in this document with the channel information (bits 3 - 0) set to 0, example 0x80. However the channel information could have a value anywhere from 0x0 to 0xf.
+The following commands are detailed in this document with the channel
+information (bits 3 - 0) set to 0, example 0x80.  However the channel
+information could have a value anywhere from 0x0 to 0xf.
 
-For more detail about the folling MIDI command information please see MidiFileFormat.txt within the WildMIDI project source code.
+For more detail about the folling MIDI command information please see
+MidiFileFormat.txt within the WildMIDI project source code.
 
 // Note Off
 {
@@ -112,7 +128,9 @@ For more detail about the folling MIDI command information please see MidiFileFo
 
 // Aftertouch
 {
-    // Adjust the velocity of a note as if adjusting the preasure you are placing on the key of a preasure sensitive keyboard after you started playing it.
+    // Adjust the velocity of a note as if adjusting the preasure you
+    //  are placing on the key of a preasure sensitive keyboard after
+    //  you started playing it.
 
     char cmd = 0xa0;
     char note = 32; // Could be a value of 0 - 127
@@ -123,10 +141,13 @@ For more detail about the folling MIDI command information please see MidiFileFo
 {
     char cmd = 0xb0;
     char controller = 32; // Could be a value of 0 - 127
-    char setting = 100; // Could be a value of 0 - 127 
+    char setting = 100; // Could be a value of 0 - 127
 
     /*
-        In track 1 of HMP files controller 110 is set to 255 to mark the start of the looped events of tracks 2 & 3. Controller 111 in track 1 set to 128 to mark the end of the looped events of track 2 & 3.
+        In track 1 of HMP files controller 110 is set to 255 to
+        mark the start of the looped events of tracks 2 & 3.
+        Controller 111 in track 1 set to 128 to mark the end of
+        the looped events of track 2 & 3.
      */
 }
 
@@ -142,7 +163,10 @@ For more detail about the folling MIDI command information please see MidiFileFo
 // Preasure
 {
     /*
-        Adjust the velocity of all active notes on the channel as if adjusting the preasure you are placing on the keys of a preasure sensitive keyboard after you started playing them.
+        Adjust the velocity of all active notes on the channel
+        as if adjusting the preasure you are placing on the keys
+        of a preasure sensitive keyboard after you started playing
+        them.
      */
     char cmd = 0xd0;
     char velocity = 32; // Could be a value of 0 - 127
@@ -160,7 +184,8 @@ For more detail about the folling MIDI command information please see MidiFileFo
 
 // Sysex
 {
-    ** It is uncertain if sysex events will apepar in a HMP file but they have been included because it is possible **
+    ** It is uncertain if sysex events will apepar in a HMP file **
+    ** but they have been included because it is possible        **
 
     char cmd = 0xf0;
     // *** OR ***
@@ -177,5 +202,4 @@ For more detail about the folling MIDI command information please see MidiFileFo
     char data_size[] = < variable length in MIDI file format >;
     char data[data_size];
 }
-
 

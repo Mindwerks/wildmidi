@@ -1,8 +1,5 @@
 XMI File Format
-(incomplete)
-
-Under Construction
-
+(Incomplete - Under Construction)
 
 Document version 1
 Authored by Chris Ison chrisisonwildcode@gmail.com
@@ -10,12 +7,21 @@ Authored by Chris Ison chrisisonwildcode@gmail.com
 Last Edited 24 May 2014
 
 Copyright (C) 2014 WildMidi Developers
-This document is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
+This document is licensed under the
+Creative Commons Attribution-ShareAlike 4.0 International License.
+To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/4.0/
+
 
 Introduction
 
-This document describes the XMI format as used by the WildMIDI project. It is not a complete description of the XMI file format and only those parts that have been decyphered and are  relevant to the WildMidi project are described here. Unfortunately we cannot answer questions about the format that are not described within this document. If you feel there is an error in this document please feel free to report it as a bug at https://github.com/Mindwerks/wildmidi/issues?direction=desc&sort=updated&state=open.
-
+This document describes the XMI format as used by the WildMIDI project.
+It is not a complete description of the XMI file format and only those
+parts that have been decyphered and are relevant to the WildMidi project
+are described here. Unfortunately we cannot answer questions about the
+format that are not described within this document.  If you feel there
+is an error in this document please feel free to report it as a bug at
+https://github.com/Mindwerks/wildmidi/issues/
 
 
 Description
@@ -58,18 +64,21 @@ Description
                 uint32_t EVNT_size;
                 uint8_t MIDI_data[EVNT_size] {
                 // All events and delta values stored as with standard MIDI,
-                // EXCEPT for there is no "Note Off" and "Note On" extra data after the velocity that states the length of the note in delta ticks stored in MIDI variable length format.
+                // EXCEPT for there is no "Note Off" and "Note On" extra data
+                //      after the velocity that states the length of the note
+                //      in delta ticks stored in MIDI variable length format.
 
-                // ALSO NOTE that only the first TEMPO event is used, all others are ignored.
+                // ALSO NOTE that only the first TEMPO event is used,
+                //      all others are ignored.
 
-                // Example Note on may me stored like
+                // Example Note on may be stored like
                 // uint8_t event_data[] = { 0x90, 0x24, 0x64, 0xA3 }
                 // uint8_t delta_ticks[] = { 0xA3 }
                 // uint8_t event_data[] = { 0x90, 0x48, 0x64, 0x23, 0xA3 }
 
                 // See the MIDI file format for more information
 
-                    ...
+                ...
                 }
             }
             ...
