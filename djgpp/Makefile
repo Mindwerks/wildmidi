@@ -40,7 +40,6 @@ ifeq ($(DEBUG),1)
 CFLAGS += -g
 else
 CFLAGS += -O2 -fomit-frame-pointer -ffast-math
-LDFLAGS+= -s
 endif
 
 # Build rules
