@@ -2415,21 +2415,26 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	unsigned char *running_event;
 	unsigned long int decay_samples = 0;
 
+	if (midi_size < 14) {
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+		return NULL;
+	}
+
 	if (memcmp(midi_data, "RIFF", 4) == 0) {
+		if (midi_size < 34) {
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+			return NULL;
+		}
 		midi_data += 20;
 		midi_size -= 20;
 	}
+
 	if (memcmp(midi_data, "MThd", 4)) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
 		return NULL;
 	}
 	midi_data += 4;
 	midi_size -= 4;
-
-	if (midi_size < 10) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-		return NULL;
-	}
 
 	/*
 	 * Get Midi Header Size - must always be 6
@@ -2525,6 +2530,10 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		midi_size -= 4;
 		if (midi_size < track_size) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+			goto _end;
+		}
+		if (track_size < 3) {
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(bad track size)", 0);
 			goto _end;
 		}
 		if ((midi_data[track_size - 3] != 0xFF)
