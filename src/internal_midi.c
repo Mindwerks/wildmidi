@@ -37,6 +37,9 @@
 #include "wildmidi_lib.h"
 #include "patches.h"
 #include "internal_midi.h"
+#ifdef __DJGPP__
+#define powf pow /* prefer C89 pow() from libc.a instead of powf() from libm. */
+#endif
 
 #define HOLD_OFF 0x02
 
