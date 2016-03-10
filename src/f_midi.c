@@ -182,6 +182,10 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
             goto _end;
         }
+        if (track_size < 3) {
+            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(bad track size)", 0);
+            goto _end;
+        }
         if ((midi_data[track_size - 3] != 0xFF)
                 || (midi_data[track_size - 2] != 0x2F)
                 || (midi_data[track_size - 1] != 0x00)) {
