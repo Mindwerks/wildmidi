@@ -1,7 +1,7 @@
 /*
  * file_io.c -- file handling
  *
- * Copyright (C) WildMIDI Developers 2001-2015
+ * Copyright (C) WildMIDI Developers 2001-2016
  *
  * This file is part of WildMIDI.
  *

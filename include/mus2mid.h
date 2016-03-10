@@ -1,7 +1,7 @@
 /*
  * MUS2MIDI: DMX (DOOM) MUS to MIDI Library Header
  *
- * Copyright (C) 2014  Bret Curtis
+ * Copyright (C) 2014-2016  Bret Curtis
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public

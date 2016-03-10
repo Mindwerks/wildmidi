@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2001  Ryan Nunn
  * Copyright (C) 2014  Bret Curtis
- * Copyright (C) WildMIDI Developers 2015
+ * Copyright (C) WildMIDI Developers 2015-2016
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
