@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------------#
-# This is a Makefile for building libWildMidi using GNU Make and GNU C compiler
+# Makefile for building WildMidi library and player for DOS.
 # You will need a GCC/DJGPP package and GNU make to do it painlessly.
 #------------------------------------------------------------------------------#
 # Targets:
@@ -32,7 +32,7 @@ CFLAGS+= -DAUDIODRV_DOSSB
 SB_OBJ = dosirq.o dosdma.o dossb.o
 
 LD = $(CC)
-LDFLAGS = -L. -lWildMidi -lm
+LDFLAGS = -L. -lWildMidi
 
 # build for pentium and newer (comment out if not wanted)
 CFLAGS += -march=i586
