@@ -5,8 +5,8 @@
  NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
  COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
 
- Copyright (C) Chris Ison  2001-2014
- Copyright (C) Bret Curtis 2013-2014
+ Copyright (C) Chris Ison  2001-2016
+ Copyright (C) Bret Curtis 2013-2016
 
  This file is part of WildMIDI.
 

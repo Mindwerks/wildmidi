@@ -3,7 +3,7 @@
  Midi Player using the WildMidi Midi Processing Library
 
  Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2014
+ Copyright (C) Bret Curtis 2013-2016
 
  This file is part of WildMIDI.
 
@@ -1052,7 +1052,7 @@ static void do_help(void) {
 
 static void do_version(void) {
 	printf("\nWildMidi %s Open Source Midi Sequencer\n", PACKAGE_VERSION);
-	printf("Copyright (C) WildMIDI Developers 2001-2014\n\n");
+	printf("Copyright (C) WildMIDI Developers 2001-2016\n\n");
 	printf("WildMidi comes with ABSOLUTELY NO WARRANTY\n");
 	printf("This is free software, and you are welcome to redistribute it under\n");
 	printf("the terms and conditions of the GNU General Public License version 3.\n");

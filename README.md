@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.3.8
+Version: 0.3.9
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -29,6 +29,9 @@ Requirements:
 * DOS port: DJGPP / GNU make
 
 CHANGELOG
+
+0.3.9
+* Library: Fixed a segmentation fault with bad midi files.
 
 0.3.8
 * Library: Fixed a seek-to-0 bug in order to cure an issue of truncated

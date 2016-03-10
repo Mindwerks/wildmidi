@@ -4,7 +4,7 @@
  Midi Wavetable Processing library
 
  Copyright (C) Chris Ison  2001-2014
- Copyright (C) Bret Curtis 2013-2014
+ Copyright (C) Bret Curtis 2013-2016
 
  This file is part of WildMIDI.
 

@@ -2,7 +2,7 @@
  lock.c - data locking code for lib
 
  Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2014
+ Copyright (C) Bret Curtis 2013-2016
 
  This file is part of WildMIDI.
 
