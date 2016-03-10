@@ -66,28 +66,28 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
 //  uint8_t current_event = 0;
 //  uint8_t current_event_ch = 0;
     uint8_t *running_event;
-    uint8_t *cvt = NULL;
-//  uint32_t cvt_size;
     uint32_t setup_ret = 0;
 
+    if (midi_size < 14) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        return (NULL);
+    }
+
     if (!memcmp(midi_data, "RIFF", 4)) {
+        if (midi_size < 34) {
+            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+            return (NULL);
+        }
         midi_data += 20;
         midi_size -= 20;
     }
 
     if (memcmp(midi_data, "MThd", 4)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
-        free(cvt);
         return (NULL);
     }
     midi_data += 4;
     midi_size -= 4;
-
-    if (midi_size < 10) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-        free(cvt);
-        return (NULL);
-    }
 
     /*
      * Get Midi Header Size - must always be 6
@@ -99,7 +99,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     midi_size -= 4;
     if (tmp_val != 6) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, NULL, 0);
-        free(cvt);
         return (NULL);
     }
 
@@ -111,7 +110,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     midi_size -= 2;
     if (tmp_val > 2) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID, NULL, 0);
-        free(cvt);
         return (NULL);
     }
     midi_type = tmp_val;
@@ -124,7 +122,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     midi_size -= 2;
     if (tmp_val < 1) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
-        free(cvt);
         return (NULL);
     }
     no_tracks = tmp_val;
@@ -134,7 +131,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
      */
     if ((midi_type == 0) && (no_tracks > 1)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID, "(expected 1 track for type 0 midi file, found more)", 0);
-        free(cvt);
         return (NULL);
     }
 
@@ -146,7 +142,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     midi_size -= 2;
     if (divisions & 0x00008000) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID, NULL, 0);
-        free(cvt);
         return (NULL);
     }
 
@@ -375,7 +370,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     _WM_ResetToStart(mdi);
 
 _end:   free(sysex_store);
-    free(cvt);
     free(track_end);
     free(track_delta);
     free(running_event);
