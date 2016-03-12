@@ -1,6 +1,7 @@
 #------------------------------------------------------------------------------#
 # Makefile for building WildMidi library and player for DOS.
-# You will need a GCC/DJGPP package and GNU make to do it painlessly.
+# You will need a DJGPP build environment and GNU make to do it painlessly.
+# To build natively on DOS, you need long file names support (e.g. doslfn.)
 #------------------------------------------------------------------------------#
 # Targets:
 # - all (default): make libWildMidi.a library and wildmidi.exe
@@ -9,6 +10,9 @@
 
 # Set to 1 for debug build
 DEBUG = 0
+
+# Set to 1 if want to build / use a DXE3 version of the library (DJGPP-2.05 or newer)
+USE_DXE = 0
 
 # The tools
 ifeq ($(CROSS),)
@@ -22,6 +26,7 @@ AS=$(CROSS)-as
 AR=$(CROSS)-ar
 RANLIB=$(CROSS)-ranlib
 endif
+DXE3GEN=dxe3gen
 
 INCLUDE = -I. -I../include
 CFLAGS = $(INCLUDE) -Wall -W -fno-common
@@ -32,7 +37,12 @@ CFLAGS+= -DAUDIODRV_DOSSB
 SB_OBJ = dosirq.o dosdma.o dossb.o
 
 LD = $(CC)
-LDFLAGS = -L. -lWildMidi
+ifneq ($(USE_DXE),1)
+WM_LINK = WildMidi
+else
+WM_LINK = WildMidi_dxe
+endif
+LDFLAGS = -L. -l$(WM_LINK)
 
 # build for pentium and newer (comment out if not wanted)
 CFLAGS += -march=i586
@@ -53,7 +63,7 @@ LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
 PLAYER_OBJ= $(SB_OBJ) getopt_long.o wm_tty.o wildmidi.o
 
 # Build targets
-TARGETS = libWildMidi.a wildmidi.exe
+TARGETS = libWildMidi.a wildmidi.exe libWildMidi_dxe.a wildmidi.dxe
 
 .PHONY: clean distclean
 all: $(TARGETS)
@@ -62,7 +72,11 @@ libWildMidi.a: $(LIB_OBJ)
 	$(AR) $(ARFLAGS) $@ $^
 	$(RANLIB) $@
 
-wildmidi.exe: libWildMidi.a $(PLAYER_OBJ)
+libWildMidi_dxe.a: wildmidi.dxe
+wildmidi.dxe: $(LIB_OBJ)
+	-$(DXE3GEN) -Y libWildMidi_dxe.a -o $@ -E _WildMidi_ -U  $^
+
+wildmidi.exe: lib$(WM_LINK).a $(PLAYER_OBJ)
 	$(LD) -o $@ $(PLAYER_OBJ) $(LDFLAGS)
 
 clean:
