@@ -831,12 +831,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[1].do_event == NULL)) {
-                    note_data = mdi->note;
-                    while (note_data) {
-                        note_data->ignore_chan_events = 1;
-                        note_data = note_data->next;
-                    }
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].do_event == *_WM_do_meta_endoftrack)) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
@@ -1154,12 +1149,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[1].do_event == NULL)) {
-                    note_data = mdi->note;
-                    while (note_data) {
-                        note_data->ignore_chan_events = 1;
-                        note_data = note_data->next;
-                    }
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].do_event == *_WM_do_meta_endoftrack)) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
