@@ -1648,7 +1648,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
             WildMidi_Close(ret);
             ret = NULL;
         } else {
-            _WM_Add_Silence_To_End((struct _mdi *)ret);
+            //_WM_Add_Silence_To_End((struct _mdi *)ret);
         }
     }
 
@@ -1690,7 +1690,7 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
             WildMidi_Close(ret);
             ret = NULL;
         } else {
-            _WM_Add_Silence_To_End((struct _mdi *)ret);
+            //_WM_Add_Silence_To_End((struct _mdi *)ret);
         }
     }
 
