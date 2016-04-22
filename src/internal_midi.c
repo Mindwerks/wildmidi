@@ -1185,7 +1185,12 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
 #else
     UNUSED(data);
 #endif
-    UNUSED(mdi);
+
+    for (ch = 0; ch < 16; ch++) {
+        data->channel = ch;
+        _WM_do_control_channel_notes_off(mdi,data);
+    }
+    // UNUSED(mdi);
     return;
 }
 
