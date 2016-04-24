@@ -1137,7 +1137,7 @@ int main(int argc, char **argv) {
     uint32_t apr_mins;
     uint32_t apr_secs;
     char modes[5];
-    uint32_t count_diff;
+//    uint32_t count_diff = 0;
     uint8_t ch;
     uint8_t test_midi = 0;
     uint8_t test_count = 0;
@@ -1259,7 +1259,7 @@ int main(int argc, char **argv) {
              * This option reads lyrics from there instead.  */
             mixer_options |= WM_MO_TEXTASLYRIC;
             break;
-        case 's': /* whole number tempo */
+        case 's': /* strip silence at start */
             mixer_options |= WM_MO_STRIPSILENCE;
             break;
         case '0': /* treat as type 2 midi when writing to file */
@@ -1398,12 +1398,14 @@ int main(int argc, char **argv) {
         memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
 
         while (1) {
+            
+#if 0
             count_diff = wm_info->approx_total_samples
                         - wm_info->current_sample;
 
             if (count_diff == 0)
                 break;
-
+#endif
             ch = 0;
 #ifdef _WIN32
             if (_kbhit()) {
@@ -1531,13 +1533,6 @@ int main(int argc, char **argv) {
                           /* Enables/Disables the display of lyrics */
                     kareoke ^= 1;
                     break;
-                case 'o':
-                    WildMidi_SetOption(midi_ptr, WM_MO_LOOP,
-                                        ((mixer_options & WM_MO_LOOP) ^ WM_MO_LOOP));
-                    mixer_options ^= WM_MO_LOOP;
-                    modes[3] = (mixer_options & WM_MO_LOOP)? 'o' : ' ';
-                    break;
-    
                 default:
                     break;
                 }
@@ -1557,8 +1552,8 @@ int main(int argc, char **argv) {
                 continue;
             }
 
-            res = WildMidi_GetOutput(midi_ptr, output_buffer,
-                                     (count_diff >= 4096)? 16384 : (count_diff * 4));
+            res = WildMidi_GetOutput(midi_ptr, output_buffer, 16384);
+//                                     (count_diff >= 4096)? 16384 : (count_diff * 4));
             if (res <= 0)
                 break;
 

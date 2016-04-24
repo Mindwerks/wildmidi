@@ -1175,6 +1175,41 @@ void _WM_do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data) {
     _WM_do_sysex_gm_reset(mdi,data);
 }
 
+void _WM_Release_Allowance(struct _mdi *mdi) {
+    uint32_t release = 0;
+    uint32_t longest_release = 0;
+    
+    struct _note *note = mdi->note;
+    
+    while (note != NULL) {
+        
+        if (note->modes & SAMPLE_ENVELOPE) {
+            //ensure envelope isin a release state
+            if (note->env < 4) {
+                note->env = 4;
+            }
+        
+            // make sure this is set
+            note->env_inc = -note->sample->env_rate[note->env];
+        
+            release = note->env_level / -note->env_inc;
+        } else {
+            // Sample release
+            if (note->modes & SAMPLE_LOOP) {
+                note->modes ^= SAMPLE_LOOP;
+            }
+            release = note->sample->data_length - note->sample_pos;
+        }
+        
+        if (release > longest_release) longest_release = release;
+        note->replay = NULL;
+        note = note->next;
+    }
+    
+    mdi->samples_to_mix = longest_release;
+    
+    return;
+}
 
 void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
 /* placeholder function so we can record eot in the event stream
@@ -1186,11 +1221,7 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
     UNUSED(data);
 #endif
 
-    for (ch = 0; ch < 16; ch++) {
-        data->channel = ch;
-        _WM_do_control_channel_notes_off(mdi,data);
-    }
-    // UNUSED(mdi);
+    _WM_Release_Allowance(mdi);
     return;
 }
 
@@ -1923,44 +1954,6 @@ void _WM_freeMDI(struct _mdi *mdi) {
     _WM_free_reverb(mdi->reverb);
     free(mdi->mix_buffer);
     free(mdi);
-}
-
-void _WM_Add_Silence_To_End(struct _mdi *mdi) {
-    uint32_t count = 0;
-
-    uint32_t samples_from_last_note_off = 0;
-    uint32_t sample_decay = 0;
-    uint32_t largest_sample_decay = 0;
-
-    /* Get Number of samples from last Note Off
-     * to end of song. */
-    while (count != mdi->event_count) {
-        if (mdi->events[count].do_event == _WM_do_note_off) {
-            samples_from_last_note_off = 0;
-            sample_decay = _WM_get_decay_samples(mdi, mdi->events[count].event_data.channel, mdi->events[count].event_data.data.value);
-            /* Add a second to allow space between songs */
-            sample_decay += _WM_SampleRate;
-            if (sample_decay > largest_sample_decay) {
-                largest_sample_decay = (uint32_t)sample_decay;
-            }
-        }
-        samples_from_last_note_off += mdi->events[count].samples_to_next;
-        if (largest_sample_decay > 0) {
-            if (mdi->events[count].samples_to_next > largest_sample_decay) {
-                largest_sample_decay = 0;
-            } else {
-                largest_sample_decay -= (uint32_t)mdi->events[count].samples_to_next;
-            }
-        }
-        count++;
-    }
-
-    if (largest_sample_decay) {
-        mdi->events[mdi->event_count - 1].samples_to_next += largest_sample_decay;
-        mdi->extra_info.approx_total_samples += largest_sample_decay;
-    }
-
-    return;
 }
 
 uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t running_event) {
