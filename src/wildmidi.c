@@ -1077,6 +1077,8 @@ static struct option const long_options[] = {
     { "roundtempo", 0, 0, 'n' },
     { "skipsilentstart", 0, 0, 's' },
     { "textaslyric", 0, 0, 'a' },
+    { "playfrom", 1, 0, 'i'},
+    { "playto", 1, 0, 'j'},
     { NULL, 0, NULL, 0 }
 };
 
@@ -1147,6 +1149,7 @@ int main(int argc, char **argv) {
     static char spinner[] = "|/-\\";
     static int spinpoint = 0;
     unsigned long int seek_to_sample;
+    unsigned long int samples = 0;
     int inpause = 0;
     char * ret_err = NULL;
     long libraryver;
@@ -1158,6 +1161,9 @@ int main(int argc, char **argv) {
     char lyrics[MAX_LYRIC_CHAR + 1];
 #define MAX_DISPLAY_LYRICS 29
     char display_lyrics[MAX_DISPLAY_LYRICS + 1];
+    
+    unsigned long int song_start = 0.0;
+    unsigned long int song_stop = 0.0;
 
     memset(lyrics,' ',MAX_LYRIC_CHAR);
     memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
@@ -1171,7 +1177,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:f:lr:c:m:btak:p:ed:ns", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:f:lr:c:m:btak:p:ed:nsi:j:", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -1264,6 +1270,12 @@ int main(int argc, char **argv) {
             break;
         case '0': /* treat as type 2 midi when writing to file */
             mixer_options |= WM_MO_SAVEASTYPE0;
+            break;
+        case 'i':
+            song_start = (unsigned long int)(atof(optarg) * (double)rate);
+            break;
+        case 'j':
+            song_stop = (unsigned long int)(atof(optarg) * (double)rate);
             break;
         default:
             do_syntax();
@@ -1396,9 +1408,12 @@ int main(int argc, char **argv) {
 
         memset(lyrics,' ',MAX_LYRIC_CHAR);
         memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
+        
+        if (song_start != 0) {
+            WildMidi_FastSeek(midi_ptr, &song_start);
+        }
 
         while (1) {
-            
 #if 0
             count_diff = wm_info->approx_total_samples
                         - wm_info->current_sample;
@@ -1552,7 +1567,17 @@ int main(int argc, char **argv) {
                 continue;
             }
 
-            res = WildMidi_GetOutput(midi_ptr, output_buffer, 16384);
+            
+            if (song_stop != 0) {
+                if ((wm_info->current_sample + 4096) <= song_stop) {
+                    samples = 16384;
+                } else {
+                    samples = (song_stop - wm_info->current_sample) << 2;
+                }
+            } else {
+                samples = 16384;
+            }
+            res = WildMidi_GetOutput(midi_ptr, output_buffer, samples);
 //                                     (count_diff >= 4096)? 16384 : (count_diff * 4));
             if (res <= 0)
                 break;
