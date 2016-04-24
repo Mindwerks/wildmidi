@@ -1162,8 +1162,8 @@ int main(int argc, char **argv) {
 #define MAX_DISPLAY_LYRICS 29
     char display_lyrics[MAX_DISPLAY_LYRICS + 1];
     
-    unsigned long int song_start = 0.0;
-    unsigned long int song_stop = 0.0;
+    unsigned long int play_from = 0.0;
+    unsigned long int play_to = 0.0;
 
     memset(lyrics,' ',MAX_LYRIC_CHAR);
     memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
@@ -1272,10 +1272,10 @@ int main(int argc, char **argv) {
             mixer_options |= WM_MO_SAVEASTYPE0;
             break;
         case 'i':
-            song_start = (unsigned long int)(atof(optarg) * (double)rate);
+            play_from = (unsigned long int)(atof(optarg) * (double)rate);
             break;
         case 'j':
-            song_stop = (unsigned long int)(atof(optarg) * (double)rate);
+            play_to = (unsigned long int)(atof(optarg) * (double)rate);
             break;
         default:
             do_syntax();
@@ -1409,8 +1409,11 @@ int main(int argc, char **argv) {
         memset(lyrics,' ',MAX_LYRIC_CHAR);
         memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
         
-        if (song_start != 0) {
-            WildMidi_FastSeek(midi_ptr, &song_start);
+        if (play_from != 0) {
+            WildMidi_FastSeek(midi_ptr, &play_from);
+            if (play_to < play_from) {
+                // Ignore --playto if set less than --playfrom
+            }   play_to = 0;
         }
 
         while (1) {
@@ -1568,11 +1571,16 @@ int main(int argc, char **argv) {
             }
 
             
-            if (song_stop != 0) {
-                if ((wm_info->current_sample + 4096) <= song_stop) {
+            if (play_to != 0) {
+                if ((wm_info->current_sample + 4096) <= play_to) {
                     samples = 16384;
                 } else {
-                    samples = (song_stop - wm_info->current_sample) << 2;
+                    samples = (play_to - wm_info->current_sample) << 2;
+                    if (samples <= 0) {
+                        // We are at or past where we wanted to play to
+                        break;
+                    }
+                    
                 }
             } else {
                 samples = 16384;
