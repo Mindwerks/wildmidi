@@ -1460,10 +1460,10 @@ int main(int argc, char **argv) {
                     modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
                     break;
                 case 'a':
-                        WildMidi_SetOption(midi_ptr, WM_MO_TEXTASLYRIC,
-                                           ((mixer_options & WM_MO_TEXTASLYRIC) ^ WM_MO_TEXTASLYRIC));
-                        mixer_options ^= WM_MO_TEXTASLYRIC;
-                        break;
+                    WildMidi_SetOption(midi_ptr, WM_MO_TEXTASLYRIC,
+                                       ((mixer_options & WM_MO_TEXTASLYRIC) ^ WM_MO_TEXTASLYRIC));
+                    mixer_options ^= WM_MO_TEXTASLYRIC;
+                    break;
                 case 'n':
                     goto NEXTMIDI;
                 case 'p':
@@ -1546,7 +1546,7 @@ int main(int argc, char **argv) {
                         write_midi_output(getmidibuffer,getmidisize);
                         free(getmidibuffer);
                     }
-                    }   break;
+                  } break;
                 case 'k': /* Kareoke */
                           /* Enables/Disables the display of lyrics */
                     kareoke ^= 1;
@@ -1593,7 +1593,7 @@ int main(int argc, char **argv) {
             wm_info = WildMidi_GetInfo(midi_ptr);
             lyric = WildMidi_GetLyric(midi_ptr);
 
-            memcpy(lyrics, &lyrics[1], MAX_LYRIC_CHAR - 1);
+            memmove(lyrics, &lyrics[1], MAX_LYRIC_CHAR - 1);
             lyrics[MAX_LYRIC_CHAR - 1] = ' ';
 
             if ((lyric != NULL) && (lyric != last_lyric) && (kareoke)) {
