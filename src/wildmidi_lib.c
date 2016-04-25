@@ -1722,7 +1722,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
     }
 
     /* was end of song requested and are we are there? */
-    if (*sample_pos == mdi->extra_info.current_sample) {
+    if (*sample_pos == mdi->extra_info.approx_total_samples) {
         /* yes */
         _WM_Unlock(&mdi->lock);
         return (0);
@@ -1737,17 +1737,21 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
         mdi->samples_to_mix = 0;
     }
 
-    if (mdi->samples_to_mix > (*sample_pos - mdi->extra_info.current_sample)) {
-        mdi->samples_to_mix -= *sample_pos - mdi->extra_info.current_sample;
+    if ((mdi->extra_info.current_sample + mdi->samples_to_mix) > *sample_pos) {
+        mdi->samples_to_mix = (mdi->extra_info.current_sample + mdi->samples_to_mix) - *sample_pos;
         mdi->extra_info.current_sample = *sample_pos;
     } else {
-        while (mdi->extra_info.current_sample < *sample_pos) {
+        mdi->extra_info.current_sample += mdi->samples_to_mix;
+        mdi->samples_to_mix = 0;
+        while ((!mdi->samples_to_mix) && (event->do_event)) {
             event->do_event(mdi, &event->event_data);
-            if (event->samples_to_next > (*sample_pos - mdi->extra_info.current_sample)) {
-                mdi->extra_info.current_sample += (*sample_pos - mdi->extra_info.current_sample);
-                mdi->samples_to_mix = event->samples_to_next - (*sample_pos - mdi->extra_info.current_sample);
+            mdi->samples_to_mix = event->samples_to_next;
+                
+            if ((mdi->extra_info.current_sample + mdi->samples_to_mix) > *sample_pos) {
+                mdi->samples_to_mix = (mdi->extra_info.current_sample + mdi->samples_to_mix) - *sample_pos;
+                mdi->extra_info.current_sample = *sample_pos;
             } else {
-                mdi->extra_info.current_sample += event->samples_to_next;
+                mdi->extra_info.current_sample += mdi->samples_to_mix;
                 mdi->samples_to_mix = 0;
             }
             event++;
