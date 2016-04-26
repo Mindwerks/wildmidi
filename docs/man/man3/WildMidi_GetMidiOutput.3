@@ -10,18 +10,16 @@ WildMidi_GetMidiOutput \- get a midi file of a file being processed.
 .B int WildMidi_GetMidiOutput (midi *\fIhandle\fP, int8_t **\fIbuffer\fP, uint32_t *\fIsize\fP)
 .PP
 .SH DESCRIPTION
-.B UNDERDEVEL AND MAY CHANGE BEFORE RELEASE
-.PP
-Places a midi file of a file being processed in the location pointed to by \fIbuffer\fP.
+Writes the midi\-format data from the file being processed to the memory location pointed to by \fIbuffer\fP. The data will be in type-0 format for type-0 and type-1 files.  For type-2 files, the data will be in type-2 format unless the WM_MO_SAVEASTYPE0 option is set.
 .PP
 .IP \fIhandle\fP
 The identifier obtained from opening a file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
 .IP \fIbuffer\fP
-The location where WildMIDI is to store the midi file of the \fIhandle\fP being processed.
+The memory location where libWildMidi is to store the midi data from the \fIhandle\fP. The \fIbuffer\fP will be allocated with \fBmalloc\fP() and must be \fBfree\fP()d by the caller when it is no longer needed.
 .PP
 .IP \fIsize\fP
-The location where WildMIDI is to store the size of the midi file stored in \fIbuffer\fP.
+The location where libWildMidi is to store the size of the midi data stored in \fIbuffer\fP.
 .PP
 .SH "RETURN VALUE"
 Returns \-1 on error otherwise returns 0

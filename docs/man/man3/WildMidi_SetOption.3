@@ -29,6 +29,18 @@ By default libWildMidi uses linear interpolation for the resampling of the sound
 .IP WM_MO_REVERB
 libWildMidi has an 8 reflection reverb engine. Use this option to give more depth to the output.
 .PP
+.IP WM_MO_LOOP
+Makes libWildMidi to automatically rewind when it reaches the end, so the file would play in continuous loop.
+.PP
+.IP WM_MO_STRIPSILENCE
+Strips silence at song start.
+.PP
+.IP WM_MO_SAVEASTYPE0
+This option tells \fBWildMidi_GetMidiOutput\fP(3) to output type-0 format data for type-2 files.
+.PP
+.IP WM_MO_TEXTASLYRIC
+Some files have the lyrics in the text meta event. This option reads lyrics from there instead.
+.PP
 .RE
 .IP setting
 To turn on an option, repeat that option here. To turn off an option, do not put the option here.
