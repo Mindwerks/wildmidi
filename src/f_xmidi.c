@@ -60,7 +60,6 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     uint32_t xmi_delta = 0;
     uint32_t xmi_lowestdelta = 0;
 
-    uint8_t xmi_tempo_set = 0;
     uint32_t xmi_evnt_cnt = 0;
 
 
@@ -109,7 +108,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_data += xmi_tmpdata;
     xmi_size -= xmi_tmpdata;
 
-/* FIXME: Check: may not even need to process CAT information */
+    /* FIXME: Check: may not even need to process CAT information */
     if (memcmp(xmi_data,"CAT ",4)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
         return NULL;
@@ -204,7 +203,6 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_evntlen |= *xmi_data++;
                 xmi_size -= 8;
                 xmi_subformlen -= 8;
-                xmi_tempo_set = 0;
 
                 do {
                     if (*xmi_data < 0x80) {
