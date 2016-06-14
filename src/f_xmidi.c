@@ -264,18 +264,15 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                         } while (xmi_delta);
 
                     } else {
-                        if (xmi_tempo_set) {
-                            if ((xmi_data[0] == 0xff) && (xmi_data[1] == 0x51) && (xmi_data[2] == 0x03)) {
-                                setup_ret = 6;
-                                goto _XMI_Next_Event;
-                            }
+                        if ((xmi_data[0] == 0xff) && (xmi_data[1] == 0x51) && (xmi_data[2] == 0x03)) {
+                            // Ignore tempo events
+                            setup_ret = 6;
+                            goto _XMI_Next_Event;
                         }
                         if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data,0)) == 0) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                             goto _xmi_end;
                         }
-
-                        // FIXME: Add Tempo Check
 
                         if ((*xmi_data & 0xf0) == 0x90) {
                             // Note on has extra data stating note length
@@ -307,22 +304,8 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                                 xmi_lowestdelta = xmi_tmpdata;
                             }
 
-                        } else if ((xmi_data[0] == 0xff) && (xmi_data[1] == 0x51) && (xmi_data[2] == 0x03)) {
-                            /* Tempo */
-                            xmi_tempo = (xmi_data[3] << 16) + (xmi_data[4] << 8)+ xmi_data[5];
-                            if (!xmi_tempo)
-                                xmi_tempo = 500000;
-
-                            xmi_samples_per_delta_f = _WM_GetSamplesPerTick(xmi_divisions, xmi_tempo);
-
-                        _XMI_Next_Event:
-                            xmi_data += setup_ret;
-                            xmi_size -= setup_ret;
-                            xmi_evntlen -= setup_ret;
-                            xmi_subformlen -= setup_ret;
-                            xmi_tempo_set = 1;
-
                         } else {
+                        _XMI_Next_Event:
                             xmi_data += setup_ret;
                             xmi_size -= setup_ret;
                             xmi_evntlen -= setup_ret;
