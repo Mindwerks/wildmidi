@@ -1,30 +1,34 @@
-.TH WildMidi_Open 3 "10 March 2016" "" "WildMidi Programmer's Manual"
+.TH WildMidi_SongSeek 3 "10 March 2016" "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_Open \- Open a midi file for processing
+WildMidi_SongSeek \- Move to next song.
+.PP
 .SH LIBRARY
 .B libWildMidi
 .PP
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B midi *WildMidi_Open (const char *\fImidifile\fP)
+.B int WildMidi_SongSeek (midi *\fIhandle\fB, int8_t *\fInextsong\fB);
 .PP
 .SH DESCRIPTION
-Open a MIDI type file pointed to by \fImidifile\fP for processing. This file must be in HMP, HMI, MIDI, or XMIDI format.
+Stops and flushes currently playing midi and then begins playing the next, previous or the same song contained in a type-2 midi.
 .PP
-.SH "RETURN VALUE"
-Returns NULL on error and sends a message to stderr, otherwise returns a handle for the midi file opened. This handle is used by most functions in libWildMidi to identify which midi file we are referring to.
+.IP \fIhandle\fP
+The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+.PP
+.IP \fInextsong\fP
+Whether to go to previous song (-1), beginning of current song (0), next song (1). Only 0 is accepted for type-0 or type-1 midis.
 .PP
 .SH SEE ALSO
 .BR WildMidi_GetVersion (3) ,
 .BR WildMidi_Init (3) ,
 .BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
 .BR WildMidi_GetMidiOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
-.BR WildMidi_FastSeek (3) ,
 .BR WildMidi_Close (3) ,
 .BR WildMidi_Shutdown (3) ,
 .BR wildmidi.cfg (5)

@@ -1,24 +1,32 @@
-.TH WildMidi_Open 3 "10 March 2016" "" "WildMidi Programmer's Manual"
+.TH WildMidi_ConvertToMidi 3 "10 March 2016" "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_Open \- Open a midi file for processing
+WildMidi_ConvertToMidi \- Convert a MIDI-like file into a new MIDI file.
+.PP
 .SH LIBRARY
 .B libWildMidi
 .PP
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B midi *WildMidi_Open (const char *\fImidifile\fP)
+.B WildMidi_ConvertToMidi (const char *\fIfile\fP, uint8_t **\fIout\fP, uint32_t *\fIsize\fP)
 .PP
 .SH DESCRIPTION
-Open a MIDI type file pointed to by \fImidifile\fP for processing. This file must be in HMP, HMI, MIDI, or XMIDI format.
+Takes a MIDI-like file as input and tries to detect, convert and write to a memory buffer in MIDI format.
 .PP
-.SH "RETURN VALUE"
-Returns NULL on error and sends a message to stderr, otherwise returns a handle for the midi file opened. This handle is used by most functions in libWildMidi to identify which midi file we are referring to.
+.IP \fIfile\fP
+The input file that contains MIDI-like content: XMI, HMI, HMP or MUS.
+.PP
+.IP \fIout\fP
+The output buffer.
+.PP
+.IP \fIsize\fP
+The size of the output buffer.
+.RS
 .PP
 .SH SEE ALSO
 .BR WildMidi_GetVersion (3) ,
-.BR WildMidi_Init (3) ,
 .BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
@@ -46,3 +54,4 @@ You should have received a copy of the GNU General Public License and the GNU Le
 .PP
 This manpage is licensed under the Creative Commons Attribution\-Share Alike 3.0 Unported License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
 .PP
+

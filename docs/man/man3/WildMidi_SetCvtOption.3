@@ -1,26 +1,41 @@
-.TH WildMidi_Open 3 "10 March 2016" "" "WildMidi Programmer's Manual"
+.TH WildMidi_SetCvtOption 3 "10 March 2016" "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_Open \- Open a midi file for processing
+WildMidi_SetCvtOption \- Set a conversion option for a specific midi
+.PP
 .SH LIBRARY
 .B libWildMidi
 .PP
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B midi *WildMidi_Open (const char *\fImidifile\fP)
+.B int WildMidi_SetCvtOption (uint16_t *\fItag\fP, uint16_t \fIsetting\fP)
 .PP
 .SH DESCRIPTION
-Open a MIDI type file pointed to by \fImidifile\fP for processing. This file must be in HMP, HMI, MIDI, or XMIDI format.
+Set a conversion option for a specific midi.
+.PP
+.B \fItag\fP
+The type of option you wish to change.
+.PP
+.RS
+.IP WM_CO_XMI_TYPE
+The the conversion type of an XMI to MIDI.
+.PP
+.IP WM_CO_FREQUENCY
+The frequency to be used for a MUS file.
+.PP
+.RE
+.IP \fIsetting\fP
+Value for the particular tag.
 .PP
 .SH "RETURN VALUE"
-Returns NULL on error and sends a message to stderr, otherwise returns a handle for the midi file opened. This handle is used by most functions in libWildMidi to identify which midi file we are referring to.
-.PP
+Returns \-1 on error, otherwise returns 0.
 .SH SEE ALSO
 .BR WildMidi_GetVersion (3) ,
 .BR WildMidi_Init (3) ,
 .BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
 .BR WildMidi_OpenBuffer (3) ,
-.BR WildMidi_SetOption (3) ,
+.BR WildMidi_SetCvtOption (3) ,
 .BR WildMidi_GetOutput (3) ,
 .BR WildMidi_GetMidiOutput (3) ,
 .BR WildMidi_GetInfo (3) ,

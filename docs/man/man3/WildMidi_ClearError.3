@@ -1,24 +1,23 @@
-.TH WildMidi_Open 3 "10 March 2016" "" "WildMidi Programmer's Manual"
+.TH WildMidi_ClearError 3 "10 March 2016" "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_Open \- Open a midi file for processing
+WildMidi_ClearError \- Clear errors
+.PP
 .SH LIBRARY
 .B libWildMidi
 .PP
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B midi *WildMidi_Open (const char *\fImidifile\fP)
+.B void WildMidi_ClearError(\fIvoid\fP)
 .PP
 .SH DESCRIPTION
-Open a MIDI type file pointed to by \fImidifile\fP for processing. This file must be in HMP, HMI, MIDI, or XMIDI format.
-.PP
-.SH "RETURN VALUE"
-Returns NULL on error and sends a message to stderr, otherwise returns a handle for the midi file opened. This handle is used by most functions in libWildMidi to identify which midi file we are referring to.
+Clears errors in wildmidi library.
 .PP
 .SH SEE ALSO
 .BR WildMidi_GetVersion (3) ,
 .BR WildMidi_Init (3) ,
 .BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
@@ -26,7 +25,6 @@ Returns NULL on error and sends a message to stderr, otherwise returns a handle 
 .BR WildMidi_GetInfo (3) ,
 .BR WildMidi_FastSeek (3) ,
 .BR WildMidi_Close (3) ,
-.BR WildMidi_Shutdown (3) ,
 .BR wildmidi.cfg (5)
 .PP
 .SH AUTHOR
