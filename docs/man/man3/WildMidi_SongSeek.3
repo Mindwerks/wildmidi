@@ -1,49 +1,36 @@
-.TH WildMidi_Live 3 "10 March 2016" "" "WildMidi Programmer's Manual"
+.TH WildMidi_SongSeek 3 "10 March 2016" "" "WildMidi Programmer's Manual"
 .SH NAME
-WildMidi_Live \- Push a midi event into the head of the processing buffer.
+WildMidi_SongSeek \- Move to next song.
+.PP
 .SH LIBRARY
 .B libWildMidi
 .PP
 .SH SYNOPSIS
 .B #include <wildmidi_lib.h>
 .PP
-.B int WildMidi_Live (midi *\fIhandle\fP, uint32_t \fImidi_event\fP)
+.B int WildMidi_SongSeek (midi *\fIhandle\fB, int8_t *\fInextsong\fB);
 .PP
 .SH DESCRIPTION
-.B UNDERDEVEL AND MAY CHANGE BEFORE RELEASE
-.PP
-Places \fImidi_event\fP at the head of the processing buffer so it is the next event processed.
+Stops and flushes currently playing midi and then begins playing the next, previous or the same song.
 .PP
 .IP \fIhandle\fP
 The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
-.IP \fImidi_event\fP
-The midi data that WildMIDI is to process. bits 31\-24 contain the event and channel info with bits 23\-0 containing the data shifted left.
-.PP
-.nf
-Example: Note on event
-    event_byte = 0x91;
-    note_byte = 0x7f;
-    velocity_byte = 0x65;
-    midi_event = (event_byte << 24) | (note_byte << 16) | (velocity_byte << 8);
-.fi
-.PP
-.SH "RETURN VALUE"
-Returns \-1 on error otherwise returns 0
+.IP \fInextsong\fP
+Whether to go to previous song (-1), beginning of current song (0), next song (1).
 .PP
 .SH SEE ALSO
 .BR WildMidi_GetVersion (3) ,
 .BR WildMidi_Init (3) ,
-.BR WildMidi_MasterVolume (3),
+.BR WildMidi_MasterVolume (3) ,
 .BR WildMidi_Open (3) ,
 .BR WildMidi_OpenBuffer (3) ,
 .BR WildMidi_SetOption (3) ,
 .BR WildMidi_GetOutput (3) ,
 .BR WildMidi_GetMidiOutput (3) ,
 .BR WildMidi_GetInfo (3) ,
-.BR WildMidi_FastSeek (3) ,
 .BR WildMidi_Close (3) ,
-.BR WildMidi_Shutdown (3),
+.BR WildMidi_Shutdown (3) ,
 .BR wildmidi.cfg (5)
 .PP
 .SH AUTHOR

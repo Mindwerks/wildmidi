@@ -1,0 +1,53 @@
+.TH WildMidi_GetLyric 3 "10 March 2016" "" "WildMidi Programmer's Manual"
+.SH NAME
+WildMidi_GetLyric \- get lyrics of a midi
+.SH LIBRARY
+.B libWildMidi
+.SH SYNOPSIS
+.B #include <wildmidi_lib.h>
+.PP
+.B char *WildMidi_GetLyric (midi *\fIhandle\fP);
+.PP
+.SH DESCRIPTION
+Returns points to a \0 terminated string that contains the data contained in the last read lyric or text meta event.
+Or returns NULL if no lyric is waiting to be read.
+.PP
+.IP \fIhandle\fP
+The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
+.PP
+.SH RETURN VALUE
+On error returns NULL with an error message displayed to stderr.
+.PP
+Otherwise returns a pointer to a *char containing the lyric data.
+.PP
+.SH SEE ALSO
+.BR WildMidi_GetVersion (3) ,
+.BR WildMidi_Init (3) ,
+.BR WildMidi_MasterVolume (3) ,
+.BR WildMidi_Open (3) ,
+.BR WildMidi_OpenBuffer (3) ,
+.BR WildMidi_SetOption (3) ,
+.BR WildMidi_GetOutput (3) ,
+.BR WildMidi_GetMidiOutput (3) ,
+.BR WildMidi_FastSeek (3) ,
+.BR WildMidi_Close (3) ,
+.BR WildMidi_Shutdown (3) ,
+.BR wildmidi.cfg (5)
+.PP
+.SH AUTHOR
+Chris Ison <chrisisonwildcode@gmail.com>
+Bret Curtis <psi29a@gmail.com>
+.PP
+.SH COPYRIGHT
+Copyright (C) WildMidi Developers 2001\-2016
+.PP
+This file is part of WildMIDI.
+.PP
+WildMIDI is free software: you can redistribute and/or modify the player under the terms of the GNU General Public License and you can redistribute and/or modify the library under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the licenses, or(at your option) any later version.
+.PP
+WildMIDI is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and the GNU Lesser General Public License for more details.
+.PP
+You should have received a copy of the GNU General Public License and the GNU Lesser General Public License along with WildMIDI. If not, see <http://www.gnu.org/licenses/>.
+.PP
+This manpage is licensed under the Creative Commons Attribution\-Share Alike 3.0 Unported License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
+.PP
