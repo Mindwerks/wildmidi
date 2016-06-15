@@ -5,6 +5,9 @@ compiler:
 env:
  - BUILD_TYPE=Debug
  - BUILD_TYPE=Release
+ matrix:
+   allow_failures:
+     - compiler: clang
 branches:
   only:
     - master
