@@ -5,9 +5,9 @@ compiler:
 env:
  - BUILD_TYPE=Debug
  - BUILD_TYPE=Release
- matrix:
-   allow_failures:
-     - compiler: clang
+matrix:
+ allow_failures:
+ - compiler: clang
 branches:
   only:
     - master
@@ -38,11 +38,6 @@ script:
 #after_script:
 # - ./runtests
 notifications:
-  recipients:
-    - psi29a+travis.ci@gmail.com
-  email:
-    on_success: change
-    on_failure: always
   irc:    
     channels:
       - "chat.freenode.net#wildmidi"
