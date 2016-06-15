@@ -24,15 +24,8 @@ The the conversion type of an XMI to MIDI.
 The frequency to be used for a MUS file.
 .PP
 .RE
-.IP setting
-Value of the particular tag.
-.PP
-.IP "Example: To turn on Reverb"
-WildMidi_SetCvtOption(handle, WM_MO_REVERB, WM_MO_REVERB);
-.IP "Example: To turn off Reverb"
-WildMidi_SetCvtOption(handle, WM_MO_REVERB, 0);
-.IP "Example: To turn on Reverb and Enhanced Resampling"
-WildMidi_SetCvtOption(handle, (WM_MO_REVERB | WM_MO_ENHANCED_RESAMPLING), (WM_MO_REVERB | WM_MO_ENHANCED_RESAMPLING));
+.IP \fIsetting\fP
+Value for the particular tag.
 .PP
 .SH "RETURN VALUE"
 Returns \-1 on error, otherwise returns 0.

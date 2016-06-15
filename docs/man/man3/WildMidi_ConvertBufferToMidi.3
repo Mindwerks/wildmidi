@@ -11,16 +11,16 @@ WildMidi_ConvertBufferToMidi \- Convert a MIDI-like buffer into a new MIDI buffe
 .B WildMidi_ConvertBufferToMidi (uint8_t *\fIin\fP, uint8_t \fIinsize\fP, uint8_t **\fIout\fP, uint32_t *\fIoutsize\fP)
 .PP
 .SH DESCRIPTION
-Takes a MIDI-like file as input and tries to detect, convert and write a new MIDI file out.
+Takes a MIDI-like memory buffer as input and tries to detect, convert and write to a memory buffer in MIDI format.
 .PP
 .IP \fIin\fP
 The input buffer that contains MIDI-like content: XMI, HMI, HMP and MUS.
 .PP
 .IP \fIinsize\fP
-The size of the buffer.
+The size of the input buffer.
 .PP
 .IP \fIout\fP
-The output MIDI buffer.
+The output buffer.
 .PP
 .IP \fIoutsize\fP
 The size of the output buffer.

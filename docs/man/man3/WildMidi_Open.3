@@ -10,7 +10,7 @@ WildMidi_Open \- Open a midi file for processing
 .B midi *WildMidi_Open (const char *\fImidifile\fP)
 .PP
 .SH DESCRIPTION
-Open a MIDI type file pointed to by \fImidifile\fP for processing. This file must be in HMP, HMI, or MIDI format.
+Open a MIDI type file pointed to by \fImidifile\fP for processing. This file must be in HMP, HMI, MIDI, or XMIDI format.
 .PP
 .SH "RETURN VALUE"
 Returns NULL on error and sends a message to stderr, otherwise returns a handle for the midi file opened. This handle is used by most functions in libWildMidi to identify which midi file we are referring to.

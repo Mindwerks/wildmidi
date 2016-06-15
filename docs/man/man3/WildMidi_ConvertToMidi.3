@@ -11,16 +11,16 @@ WildMidi_ConvertToMidi \- Convert a MIDI-like file into a new MIDI file.
 .B WildMidi_ConvertToMidi (const char *\fIfile\fP, uint8_t **\fIout\fP, uint32_t *\fIsize\fP)
 .PP
 .SH DESCRIPTION
-Takes a MIDI-like file as input and tries to detect, convert and write a new MIDI file out.
+Takes a MIDI-like file as input and tries to detect, convert and write to a memory buffer in MIDI format.
 .PP
 .IP \fIfile\fP
-The input file that contains MIDI-like content: XMI, HMI, HMP and MUS.
+The input file that contains MIDI-like content: XMI, HMI, HMP or MUS.
 .PP
 .IP \fIout\fP
-The output file.
+The output buffer.
 .PP
 .IP \fIsize\fP
-The size of the input file.
+The size of the output buffer.
 .RS
 .PP
 .SH SEE ALSO

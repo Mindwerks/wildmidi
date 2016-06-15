@@ -11,13 +11,13 @@ WildMidi_SongSeek \- Move to next song.
 .B int WildMidi_SongSeek (midi *\fIhandle\fB, int8_t *\fInextsong\fB);
 .PP
 .SH DESCRIPTION
-Stops and flushes currently playing midi and then begins playing the next, previous or the same song.
+Stops and flushes currently playing midi and then begins playing the next, previous or the same song contained in a type-2 midi.
 .PP
 .IP \fIhandle\fP
 The identifier obtained from opening a midi file with \fBWildMidi_Open\fR(3)\fP or \fBWildMidi_OpenBuffer\fR(3)\fP
 .PP
 .IP \fInextsong\fP
-Whether to go to previous song (-1), beginning of current song (0), next song (1).
+Whether to go to previous song (-1), beginning of current song (0), next song (1). Only 0 is accepted for type-0 or type-1 midis.
 .PP
 .SH SEE ALSO
 .BR WildMidi_GetVersion (3) ,
