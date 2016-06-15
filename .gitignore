@@ -22,5 +22,8 @@ Thumbs.db
 .project
 .settings/
 
+# CLion
+.idea/
+
 # config files
 include/config.h

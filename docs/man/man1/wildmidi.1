@@ -9,12 +9,12 @@ wildmidi \- example player for libWildMidi
 .B /etc/wildmidi/wildmidi.cfg
 .PP
 .SH SYNOPSIS
-.B wildmidi [\-behlvwn] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-o \fIwav\-file\fB] \fImidifile ...
+.B wildmidi [\-bhlvwnst] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-o \fIwav\-file\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] \fImidifile ...
 .PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
 .PP
-\fImidifile\fP can be a midi type file in the HMP, HMI or MIDI formats and is processed by libWildMidi and the resulting audio is output by the player.
+\fImidifile\fP can be a MIDI type file in the HMI, HMP, MUS or MIDI formats and is processed by libWildMidi and the resulting audio is output by the player.
 .PP
 You can have more than one \fImidifile\fP on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
 .PP
@@ -28,11 +28,16 @@ Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmid
 .IP "\fB\-d\fP \fIaudiodev\fP | \fB\-\-device=\fIaudiodev\fP"
 Send the audio to \fIaudiodev\fP instead of the default. ALSA defaults to the system "default" while OSS defaults to "/dev/dsp". Other environments do not support this option.
 .PP
-.IP "\fB\-e\fP | \fB\-\-enhanced\fP"
-Switches to a gauss based resampling algorithm which can improve the shape of the sound.
-.PP
 .IP "\fB\-h\fP | \fB\-\-help\fP"
-Displays command line options
+Displays command line options.
+.PP
+.IP "\fB\-f\fP | \fB\-\-frequency\fP"
+Use frequency F Hz for playback (MUS).
+.PP
+.IP "\fB\-g\fP | \fB\-\-convert\fP"
+Convert XMI: 0 - No Conversion (default)
+             1 - MT32 to GM
+             2 - MT32 to GS
 .PP
 .IP "\fB\-l\fP | \fB\-\-log_vol\fP"
 Some MIDI files have been recorded on hardware that uses a volume curve, making them sound really badly mixed on other MIDI devices. Use this option to use volume curves.
@@ -46,14 +51,17 @@ Records the audio in wav format to \fIwav-file\fP.
 .IP "\fB\-r\fP \fIsndrate\fP | \fB\-\-rate=\fIsndrate\fP"
 Set the audio output rate to \fIsndrate\fP. The default rate is 32072.
 .PP
-.IP "\fB\-w\fP | \fB\-\-wholetempo\fP"
-Round down tempo to whole number
-.PP
 .IP "\fB\-n\fP | \fB\-\-roundtempo\fP"
-Round tempo to nearest whole number
+Round tempo to nearest whole number.
+.PP
+.IP "\fB\-s\fP | \fB\-\-skipsilentstart\fP"
+Skips any silence at the start of playback.
 .PP
 .IP "\fB\-v\fP | \fB\-\-version\fP"
-Display version and copyright information
+Display version and copyright information.
+.PP
+.IP "\fB\-x\fP | \fB\-\-tomidi\fP"
+Convert file to midi and save to file.
 .PP
 .SH TEST OPTIONS
 These options are not designed for general use. Instead these options are designed to make it easier to listen to specific sound samples.
