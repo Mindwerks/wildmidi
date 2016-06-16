@@ -44,6 +44,7 @@ IF(MSVC)
 ELSE()
    SET(GETOPT)
 ENDIF()
+
 SET(wildmidi_executable_SRCS
     ${GETOPT}
     wm_tty.c

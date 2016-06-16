@@ -1139,7 +1139,6 @@ int main(int argc, char **argv) {
     uint32_t apr_mins;
     uint32_t apr_secs;
     char modes[5];
-//    uint32_t count_diff = 0;
     uint8_t ch;
     uint8_t test_midi = 0;
     uint8_t test_count = 0;
@@ -1149,21 +1148,21 @@ int main(int argc, char **argv) {
     static char spinner[] = "|/-\\";
     static int spinpoint = 0;
     unsigned long int seek_to_sample;
-    unsigned long int samples = 0;
+    uint32_t samples = 0;
     int inpause = 0;
     char * ret_err = NULL;
     long libraryver;
     char * lyric = NULL;
     char *last_lyric = NULL;
-    uint32_t last_lyric_length = 0;
+    size_t last_lyric_length = 0;
     int8_t kareoke = 0;
 #define MAX_LYRIC_CHAR 128
     char lyrics[MAX_LYRIC_CHAR + 1];
 #define MAX_DISPLAY_LYRICS 29
     char display_lyrics[MAX_DISPLAY_LYRICS + 1];
     
-    unsigned long int play_from = 0.0;
-    unsigned long int play_to = 0.0;
+    unsigned long int play_from = 0;
+    unsigned long int play_to = 0;
 
     memset(lyrics,' ',MAX_LYRIC_CHAR);
     memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
@@ -1194,7 +1193,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Error: bad rate %i.\n", res);
                 return (1);
             }
-            rate = res;
+            rate = (uint32_t) res;
             break;
         case 'b': /* Reverb */
             mixer_options |= WM_MO_REVERB;
@@ -1211,10 +1210,10 @@ int main(int argc, char **argv) {
             wav_file[sizeof(wav_file) - 1] = 0;
             break;
         case 'g': /* XMIDI Conversion */
-            WildMidi_SetCvtOption(WM_CO_XMI_TYPE, atoi(optarg));
+            WildMidi_SetCvtOption(WM_CO_XMI_TYPE, (uint16_t) atoi(optarg));
             break;
         case 'f': /* MIDI-like Conversion */
-            WildMidi_SetCvtOption(WM_CO_FREQUENCY, atoi(optarg));
+            WildMidi_SetCvtOption(WM_CO_FREQUENCY, (uint16_t) atoi(optarg));
             break;
         case 'x': /* MIDI Output */
             if (!*optarg) {
@@ -1417,13 +1416,6 @@ int main(int argc, char **argv) {
         }
 
         while (1) {
-#if 0
-            count_diff = wm_info->approx_total_samples
-                        - wm_info->current_sample;
-
-            if (count_diff == 0)
-                break;
-#endif
             ch = 0;
 #ifdef _WIN32
             if (_kbhit()) {
@@ -1586,7 +1578,7 @@ int main(int argc, char **argv) {
                 samples = 16384;
             }
             res = WildMidi_GetOutput(midi_ptr, output_buffer, samples);
-//                                     (count_diff >= 4096)? 16384 : (count_diff * 4));
+
             if (res <= 0)
                 break;
 
