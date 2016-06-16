@@ -14,13 +14,13 @@ WildMidi_ConvertBufferToMidi \- Convert a MIDI-like buffer into a new MIDI buffe
 Takes a MIDI-like memory buffer as input and tries to detect, convert and write to a memory buffer in MIDI format.
 .PP
 .IP \fIin\fP
-The input buffer that contains MIDI-like content: XMI, HMI, HMP and MUS.
+The input buffer that contains MIDI-like content: XMI or MUS.
 .PP
 .IP \fIinsize\fP
 The size of the input buffer.
 .PP
 .IP \fIout\fP
-The output buffer.
+The output buffer. It will be allocated with \fBmalloc\fP() and must be \fBfree\fP()d by the caller when it is no longer needed.
 .PP
 .IP \fIoutsize\fP
 The size of the output buffer.

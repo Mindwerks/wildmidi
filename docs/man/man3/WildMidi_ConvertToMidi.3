@@ -14,10 +14,10 @@ WildMidi_ConvertToMidi \- Convert a MIDI-like file into a new MIDI file.
 Takes a MIDI-like file as input and tries to detect, convert and write to a memory buffer in MIDI format.
 .PP
 .IP \fIfile\fP
-The input file that contains MIDI-like content: XMI, HMI, HMP or MUS.
+The input file that contains MIDI-like content: XMI or MUS.
 .PP
 .IP \fIout\fP
-The output buffer.
+The output buffer. It will be allocated with \fBmalloc\fP() and must be \fBfree\fP()d by the caller when it is no longer needed.
 .PP
 .IP \fIsize\fP
 The size of the output buffer.
