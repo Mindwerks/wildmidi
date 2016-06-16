@@ -3,16 +3,13 @@
 # You will need a DJGPP build environment and GNU make to do it painlessly.
 # To build natively on DOS, you need long file names support (e.g. doslfn.)
 #------------------------------------------------------------------------------#
-# Targets:
-# - all (default): make libWildMidi.a library and wildmidi.exe
-# - clean: clean up (remove all generated files)
-#------------------------------------------------------------------------------#
 
 # Set to 1 for debug build
 DEBUG = 0
 
-# Set to 1 if want to build / use a DXE3 version of the library (DJGPP-2.05 or newer)
-USE_DXE = 0
+# DXE3 version of the library requires DJGPP-2.05 or newer.
+# Set to 0 if dont want to build / use a DXE3 version of the library.
+USE_DXE = 1
 
 # The tools
 ifeq ($(CROSS),)
