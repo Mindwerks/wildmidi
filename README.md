@@ -41,9 +41,20 @@ CHANGELOG
 * API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
   to accept strictly 32bit size parameters, i.e. uint32_t, instead of
   unsigned long.
+* API change: WildMidi_ConvertToMidi() and WildMidi_ConvertBufferToMidi() 
+  added for MIDI-like files to be converted to MIDI.
+* API change: WildMidi_SetCvtOption() added to support conversion options.
+* API change: WildMidi_SongSeek() added to support Type 2 MIDI files.
+* API change: WildMidi_GetLyric() added to support embedded text, 
+  such as KAR files.
+* API change: WildMidi_GetError() and WildMidi_ClearError() added to
+  cleanly check for, retrieve and clear error messages. They no longer
+  go to stderr.
 * Support for loading XMI (XMIDI format) files, thanks Ryan Nunn for
   releasing his code under the LGPL.
 * Support for loading MUS (MUS Id format) files, such as from Doom.
+* Support for loading HMP/HMI files, such as from Arena and Daggerfall.
+* Support for loading KAR (MIDI with Lyrics) and Type 2 MIDI files.
 * Build requires cmake-2.8.11 or newer now.
 
 0.3.9
