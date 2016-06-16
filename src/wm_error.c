@@ -39,7 +39,7 @@ void _WM_ERROR_NEW(const char * wmfmt, ...) {
 }
 
 static const char *errors[WM_ERR_MAX+1] = {
-    "System Error",
+    "No Error",
 
     "Unable to obtain memory",
     "Unable to stat",
@@ -104,30 +104,6 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
 
 void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
                const char * wmfor, int error) {
-
-    static const char *errors[WM_ERR_MAX+1] = {
-        "No error",
-
-        "Unable to obtain memory",
-        "Unable to stat",
-        "Unable to load",
-        "Unable to open",
-        "Unable to read",
-        "Invalid or Unsupported file format",
-        "File corrupt",
-        "Library not Initialized",
-        "Invalid argument",
-        "Library Already Initialized",
-        "Not a midi file",
-        "Refusing to load unusually long file",
-        "Not an hmp file",
-        "Not an hmi file",
-        "Unable to convert",
-        "Not a mus file",
-        "Not an xmi file",
-
-        "Invalid error code"
-    };
 
     if (wmerno < 0 || wmerno > WM_ERR_MAX)
         wmerno = WM_ERR_MAX;
