@@ -1803,7 +1803,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
     _WM_Lock(&mdi->lock);
 
     if ((!mdi->is_type2) && (nextsong != 0)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID_ARG, "(Illegal use. Only usable with files detected to be type 2 compatable.", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID_ARG, "(Illegal use. Only usable with files detected to be type 2 compatible.", 0);
         _WM_Unlock(&mdi->lock);
         return (-1);
     }

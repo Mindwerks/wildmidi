@@ -1565,7 +1565,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
     }
 
     if (strncmp((char *) midi_data, "MThd", 4) != 0) {
-        printf("Not a compatable file\n");
+        printf("Not a compatible file\n");
         return -1;
     }
 
