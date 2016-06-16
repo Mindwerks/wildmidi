@@ -77,8 +77,7 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
 
     if (_WM_Global_ErrorS != NULL) free(_WM_Global_ErrorS);
 
-    errorstring = malloc(MAX_ERROR_LEN+1);
-    bzero(errorstring, MAX_ERROR_LEN+1);
+    errorstring = calloc(1, MAX_ERROR_LEN+1);
 
     if (error == 0) {
         if (wmfor == NULL) {
