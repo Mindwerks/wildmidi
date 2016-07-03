@@ -32,6 +32,7 @@ SET(CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
 MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # Set our optoins
+OPTION(BUILD_SHARED_LIBS "Build a dynamic wildmidi library" ON)
 OPTION(WANT_PLAYER      "Build WildMIDI player in addition to the libraries" ON)
 OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OFF)
 CMAKE_DEPENDENT_OPTION(WANT_PLAYERSTATIC "Build a statically linked WildMIDI player" ON "WANT_STATIC;WANT_PLAYER" OFF)
@@ -44,6 +45,10 @@ IF(UNIX AND NOT APPLE)
 SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
 ELSE()
 SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
+ENDIF()
+
+IF((NOT BUILD_SHARED_LIBS) AND (NOT WANT_STATIC))
+    MESSAGE(FATAL_ERROR "Neither dynamic nor static library build is selected.")
 ENDIF()
 
 # Platform specific defines
