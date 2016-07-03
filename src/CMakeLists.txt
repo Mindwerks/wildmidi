@@ -24,6 +24,7 @@ IF(MSVC)
 ELSE()
    SET(GETOPT)
 ENDIF()
+
 SET(wildmidi_executable_SRCS
     ${GETOPT}
     wm_tty.c
@@ -65,7 +66,8 @@ IF(WANT_STATIC)
         )
 ENDIF(WANT_STATIC)
 
-# always build our dynamic library
+IF(BUILD_SHARED_LIBS)
+# dynamic library
 ADD_LIBRARY(libwildmidi_dynamic SHARED
     ${wildmidi_library_SRCS}
     ${wildmidi_library_HDRS}
@@ -106,6 +108,7 @@ ELSE()
         COMPILE_DEFINITIONS WILDMIDI_BUILD
     )
 ENDIF()
+ENDIF(BUILD_SHARED_LIBS)
 
 # Set our default and then look at the possible locations
 SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
@@ -119,8 +122,9 @@ ENDIF(MSVC)
 
 # MinGW or MinGW-w64
 IF(CMAKE_COMPILER_IS_MINGW)
-    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}\\lib${LIBRARY_DYN_NAME}.dll.a")
-    SET(WILDMIDILIBSTATIC "${CMAKE_BINARY_DIR}\\lib${LIBRARY_STATIC_NAME}.a")
+    SET(WILDMIDILIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.dll.a")
+    SET(WILDMIDIDLL "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.dll")
+    SET(WILDMIDILIBSTATIC "${CMAKE_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
 ENDIF(CMAKE_COMPILER_IS_MINGW)
 
 # Apple's Xcode
@@ -133,7 +137,7 @@ ELSEIF(APPLE) # Apple's CLI default
 ENDIF(CMAKE_GENERATOR STREQUAL "Xcode")
 
 # do we want the wildmidi player?
-IF(WANT_PLAYER)
+IF(WANT_PLAYER AND BUILD_SHARED_LIBS)
     ADD_EXECUTABLE(wildmidi
         ${wildmidi_executable_SRCS}
         ${wildmidi_executable_HDRS}
@@ -146,7 +150,7 @@ IF(WANT_PLAYER)
         ${M_LIBRARY}
         ${AUDIO_LIBRARY}
         )
-ENDIF(WANT_PLAYER)
+ENDIF()
 
 IF(WANT_PLAYERSTATIC)
     ADD_EXECUTABLE(wildmidi-static
@@ -167,21 +171,22 @@ IF(WANT_PLAYERSTATIC)
         )
 ENDIF(WANT_PLAYERSTATIC)
 
-# add install target:
+# install target (*nix OSes)
 IF(UNIX AND NOT APPLE)
     # install our libraries
     IF(WANT_STATIC)
         INSTALL(TARGETS libwildmidi_static DESTINATION "lib${LIB_SUFFIX}/${CMAKE_LIBRARY_ARCHITECTURE}")
+        IF(WANT_PLAYERSTATIC)
+            INSTALL(TARGETS wildmidi-static DESTINATION bin)
+        ENDIF()
     ENDIF(WANT_STATIC)
-    INSTALL(TARGETS libwildmidi_dynamic DESTINATION "lib${LIB_SUFFIX}/${CMAKE_LIBRARY_ARCHITECTURE}")
 
-    # install our player if asked for
-    IF(WANT_PLAYER)
-        INSTALL(TARGETS wildmidi DESTINATION bin)
-    ENDIF(WANT_PLAYER)
-    IF(WANT_PLAYERSTATIC)
-        INSTALL(TARGETS wildmidi-static DESTINATION bin)
-    ENDIF(WANT_PLAYERSTATIC)
+    IF(BUILD_SHARED_LIBS)
+        INSTALL(TARGETS libwildmidi_dynamic DESTINATION "lib${LIB_SUFFIX}/${CMAKE_LIBRARY_ARCHITECTURE}")
+        IF(WANT_PLAYER)
+            INSTALL(TARGETS wildmidi DESTINATION bin)
+        ENDIF()
+    ENDIF()
 
     # install supporting man pages and headers
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
