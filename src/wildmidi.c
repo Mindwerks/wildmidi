@@ -213,6 +213,7 @@ static void (*close_output)(void);
 static void (*pause_output)(void);
 static void (*resume_output)(void);
 
+#define wmidi_geterrno() errno /* generic case */
 #if defined(_WIN32)
 static int audio_fd = -1;
 #define WM_IS_BADF(_fd) (_fd)<0
@@ -258,6 +259,14 @@ static inline int wmidi_write (int fd, const void *buf, size_t size) {
 static BPTR audio_fd = 0;
 #define WM_IS_BADF(_fd) (_fd)==0
 #define WM_BADF 0
+#undef wmidi_geterrno
+static int wmidi_geterrno (void) {
+    switch (IoErr()) {
+    case ERROR_OBJECT_NOT_FOUND: return ENOENT;
+    case ERROR_DISK_FULL: return ENOSPC;
+    }
+    return EIO; /* better ?? */
+}
 static inline int wmidi_fileexists (const char *path) {
     BPTR fd = Open((const STRPTR)path, MODE_OLDFILE);
     if (!fd) return 0;
@@ -329,12 +338,12 @@ static int write_midi_output(void *output_data, int output_size) {
 
     audio_fd = wmidi_open_write(midi_file);
     if (WM_IS_BADF(audio_fd)) {
-        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
+        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(wmidi_geterrno()));
         return (-1);
     }
 
     if (wmidi_write(audio_fd, output_data, output_size) < 0) {
-        fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(errno));
+        fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(wmidi_geterrno()));
         wmidi_close(audio_fd);
         audio_fd = WM_BADF;
         return (-1);
@@ -377,7 +386,7 @@ static int open_wav_output(void) {
 
     audio_fd = wmidi_open_write(wav_file);
     if (WM_IS_BADF(audio_fd)) {
-        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
+        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(wmidi_geterrno()));
         return (-1);
     } else {
         uint32_t bytes_per_sec;
@@ -393,7 +402,7 @@ static int open_wav_output(void) {
     }
 
     if (wmidi_write(audio_fd, &wav_hdr, 44) < 0) {
-        fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(errno));
+        fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(wmidi_geterrno()));
         wmidi_close(audio_fd);
         audio_fd = WM_BADF;
         return (-1);
@@ -417,7 +426,7 @@ static int write_wav_output(int8_t *output_data, int output_size) {
     }
 #endif
     if (wmidi_write(audio_fd, output_data, output_size) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
         wmidi_close(audio_fd);
         audio_fd = WM_BADF;
         return (-1);
@@ -439,7 +448,7 @@ static void close_wav_output(void) {
     wav_count[3] = (wav_size >> 24) & 0xFF;
     wmidi_seekset(audio_fd, 40);
     if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
         goto end;
     }
 
@@ -450,7 +459,7 @@ static void close_wav_output(void) {
     wav_count[3] = (wav_size >> 24) & 0xFF;
     wmidi_seekset(audio_fd, 4);
     if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
         goto end;
     }
 
