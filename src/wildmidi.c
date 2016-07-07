@@ -1004,6 +1004,7 @@ static int open_openal_output(void) {
 
 #define open_audio_output open_noaudio_output
 static int open_noaudio_output(void) {
+	fprintf(stderr, "No audio output driver was selected at compile time.\r\n");
 	return -1;
 }
 
