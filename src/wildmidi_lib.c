@@ -28,19 +28,10 @@
 #include <stdint.h>
 #include <errno.h>
 #include <math.h>
-#ifndef WILDMIDI_AMIGA
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 #include "wm_error.h"
 #include "file_io.h"
