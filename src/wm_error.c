@@ -101,28 +101,3 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
 
     return;
 }
-
-void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
-               const char * wmfor, int error) {
-
-    if (wmerno < 0 || wmerno > WM_ERR_MAX)
-        wmerno = WM_ERR_MAX;
-
-    if (wmfor != NULL) {
-        if (error != 0) {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s %s (%s)\n", func,
-                    lne, errors[wmerno], wmfor, strerror(error));
-        } else {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s %s\n", func, lne,
-                    errors[wmerno], wmfor);
-        }
-    } else {
-        if (error != 0) {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s (%s)\n", func, lne,
-                    errors[wmerno], strerror(error));
-        } else {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s\n", func, lne,
-                    errors[wmerno]);
-        }
-    }
-}

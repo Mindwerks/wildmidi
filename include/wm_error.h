@@ -57,7 +57,5 @@ extern void _WM_ERROR_NEW(const char * wmfmt, ...)
         __attribute__((format(printf, 1, 2)))
 #endif
         ;
-extern void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
-                      const char * wmfor, int error);
 
 #endif /* __WM_ERROR_H */
