@@ -71,7 +71,8 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
 
     char * errorstring = NULL;
 
-    if ((wmerno < 0) || (wmerno >= WM_ERR_MAX)) return;
+    if (wmerno < 0 || wmerno >= WM_ERR_MAX)
+         wmerno = WM_ERR_MAX; /* set to invalid error code. */
 
     _WM_Global_ErrorI = wmerno;
 
