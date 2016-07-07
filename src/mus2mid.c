@@ -392,7 +392,7 @@ int _WM_mus2midi(uint8_t *in, uint32_t insize,
                 bit1 = 0x2f;
                 bit2 = 0x00;
                 if (cur != end) { /* should we error here or report-only? */
-                    _WM_ERROR_NEW("%s:%i: MUS buffer off by %ld bytes",
+                    _WM_DEBUG_MSG("%s:%i: MUS buffer off by %ld bytes",
                                   __FUNCTION__, __LINE__, (long)(cur - end));
                 }
                 break;

@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include "wm_error.h"
 
-void _WM_ERROR_NEW(const char * wmfmt, ...) {
+void _WM_DEBUG_MSG(const char * wmfmt, ...) {
     va_list args;
     fprintf(stderr, "\r");
     va_start(args, wmfmt);
@@ -69,7 +69,7 @@ int _WM_Global_ErrorI = 0;
 
 void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, int wmerno, const char * wmfor, int error) {
 
-    char * errorstring = NULL;
+    char *errorstring;
 
     if (wmerno < 0 || wmerno >= WM_ERR_MAX)
          wmerno = WM_ERR_MAX; /* set to invalid error code. */
@@ -78,7 +78,7 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
 
     if (_WM_Global_ErrorS != NULL) free(_WM_Global_ErrorS);
 
-    errorstring = calloc(1, MAX_ERROR_LEN+1);
+    errorstring = malloc(MAX_ERROR_LEN+1);
 
     if (error == 0) {
         if (wmfor == NULL) {
@@ -98,7 +98,17 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
         }
     }
 
+    errorstring[MAX_ERROR_LEN] = 0;
     _WM_Global_ErrorS = errorstring;
+}
 
-    return;
+void _WM_ERROR_NEW(const char * wmfmt, ...) {
+    char *errorstring;
+    va_list args;
+    va_start(args, wmfmt);
+    errorstring = malloc(MAX_ERROR_LEN+1);
+    vsprintf(errorstring, wmfmt, args);
+    va_end(args);
+    errorstring[MAX_ERROR_LEN] = 0;
+    _WM_Global_ErrorS = errorstring;
 }

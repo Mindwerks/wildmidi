@@ -1001,7 +1001,7 @@ badfile:    _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(
 
         /* XDIRless XMIDI, we can handle them here. */
         if (!memcmp(buf, "XMID", 4)) {
-            _WM_ERROR_NEW("Warning: XMIDI without XDIR");
+            _WM_DEBUG_MSG("Warning: XMIDI without XDIR");
             ctx->info.tracks = 1;
         }
         /* Not an XMIDI that we recognise */
