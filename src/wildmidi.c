@@ -23,16 +23,16 @@
 
 #include "config.h"
 
-#include <sys/types.h>
 #include <stdint.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #if defined(__DJGPP__)
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "getopt_long.h"
 #include <conio.h>
 #define getopt dj_getopt /* hack */
@@ -44,29 +44,32 @@
 #ifdef AUDIODRV_DOSSB
 #include "dossb.h"
 #endif
-#endif
 
-#if (defined _WIN32) || (defined __CYGWIN__)
+#elif (defined _WIN32) || (defined __CYGWIN__)
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <conio.h>
 #include <windows.h>
 #include <mmsystem.h>
 #define msleep(s) Sleep((s))
 #include <io.h>
-#undef close
-#define close _close
-#undef open
-#define open _open
-#undef read
-#define read _read
-#undef write
-#define write _write
-#undef lseek
-#define lseek _lseek
 #include "getopt_long.h"
-#endif
 
-#if !defined(_WIN32) && !defined(__DJGPP__) /* unix build */
+#elif defined(WILDMIDI_AMIGA)
+extern void amiga_sysinit (void);
+extern int amiga_usleep(unsigned long millisec);
+#define msleep(s) amiga_usleep((s)*1000)
+extern int amiga_getch (unsigned char *ch);
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include "getopt_long.h"
+
+#else /* unix build */
 static int msleep(unsigned long millisec);
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -209,7 +212,98 @@ static int (*send_output)(int8_t *output_data, int output_size);
 static void (*close_output)(void);
 static void (*pause_output)(void);
 static void (*resume_output)(void);
+
+#if defined(_WIN32)
 static int audio_fd = -1;
+#define WM_IS_BADF(_fd) (_fd)<0
+#define WM_BADF -1
+static inline int wmidi_fileexists (const char *path) {
+    return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES);
+}
+static inline int wmidi_open_write (const char *path) {
+    return _open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
+}
+static inline void wmidi_close (int fd) {
+    _close(fd);
+}
+static inline long wmidi_seekset (int fd, long ofs) {
+    return _lseek(fd, ofs, SEEK_SET);
+}
+static inline int wmidi_write (int fd, const void *buf, size_t size) {
+    return _write(fd, buf, size);
+}
+
+#elif defined(__DJGPP__)
+static int audio_fd = -1;
+#define WM_IS_BADF(_fd) (_fd)<0
+#define WM_BADF -1
+static inline int wmidi_fileexists (const char *path) {
+    struct ffblk f;
+    return (findfirst(path, &f, FA_ARCH | FA_RDONLY) == 0);
+}
+static inline int wmidi_open_write (const char *path) {
+    return open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
+}
+static inline void wmidi_close (int fd) {
+    close(fd);
+}
+static inline off_t wmidi_seekset (int fd, off_t ofs) {
+    return lseek(fd, ofs, SEEK_SET);
+}
+static inline int wmidi_write (int fd, const void *buf, size_t size) {
+    return write(fd, buf, size);
+}
+
+#elif defined(WILDMIDI_AMIGA)
+static BPTR audio_fd = 0;
+#define WM_IS_BADF(_fd) (_fd)==0
+#define WM_BADF 0
+static inline int wmidi_fileexists (const char *path) {
+    BPTR fd = Open((const STRPTR)path, MODE_OLDFILE);
+    if (!fd) return 0;
+    Close(fd); return 1;
+}
+static inline BPTR wmidi_open_write (const char *path) {
+    return Open((const STRPTR) path, MODE_NEWFILE);
+}
+static inline LONG wmidi_close (BPTR fd) {
+    return Close(fd);
+}
+static inline LONG wmidi_seekset (BPTR fd, LONG ofs) {
+    return Seek(fd, ofs, OFFSET_BEGINNING);
+}
+static LONG wmidi_write (BPTR fd, /*const*/ void *buf, LONG size) {
+    LONG written = 0, result;
+    unsigned char *p = (unsigned char *)buf;
+    while (written < size) {
+        result = Write(fd, p + written, size - written);
+        if (result < 0) return result;
+        written += result;
+    }
+    return written;
+}
+
+#else /* common posix case */
+static int audio_fd = -1;
+#define WM_IS_BADF(_fd) (_fd)<0
+#define WM_BADF -1
+static inline int wmidi_fileexists (const char *path) {
+    struct stat st;
+    return (stat(path, &st) == 0);
+}
+static inline int wmidi_open_write (const char *path) {
+    return open(path, (O_RDWR | O_CREAT | O_TRUNC), (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
+}
+static inline int wmidi_close (int fd) {
+    return close(fd);
+}
+static inline off_t wmidi_seekset (int fd, off_t ofs) {
+    return lseek(fd, ofs, SEEK_SET);
+}
+static inline ssize_t wmidi_write (int fd, const void *buf, size_t size) {
+    return write(fd, buf, size);
+}
+#endif
 
 static void pause_output_nop(void) {
 }
@@ -222,47 +316,32 @@ static void resume_output_nop(void) {
 static char midi_file[1024];
 
 static int write_midi_output(void *output_data, int output_size) {
-#ifdef __DJGPP__
-    struct ffblk f;
-#else
-    struct stat st;
-#endif
-
     if (midi_file[0] == '\0')
         return (-1);
 
 /*
  * Test if file already exists 
  */
-#ifdef __DJGPP__
-    if (findfirst(midi_file, &f, FA_ARCH | FA_RDONLY) == 0) {
-#else
-    if (stat(midi_file, &st) == 0) {
-#endif
+    if (wmidi_fileexists(midi_file)) {
         fprintf(stderr, "\rError: %s already exists\r\n", midi_file);
         return (-1);
     }
 
-#if defined(_WIN32) || defined(__DJGPP__)
-    audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
-#else
-    audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC),
-                                                            (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
-#endif
-    if (audio_fd < 0) {
+    audio_fd = wmidi_open_write(midi_file);
+    if (WM_IS_BADF(audio_fd)) {
         fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
         return (-1);
     }
 
-    if (write(audio_fd, output_data, output_size) < 0) {
+    if (wmidi_write(audio_fd, output_data, output_size) < 0) {
         fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(errno));
-        close(audio_fd);
-        audio_fd = -1;
+        wmidi_close(audio_fd);
+        audio_fd = WM_BADF;
         return (-1);
     }
 
-    close(audio_fd);
-    audio_fd = -1;
+    wmidi_close(audio_fd);
+    audio_fd = WM_BADF;
     return (0);
 }
 
@@ -296,13 +375,8 @@ static int open_wav_output(void) {
     if (wav_file[0] == '\0')
         return (-1);
 
-#if defined(_WIN32) || defined(__DJGPP__)
-    audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
-#else
-    audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
-                                                           (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
-#endif
-    if (audio_fd < 0) {
+    audio_fd = wmidi_open_write(wav_file);
+    if (WM_IS_BADF(audio_fd)) {
         fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
         return (-1);
     } else {
@@ -318,10 +392,10 @@ static int open_wav_output(void) {
         wav_hdr[31] = (bytes_per_sec >> 24) & 0xFF;
     }
 
-    if (write(audio_fd, &wav_hdr, 44) < 0) {
+    if (wmidi_write(audio_fd, &wav_hdr, 44) < 0) {
         fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(errno));
-        close(audio_fd);
-        audio_fd = -1;
+        wmidi_close(audio_fd);
+        audio_fd = WM_BADF;
         return (-1);
     }
 
@@ -342,10 +416,10 @@ static int write_wav_output(int8_t *output_data, int output_size) {
         swp[i] = (swp[i] << 8) | (swp[i] >> 8);
     }
 #endif
-    if (write(audio_fd, output_data, output_size) < 0) {
+    if (wmidi_write(audio_fd, output_data, output_size) < 0) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
-        close(audio_fd);
-        audio_fd = -1;
+        wmidi_close(audio_fd);
+        audio_fd = WM_BADF;
         return (-1);
     }
 
@@ -355,7 +429,7 @@ static int write_wav_output(int8_t *output_data, int output_size) {
 
 static void close_wav_output(void) {
     uint8_t wav_count[4];
-    if (audio_fd < 0)
+    if (WM_IS_BADF(audio_fd))
         return;
 
     printf("Finishing and closing wav output\r");
@@ -363,8 +437,8 @@ static void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    lseek(audio_fd, 40, SEEK_SET);
-    if (write(audio_fd, &wav_count, 4) < 0) {
+    wmidi_seekset(audio_fd, 40);
+    if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
         goto end;
     }
@@ -374,16 +448,16 @@ static void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    lseek(audio_fd, 4, SEEK_SET);
-    if (write(audio_fd, &wav_count, 4) < 0) {
+    wmidi_seekset(audio_fd, 4);
+    if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
         goto end;
     }
 
 end:    printf("\n");
-    if (audio_fd >= 0)
-        close(audio_fd);
-    audio_fd = -1;
+    if (!WM_IS_BADF(audio_fd))
+        wmidi_close(audio_fd);
+    audio_fd = WM_BADF;
 }
 
 #if (defined _WIN32) || (defined __CYGWIN__)
@@ -1354,6 +1428,9 @@ int main(int argc, char **argv) {
     }
 
     wm_inittty();
+#ifdef WILDMIDI_AMIGA
+    amiga_sysinit();
+#endif
 
     WildMidi_MasterVolume(master_volume);
 
@@ -1427,6 +1504,8 @@ int main(int argc, char **argv) {
                 ch = getch();
                 putch(ch);
             }
+#elif defined(WILDMIDI_AMIGA)
+            amiga_getch (&ch);
 #else
             if (read(STDIN_FILENO, &ch, 1) != 1)
                 ch = 0;
@@ -1647,7 +1726,7 @@ end2: close_output();
 
 /* helper / replacement functions: */
 
-#if !defined(_WIN32) && !defined(__DJGPP__)
+#if !defined(_WIN32) && !defined(__DJGPP__) && !defined(WILDMIDI_AMIGA)
 static int msleep(unsigned long milisec) {
     struct timespec req = { 0, 0 };
     time_t sec = (int) (milisec / 1000);

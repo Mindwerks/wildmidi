@@ -28,7 +28,7 @@
 void wm_inittty(void);
 void wm_resetty(void);
 
-#if defined(_WIN32)||defined(__DJGPP__)
+#if defined(_WIN32)||defined(__DJGPP__)||defined(WILDMIDI_AMIGA)
 #define wm_inittty() do {} while (0)
 #define wm_resetty() do {} while (0)
 #endif /* !_WIN32, !__DJGPP__ */
