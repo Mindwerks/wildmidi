@@ -27,7 +27,7 @@
 /* library version number */
 #define LIBWILDMIDI_VER_MAJOR 0L
 #define LIBWILDMIDI_VER_MINOR 4L
-#define LIBWILDMIDI_VER_MICRO 0L
+#define LIBWILDMIDI_VER_MICRO 1L
 #define LIBWILDMIDI_VERSION     \
       ((LIBWILDMIDI_VER_MAJOR << 16) | \
        (LIBWILDMIDI_VER_MINOR <<  8) | \
