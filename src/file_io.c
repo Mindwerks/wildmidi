@@ -25,18 +25,14 @@
 
 #include <stdint.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef WILDMIDI_AMIGA
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#if defined(__MORPHOS__) || defined(__AROS__) || defined(AMIGAOS)	|| \
-      defined(__amigaos__) || defined(__amigaos4__) || defined(__amigados__)	|| \
-      defined(AMIGA) || defined(_AMIGA) || defined(__AMIGA__)
-#define WILDMIDI_AMIGA 1
 #endif
-
 #ifdef _WIN32
 #include <io.h>
 #undef close

@@ -52,6 +52,9 @@
 /* define this if you are running a bigendian system (motorola, sparc, etc) */
 #cmakedefine WORDS_BIGENDIAN 1
 
+/* define this if building for AmigaOS variants */
+#cmakedefine WILDMIDI_AMIGA 1
+
 /* Define if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H
 
