@@ -97,6 +97,6 @@ void amiga_usleep(unsigned long timeout) {
     timerio->tr_node.io_Command = TR_ADDREQUEST;
     timerio->tr_time.tv_secs = timeout / 1000000;
     timerio->tr_time.tv_micro = timeout % 1000000;
-    SendIO(&timerio->tr_node);
-    WaitIO(&timerio->tr_node);
+    SendIO((struct IORequest *) timerio);
+    WaitIO((struct IORequest *) timerio);
 }
