@@ -1,6 +1,9 @@
 /* wildmidi config for amigaos variants */
 #define WILDMIDI_AMIGA 1
 
+/* FIXME: no locks for now - remove if/when it is properly implemented !!! */
+#define WM_NO_LOCK 1
+
 #define WILDMIDI_CFG "wildmidi.cfg"
 
 #define PACKAGE_URL "http://www.mindwerks.net/projects/wildmidi/"
