@@ -265,18 +265,20 @@ static char *wm_strdup (const char *str) {
 static inline int wm_isdigit(int c) {
     return (c >= '0' && c <= '9');
 }
-static inline int wm_islower(int c) {
-    return (c >= 'a' && c <= 'z');
-}
 static inline int wm_isupper(int c) {
     return (c >= 'A' && c <= 'Z');
 }
 static inline int wm_tolower(int c) {
     return ((wm_isupper(c)) ? (c | ('a' - 'A')) : c);
 }
+#if 0 /* clang whines that these aren't used. */
+static inline int wm_islower(int c) {
+    return (c >= 'a' && c <= 'z');
+}
 static inline int wm_toupper(int c) {
     return ((wm_islower(c)) ? (c & ~('a' - 'A')) : c);
 }
+#endif
 
 static int wm_strcasecmp(const char *s1, const char * s2) {
     const char * p1 = s1;
