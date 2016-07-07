@@ -17,3 +17,4 @@
 #define __builtin_expect(x,c) x
 #endif
 
+#define AUDIODRV_AHI 1 /* AHI output for player app */

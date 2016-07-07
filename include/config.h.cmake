@@ -70,3 +70,4 @@
 #cmakedefine AUDIODRV_ALSA
 #cmakedefine AUDIODRV_OSS
 #cmakedefine AUDIODRV_OPENAL
+#cmakedefine AUDIODRV_AHI

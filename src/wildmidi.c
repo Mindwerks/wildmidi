@@ -64,6 +64,9 @@ extern int amiga_getch (unsigned char *ch);
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "getopt_long.h"
+#ifdef AUDIODRV_AHI
+#include <devices/ahi.h>
+#endif
 
 #else /* unix build */
 static int msleep(unsigned long millisec);
@@ -774,6 +777,119 @@ static int open_sb_output(void)
     close_output = close_sb_output;
 
     return 0;
+}
+
+#elif defined(WILDMIDI_AMIGA) && defined(AUDIODRV_AHI)
+
+/* Driver for output to native Amiga AHI device:
+ * Written by Szilárd Biró <col.lawrence@gmail.com>, loosely based
+ * on an old AOS4 version by Fredrik Wikstrom <fredrik@a500.org>
+ */
+
+#define BUFFERSIZE (4 << 10)
+
+static struct MsgPort *AHImp = NULL;
+static struct AHIRequest *AHIReq[2] = { NULL, NULL };
+static int active = 0;
+static int8_t *AHIBuf[2] = { NULL, NULL };
+
+#define open_audio_output open_ahi_output
+static int write_ahi_output(int8_t *output_data, int output_size);
+static void close_ahi_output(void);
+
+static int open_ahi_output(void) {
+    AHImp = CreateMsgPort();
+    if (AHImp) {
+        AHIReq[0] = (struct AHIRequest *)CreateIORequest(AHImp, sizeof(struct AHIRequest));
+        if (AHIReq[0]) {
+            AHIReq[0]->ahir_Version = 4;
+            AHIReq[1] = AllocVec(sizeof(struct AHIRequest), MEMF_PUBLIC);
+            if (AHIReq[1]) {
+                if (!OpenDevice(AHINAME, AHI_DEFAULT_UNIT, (struct IORequest *)AHIReq[0], 0)) {
+                    /*AHIReq[0]->ahir_Std.io_Message.mn_Node.ln_Pri = 0;*/
+                    AHIReq[0]->ahir_Std.io_Command = CMD_WRITE;
+                    AHIReq[0]->ahir_Std.io_Data = NULL;
+                    AHIReq[0]->ahir_Std.io_Offset = 0;
+                    AHIReq[0]->ahir_Frequency = rate;
+                    AHIReq[0]->ahir_Type = AHIST_S16S;/* 16 bit stereo */
+                    AHIReq[0]->ahir_Volume = 0x10000;
+                    AHIReq[0]->ahir_Position = 0x8000;
+                    CopyMem(AHIReq[0], AHIReq[1], sizeof(struct AHIRequest));
+
+                    AHIBuf[0] = AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+                    if (AHIBuf[0]) {
+                        AHIBuf[1] = AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+                        if (AHIBuf[1]) {
+                            send_output = write_ahi_output;
+                            close_output = close_ahi_output;
+                            pause_output = pause_output_nop;
+                            resume_output = resume_output_nop;
+                            return (0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    close_ahi_output();
+    fprintf(stderr, "ERROR: Unable to open AHI output\r\n");
+    return (-1);
+}
+
+static int write_ahi_output(int8_t *output_data, int output_size) {
+    int chunk;
+    while (output_size > 0) {
+        if (AHIReq[active]->ahir_Std.io_Data) {
+            WaitIO((struct IORequest *) AHIReq[active]);
+        }
+        chunk = (output_size < BUFFERSIZE)? output_size : BUFFERSIZE;
+        memcpy(AHIBuf[active], output_data, chunk);
+        output_size -= chunk;
+        output_data += chunk;
+
+        AHIReq[active]->ahir_Std.io_Data = AHIBuf[active];
+        AHIReq[active]->ahir_Std.io_Length = chunk;
+        AHIReq[active]->ahir_Link = !CheckIO((struct IORequest *) AHIReq[active ^ 1]) ? AHIReq[active ^ 1] : NULL;
+        SendIO((struct IORequest *)AHIReq[active]);
+        active ^= 1;
+    }
+    return (0);
+}
+
+static void close_ahi_output(void) {
+    if (AHIReq[1]) {
+        if (!CheckIO((struct IORequest *) AHIReq[1])) {
+            AbortIO((struct IORequest *) AHIReq[1]);
+            WaitIO((struct IORequest *) AHIReq[1]);
+        }
+        FreeVec(AHIReq[1]);
+        AHIReq[1] = NULL;
+    }
+    if (AHIReq[0]) {
+        if (!CheckIO((struct IORequest *) AHIReq[0])) {
+            AbortIO((struct IORequest *) AHIReq[0]);
+            WaitIO((struct IORequest *) AHIReq[0]);
+        }
+        if (AHIReq[0]->ahir_Std.io_Device) {
+            CloseDevice((struct IORequest *) AHIReq[0]);
+            AHIReq[0]->ahir_Std.io_Device = NULL;
+        }
+        DeleteIORequest((struct IORequest *) AHIReq[0]);
+        AHIReq[0] = NULL;
+    }
+    if (AHImp) {
+        DeleteMsgPort(AHImp);
+        AHImp = NULL;
+    }
+    if (AHIBuf[0]) {
+        FreeVec(AHIBuf[0]);
+        AHIBuf[0] = NULL;
+    }
+    if (AHIBuf[1]) {
+        FreeVec(AHIBuf[1]);
+        AHIBuf[1] = NULL;
+    }
 }
 
 #else
