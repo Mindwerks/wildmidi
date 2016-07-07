@@ -67,7 +67,7 @@ static const char *errors[WM_ERR_MAX+1] = {
 char * _WM_Global_ErrorS = NULL;
 int _WM_Global_ErrorI = 0;
 
-void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, int wmerno, const char * wmfor, int error) {
+void _WM_GLOBAL_ERROR(const char * func, unsigned int lne, int wmerno, const char * wmfor, int error) {
 
     char *errorstring;
 
@@ -82,19 +82,19 @@ void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, in
 
     if (error == 0) {
         if (wmfor == NULL) {
-            sprintf(errorstring,"Error (%s:%s:%i) %s",
-                    func, file, lne, errors[wmerno]);
+            sprintf(errorstring,"Error (%s:%i) %s",
+                    func, lne, errors[wmerno]);
         } else {
-            sprintf(errorstring,"Error (%s:%s:%i) %s (%s)",
-                    func, file, lne, wmfor, errors[wmerno]);
+            sprintf(errorstring,"Error (%s:%i) %s (%s)",
+                    func, lne, wmfor, errors[wmerno]);
         }
     } else {
         if (wmfor == NULL) {
-            sprintf(errorstring,"System Error (%s:%s:%i) %s : %s",
-                    func, file, lne, errors[wmerno], strerror(error));
+            sprintf(errorstring,"System Error (%s:%i) %s : %s",
+                    func, lne, errors[wmerno], strerror(error));
         } else {
-            sprintf(errorstring,"System Error (%s:%s:%i) %s (%s) : %s",
-                    func, file, lne, wmfor, errors[wmerno], strerror(error));
+            sprintf(errorstring,"System Error (%s:%i) %s (%s) : %s",
+                    func, lne, wmfor, errors[wmerno], strerror(error));
         }
     }
 

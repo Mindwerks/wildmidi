@@ -227,7 +227,7 @@ int _WM_mus2midi(uint8_t *in, uint32_t insize,
     int channelMap[MIDI_MAXCHANNELS], currentChannel;
 
     if (insize < MUS_HEADERSIZE) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
         return (-1);
     }
 
@@ -243,16 +243,16 @@ int _WM_mus2midi(uint8_t *in, uint32_t insize,
     header.instrCnt = READ_INT16(&in[12]);
 
     if (memcmp(header.ID, MUS_ID, 4)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_MUS, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, NULL, 0);
         return (-1);
     }
     if (insize < (uint32_t)header.scoreLen + (uint32_t)header.scoreStart) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
         return (-1);
     }
     /* channel #15 should be excluded in the numchannels field: */
     if (header.channels > MIDI_MAXCHANNELS - 1) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_INVALID, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
         return (-1);
     }
 

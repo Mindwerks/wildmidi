@@ -72,12 +72,12 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     uint16_t pitchbend_tmp = 0;
 
     if (mus_size < 17) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_MUS, "File too short", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, "File too short", 0);
         return NULL;
     }
 
     if (memcmp(mus_data, mus_hdr, 4)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_MUS, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, NULL, 0);
         return NULL;
     }
 
@@ -101,7 +101,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 
     // Check that we have enough data to check the rest
     if (mus_size < (mus_data_ofs + (mus_no_instr << 1) + mus_song_len)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_MUS, "File too short", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, "File too short", 0);
         return NULL;
     }
 
@@ -316,7 +316,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 
         setup_ret = _WM_SetupMidiEvent(mus_mdi, (uint8_t *)mus_event, 0);
         if (setup_ret == 0) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
             goto _mus_end;
         }
 
@@ -345,7 +345,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 _mus_end_of_song:
     // Finalise mdi structure
     if ((mus_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _mus_end;
     }
     _WM_midi_setup_endoftrack(mus_mdi);
