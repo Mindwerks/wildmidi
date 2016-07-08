@@ -375,6 +375,7 @@ static int WM_LoadConfig(const char *config_file) {
             config_buffer[config_ptr] = '\0';
 
             if (config_ptr != line_start_ptr) {
+                _WM_Global_ErrorI = 0; /* because WM_LC_Tokenize_Line() can legitimately return NULL */
                 line_tokens = WM_LC_Tokenize_Line(&config_buffer[line_start_ptr]);
                 if (line_tokens) {
                     if (strcasecmp(line_tokens[0], "dir") == 0) {
@@ -472,10 +473,10 @@ static int WM_LoadConfig(const char *config_file) {
                         }
                         _WM_reverb_room_width = (float) atof(line_tokens[1]);
                         if (_WM_reverb_room_width < 1.0f) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_width < 1 meter, setting to minimum of 1 meter)", 0);
+                            _WM_DEBUG_MSG("%s: reverb_room_width < 1 meter, setting to minimum of 1 meter", config_file);
                             _WM_reverb_room_width = 1.0f;
                         } else if (_WM_reverb_room_width > 100.0f) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_width > 100 meters, setting to maximum of 100 meters)", 0);
+                            _WM_DEBUG_MSG("%s: reverb_room_width > 100 meters, setting to maximum of 100 meters", config_file);
                             _WM_reverb_room_width = 100.0f;
                         }
                     } else if (strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
@@ -490,10 +491,10 @@ static int WM_LoadConfig(const char *config_file) {
                         }
                         _WM_reverb_room_length = (float) atof(line_tokens[1]);
                         if (_WM_reverb_room_length < 1.0f) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_length < 1 meter, setting to minimum of 1 meter)", 0);
+                            _WM_DEBUG_MSG("%s: reverb_room_length < 1 meter, setting to minimum of 1 meter", config_file);
                             _WM_reverb_room_length = 1.0f;
                         } else if (_WM_reverb_room_length > 100.0f) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_room_length > 100 meters, setting to maximum of 100 meters)", 0);
+                            _WM_DEBUG_MSG("%s: reverb_room_length > 100 meters, setting to maximum of 100 meters", config_file);
                             _WM_reverb_room_length = 100.0f;
                         }
                     } else if (strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
@@ -509,7 +510,7 @@ static int WM_LoadConfig(const char *config_file) {
                         _WM_reverb_listen_posx = (float) atof(line_tokens[1]);
                         if ((_WM_reverb_listen_posx > _WM_reverb_room_width)
                                 || (_WM_reverb_listen_posx < 0.0f)) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_listen_posx set outside of room)", 0);
+                            _WM_DEBUG_MSG("%s: reverb_listen_posx set outside of room", config_file);
                             _WM_reverb_listen_posx = _WM_reverb_room_width / 2.0f;
                         }
                     } else if (strcasecmp(line_tokens[0],
@@ -526,7 +527,7 @@ static int WM_LoadConfig(const char *config_file) {
                         _WM_reverb_listen_posy = (float) atof(line_tokens[1]);
                         if ((_WM_reverb_listen_posy > _WM_reverb_room_width)
                                 || (_WM_reverb_listen_posy < 0.0f)) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(reverb_listen_posy set outside of room)", 0);
+                            _WM_DEBUG_MSG("%s: reverb_listen_posy set outside of room", config_file);
                             _WM_reverb_listen_posy = _WM_reverb_room_length * 0.75f;
                         }
                     } else if (strcasecmp(line_tokens[0], "guspat_editor_author_cant_read_so_fix_release_time_for_me") == 0) {
@@ -671,13 +672,13 @@ static int WM_LoadConfig(const char *config_file) {
                         while (line_tokens[token_count]) {
                             if (strncasecmp(line_tokens[token_count], "amp=", 4) == 0) {
                                 if (!wm_isdigit(line_tokens[token_count][4])) {
-                                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in patch line)", 0);
+                                    _WM_DEBUG_MSG("%s: syntax error in patch line for %s", config_file, "amp=");
                                 } else {
                                     tmp_patch->amp = (atoi(&line_tokens[token_count][4]) << 10) / 100;
                                 }
                             } else if (strncasecmp(line_tokens[token_count], "note=", 5) == 0) {
                                 if (!wm_isdigit(line_tokens[token_count][5])) {
-                                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in patch line)", 0);
+                                    _WM_DEBUG_MSG("%s: syntax error in patch line for %s", config_file, "note=");
                                 } else {
                                     tmp_patch->note = atoi(&line_tokens[token_count][5]);
                                 }
@@ -685,16 +686,16 @@ static int WM_LoadConfig(const char *config_file) {
                                 if ((!wm_isdigit(line_tokens[token_count][8])) ||
                                     (!wm_isdigit(line_tokens[token_count][10])) ||
                                     (line_tokens[token_count][9] != '=')) {
-                                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in patch line)", 0);
+                                    _WM_DEBUG_MSG("%s: syntax error in patch line for %s", config_file, "env_time");
                                 } else {
                                     uint32_t env_no = atoi(&line_tokens[token_count][8]);
                                     if (env_no > 5) {
-                                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in patch line)", 0);
+                                        _WM_DEBUG_MSG("%s: syntax error in patch line for %s", config_file, "env_time");
                                     } else {
                                         tmp_patch->env[env_no].time = (float) atof(&line_tokens[token_count][10]);
                                         if ((tmp_patch->env[env_no].time > 45000.0f) ||
                                             (tmp_patch->env[env_no].time < 1.47f)) {
-                                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(range error in patch line)", 0);
+                                            _WM_DEBUG_MSG("%s: range error in patch line %s", config_file, "env_time");
                                             tmp_patch->env[env_no].set &= 0xFE;
                                         } else {
                                             tmp_patch->env[env_no].set |= 0x01;
@@ -705,16 +706,16 @@ static int WM_LoadConfig(const char *config_file) {
                                 if ((!wm_isdigit(line_tokens[token_count][9])) ||
                                     (!wm_isdigit(line_tokens[token_count][11])) ||
                                     (line_tokens[token_count][10] != '=')) {
-                                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in patch line)", 0);
+                                    _WM_DEBUG_MSG("%s: syntax error in patch line for %s", config_file, "env_level");
                                 } else {
                                     uint32_t env_no = atoi(&line_tokens[token_count][9]);
                                     if (env_no > 5) {
-                                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in patch line)", 0);
+                                        _WM_DEBUG_MSG("%s: syntax error in patch line for %s", config_file, "env_level");
                                     } else {
                                         tmp_patch->env[env_no].level = (float) atof(&line_tokens[token_count][11]);
                                         if ((tmp_patch->env[env_no].level > 1.0f) ||
                                             (tmp_patch->env[env_no].level < 0.0f)) {
-                                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(range error in patch line)", 0);
+                                            _WM_DEBUG_MSG("%s: range error in patch line for %s", config_file, "env_level");
                                             tmp_patch->env[env_no].set &= 0xFD;
                                         } else {
                                             tmp_patch->env[env_no].set |= 0x02;
@@ -733,6 +734,12 @@ static int WM_LoadConfig(const char *config_file) {
                             token_count++;
                         }
                     }
+                }
+                else if (_WM_Global_ErrorI) { /* malloc() failure in WM_LC_Tokenize_Line() */
+                    WM_FreePatches();
+                    free(line_tokens);
+                    free(config_buffer);
+                    return (-1);
                 }
                 /* free up tokens */
                 free(line_tokens);
@@ -2024,7 +2031,11 @@ WildMidi_GetInfo(midi * handle) {
         free(mdi->tmp_info->copyright);
         mdi->tmp_info->copyright = malloc(strlen(mdi->extra_info.copyright) + 1);
         if (mdi->tmp_info->copyright == NULL) {
+            free(mdi->tmp_info);
+            mdi->tmp_info = NULL;
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set copyright", 0);
+            _WM_Unlock(&mdi->lock);
+            return (NULL);
         } else {
             strcpy(mdi->tmp_info->copyright, mdi->extra_info.copyright);
         }
@@ -2113,6 +2124,7 @@ WM_SYMBOL char * WildMidi_GetError (void) {
  * Clear any error message
  */
 WM_SYMBOL void WildMidi_ClearError (void) {
+    _WM_Global_ErrorI = 0;
     if (_WM_Global_ErrorS != NULL) {
         free(_WM_Global_ErrorS);
         _WM_Global_ErrorS = NULL;

@@ -910,7 +910,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 
         /* Never occur */
         default:
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized event)", 0);
+            _WM_DEBUG_MSG("%s: unrecognized event", __FUNCTION__);
             break;
         }
     }

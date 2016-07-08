@@ -111,4 +111,5 @@ void _WM_ERROR_NEW(const char * wmfmt, ...) {
     va_end(args);
     errorstring[MAX_ERROR_LEN] = 0;
     _WM_Global_ErrorS = errorstring;
+    _WM_Global_ErrorI = WM_ERR_MAX;/* well, it's a custom error message */
 }
