@@ -231,7 +231,6 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     hmi_track_offset[i] += 4;
                 } else {
                     if ((setup_ret = _WM_SetupMidiEvent(hmi_mdi,hmi_data,hmi_running_event[i])) == 0) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                         goto _hmi_end;
                     }
                     if ((hmi_data[0] == 0xff) && (hmi_data[1] == 0x2f) && (hmi_data[2] == 0x00)) {

@@ -245,7 +245,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 do {
                     setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], running_event[i]);
                     if (setup_ret == 0) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                         goto _end;
                     }
                     if (tracks[i][0] > 0x7f) {
@@ -307,7 +306,6 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
             do {
                 setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], running_event[i]);
                 if (setup_ret == 0) {
-                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                     goto _end;
                 }
                 if (tracks[i][0] > 0x7f) {

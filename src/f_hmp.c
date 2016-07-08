@@ -277,7 +277,6 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                     uint32_t setup_ret = 0;
 
                     if ((setup_ret = _WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], 0)) == 0) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                         goto _hmp_end;
                     }
 

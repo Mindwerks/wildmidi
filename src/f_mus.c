@@ -316,7 +316,6 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 
         setup_ret = _WM_SetupMidiEvent(mus_mdi, (uint8_t *)mus_event, 0);
         if (setup_ret == 0) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
             goto _mus_end;
         }
 
