@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include "wm_error.h"
 
-void _WM_ERROR_NEW(const char * wmfmt, ...) {
+void _WM_DEBUG_MSG(const char * wmfmt, ...) {
     va_list args;
     fprintf(stderr, "\r");
     va_start(args, wmfmt);
@@ -67,62 +67,49 @@ static const char *errors[WM_ERR_MAX+1] = {
 char * _WM_Global_ErrorS = NULL;
 int _WM_Global_ErrorI = 0;
 
-void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, int wmerno, const char * wmfor, int error) {
+void _WM_GLOBAL_ERROR(const char * func, unsigned int lne, int wmerno, const char * wmfor, int error) {
 
-    char * errorstring = NULL;
+    char *errorstring;
 
-    if ((wmerno < 0) || (wmerno >= WM_ERR_MAX)) return;
+    if (wmerno < 0 || wmerno >= WM_ERR_MAX)
+         wmerno = WM_ERR_MAX; /* set to invalid error code. */
 
     _WM_Global_ErrorI = wmerno;
 
     if (_WM_Global_ErrorS != NULL) free(_WM_Global_ErrorS);
 
-    errorstring = calloc(1, MAX_ERROR_LEN+1);
+    errorstring = malloc(MAX_ERROR_LEN+1);
 
     if (error == 0) {
         if (wmfor == NULL) {
-            sprintf(errorstring,"Error (%s:%s:%i) %s",
-                    func, file, lne, errors[wmerno]);
+            sprintf(errorstring,"Error (%s:%i) %s",
+                    func, lne, errors[wmerno]);
         } else {
-            sprintf(errorstring,"Error (%s:%s:%i) %s (%s)",
-                    func, file, lne, wmfor, errors[wmerno]);
+            sprintf(errorstring,"Error (%s:%i) %s (%s)",
+                    func, lne, wmfor, errors[wmerno]);
         }
     } else {
         if (wmfor == NULL) {
-            sprintf(errorstring,"System Error (%s:%s:%i) %s : %s",
-                    func, file, lne, errors[wmerno], strerror(error));
+            sprintf(errorstring,"System Error (%s:%i) %s : %s",
+                    func, lne, errors[wmerno], strerror(error));
         } else {
-            sprintf(errorstring,"System Error (%s:%s:%i) %s (%s) : %s",
-                    func, file, lne, wmfor, errors[wmerno], strerror(error));
+            sprintf(errorstring,"System Error (%s:%i) %s (%s) : %s",
+                    func, lne, wmfor, errors[wmerno], strerror(error));
         }
     }
 
+    errorstring[MAX_ERROR_LEN] = 0;
     _WM_Global_ErrorS = errorstring;
-
-    return;
 }
 
-void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
-               const char * wmfor, int error) {
-
-    if (wmerno < 0 || wmerno > WM_ERR_MAX)
-        wmerno = WM_ERR_MAX;
-
-    if (wmfor != NULL) {
-        if (error != 0) {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s %s (%s)\n", func,
-                    lne, errors[wmerno], wmfor, strerror(error));
-        } else {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s %s\n", func, lne,
-                    errors[wmerno], wmfor);
-        }
-    } else {
-        if (error != 0) {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s (%s)\n", func, lne,
-                    errors[wmerno], strerror(error));
-        } else {
-            fprintf(stderr, "\rlibWildMidi(%s:%u): ERROR %s\n", func, lne,
-                    errors[wmerno]);
-        }
-    }
+void _WM_ERROR_NEW(const char * wmfmt, ...) {
+    char *errorstring;
+    va_list args;
+    va_start(args, wmfmt);
+    errorstring = malloc(MAX_ERROR_LEN+1);
+    vsprintf(errorstring, wmfmt, args);
+    va_end(args);
+    errorstring[MAX_ERROR_LEN] = 0;
+    _WM_Global_ErrorS = errorstring;
+    _WM_Global_ErrorI = WM_ERR_MAX;/* well, it's a custom error message */
 }

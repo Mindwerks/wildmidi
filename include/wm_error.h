@@ -50,14 +50,20 @@ enum {
 extern char * _WM_Global_ErrorS;
 extern int _WM_Global_ErrorI;
 
-extern void _WM_GLOBAL_ERROR(const char * func, const char * file, unsigned int lne, int wmerno, const char * wmfor, int error);
+extern void _WM_GLOBAL_ERROR(const char *func, unsigned int lne, int wmerno, const char * wmfor, int error);
 
+/* sets the global error string to a custom msg */
 extern void _WM_ERROR_NEW(const char * wmfmt, ...)
 #ifdef __GNUC__
         __attribute__((format(printf, 1, 2)))
 #endif
         ;
-extern void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
-                      const char * wmfor, int error);
+
+/* prints a debug message to stderr */
+extern void _WM_DEBUG_MSG(const char * wmfmt, ...)
+#ifdef __GNUC__
+        __attribute__((format(printf, 1, 2)))
+#endif
+        ;
 
 #endif /* __WM_ERROR_H */

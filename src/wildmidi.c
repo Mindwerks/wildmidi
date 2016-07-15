@@ -1307,7 +1307,8 @@ int main(int argc, char **argv) {
 
         printf("Converting %s\r\n", real_file);
         if (WildMidi_ConvertToMidi(argv[optind], &data, &size) < 0) {
-            fprintf(stderr, "Conversion failed.\r\n");
+            fprintf(stderr, "Conversion failed: %s.\r\n", WildMidi_GetError());
+            WildMidi_ClearError();
             return (1);
         }
 
@@ -1339,6 +1340,8 @@ int main(int argc, char **argv) {
                         (libraryver>> 8) & 255,
                         (libraryver    ) & 255);
     if (WildMidi_Init(config_file, rate, mixer_options) == -1) {
+        fprintf(stderr, "%s\r\n", WildMidi_GetError());
+        WildMidi_ClearError();
         return (1);
     }
 

@@ -2365,14 +2365,17 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 */
                 ret_cnt += sysex_len;
             } else {
-                _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta type event)", 0);
+                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta type event)", 0);
                 return 0;
             }
             break;
 
         default: /* Should NEVER get here */
-            return 0;
+            ret_cnt = 0;
+            break;
     }
+    if (ret_cnt == 0)
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
     return ret_cnt;
 }
 

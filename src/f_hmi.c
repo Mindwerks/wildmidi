@@ -78,7 +78,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     UNUSED(hmi_size);
 
     if (memcmp(hmi_data, "HMI-MIDISONG061595", 18)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
         return NULL;
     }
 
@@ -114,7 +114,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     smallest_delta = 0xffffffff;
 
     if (hmi_size < (370 + (hmi_track_cnt * 17))) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
         goto _hmi_end;
     }
 
@@ -127,14 +127,14 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_track_offset[i] += (*hmi_data++ << 24);
 
         if (hmi_size < (hmi_track_offset[i] + 0x5a + 4)) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
             goto _hmi_end;
         }
 
         hmi_addr = hmi_base + hmi_track_offset[i];
 
         if (memcmp(hmi_addr, "HMI-MIDITRACK", 13)) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
             goto _hmi_end;
         }
 
@@ -231,7 +231,6 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     hmi_track_offset[i] += 4;
                 } else {
                     if ((setup_ret = _WM_SetupMidiEvent(hmi_mdi,hmi_data,hmi_running_event[i])) == 0) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
                         goto _hmi_end;
                     }
                     if ((hmi_data[0] == 0xff) && (hmi_data[1] == 0x2f) && (hmi_data[2] == 0x00)) {
@@ -331,7 +330,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     }
 
     if ((hmi_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
         goto _hmi_end;
     }
 
@@ -354,4 +353,3 @@ _hmi_end:
     _WM_freeMDI(hmi_mdi);
     return 0;
 }
-
