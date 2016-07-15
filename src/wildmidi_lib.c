@@ -29,28 +29,11 @@
 #define UNUSED(x) (void)(x)
 
 #include <errno.h>
-#include <fcntl.h>
 #include <math.h>
-#ifndef _WIN32
-#include <pwd.h>
-#include <strings.h>
-#include <unistd.h>
-#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#include <tchar.h>
-#undef strcasecmp
-#define strcasecmp _stricmp
-#undef strncasecmp
-#define strncasecmp _tcsnicmp
-#endif
 
 #include "common.h"
 #include "wm_error.h"
@@ -572,6 +555,48 @@ static char *wm_strdup (const char *str) {
 static inline int wm_isdigit(int c) {
 	return (c >= '0' && c <= '9');
 }
+static inline int wm_isupper(int c) {
+	return (c >= 'A' && c <= 'Z');
+}
+static inline int wm_tolower(int c) {
+	return ((wm_isupper(c)) ? (c | ('a' - 'A')) : c);
+}
+#if 0 /* clang whines that these aren't used. */
+static inline int wm_islower(int c) {
+	return (c >= 'a' && c <= 'z');
+}
+static inline int wm_toupper(int c) {
+	return ((wm_islower(c)) ? (c & ~('a' - 'A')) : c);
+}
+#endif
+
+static int wm_strcasecmp(const char *s1, const char * s2) {
+	const char * p1 = s1;
+	const char * p2 = s2;
+	char c1, c2;
+
+	if (p1 == p2) return 0;
+	do {
+		c1 = wm_tolower (*p1++);
+		c2 = wm_tolower (*p2++);
+		if (c1 == '\0') break;
+	} while (c1 == c2);
+	return (int)(c1 - c2);
+}
+
+static int wm_strncasecmp(const char *s1, const char *s2, size_t n) {
+	const char * p1 = s1;
+	const char * p2 = s2;
+	char c1, c2;
+
+	if (p1 == p2 || n == 0) return 0;
+	do {
+		c1 = wm_tolower (*p1++);
+		c2 = wm_tolower (*p2++);
+		if (c1 == '\0' || c1 != c2) break;
+	} while (--n > 0);
+	return (int)(c1 - c2);
+}
 
 #define TOKEN_CNT_INC 8
 static char** WM_LC_Tokenize_Line(char *line_data) {
@@ -678,7 +703,7 @@ static int WM_LoadConfig(const char *config_file) {
 			if (config_ptr != line_start_ptr) {
 				line_tokens = WM_LC_Tokenize_Line(&config_buffer[line_start_ptr]);
 				if (line_tokens) {
-					if (strcasecmp(line_tokens[0], "dir") == 0) {
+					if (wm_strcasecmp(line_tokens[0], "dir") == 0) {
 						free(config_dir);
 						if (!line_tokens[1]) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
@@ -703,7 +728,7 @@ static int WM_LoadConfig(const char *config_file) {
 							config_dir[strlen(config_dir) + 1] = '\0';
 							config_dir[strlen(config_dir)] = DIR_SEPARATOR_CHAR;
 						}
-					} else if (strcasecmp(line_tokens[0], "source") == 0) {
+					} else if (wm_strcasecmp(line_tokens[0], "source") == 0) {
 						char *new_config = NULL;
 						if (!line_tokens[1]) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
@@ -751,7 +776,7 @@ static int WM_LoadConfig(const char *config_file) {
 							return -1;
 						}
 						free(new_config);
-					} else if (strcasecmp(line_tokens[0], "bank") == 0) {
+					} else if (wm_strcasecmp(line_tokens[0], "bank") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in bank line)", 0);
@@ -764,7 +789,7 @@ static int WM_LoadConfig(const char *config_file) {
 							return -1;
 						}
 						patchid = (atoi(line_tokens[1]) & 0xFF) << 8;
-					} else if (strcasecmp(line_tokens[0], "drumset") == 0) {
+					} else if (wm_strcasecmp(line_tokens[0], "drumset") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in drumset line)", 0);
@@ -777,7 +802,7 @@ static int WM_LoadConfig(const char *config_file) {
 							return -1;
 						}
 						patchid = ((atoi(line_tokens[1]) & 0xFF) << 8) | 0x80;
-					} else if (strcasecmp(line_tokens[0], "reverb_room_width") == 0) {
+					} else if (wm_strcasecmp(line_tokens[0], "reverb_room_width") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_width line)",
@@ -802,7 +827,7 @@ static int WM_LoadConfig(const char *config_file) {
 									0);
 							reverb_room_width = 100.0f;
 						}
-					} else if (strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
+					} else if (wm_strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_room_length line)",
@@ -827,7 +852,7 @@ static int WM_LoadConfig(const char *config_file) {
 									0);
 							reverb_room_length = 100.0f;
 						}
-					} else if (strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
+					} else if (wm_strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
 									"(syntax error in reverb_listen_posx line)",
@@ -848,7 +873,7 @@ static int WM_LoadConfig(const char *config_file) {
 									0);
 							reverb_listen_posx = reverb_room_width / 2.0f;
 						}
-					} else if (strcasecmp(line_tokens[0],
+					} else if (wm_strcasecmp(line_tokens[0],
 							"reverb_listener_posy") == 0) {
 						if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
@@ -870,13 +895,13 @@ static int WM_LoadConfig(const char *config_file) {
 									0);
 							reverb_listen_posy = reverb_room_length * 0.75f;
 						}
-					} else if (strcasecmp(line_tokens[0],
+					} else if (wm_strcasecmp(line_tokens[0],
 							"guspat_editor_author_cant_read_so_fix_release_time_for_me")
 							== 0) {
 						fix_release = 1;
-					} else if (strcasecmp(line_tokens[0], "auto_amp") == 0) {
+					} else if (wm_strcasecmp(line_tokens[0], "auto_amp") == 0) {
 						auto_amp = 1;
-					} else if (strcasecmp(line_tokens[0], "auto_amp_with_amp")
+					} else if (wm_strcasecmp(line_tokens[0], "auto_amp_with_amp")
 							== 0) {
 						auto_amp = 1;
 						auto_amp_with_amp = 1;
@@ -1017,7 +1042,7 @@ static int WM_LoadConfig(const char *config_file) {
 								return -1;
 							}
 						}
-						if (strncasecmp(
+						if (wm_strncasecmp(
 								&tmp_patch->filename[strlen(tmp_patch->filename)
 										- 4], ".pat", 4) != 0) {
 							strcat(tmp_patch->filename, ".pat");
@@ -1033,7 +1058,7 @@ static int WM_LoadConfig(const char *config_file) {
 
 						token_count = 0;
 						while (line_tokens[token_count]) {
-							if (strncasecmp(line_tokens[token_count], "amp=", 4)
+							if (wm_strncasecmp(line_tokens[token_count], "amp=", 4)
 									== 0) {
 								if (!wm_isdigit(line_tokens[token_count][4])) {
 									_WM_ERROR(__FUNCTION__, __LINE__,
@@ -1044,7 +1069,7 @@ static int WM_LoadConfig(const char *config_file) {
 											&line_tokens[token_count][4]) << 10)
 											/ 100;
 								}
-							} else if (strncasecmp(line_tokens[token_count],
+							} else if (wm_strncasecmp(line_tokens[token_count],
 									"note=", 5) == 0) {
 								if (!wm_isdigit(line_tokens[token_count][5])) {
 									_WM_ERROR(__FUNCTION__, __LINE__,
@@ -1054,7 +1079,7 @@ static int WM_LoadConfig(const char *config_file) {
 									tmp_patch->note = atoi(
 											&line_tokens[token_count][5]);
 								}
-							} else if (strncasecmp(line_tokens[token_count],
+							} else if (wm_strncasecmp(line_tokens[token_count],
 									"env_time", 8) == 0) {
 								if ((!wm_isdigit(line_tokens[token_count][8]))
 										|| (!wm_isdigit(
@@ -1089,7 +1114,7 @@ static int WM_LoadConfig(const char *config_file) {
 										}
 									}
 								}
-							} else if (strncasecmp(line_tokens[token_count],
+							} else if (wm_strncasecmp(line_tokens[token_count],
 									"env_level", 9) == 0) {
 								if ((!wm_isdigit(line_tokens[token_count][9]))
 										|| (!wm_isdigit(
@@ -1123,16 +1148,16 @@ static int WM_LoadConfig(const char *config_file) {
 										}
 									}
 								}
-							} else if (strcasecmp(line_tokens[token_count],
+							} else if (wm_strcasecmp(line_tokens[token_count],
 									"keep=loop") == 0) {
 								tmp_patch->keep |= SAMPLE_LOOP;
-							} else if (strcasecmp(line_tokens[token_count],
+							} else if (wm_strcasecmp(line_tokens[token_count],
 									"keep=env") == 0) {
 								tmp_patch->keep |= SAMPLE_ENVELOPE;
-							} else if (strcasecmp(line_tokens[token_count],
+							} else if (wm_strcasecmp(line_tokens[token_count],
 									"remove=sustain") == 0) {
 								tmp_patch->remove |= SAMPLE_SUSTAIN;
-							} else if (strcasecmp(line_tokens[token_count],
+							} else if (wm_strcasecmp(line_tokens[token_count],
 									"remove=clamped") == 0) {
 								tmp_patch->remove |= SAMPLE_CLAMPED;
 							}

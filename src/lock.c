@@ -30,7 +30,7 @@
 #include <windows.h>
 #else
 #define _GNU_SOURCE
-#include <unistd.h>
+#include <unistd.h> /* usleep() */
 #endif
 
 #include "lock.h"
