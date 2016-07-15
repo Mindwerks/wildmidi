@@ -219,7 +219,7 @@ static void (*resume_output)(void);
 #define wmidi_geterrno() errno /* generic case */
 #if defined(_WIN32)
 static int audio_fd = -1;
-#define WM_IS_BADF(_fd) (_fd)<0
+#define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
 static inline int wmidi_fileexists (const char *path) {
     return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES);
@@ -239,7 +239,7 @@ static inline int wmidi_write (int fd, const void *buf, size_t size) {
 
 #elif defined(__DJGPP__)
 static int audio_fd = -1;
-#define WM_IS_BADF(_fd) (_fd)<0
+#define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
 static inline int wmidi_fileexists (const char *path) {
     struct ffblk f;
@@ -260,7 +260,7 @@ static inline int wmidi_write (int fd, const void *buf, size_t size) {
 
 #elif defined(WILDMIDI_AMIGA)
 static BPTR audio_fd = 0;
-#define WM_IS_BADF(_fd) (_fd)==0
+#define WM_IS_BADF(_fd) ((_fd)==0)
 #define WM_BADF 0
 #undef wmidi_geterrno
 static int wmidi_geterrno (void) {
@@ -297,7 +297,7 @@ static LONG wmidi_write (BPTR fd, /*const*/ void *buf, LONG size) {
 
 #else /* common posix case */
 static int audio_fd = -1;
-#define WM_IS_BADF(_fd) (_fd)<0
+#define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
 static inline int wmidi_fileexists (const char *path) {
     struct stat st;
