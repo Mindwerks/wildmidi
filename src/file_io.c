@@ -173,7 +173,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
     *size = f.ff_fsize;
 #elif defined(WILDMIDI_AMIGA)
     if ((filsize = AMIGA_filesize(buffer_file)) < 0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_STAT, filename, ENOENT /* do better!! */);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT /* do better!! */);
         free(buffer_file);
         return NULL;
     }
@@ -205,13 +205,13 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
 
 #if defined(WILDMIDI_AMIGA)
     if (!(buffer_fd = AMIGA_open(buffer_file))) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_OPEN, filename, ENOENT /* do better!! */);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, ENOENT /* do better!! */);
         free(buffer_file);
         free(data);
         return NULL;
     }
     if (AMIGA_read(buffer_fd, data, filsize) != filsize) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __FILE__, __LINE__, WM_ERR_READ, filename, EIO /* do better!! */);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, EIO /* do better!! */);
         free(buffer_file);
         free(data);
         AMIGA_close(buffer_fd);
