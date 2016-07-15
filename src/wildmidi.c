@@ -23,16 +23,16 @@
 
 #include "config.h"
 
-#include <sys/types.h>
 #include <stdint.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #if defined(__DJGPP__)
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "getopt_long.h"
 #include <conio.h>
 #define getopt dj_getopt /* hack */
@@ -44,29 +44,35 @@
 #ifdef AUDIODRV_DOSSB
 #include "dossb.h"
 #endif
-#endif
 
-#if (defined _WIN32) || (defined __CYGWIN__)
+#elif (defined _WIN32) || (defined __CYGWIN__)
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <conio.h>
 #include <windows.h>
 #include <mmsystem.h>
 #define msleep(s) Sleep((s))
 #include <io.h>
-#undef close
-#define close _close
-#undef open
-#define open _open
-#undef read
-#define read _read
-#undef write
-#define write _write
-#undef lseek
-#define lseek _lseek
 #include "getopt_long.h"
+
+#elif defined(WILDMIDI_AMIGA)
+extern void amiga_sysinit (void);
+extern int amiga_usleep(unsigned long millisec);
+#define msleep(s) amiga_usleep((s)*1000)
+extern int amiga_getch (unsigned char *ch);
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include "getopt_long.h"
+#ifdef AUDIODRV_AHI
+#include <devices/ahi.h>
 #endif
 
-#if !defined(_WIN32) && !defined(__DJGPP__) /* unix build */
+#else /* unix build */
 static int msleep(unsigned long millisec);
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -209,7 +215,107 @@ static int (*send_output)(int8_t *output_data, int output_size);
 static void (*close_output)(void);
 static void (*pause_output)(void);
 static void (*resume_output)(void);
+
+#define wmidi_geterrno() errno /* generic case */
+#if defined(_WIN32)
 static int audio_fd = -1;
+#define WM_IS_BADF(_fd) ((_fd)<0)
+#define WM_BADF -1
+static inline int wmidi_fileexists (const char *path) {
+    return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES);
+}
+static inline int wmidi_open_write (const char *path) {
+    return _open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
+}
+static inline void wmidi_close (int fd) {
+    _close(fd);
+}
+static inline long wmidi_seekset (int fd, long ofs) {
+    return _lseek(fd, ofs, SEEK_SET);
+}
+static inline int wmidi_write (int fd, const void *buf, size_t size) {
+    return _write(fd, buf, size);
+}
+
+#elif defined(__DJGPP__)
+static int audio_fd = -1;
+#define WM_IS_BADF(_fd) ((_fd)<0)
+#define WM_BADF -1
+static inline int wmidi_fileexists (const char *path) {
+    struct ffblk f;
+    return (findfirst(path, &f, FA_ARCH | FA_RDONLY) == 0);
+}
+static inline int wmidi_open_write (const char *path) {
+    return open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
+}
+static inline void wmidi_close (int fd) {
+    close(fd);
+}
+static inline off_t wmidi_seekset (int fd, off_t ofs) {
+    return lseek(fd, ofs, SEEK_SET);
+}
+static inline int wmidi_write (int fd, const void *buf, size_t size) {
+    return write(fd, buf, size);
+}
+
+#elif defined(WILDMIDI_AMIGA)
+static BPTR audio_fd = 0;
+#define WM_IS_BADF(_fd) ((_fd)==0)
+#define WM_BADF 0
+#undef wmidi_geterrno
+static int wmidi_geterrno (void) {
+    switch (IoErr()) {
+    case ERROR_OBJECT_NOT_FOUND: return ENOENT;
+    case ERROR_DISK_FULL: return ENOSPC;
+    }
+    return EIO; /* better ?? */
+}
+static inline int wmidi_fileexists (const char *path) {
+    BPTR fd = Open((const STRPTR)path, MODE_OLDFILE);
+    if (!fd) return 0;
+    Close(fd); return 1;
+}
+static inline BPTR wmidi_open_write (const char *path) {
+    return Open((const STRPTR) path, MODE_NEWFILE);
+}
+static inline LONG wmidi_close (BPTR fd) {
+    return Close(fd);
+}
+static inline LONG wmidi_seekset (BPTR fd, LONG ofs) {
+    return Seek(fd, ofs, OFFSET_BEGINNING);
+}
+static LONG wmidi_write (BPTR fd, /*const*/ void *buf, LONG size) {
+    LONG written = 0, result;
+    unsigned char *p = (unsigned char *)buf;
+    while (written < size) {
+        result = Write(fd, p + written, size - written);
+        if (result < 0) return result;
+        written += result;
+    }
+    return written;
+}
+
+#else /* common posix case */
+static int audio_fd = -1;
+#define WM_IS_BADF(_fd) ((_fd)<0)
+#define WM_BADF -1
+static inline int wmidi_fileexists (const char *path) {
+    struct stat st;
+    return (stat(path, &st) == 0);
+}
+static inline int wmidi_open_write (const char *path) {
+    return open(path, (O_RDWR | O_CREAT | O_TRUNC), (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
+}
+static inline int wmidi_close (int fd) {
+    return close(fd);
+}
+static inline off_t wmidi_seekset (int fd, off_t ofs) {
+    return lseek(fd, ofs, SEEK_SET);
+}
+static inline ssize_t wmidi_write (int fd, const void *buf, size_t size) {
+    return write(fd, buf, size);
+}
+#endif
 
 static void pause_output_nop(void) {
 }
@@ -222,47 +328,32 @@ static void resume_output_nop(void) {
 static char midi_file[1024];
 
 static int write_midi_output(void *output_data, int output_size) {
-#ifdef __DJGPP__
-    struct ffblk f;
-#else
-    struct stat st;
-#endif
-
     if (midi_file[0] == '\0')
         return (-1);
 
 /*
  * Test if file already exists 
  */
-#ifdef __DJGPP__
-    if (findfirst(midi_file, &f, FA_ARCH | FA_RDONLY) == 0) {
-#else
-    if (stat(midi_file, &st) == 0) {
-#endif
+    if (wmidi_fileexists(midi_file)) {
         fprintf(stderr, "\rError: %s already exists\r\n", midi_file);
         return (-1);
     }
 
-#if defined(_WIN32) || defined(__DJGPP__)
-    audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
-#else
-    audio_fd = open(midi_file, (O_RDWR | O_CREAT | O_TRUNC),
-                                                            (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
-#endif
-    if (audio_fd < 0) {
-        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
+    audio_fd = wmidi_open_write(midi_file);
+    if (WM_IS_BADF(audio_fd)) {
+        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(wmidi_geterrno()));
         return (-1);
     }
 
-    if (write(audio_fd, output_data, output_size) < 0) {
-        fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(errno));
-        close(audio_fd);
-        audio_fd = -1;
+    if (wmidi_write(audio_fd, output_data, output_size) < 0) {
+        fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(wmidi_geterrno()));
+        wmidi_close(audio_fd);
+        audio_fd = WM_BADF;
         return (-1);
     }
 
-    close(audio_fd);
-    audio_fd = -1;
+    wmidi_close(audio_fd);
+    audio_fd = WM_BADF;
     return (0);
 }
 
@@ -296,14 +387,9 @@ static int open_wav_output(void) {
     if (wav_file[0] == '\0')
         return (-1);
 
-#if defined(_WIN32) || defined(__DJGPP__)
-    audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
-#else
-    audio_fd = open(wav_file, (O_RDWR | O_CREAT | O_TRUNC),
-                                                           (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
-#endif
-    if (audio_fd < 0) {
-        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
+    audio_fd = wmidi_open_write(wav_file);
+    if (WM_IS_BADF(audio_fd)) {
+        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(wmidi_geterrno()));
         return (-1);
     } else {
         uint32_t bytes_per_sec;
@@ -318,10 +404,10 @@ static int open_wav_output(void) {
         wav_hdr[31] = (bytes_per_sec >> 24) & 0xFF;
     }
 
-    if (write(audio_fd, &wav_hdr, 44) < 0) {
-        fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(errno));
-        close(audio_fd);
-        audio_fd = -1;
+    if (wmidi_write(audio_fd, &wav_hdr, 44) < 0) {
+        fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(wmidi_geterrno()));
+        wmidi_close(audio_fd);
+        audio_fd = WM_BADF;
         return (-1);
     }
 
@@ -342,10 +428,10 @@ static int write_wav_output(int8_t *output_data, int output_size) {
         swp[i] = (swp[i] << 8) | (swp[i] >> 8);
     }
 #endif
-    if (write(audio_fd, output_data, output_size) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
-        close(audio_fd);
-        audio_fd = -1;
+    if (wmidi_write(audio_fd, output_data, output_size) < 0) {
+        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
+        wmidi_close(audio_fd);
+        audio_fd = WM_BADF;
         return (-1);
     }
 
@@ -355,7 +441,7 @@ static int write_wav_output(int8_t *output_data, int output_size) {
 
 static void close_wav_output(void) {
     uint8_t wav_count[4];
-    if (audio_fd < 0)
+    if (WM_IS_BADF(audio_fd))
         return;
 
     printf("Finishing and closing wav output\r");
@@ -363,9 +449,9 @@ static void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    lseek(audio_fd, 40, SEEK_SET);
-    if (write(audio_fd, &wav_count, 4) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+    wmidi_seekset(audio_fd, 40);
+    if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
+        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
         goto end;
     }
 
@@ -374,16 +460,16 @@ static void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    lseek(audio_fd, 4, SEEK_SET);
-    if (write(audio_fd, &wav_count, 4) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(errno));
+    wmidi_seekset(audio_fd, 4);
+    if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
+        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
         goto end;
     }
 
 end:    printf("\n");
-    if (audio_fd >= 0)
-        close(audio_fd);
-    audio_fd = -1;
+    if (!WM_IS_BADF(audio_fd))
+        wmidi_close(audio_fd);
+    audio_fd = WM_BADF;
 }
 
 #if (defined _WIN32) || (defined __CYGWIN__)
@@ -691,6 +777,119 @@ static int open_sb_output(void)
     close_output = close_sb_output;
 
     return 0;
+}
+
+#elif defined(WILDMIDI_AMIGA) && defined(AUDIODRV_AHI)
+
+/* Driver for output to native Amiga AHI device:
+ * Written by Szilárd Biró <col.lawrence@gmail.com>, loosely based
+ * on an old AOS4 version by Fredrik Wikstrom <fredrik@a500.org>
+ */
+
+#define BUFFERSIZE (4 << 10)
+
+static struct MsgPort *AHImp = NULL;
+static struct AHIRequest *AHIReq[2] = { NULL, NULL };
+static int active = 0;
+static int8_t *AHIBuf[2] = { NULL, NULL };
+
+#define open_audio_output open_ahi_output
+static int write_ahi_output(int8_t *output_data, int output_size);
+static void close_ahi_output(void);
+
+static int open_ahi_output(void) {
+    AHImp = CreateMsgPort();
+    if (AHImp) {
+        AHIReq[0] = (struct AHIRequest *)CreateIORequest(AHImp, sizeof(struct AHIRequest));
+        if (AHIReq[0]) {
+            AHIReq[0]->ahir_Version = 4;
+            AHIReq[1] = AllocVec(sizeof(struct AHIRequest), MEMF_PUBLIC);
+            if (AHIReq[1]) {
+                if (!OpenDevice(AHINAME, AHI_DEFAULT_UNIT, (struct IORequest *)AHIReq[0], 0)) {
+                    /*AHIReq[0]->ahir_Std.io_Message.mn_Node.ln_Pri = 0;*/
+                    AHIReq[0]->ahir_Std.io_Command = CMD_WRITE;
+                    AHIReq[0]->ahir_Std.io_Data = NULL;
+                    AHIReq[0]->ahir_Std.io_Offset = 0;
+                    AHIReq[0]->ahir_Frequency = rate;
+                    AHIReq[0]->ahir_Type = AHIST_S16S;/* 16 bit stereo */
+                    AHIReq[0]->ahir_Volume = 0x10000;
+                    AHIReq[0]->ahir_Position = 0x8000;
+                    CopyMem(AHIReq[0], AHIReq[1], sizeof(struct AHIRequest));
+
+                    AHIBuf[0] = AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+                    if (AHIBuf[0]) {
+                        AHIBuf[1] = AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+                        if (AHIBuf[1]) {
+                            send_output = write_ahi_output;
+                            close_output = close_ahi_output;
+                            pause_output = pause_output_nop;
+                            resume_output = resume_output_nop;
+                            return (0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    close_ahi_output();
+    fprintf(stderr, "ERROR: Unable to open AHI output\r\n");
+    return (-1);
+}
+
+static int write_ahi_output(int8_t *output_data, int output_size) {
+    int chunk;
+    while (output_size > 0) {
+        if (AHIReq[active]->ahir_Std.io_Data) {
+            WaitIO((struct IORequest *) AHIReq[active]);
+        }
+        chunk = (output_size < BUFFERSIZE)? output_size : BUFFERSIZE;
+        memcpy(AHIBuf[active], output_data, chunk);
+        output_size -= chunk;
+        output_data += chunk;
+
+        AHIReq[active]->ahir_Std.io_Data = AHIBuf[active];
+        AHIReq[active]->ahir_Std.io_Length = chunk;
+        AHIReq[active]->ahir_Link = !CheckIO((struct IORequest *) AHIReq[active ^ 1]) ? AHIReq[active ^ 1] : NULL;
+        SendIO((struct IORequest *)AHIReq[active]);
+        active ^= 1;
+    }
+    return (0);
+}
+
+static void close_ahi_output(void) {
+    if (AHIReq[1]) {
+        if (!CheckIO((struct IORequest *) AHIReq[1])) {
+            AbortIO((struct IORequest *) AHIReq[1]);
+            WaitIO((struct IORequest *) AHIReq[1]);
+        }
+        FreeVec(AHIReq[1]);
+        AHIReq[1] = NULL;
+    }
+    if (AHIReq[0]) {
+        if (!CheckIO((struct IORequest *) AHIReq[0])) {
+            AbortIO((struct IORequest *) AHIReq[0]);
+            WaitIO((struct IORequest *) AHIReq[0]);
+        }
+        if (AHIReq[0]->ahir_Std.io_Device) {
+            CloseDevice((struct IORequest *) AHIReq[0]);
+            AHIReq[0]->ahir_Std.io_Device = NULL;
+        }
+        DeleteIORequest((struct IORequest *) AHIReq[0]);
+        AHIReq[0] = NULL;
+    }
+    if (AHImp) {
+        DeleteMsgPort(AHImp);
+        AHImp = NULL;
+    }
+    if (AHIBuf[0]) {
+        FreeVec(AHIBuf[0]);
+        AHIBuf[0] = NULL;
+    }
+    if (AHIBuf[1]) {
+        FreeVec(AHIBuf[1]);
+        AHIBuf[1] = NULL;
+    }
 }
 
 #else
@@ -1358,6 +1557,9 @@ int main(int argc, char **argv) {
     }
 
     wm_inittty();
+#ifdef WILDMIDI_AMIGA
+    amiga_sysinit();
+#endif
 
     WildMidi_MasterVolume(master_volume);
 
@@ -1431,6 +1633,8 @@ int main(int argc, char **argv) {
                 ch = getch();
                 putch(ch);
             }
+#elif defined(WILDMIDI_AMIGA)
+            amiga_getch (&ch);
 #else
             if (read(STDIN_FILENO, &ch, 1) != 1)
                 ch = 0;
@@ -1651,7 +1855,7 @@ end2: close_output();
 
 /* helper / replacement functions: */
 
-#if !defined(_WIN32) && !defined(__DJGPP__)
+#if !defined(_WIN32) && !defined(__DJGPP__) && !defined(WILDMIDI_AMIGA)
 static int msleep(unsigned long milisec) {
     struct timespec req = { 0, 0 };
     time_t sec = (int) (milisec / 1000);

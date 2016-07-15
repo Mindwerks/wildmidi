@@ -1,0 +1,61 @@
+# GNU Makefile to build for AmigaOS variants using VBCC
+#
+# make amigaos  : build for m68k-amigaos
+
+# for now, only tested for m68k-amigaos:
+AOS3 := 1
+
+# The tools
+CC=vc
+#MKLIB=join $(LIB_OBJ) as WildMidi.lib
+MKLIB=cat $(LIB_OBJ) > WildMidi.lib
+
+INCLUDE = -I. -I../include
+CFLAGS  = -O1 -speed -c99
+CFLAGS += $(INCLUDE)
+LDFLAGS = -L. -lWildMidi
+
+ifeq ($(MORPHOS),1)
+include vbcc_morphos.cfg
+endif
+ifeq ($(AOS3),1)
+include vbcc_aos3.cfg
+endif
+ifeq ($(AOS4),1)
+include vbcc_aos4.cfg
+endif
+
+# Build rules
+%.o: %.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+%.o: ../src/%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+# Objects
+LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
+PLAYER_OBJ= getopt_long.o wm_tty.o amiga.o wildmidi.o
+
+# Build targets
+.PHONY: clean distclean
+all: WildMidi.lib wildmidi
+
+WildMidi.lib: $(LIB_OBJ)
+	$(MKLIB)
+
+wildmidi: WildMidi.lib $(PLAYER_OBJ)
+	$(CC) -o $@ $(PLAYER_OBJ) $(LDFLAGS)
+
+amigaos:
+	@echo Building for m68k-amigaos
+	$(MAKE) -f Makefile.vbcc AOS3=1
+amigaos4:
+	@echo Building for ppc-amigaos4
+	$(MAKE) -f Makefile.vbcc AOS4=1
+morphos:
+	@echo Building for ppc-morphos
+	$(MAKE) -f Makefile.vbcc MORPHOS=1
+
+clean:
+	rm -rf $(LIB_OBJ) $(PLAYER_OBJ)
+distclean: clean
+	rm -rf libWildMidi.a WildMidi.lib wildmidi

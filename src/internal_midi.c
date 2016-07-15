@@ -40,6 +40,9 @@
 #ifdef __DJGPP__
 #define powf pow /* prefer C89 pow() from libc.a instead of powf() from libm. */
 #endif
+#ifdef WILDMIDI_AMIGA
+#define powf pow
+#endif
 
 #define HOLD_OFF 0x02
 
