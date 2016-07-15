@@ -131,8 +131,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
         if (home) {
             buffer_file = malloc(strlen(filename) + strlen(home) + 1);
             if (buffer_file == NULL) {
-                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
+                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, errno);
                 return NULL;
             }
             strcpy(buffer_file, home);
@@ -143,8 +142,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
         if (cwdresult != NULL)
             buffer_file = malloc(strlen(filename) + strlen(buffer_dir) + 2);
         if (buffer_file == NULL || cwdresult == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, errno);
             return NULL;
         }
         strcpy(buffer_file, buffer_dir);
@@ -157,8 +155,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
     if (buffer_file == NULL) {
         buffer_file = malloc(strlen(filename) + 1);
         if (buffer_file == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, errno);
             return NULL;
         }
         strcpy(buffer_file, filename);
@@ -197,8 +194,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
     /* +1 needed for parsing text files without a newline at the end */
     data = (uint8_t *) malloc(*size + 1);
     if (data == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, errno);
         free(buffer_file);
         return NULL;
     }

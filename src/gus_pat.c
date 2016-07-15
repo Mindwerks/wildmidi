@@ -732,27 +732,23 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
         return NULL;
     }
     if (gus_size < 239) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, filename, 0);
         free(gus_patch);
         return NULL;
     }
     if (memcmp(gus_patch, "GF1PATCH110\0ID#000002", 22)
             && memcmp(gus_patch, "GF1PATCH100\0ID#000002", 22)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)", 0);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, filename, 0);
         free(gus_patch);
         return NULL;
     }
     if (gus_patch[82] > 1) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)", 0);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, filename, 0);
         free(gus_patch);
         return NULL;
     }
     if (gus_patch[151] > 1) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)", 0);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, filename, 0);
         free(gus_patch);
         return NULL;
     }
@@ -772,8 +768,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             gus_sample = gus_sample->next;
         }
         if (gus_sample == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, 0);
             free(gus_patch);
             return NULL;
         }

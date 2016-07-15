@@ -376,8 +376,7 @@ static int WM_LoadConfig(const char *config_file) {
     if (dir_end) {
         config_dir = malloc((dir_end - config_file + 2));
         if (config_dir == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse config", errno);
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
             WM_FreePatches();
             free(config_buffer);
             return (-1);
@@ -407,14 +406,12 @@ static int WM_LoadConfig(const char *config_file) {
                         free(config_dir);
                         if (!line_tokens[1]) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(missing name in dir line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(line_tokens);
                             free(config_buffer);
                             return (-1);
                         } else if (!(config_dir = wm_strdup(line_tokens[1]))) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse config", errno);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                             WM_FreePatches();
                             free(line_tokens);
                             free(config_buffer);
@@ -428,7 +425,6 @@ static int WM_LoadConfig(const char *config_file) {
                         char *new_config = NULL;
                         if (!line_tokens[1]) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(missing name in source line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(line_tokens);
                             free(config_buffer);
@@ -436,8 +432,7 @@ static int WM_LoadConfig(const char *config_file) {
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
                             new_config = malloc(strlen(config_dir) + strlen(line_tokens[1]) + 1);
                             if (new_config == NULL) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse config", errno);
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
@@ -448,8 +443,7 @@ static int WM_LoadConfig(const char *config_file) {
                             strcpy(&new_config[strlen(config_dir)], line_tokens[1]);
                         } else {
                             if (!(new_config = wm_strdup(line_tokens[1]))) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse config", errno);
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                 WM_FreePatches();
                                 free(line_tokens);
                                 free(config_buffer);
@@ -467,7 +461,6 @@ static int WM_LoadConfig(const char *config_file) {
                     } else if (wm_strcasecmp(line_tokens[0], "bank") == 0) {
                         if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in bank line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
@@ -478,7 +471,6 @@ static int WM_LoadConfig(const char *config_file) {
                     } else if (wm_strcasecmp(line_tokens[0], "drumset") == 0) {
                         if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in drumset line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
@@ -489,7 +481,6 @@ static int WM_LoadConfig(const char *config_file) {
                     } else if (wm_strcasecmp(line_tokens[0], "reverb_room_width") == 0) {
                         if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in reverb_room_width line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
@@ -507,7 +498,6 @@ static int WM_LoadConfig(const char *config_file) {
                     } else if (wm_strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
                         if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in reverb_room_length line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
@@ -525,7 +515,6 @@ static int WM_LoadConfig(const char *config_file) {
                     } else if (wm_strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
                         if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in reverb_listen_posx line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
@@ -542,7 +531,6 @@ static int WM_LoadConfig(const char *config_file) {
                             "reverb_listener_posy") == 0) {
                         if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(syntax error in reverb_listen_posy line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
@@ -568,8 +556,7 @@ static int WM_LoadConfig(const char *config_file) {
                         if (_WM_patch[(patchid & 0x7F)] == NULL) {
                             _WM_patch[(patchid & 0x7F)] = malloc(sizeof(struct _patch));
                             if (_WM_patch[(patchid & 0x7F)] == NULL) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
@@ -601,8 +588,7 @@ static int WM_LoadConfig(const char *config_file) {
                                     }
                                     if (tmp_patch->next == NULL) {
                                         if ((tmp_patch->next = malloc(sizeof(struct _patch))) == NULL) {
-                                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
-                                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
                                             WM_FreePatches();
                                             free(config_dir);
                                             free(line_tokens);
@@ -629,8 +615,7 @@ static int WM_LoadConfig(const char *config_file) {
                                     tmp_patch->next = malloc(
                                             sizeof(struct _patch));
                                     if (tmp_patch->next == NULL) {
-                                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-                                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                         WM_FreePatches();
                                         free(config_dir);
                                         free(line_tokens);
@@ -651,7 +636,6 @@ static int WM_LoadConfig(const char *config_file) {
                         }
                         if (!line_tokens[1]) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(missing name in patch line)", 0);
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
@@ -660,8 +644,7 @@ static int WM_LoadConfig(const char *config_file) {
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
                             tmp_patch->filename = malloc(strlen(config_dir) + strlen(line_tokens[1]) + 5);
                             if (tmp_patch->filename == NULL) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
@@ -672,8 +655,7 @@ static int WM_LoadConfig(const char *config_file) {
                             strcat(tmp_patch->filename, line_tokens[1]);
                         } else {
                             if (!(tmp_patch->filename = wm_strdup(line_tokens[1]))) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
