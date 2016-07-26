@@ -31,7 +31,7 @@ Requirements:
 CHANGELOG
 
 0.4.1
-* 
+* Build: install a pkg-config file on supported platforms (Linux,...)
 
 0.4.0
 * API change: The library now returns audio data in host-endian format,
