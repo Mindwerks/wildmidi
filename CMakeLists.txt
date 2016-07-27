@@ -220,6 +220,12 @@ IF(WIN32)
     ENDIF()
 ENDIF(WIN32)
 
+# pkg-config support
+find_package(PkgConfig)
+IF(NOT PKG_CONFIG_FOUND)
+    MESSAGE(STATUS "Will not provide a pkg-config file.")
+ENDIF(NOT PKG_CONFIG_FOUND)
+
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${CMAKE_SOURCE_DIR}/include")
 FILE (MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")

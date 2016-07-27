@@ -1,0 +1,15 @@
+# WildMIDI pkg-config file
+
+prefix=@WILDMIDILIB_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/@WILDMIDILIB_LIBDIR@
+includedir=${exec_prefix}/include
+
+Name: WildMIDI
+Description: software synthesizer library
+Version: @WILDMIDI_VERSION@
+URL: https://www.mindwerks.net/projects/wildmidi/
+
+Libs: -L${libdir} -lWildMidi
+Libs.private: -lm 
+Cflags: -I${includedir}
