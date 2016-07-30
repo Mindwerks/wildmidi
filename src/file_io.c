@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 #endif
 #ifdef _WIN32
+#include <windows.h>
 #include <io.h>
 #undef close
 #define close _close
@@ -103,25 +104,27 @@ static void AMIGA_close (BPTR fd) {
 #endif
 
 void *_WM_BufferFile(const char *filename, uint32_t *size) {
+    char *buffer_file = NULL;
     uint8_t *data;
 #ifdef __DJGPP__
     int buffer_fd;
     struct ffblk f;
+#elif defined(_WIN32)
+    int buffer_fd;
+    HANDLE h;
+    WIN32_FIND_DATA wfd;
 #elif defined(WILDMIDI_AMIGA)
     BPTR buffer_fd;
     long filsize;
-#else
+#else /* unix builds */
     int buffer_fd;
     struct stat buffer_stat;
-#endif
-#if !defined(_WIN32) && !defined(__DJGPP__) && !defined(WILDMIDI_AMIGA)
+
+/* for basedir of filename: */
     const char *home = NULL;
     struct passwd *pwd_ent;
     char buffer_dir[1024];
-#endif /* unix builds */
-    char *buffer_file = NULL;
 
-#if !defined(_WIN32) && !defined(__DJGPP__) && !defined(WILDMIDI_AMIGA)
     if (strncmp(filename, "~/", 2) == 0) {
         if ((pwd_ent = getpwuid(getuid()))) {
             home = pwd_ent->pw_dir;
@@ -150,7 +153,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
             strcat(buffer_file, "/");
         strcat(buffer_file, filename);
     }
-#endif
+#endif /* unix builds */
 
     if (buffer_file == NULL) {
         buffer_file = malloc(strlen(filename) + 1);
@@ -168,6 +171,16 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
         return NULL;
     }
     *size = f.ff_fsize;
+#elif defined(_WIN32)
+    if ((h = FindFirstFile(buffer_file, &wfd)) == INVALID_HANDLE_VALUE) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
+        free(buffer_file);
+        return NULL;
+    }
+    FindClose(h);
+    if (wfd.nFileSizeHigh != 0) /* too big */
+        *size = 0xffffffff;
+    else *size = wfd.nFileSizeLow;
 #elif defined(WILDMIDI_AMIGA)
     if ((filsize = AMIGA_filesize(buffer_file)) < 0) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT /* do better!! */);
