@@ -32,6 +32,8 @@ CHANGELOG
 
 0.4.1
 * Build: install a pkg-config file on supported platforms (Linux,...)
+* File i/o updates.
+* Support for AmigaOS and its variants like MorphOS and AROS.
 
 0.4.0
 * API change: The library now returns audio data in host-endian format,
