@@ -194,7 +194,10 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
         free(buffer_file);
         return NULL;
     }
-    *size = buffer_stat.st_size;
+    /* st_size can be sint32 or int64. */
+    if (buffer_stat.st_size > WM_MAXFILESIZE) /* too big */
+        *size = 0xffffffff;
+    else *size = buffer_stat.st_size;
 #endif
 
     if (__builtin_expect((*size > WM_MAXFILESIZE), 0)) {
