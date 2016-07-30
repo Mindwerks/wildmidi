@@ -27,13 +27,15 @@
 #include "config.h"
 
 #include <errno.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef _WIN32
+#include <windows.h>
 #include <io.h>
 #undef close
 #define close _close
@@ -63,21 +65,24 @@
 #include "file_io.h"
 
 unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
-	int buffer_fd;
+	char *buffer_file = NULL;
 	unsigned char *data;
 #ifdef __DJGPP__
+	int buffer_fd;
 	struct ffblk f;
-#else
+#elif defined(_WIN32)
+	int buffer_fd;
+	HANDLE h;
+	WIN32_FIND_DATA wfd;
+#else /* unix builds */
+	int buffer_fd;
 	struct stat buffer_stat;
-#endif
-#if !defined(_WIN32) && !defined(__DJGPP__)
+
+/* for basedir of filename: */
 	const char *home = NULL;
 	struct passwd *pwd_ent;
 	char buffer_dir[1024];
-#endif /* unix builds */
-	char *buffer_file = NULL;
 
-#if !defined(_WIN32) && !defined(__DJGPP__)
 	if (strncmp(filename, "~/", 2) == 0) {
 		if ((pwd_ent = getpwuid(getuid()))) {
 			home = pwd_ent->pw_dir;
@@ -108,7 +113,7 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 			strcat(buffer_file, "/");
 		strcat(buffer_file, filename);
 	}
-#endif
+#endif /* unix builds */
 
 	if (buffer_file == NULL) {
 		buffer_file = malloc(strlen(filename) + 1);
@@ -127,13 +132,26 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 		return NULL;
 	}
 	*size = f.ff_fsize;
+#elif defined(_WIN32)
+	if ((h = FindFirstFile(buffer_file, &wfd)) == INVALID_HANDLE_VALUE) {
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
+		free(buffer_file);
+		return NULL;
+	}
+	FindClose(h);
+	if (wfd.nFileSizeHigh != 0) /* too big */
+		*size = 0xffffffff;
+	else *size = wfd.nFileSizeLow;
 #else
 	if (stat(buffer_file, &buffer_stat)) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
 		free(buffer_file);
 		return NULL;
 	}
-	*size = buffer_stat.st_size;
+	/* st_size can be sint32 or int64. */
+	if (buffer_stat.st_size > WM_MAXFILESIZE) /* too big */
+		*size = 0xffffffff;
+	else *size = buffer_stat.st_size;
 #endif
 
 	if (__builtin_expect((*size > WM_MAXFILESIZE), 0)) {
@@ -165,9 +183,9 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 		close(buffer_fd);
 		return NULL;
 	}
-	data[*size] = '\0';
-
 	close(buffer_fd);
 	free(buffer_file);
+
+	data[*size] = '\0';
 	return data;
 }
