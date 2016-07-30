@@ -15,3 +15,4 @@
 #define __builtin_expect(x,c) x
 #endif
 
+#define WM_NO_LOCK 1 /* don't need locking in MSDOS */

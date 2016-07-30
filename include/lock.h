@@ -28,7 +28,7 @@
 extern void _WM_Lock (int * wmlock);
 extern void _WM_Unlock (int *wmlock);
 
-#ifdef __DJGPP__
+#if defined(WM_NO_LOCK)
 #define _WM_Lock(p) do {} while (0)
 #define _WM_Unlock(p) do {} while (0)
 #endif

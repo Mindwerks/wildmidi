@@ -24,7 +24,7 @@
 
 #include "config.h"
 
-#ifndef __DJGPP__
+#if !defined(WM_NO_LOCK)
 
 #ifdef _WIN32
 #include <windows.h>
@@ -34,7 +34,6 @@
 #endif
 
 #include "lock.h"
-#include "common.h"
 
 /*
  _WM_Lock(wmlock)
@@ -84,4 +83,4 @@ void _WM_Unlock(int *wmlock) {
 	}
 }
 
-#endif /* __DJGPP__ */
+#endif /* !WM_NO_LOCK */
