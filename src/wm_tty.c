@@ -24,7 +24,7 @@
 
 #include "config.h"
 
-#if !defined(_WIN32) && !defined(__DJGPP__)
+#if !defined(_WIN32) && !defined(__DJGPP__) && !defined(WILDMIDI_AMIGA)
 
 #define _XOPEN_SOURCE 600 /* for ONLCR */
 

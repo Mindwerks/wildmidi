@@ -25,8 +25,15 @@ ELSE()
    SET(GETOPT)
 ENDIF()
 
+IF(AMIGA OR AROS)
+    SET(SYS_OTHER amiga.c)
+ELSE()
+    SET(SYS_OTHER)
+ENDIF()
+
 SET(wildmidi_executable_SRCS
     ${GETOPT}
+    ${SYS_OTHER}
     wm_tty.c
     wildmidi.c
 )

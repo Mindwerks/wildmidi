@@ -30,10 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef WILDMIDI_AMIGA
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#endif
 #ifdef _WIN32
 #include <windows.h>
 #include <io.h>
@@ -47,6 +48,9 @@
 #include <io.h>
 #include <dir.h>
 #include <unistd.h>
+#elif defined(WILDMIDI_AMIGA)
+#include <proto/exec.h>
+#include <proto/dos.h>
 #else
 #include <pwd.h>
 #include <strings.h>
@@ -64,6 +68,43 @@
 #include "wm_error.h"
 #include "file_io.h"
 
+#ifdef WILDMIDI_AMIGA
+static long AMIGA_filesize (const char *path) {
+	long size = -1;
+	BPTR fh = Open((const STRPTR) path, MODE_OLDFILE);
+	if (fh) {
+		struct FileInfoBlock *fib = (struct FileInfoBlock*)
+								AllocDosObject(DOS_FIB, NULL);
+		if (fib != NULL) {
+			if (ExamineFH(fh, fib))
+				size = fib->fib_Size;
+			FreeDosObject(DOS_FIB, fib);
+		}
+		Close(fh);
+	}
+	return size;
+}
+
+static long AMIGA_read (BPTR fd, unsigned char *buf, long size) {
+	long bytes_read = 0, result;
+	while (bytes_read < size) {
+		result = Read(fd, buf + bytes_read, size - bytes_read);
+		if (result < 0) return result;
+		if (result == 0) break;
+		bytes_read += result;
+	}
+	return bytes_read;
+}
+
+static BPTR AMIGA_open (const char *path) {
+	return Open((const STRPTR) path, MODE_OLDFILE);
+}
+
+static void AMIGA_close (BPTR fd) {
+	Close(fd);
+}
+#endif
+
 unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	char *buffer_file = NULL;
 	unsigned char *data;
@@ -74,6 +115,9 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	HANDLE h;
 	WIN32_FIND_DATA wfd;
+#elif defined(WILDMIDI_AMIGA)
+	BPTR buffer_fd;
+	long filsize;
 #else /* unix builds */
 	int buffer_fd;
 	struct stat buffer_stat;
@@ -142,6 +186,13 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	if (wfd.nFileSizeHigh != 0) /* too big */
 		*size = 0xffffffff;
 	else *size = wfd.nFileSizeLow;
+#elif defined(WILDMIDI_AMIGA)
+	if ((filsize = AMIGA_filesize(buffer_file)) < 0) {
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT /* do better!! */);
+		free(buffer_file);
+		return NULL;
+	}
+	*size = filsize;
 #else
 	if (stat(buffer_file, &buffer_stat)) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
@@ -170,6 +221,23 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 		return NULL;
 	}
 
+#if defined(WILDMIDI_AMIGA)
+	if (!(buffer_fd = AMIGA_open(buffer_file))) {
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, ENOENT /* do better!! */);
+		free(buffer_file);
+		free(data);
+		return NULL;
+	}
+	if (AMIGA_read(buffer_fd, data, filsize) != filsize) {
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, EIO /* do better!! */);
+		free(buffer_file);
+		free(data);
+		AMIGA_close(buffer_fd);
+		return NULL;
+	}
+	AMIGA_close(buffer_fd);
+	free(buffer_file);
+#else
 	if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, errno);
 		free(buffer_file);
@@ -185,6 +253,7 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	}
 	close(buffer_fd);
 	free(buffer_file);
+#endif
 
 	data[*size] = '\0';
 	return data;

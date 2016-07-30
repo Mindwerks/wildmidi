@@ -52,6 +52,9 @@
 /* define this if you are running a bigendian system (motorola, sparc, etc) */
 #cmakedefine WORDS_BIGENDIAN 1
 
+/* define this if building for AmigaOS variants */
+#cmakedefine WILDMIDI_AMIGA 1
+
 /* Define our audio drivers */
 #cmakedefine HAVE_LINUX_SOUNDCARD_H
 #cmakedefine HAVE_SYS_SOUNDCARD_H
@@ -61,3 +64,4 @@
 #cmakedefine AUDIODRV_ALSA
 #cmakedefine AUDIODRV_OSS
 #cmakedefine AUDIODRV_OPENAL
+#cmakedefine AUDIODRV_AHI

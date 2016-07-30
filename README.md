@@ -32,6 +32,8 @@ CHANGELOG
 
 0.3.10
 * Build system updates.
+* File i/o updates.
+* Support for AmigaOS and its variants like MorphOS and AROS.
 
 0.3.9
 * Library: Fixed a segmentation fault with bad midi files.
