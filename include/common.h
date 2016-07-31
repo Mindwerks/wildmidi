@@ -24,7 +24,11 @@
 #ifndef __COMMON_H
 #define __COMMON_H
 
+#ifndef __VBCC__
 #define UNUSED(x) (void)(x)
+#else
+#define UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
+#endif
 #define MEM_CHUNK 8192
 
 extern int16_t _WM_MasterVolume;

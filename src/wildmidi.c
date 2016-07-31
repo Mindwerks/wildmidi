@@ -1340,8 +1340,8 @@ int main(int argc, char **argv) {
     uint32_t apr_secs;
     char modes[5];
     uint8_t ch;
-    uint8_t test_midi = 0;
-    uint8_t test_count = 0;
+    int test_midi = 0;
+    int test_count = 0;
     uint8_t *test_data;
     uint8_t test_bank = 0;
     uint8_t test_patch = 0;
@@ -1764,7 +1764,7 @@ int main(int argc, char **argv) {
                 pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
                 fprintf(stderr,
                         "%s [%s] [%3i] [%2um %2us Processed] [%2u%%] P  \r",
-                        display_lyrics, modes, master_volume, pro_mins,
+                        display_lyrics, modes, (int)master_volume, pro_mins,
                         pro_secs, perc_play);
                 msleep(5);
                 continue;
@@ -1816,7 +1816,7 @@ int main(int argc, char **argv) {
             pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
             fprintf(stderr,
                 "%s [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
-                display_lyrics, modes, master_volume, pro_mins,
+                display_lyrics, modes, (int)master_volume, pro_mins,
                 pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
             if (send_output(output_buffer, res) < 0) {
