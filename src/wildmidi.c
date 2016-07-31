@@ -809,6 +809,7 @@ static int write_ahi_output(char * output_data, int output_size) {
 
 static void close_ahi_output(void) {
 	if (AHIReq[1]) {
+		AHIReq[0]->ahir_Link = NULL; /* in case we are linked to req[0] */
 		if (!CheckIO((struct IORequest *) AHIReq[1])) {
 			AbortIO((struct IORequest *) AHIReq[1]);
 			WaitIO((struct IORequest *) AHIReq[1]);
