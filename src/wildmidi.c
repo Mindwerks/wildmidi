@@ -858,11 +858,15 @@ static int write_ahi_output(int8_t *output_data, int output_size) {
 }
 
 static void close_ahi_output(void) {
-    if (AHIReq[0]) {
-        if (AHIReq[1] && !CheckIO((struct IORequest *) AHIReq[1]) ) {
+    if (AHIReq[1]) {
+        if (!CheckIO((struct IORequest *) AHIReq[1])) {
             AbortIO((struct IORequest *) AHIReq[1]);
             WaitIO((struct IORequest *) AHIReq[1]);
         }
+        FreeVec(AHIReq[1]);
+        AHIReq[1] = NULL;
+    }
+    if (AHIReq[0]) {
         if (!CheckIO((struct IORequest *) AHIReq[0])) {
             AbortIO((struct IORequest *) AHIReq[0]);
             WaitIO((struct IORequest *) AHIReq[0]);
@@ -873,10 +877,6 @@ static void close_ahi_output(void) {
         }
         DeleteIORequest((struct IORequest *) AHIReq[0]);
         AHIReq[0] = NULL;
-        if (AHIReq[1]) {
-            FreeVec(AHIReq[1]);
-            AHIReq[1] = NULL;
-        }
     }
     if (AHImp) {
         DeleteMsgPort(AHImp);
@@ -1360,7 +1360,7 @@ int main(int argc, char **argv) {
     char lyrics[MAX_LYRIC_CHAR + 1];
 #define MAX_DISPLAY_LYRICS 29
     char display_lyrics[MAX_DISPLAY_LYRICS + 1];
-
+    
     unsigned long int play_from = 0;
     unsigned long int play_to = 0;
 
@@ -1613,7 +1613,7 @@ int main(int argc, char **argv) {
 
         memset(lyrics,' ',MAX_LYRIC_CHAR);
         memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
-
+        
         if (play_from != 0) {
             WildMidi_FastSeek(midi_ptr, &play_from);
             if (play_to < play_from) {
@@ -1770,6 +1770,7 @@ int main(int argc, char **argv) {
                 continue;
             }
 
+            
             if (play_to != 0) {
                 if ((wm_info->current_sample + 4096) <= play_to) {
                     samples = 16384;
@@ -1779,9 +1780,9 @@ int main(int argc, char **argv) {
                         // We are at or past where we wanted to play to
                         break;
                     }
+                    
                 }
-            }
-            else {
+            } else {
                 samples = 16384;
             }
             res = WildMidi_GetOutput(midi_ptr, output_buffer, samples);
