@@ -50,7 +50,7 @@ enum {
 		__attribute__((format(printf, 1, 2)))
 #endif
 		;
- extern void _WM_ERROR(const char * func, unsigned int lne, int wmerno,
+ extern void _WM_ERROR(const char *func, int lne, int wmerno,
 		const char * wmfor, int error);
 
 #endif /* __WM_ERROR_H */

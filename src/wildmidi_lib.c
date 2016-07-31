@@ -26,7 +26,11 @@
 
 #include "config.h"
 
+#ifndef __VBCC__
 #define UNUSED(x) (void)(x)
+#else
+#define UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
+#endif
 
 #include <errno.h>
 #include <math.h>

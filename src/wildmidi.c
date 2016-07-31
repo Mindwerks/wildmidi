@@ -1280,8 +1280,8 @@ int main(int argc, char **argv) {
 	char modes[4];
 	unsigned long int count_diff;
 	unsigned char ch;
-	unsigned char test_midi = 0;
-	unsigned char test_count = 0;
+	int test_midi = 0;
+	int test_count = 0;
 	unsigned char *test_data;
 	unsigned char test_bank = 0;
 	unsigned char test_patch = 0;
@@ -1565,7 +1565,7 @@ int main(int argc, char **argv) {
 					pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 					fprintf(stderr,
 						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] 0  \r",
-						apr_mins, apr_secs, modes, master_volume, pro_mins,
+						apr_mins, apr_secs, modes, (int)master_volume, pro_mins,
 						pro_secs, perc_play);
 
 					msleep(5);
@@ -1584,7 +1584,7 @@ int main(int argc, char **argv) {
 				pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
 				fprintf(stderr,
 						"        [Approx %2lum %2lus Total] [%s] [%3i] [%2lum %2lus Processed] [%2lu%%] %c  \r",
-						apr_mins, apr_secs, modes, master_volume, pro_mins,
+						apr_mins, apr_secs, modes, (int)master_volume, pro_mins,
 						pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
 #if defined(AUDIODRV_OPENAL) && defined(WORDS_BIGENDIAN)
