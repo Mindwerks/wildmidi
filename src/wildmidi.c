@@ -808,11 +808,15 @@ static int write_ahi_output(char * output_data, int output_size) {
 }
 
 static void close_ahi_output(void) {
-	if (AHIReq[0]) {
-		if (AHIReq[1] && !CheckIO((struct IORequest *) AHIReq[1]) ) {
+	if (AHIReq[1]) {
+		if (!CheckIO((struct IORequest *) AHIReq[1])) {
 			AbortIO((struct IORequest *) AHIReq[1]);
 			WaitIO((struct IORequest *) AHIReq[1]);
 		}
+		FreeVec(AHIReq[1]);
+		AHIReq[1] = NULL;
+	}
+	if (AHIReq[0]) {
 		if (!CheckIO((struct IORequest *) AHIReq[0])) {
 			AbortIO((struct IORequest *) AHIReq[0]);
 			WaitIO((struct IORequest *) AHIReq[0]);
@@ -823,10 +827,6 @@ static void close_ahi_output(void) {
 		}
 		DeleteIORequest((struct IORequest *) AHIReq[0]);
 		AHIReq[0] = NULL;
-		if (AHIReq[1]) {
-			FreeVec(AHIReq[1]);
-			AHIReq[1] = NULL;
-		}
 	}
 	if (AHImp) {
 		DeleteMsgPort(AHImp);
