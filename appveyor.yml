@@ -8,7 +8,7 @@ branches:
 
 platform:
     - Win32
-#    - x64
+    - x64
 
 configuration: Debug
 
@@ -39,7 +39,8 @@ build_script:
     - cmd: msbuild %build%\WildMIDI.sln /t:Build /p:Configuration=%configuration% /m:2 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 after_build:
-    - cmd: 7z a WildMIDI.zip %APPVEYOR_BUILD_FOLDER%\Build_32\Debug\wildmidi*
+    - cmd: if %PLATFORM%==Win32 7z a WildMIDI_x32.zip %APPVEYOR_BUILD_FOLDER%\Build_32\Debug\wildmidi*
+    - cmd: if %PLATFORM%==x64 7z a WildMIDI_x64.zip %APPVEYOR_BUILD_FOLDER%\Build_64\Debug\wildmidi*
 
 test: off
 
