@@ -52,5 +52,7 @@ test: off
 #    on_build_status_changed: true
 
 artifacts:
-  - path: WildMIDI.zip
-    name: WildMIDI
+  - path: WildMIDI_x32.zip
+    name: WildMIDI_x32
+  - path: WildMIDI_x64.zip
+    name: WildMIDI_x64
