@@ -38,6 +38,9 @@ build_script:
     - cmd: if %PLATFORM%==x64 set build=Build_64
     - cmd: msbuild %build%\WildMIDI.sln /t:Build /p:Configuration=%configuration% /m:2 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
+after_build:
+    - cmd: 7z a WildMIDI.zip %APPVEYOR_BUILD_FOLDER%\Build_32\Debug\wildmidi*
+
 test: off
 
 #notifications:
@@ -46,3 +49,7 @@ test: off
 #        -  
 #    on_build_failure: true
 #    on_build_status_changed: true
+
+artifacts:
+  - path: WildMIDI.zip
+    name: WildMIDI
