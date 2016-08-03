@@ -14,9 +14,6 @@ matrix:
       env:
         ANALYZE="scan-build-3.6 --use-cc clang-3.6 --use-c++ clang++-3.6 "
       compiler: clang
-  allow_failures:
-    - env: ANALYZE="scan-build-3.6 --use-cc clang-3.6 --use-c++ clang++-3.6 "
-    - os: osx
 branches:
   only:
     - master
@@ -33,8 +30,6 @@ script:
  - cd ./build
  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then ${ANALYZE}make -j3; fi
 
-#after_script:
-# - ./runtests
 notifications:
   irc:    
     channels:
