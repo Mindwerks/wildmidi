@@ -1,0 +1,58 @@
+version: "{build}"
+
+branches:
+    only:
+        - master
+        - /wildmidi-.*$/
+        - appveyor
+
+platform:
+    - Win32
+    - x64
+
+configuration: Debug
+
+matrix:
+    fast_finish: true
+
+# For the Qt, Boost, CMake, etc installs
+os: unstable
+
+# We want the git revision for versioning,
+# so shallow clones don't work.
+clone_depth: 1
+
+#cache:
+#    - C:\projects\wildmidi\deps\ffmpeg32-2.5.2.7z
+#    - C:\projects\wildmidi\deps\ffmpeg32-2.5.2-dev.7z
+#    - C:\projects\wildmidi\deps\ffmpeg64-2.5.2.7z
+#    - C:\projects\wildmidi\deps\ffmpeg64-2.5.2-dev.7z
+
+clone_folder: C:\projects\wildmidi
+
+before_build:
+    - cmd: sh %APPVEYOR_BUILD_FOLDER%\CI\before_script.msvc.sh -u -p %PLATFORM%
+
+build_script:
+    - cmd: if %PLATFORM%==Win32 set build=Build_32
+    - cmd: if %PLATFORM%==x64 set build=Build_64
+    - cmd: msbuild %build%\WildMIDI.sln /t:Build /p:Configuration=%configuration% /m:2 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+after_build:
+    - cmd: if %PLATFORM%==Win32 7z a WildMIDI_x32.zip %APPVEYOR_BUILD_FOLDER%\Build_32\Debug\wildmidi*
+    - cmd: if %PLATFORM%==x64 7z a WildMIDI_x64.zip %APPVEYOR_BUILD_FOLDER%\Build_64\Debug\wildmidi*
+
+test: off
+
+#notifications:
+#    - provider: Email
+#    to:
+#        -  
+#    on_build_failure: true
+#    on_build_status_changed: true
+
+artifacts:
+  - path: WildMIDI_x32.zip
+    name: WildMIDI_x32
+  - path: WildMIDI_x64.zip
+    name: WildMIDI_x64
