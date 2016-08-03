@@ -41,6 +41,13 @@ OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
 OPTION(WANT_DEVTEST     "Build WildMIDI DevTest file to check files" OFF)
 OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF)
+if (WIN32)
+    OPTION(USE_DEBUG_CONSOLE "Whether a debug console should be enabled for debug builds, if false debug output is redirected to Visual Studio output" ON)
+    if (MSVC)
+        option(WANT_MP_BUILD "Build OpenMW with /MP flag" OFF)
+    endif()
+endif()
+
 
 IF(UNIX AND NOT APPLE)
 SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
@@ -64,6 +71,7 @@ ENDIF()
 
 IF(WIN32)
     ADD_DEFINITIONS(
+        -DNOMINMAX
         -DWIN32_LEAN_AND_MEAN
         -D_CRT_SECURE_NO_WARNINGS
         )
