@@ -1,44 +1,35 @@
-sudo: required
+os:
+ - linux
+ - osx
+osx_image: xcode7.2
 dist: trusty
+sudo: required
 language: c
-compiler:
- - gcc
- - clang
 env:
  - BUILD_TYPE=Debug
  - BUILD_TYPE=Release
 matrix:
- allow_failures:
- - compiler: clang
+  include:
+    - os: linux
+      env:
+        ANALYZE="scan-build-3.6 --use-cc clang-3.6 --use-c++ clang++-3.6 "
+      compiler: clang
 branches:
   only:
     - master
+    - coverity_scan
     - /wildmidi-.*$/
-before_install:
- - pwd
- - git submodule update --init --recursive
- - echo "yes" | sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu `lsb_release -sc` main universe restricted multiverse"
- - echo "yes" | sudo apt-add-repository ppa:psi29a/`lsb_release -sc`
- - sudo apt-get update -qq
- - sudo apt-get install -qq cmake
- - sudo apt-get install -qq libgtest-dev google-mock 
- - sudo apt-get install -qq libasound2-dev libopenal-dev
- - sudo mkdir /usr/src/gtest/build
- - cd /usr/src/gtest/build
- - sudo cmake .. -DBUILD_SHARED_LIBS=1
- - sudo make -j4
- - sudo ln -s /usr/src/gtest/build/libgtest.so /usr/lib/libgtest.so
- - sudo ln -s /usr/src/gtest/build/libgtest_main.so /usr/lib/libgtest_main.so
-before_script:
- - cd -
- - mkdir build
- - cd build
- - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
-script:
- - make -j4
 
-#after_script:
-# - ./runtests
+before_install:
+ - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then ./CI/before_install.linux.sh; fi
+ - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ./CI/before_install.osx.sh; fi
+before_script:
+ - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then ./CI/before_script.linux.sh; fi
+ - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ./CI/before_script.osx.sh; fi
+script:
+ - cd ./build
+ - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then ${ANALYZE}make -j3; fi
+
 notifications:
   irc:    
     channels:
