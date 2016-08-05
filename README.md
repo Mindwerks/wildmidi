@@ -55,10 +55,10 @@ CHANGELOG
 * API change: WildMidi_GetError() and WildMidi_ClearError() added to
   cleanly check for, retrieve and clear error messages. They no longer
   go to stderr.
-* Support for loading XMI (XMIDI format) files, thanks Ryan Nunn for
-  releasing his code under the LGPL.
+* Support for loading XMI (XMIDI format) files, such as from Arena. Thanks
+  Ryan Nunn for releasing his code under the LGPL.
 * Support for loading MUS (MUS Id format) files, such as from Doom.
-* Support for loading HMP/HMI files, such as from Arena and Daggerfall.
+* Support for loading HMP/HMI files, such as from Daggerfall.
 * Support for loading KAR (MIDI with Lyrics) and Type 2 MIDI files.
 * Build requires cmake-2.8.11 or newer now.
 
