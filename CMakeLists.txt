@@ -64,7 +64,30 @@ IF (UNIX)
             -D_FILE_OFFSET_BITS=64
             -D_LARGE_FILES
     )
-ENDIF ()
+ENDIF (UNIX)
+
+IF (OPENBSD)  # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
+    # use, i.e. don't skip the full RPATH for the build tree
+    SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+    # when building, don't use the install RPATH already
+    # (but later on when installing)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+    # add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+    # the RPATH to be used when installing, but only if it's not a system directory
+    LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+    IF ("${isSystemDir}" STREQUAL "-1")
+        SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+    ENDIF ("${isSystemDir}" STREQUAL "-1")
+
+ENDIF (OPENBSD)
+
 
 IF (WIN32)
     ADD_DEFINITIONS(
@@ -72,7 +95,7 @@ IF (WIN32)
             -DWIN32_LEAN_AND_MEAN
             -D_CRT_SECURE_NO_WARNINGS
     )
-ENDIF ()
+ENDIF (WIN32)
 
 # Compiler specific settings
 IF (CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
