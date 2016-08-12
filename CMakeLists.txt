@@ -42,7 +42,7 @@ OPTION(WANT_OPENAL "Include OpenAL suport (Cross Platform) support" OFF)
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
 OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF)
 IF (WIN32 AND MSVC)
-    OPTION(WANT_MP_BUILD "Build with Multiple Processes /MP flag" OFF)
+    OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF)
 ENDIF ()
 
 
