@@ -1,7 +1,7 @@
 LOCAL_PATH := $(call my-dir)/../..
 include $(CLEAR_VARS)
 
-LOCAL_MODULE     := wildmidi
+LOCAL_MODULE     := WildMidi
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/android/jni $(LOCAL_PATH)/include
 LOCAL_ARM_MODE   := arm
 LOCAL_CFLAGS     += -DWILDMIDI_BUILD
