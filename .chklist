@@ -1,0 +1,8 @@
+Edit files for version number (and possibly other changes) :
+- djgpp/config.h
+- amiga/config.h
+
+Edit files for possibly other changes:
+- djgpp/Makefile
+- amiga/Makefile*
+- amiga/*.cfg
