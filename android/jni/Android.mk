@@ -1,9 +1,11 @@
 LOCAL_PATH := $(call my-dir)/../..
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := wildmidi
+LOCAL_MODULE     := wildmidi
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/android/jni $(LOCAL_PATH)/include
-LOCAL_ARM_MODE  := arm
+LOCAL_ARM_MODE   := arm
+LOCAL_CFLAGS     += -DWILDMIDI_BUILD
+LOCAL_CFLAGS     += -fvisibility=hidden -DSYM_VISIBILITY
 
 LOCAL_SRC_FILES := \
 	src/f_hmi.c \
@@ -22,6 +24,5 @@ LOCAL_SRC_FILES := \
 	src/wildmidi_lib.c \
 	src/wm_error.c \
 	src/xmi2mid.c
-
 
 include $(BUILD_SHARED_LIBRARY)
