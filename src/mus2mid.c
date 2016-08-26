@@ -76,9 +76,9 @@
 
 #define MIDI_MAXCHANNELS            16
 
-static char MUS_ID[] = { 'M', 'U', 'S', 0x1A };
+static const char MUS_ID[] = { 'M', 'U', 'S', 0x1A };
 
-static uint8_t midimap[] =
+static const uint8_t midimap[] =
 {/* MIDI  Number  Description */
     0,    /* 0    program change */
     0,    /* 1    bank selection */
@@ -123,7 +123,7 @@ typedef struct MidiTrackChunk {
 #define TRK_CHUNKSIZE 8
 
 struct mus_ctx {
-    uint8_t *src, *src_ptr;
+    const uint8_t *src, *src_ptr;
     uint32_t srcsize;
     uint32_t datastart;
     uint8_t *dst, *dst_ptr;
@@ -214,12 +214,12 @@ static int32_t writevarlen(int32_t value, uint8_t *out)
 #define READ_INT16(b) ((b)[0] | ((b)[1] << 8))
 #define READ_INT32(b) ((b)[0] | ((b)[1] << 8) | ((b)[2] << 16) | ((b)[3] << 24))
 
-int _WM_mus2midi(uint8_t *in, uint32_t insize,
+int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                  uint8_t **out, uint32_t *outsize,
                  uint16_t frequency) {
     struct mus_ctx ctx;
     MUSHeader header;
-    uint8_t *cur, *end;
+    const uint8_t *cur, *end;
     uint32_t track_size_pos, begin_track_pos, current_pos;
     int32_t delta_time;/* Delta time for midi event */
     int temp, ret = -1;

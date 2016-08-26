@@ -58,7 +58,7 @@ typedef struct {
 } midi_descriptor;
 
 struct xmi_ctx {
-    uint8_t *src, *src_ptr;
+    const uint8_t *src, *src_ptr;
     uint32_t srcsize;
     uint32_t datastart;
     uint8_t *dst, *dst_ptr;
@@ -461,7 +461,7 @@ static const char mt32asgs[256] = {
     121, 0  /* 127 Jungle Tune set to Breath Noise */
 };
 
-int _WM_xmi2midi(uint8_t *in, uint32_t insize,
+int _WM_xmi2midi(const uint8_t *in, uint32_t insize,
                  uint8_t **out, uint32_t *outsize,
                  uint32_t convert_type) {
     struct xmi_ctx ctx;
