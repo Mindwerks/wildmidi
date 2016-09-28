@@ -8,6 +8,10 @@
  * This was based on filenames.h from BFD, the Binary File Descriptor
  * library, Copyright (C) 2000-2016 Free Software Foundation, Inc.,
  * and changed by O. Sezer <sezero@users.sourceforge.net> for our needs.
+ * The original version of this header in binutils/gcc is GPL licensed,
+ * this modified version was authorized to be LGPL in our LGPL projects:
+ * http://gcc.gnu.org/ml/gcc-patches/2016-09/msg02007.html
+ * http://gcc.gnu.org/ml/gcc-patches/2016-09/msg02179.html
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
