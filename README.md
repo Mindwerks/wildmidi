@@ -19,6 +19,7 @@ PLATFORMS:
 * kFreeBSD: Debian (player: OSS output)
 * Hurd: Debian
 * DOS (player: sound blaster or compatibles output.)
+* AmigaOS & variants like MorphOS, AROS. (player: AHI output)
 
 BUILD FROM SOURCE:
 
