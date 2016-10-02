@@ -32,9 +32,11 @@ Requirements:
 CHANGELOG
 
 0.4.1
-* Build: install a pkg-config file on supported platforms (Linux,...)
+* Build system updates. Install a pkg-config file on supported platforms
+  such as Linux. New android ndk makefile.
 * File i/o updates.
 * Support for AmigaOS and its variants like MorphOS and AROS.
+* Fixed a nasty bug in dBm_pan_volume. Other fixes and clean-ups.
 
 0.4.0
 * API change: The library now returns audio data in host-endian format,
