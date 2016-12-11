@@ -2348,8 +2348,8 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                         }
                     } else {
                         /* For non-Roland Sysex Messages */
-                        int8_t gm_reset[] = {0x7e, 0x7f, 0x09, 0x01, 0xf7};
-                        int8_t yamaha_reset[] = {0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
+                        uint8_t gm_reset[] = {0x7e, 0x7f, 0x09, 0x01, 0xf7};
+                        uint8_t yamaha_reset[] = {0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
 
                         if (memcmp(gm_reset, sysex_store, 5) == 0) {
                             /* GM Reset */

@@ -677,7 +677,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         } else if (event->do_event == _WM_do_sysex_roland_drum_track) {
             // DEBUG
             // fprintf(stderr,"Sysex Roland Drum Track: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
-            int8_t foo[] = {0xf0, 0x09, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x15, 0x00, 0xf7};
+            uint8_t foo[] = {0xf0, 0x09, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x15, 0x00, 0xf7};
             uint8_t foo_ch = event->event_data.channel;
             if (foo_ch == 9) {
                 foo_ch = 0;
@@ -692,21 +692,21 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         } else if (event->do_event == _WM_do_sysex_gm_reset) {
             // DEBUG
             // fprintf(stderr,"Sysex GM Reset\r\n");
-            int8_t foo[] = {0xf0, 0x05, 0x7e, 0x7f, 0x09, 0x01, 0xf7};
+            uint8_t foo[] = {0xf0, 0x05, 0x7e, 0x7f, 0x09, 0x01, 0xf7};
             memcpy(&((*out)[out_ofs]),foo,7);
             out_ofs += 7;
             running_event = 0;
         } else if (event->do_event == _WM_do_sysex_roland_reset) {
             // DEBUG
             // fprintf(stderr,"Sysex Roland Reset\r\n");
-            int8_t foo[] = {0xf0, 0x0a, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7f, 0x00, 0x41, 0xf7};
+            uint8_t foo[] = {0xf0, 0x0a, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7f, 0x00, 0x41, 0xf7};
             memcpy(&((*out)[out_ofs]),foo,12);
             out_ofs += 12;
             running_event = 0;
         } else if (event->do_event == _WM_do_sysex_yamaha_reset) {
             // DEBUG
             // fprintf(stderr,"Sysex Yamaha Reset\r\n");
-            int8_t foo[] = {0xf0, 0x08, 0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
+            uint8_t foo[] = {0xf0, 0x08, 0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
             memcpy(&((*out)[out_ofs]),foo,10);
             out_ofs += 10;
             running_event = 0;
