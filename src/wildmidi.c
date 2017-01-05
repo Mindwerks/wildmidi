@@ -1619,7 +1619,8 @@ int main(int argc, char **argv) {
             WildMidi_FastSeek(midi_ptr, &play_from);
             if (play_to < play_from) {
                 // Ignore --playto if set less than --playfrom
-            }   play_to = 0;
+                play_to = 0;
+            }
         }
 
         while (1) {
