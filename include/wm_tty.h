@@ -1,5 +1,4 @@
-/*
- * wm_tty.h - unix termios code for player
+/* wm_tty.h - unix termios code for player
  *
  * Copyright (C) Chris Ison 2001-2011
  * Copyright (C) Bret Curtis 2013-2016
@@ -28,9 +27,9 @@
 void wm_inittty(void);
 void wm_resetty(void);
 
-#if defined(_WIN32)||defined(__DJGPP__)||defined(WILDMIDI_AMIGA)
+#if defined(_WIN32)||defined(__DJGPP__)||defined(WILDMIDI_AMIGA)||defined(__OS2__)
 #define wm_inittty() do {} while (0)
 #define wm_resetty() do {} while (0)
-#endif /* !_WIN32, !__DJGPP__ */
+#endif /* !_WIN32, !__DJGPP__, !__OS2__ */
 
 #endif /* wm_tty_h */
