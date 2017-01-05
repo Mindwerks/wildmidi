@@ -1776,7 +1776,7 @@ int main(int argc, char **argv) {
                     samples = 16384;
                 } else {
                     samples = (play_to - wm_info->current_sample) << 2;
-                    if (samples <= 0) {
+                    if (!samples) {
                         // We are at or past where we wanted to play to
                         break;
                     }
