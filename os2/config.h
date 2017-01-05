@@ -1,10 +1,9 @@
-#define VERSION "0.3.11"
 #define WILDMIDI_CFG "wildmidi.cfg"
 
 #define PACKAGE_URL "http://www.mindwerks.net/projects/wildmidi/"
 #define PACKAGE_BUGREPORT "https://github.com/Mindwerks/wildmidi/issues"
 
-#define PACKAGE_VERSION VERSION
+#define PACKAGE_VERSION "0.3.11"
 
 #define HAVE_C_INLINE
 
@@ -15,4 +14,4 @@
 #define __builtin_expect(x,c) x
 #endif
 
-#define WM_NO_LOCK 1 /* don't need locking in MSDOS */
+#define AUDIODRV_OS2DART 1 /* OS/2 DART output */

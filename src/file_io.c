@@ -48,6 +48,12 @@
 #include <io.h>
 #include <dir.h>
 #include <unistd.h>
+#elif defined(__OS2__)
+#define INCL_DOS
+#define INCL_DOSERRORS
+#include <os2.h>
+#include <fcntl.h>
+#include <io.h>
 #elif defined(WILDMIDI_AMIGA)
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -115,6 +121,11 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	HANDLE h;
 	WIN32_FIND_DATA wfd;
+#elif defined(__OS2__)
+	int buffer_fd;
+	HDIR h = HDIR_CREATE;
+	FILEFINDBUF3 fb = {0};
+	ULONG cnt = 1;
 #elif defined(WILDMIDI_AMIGA)
 	BPTR buffer_fd;
 	long filsize;
@@ -186,6 +197,14 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	if (wfd.nFileSizeHigh != 0) /* too big */
 		*size = 0xffffffff;
 	else *size = wfd.nFileSizeLow;
+#elif defined(__OS2__)
+	if (DosFindFirst(buffer_file, &h, FILE_NORMAL, &fb, sizeof(fb), &cnt, FIL_STANDARD) != NO_ERROR) {
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
+		free(buffer_file);
+		return NULL;
+	}
+	DosFindClose(h);
+	*size = fb.cbFile;
 #elif defined(WILDMIDI_AMIGA)
 	if ((filsize = AMIGA_filesize(buffer_file)) < 0) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT /* do better!! */);

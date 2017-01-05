@@ -28,6 +28,9 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#elif defined __OS2__
+#define INCL_DOS
+#include <os2.h>
 #elif defined(WILDMIDI_AMIGA)
 #include <proto/dos.h>
 #else
@@ -63,6 +66,8 @@ void _WM_Lock(int * wmlock) {
 	}
 #ifdef _WIN32
 	Sleep(10);
+#elif defined __OS2__
+	DosSleep(10);
 #elif defined(WILDMIDI_AMIGA)
 	Delay(1);
 #else

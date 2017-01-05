@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.3.10
+Version: 0.3.11
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -19,6 +19,7 @@ PLATFORMS:
 * kFreeBSD: Debian (player: OSS output)
 * Hurd: Debian
 * DOS (player: sound blaster or compatibles output.)
+* OS/2 (player: Dart output.)
 * AmigaOS & variants like MorphOS, AROS. (player: AHI output)
 
 BUILD FROM SOURCE:
@@ -28,8 +29,12 @@ Requirements:
 * cmake
 * GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
 * DOS port: DJGPP / GNU make
+* OS/2 port: OpenWatcom (tested with version 1.9)
 
 CHANGELOG
+
+0.3.11
+* Support for OS/2.
 
 0.3.10
 * Build system updates.
