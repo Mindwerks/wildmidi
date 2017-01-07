@@ -73,6 +73,8 @@
 */
 # elif defined(SYM_LDSCOPE)     /* __SUNPRO_C >= 0x550 */
 #  define WM_SYMBOL __global
+# elif defined(__OS2__) && defined(__WATCOMC__) && defined(__SW_BD)
+#  define WM_SYMBOL __declspec(dllexport)
 # else
 #  define WM_SYMBOL
 # endif

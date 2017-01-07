@@ -43,6 +43,9 @@
 #ifdef WILDMIDI_AMIGA
 #define powf pow
 #endif
+#ifdef __OS2__
+#define powf pow
+#endif
 
 #define HOLD_OFF 0x02
 
