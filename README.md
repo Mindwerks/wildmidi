@@ -30,6 +30,7 @@ Requirements:
 * GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
 * DOS port: DJGPP / GNU make
 * OS/2 port: OpenWatcom (tested with version 1.9)
+* Nintendo 3DS port: devkitARM
 
 CHANGELOG
 
@@ -38,6 +39,7 @@ CHANGELOG
   such as Linux. New android ndk makefile.
 * File i/o updates.
 * Support for OS/2.
+* Support for Nintendo 3DS
 * Support for AmigaOS and its variants like MorphOS and AROS.
 * Fixed a nasty bug in dBm_pan_volume. Other fixes and clean-ups.
 
