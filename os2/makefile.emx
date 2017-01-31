@@ -1,0 +1,57 @@
+# Makefile for OS/2 using EMX environment.
+# builds static wildmidi.a library and wildmidi.exe player
+
+CC=gcc
+AS=as
+AR=ar
+RANLIB=ranlib
+
+INCLUDES=-I. -I../include/stdint -I../include
+CFLAGS = $(INCLUDE) -Wall -W -Zmt
+LDFLAGS = -Zmt
+ARFLAGS = cr
+
+ifeq ($(DEBUG),1)
+CFLAGS += -g
+else
+CFLAGS += -O2 -fomit-frame-pointer -ffast-math
+LDFLAGS+= -s
+endif
+
+LIBSTATIC=wildmidi.a
+PLAYER_STATIC=wildmidi.exe
+PLAYER_LIBS=-L. -lwildmidi
+#PLAYER_LIBS+=-lmmpm2
+PLAYER_LIBS+=-los2me
+
+CFLAGS_LIB= $(CFLAGS) -DWILDMIDI_BUILD
+CFLAGS_EXE= $(CFLAGS)
+
+OBJ=wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
+PLAYER_OBJ=wildmidi.o getopt_long.o wm_tty.o
+
+all: $(LIBSTATIC) $(PLAYER_STATIC)
+
+$(LIBSTATIC): $(OBJ)
+	$(AR) $(ARFLAGS) $@ $^
+#	$(RANLIB) $@
+
+$(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
+	$(LD) -o $@ $(PLAYER_OBJ) $(PLAYER_LIBS) $(LDFLAGS)
+
+# rules for library objs:
+%.o: ../src/%.c
+	$(CC) -c $(CFLAGS_LIB) -o $@ $<
+# rules for player objs:
+getopt_long.o: ../src/getopt_long.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+wm_tty.o: ../src/wm_tty.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+wildmidi.o: ../src/wildmidi.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+
+clean:
+	$(RM) *.o
+distclean: clean
+	$(RM) $(LIBSTATIC) $(PLAYER_STATIC)
+

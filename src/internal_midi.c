@@ -43,7 +43,7 @@
 #ifdef WILDMIDI_AMIGA
 #define powf pow
 #endif
-#ifdef __OS2__
+#if defined(__OS2__) || defined(__EMX__)
 #define powf pow
 #endif
 
