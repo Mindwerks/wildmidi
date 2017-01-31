@@ -10,8 +10,6 @@
 target = dll
 !endif
 
-CPPFLAGS=-DWILDMIDI_BUILD
-
 CFLAGS = -bt=os2 -bm -fp5 -fpi87 -mf -oeatxh -w4 -ei -j -zp8 -zq
 # -5s  :  Pentium stack calling conventions.
 # -5r  :  Pentium register calling conventions.
@@ -29,7 +27,7 @@ PLAYER=wildmidi.exe
 PLAYER_STATIC=wildmidi_static.exe
 PLAYER_LIBS=mmpm2.lib
 
-CFLAGS_LIB= $(CFLAGS)
+CFLAGS_LIB= $(CFLAGS) -DWILDMIDI_BUILD
 CFLAGS_EXE= $(CFLAGS)
 !ifeq target static
 BLD_TARGET=$(LIBSTATIC) $(PLAYER_STATIC)
@@ -39,7 +37,7 @@ BLD_TARGET=$(DLLNAME) $(PLAYER)
 !endif
 
 OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj internal_midi.obj patches.obj sample.obj
-PLAYER_OBJ= getopt_long.obj wm_tty.obj wildmidi.obj
+PLAYER_OBJ=getopt_long.obj wm_tty.obj wildmidi.obj
 
 all: $(BLD_TARGET)
 
@@ -59,14 +57,14 @@ $(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
 
 # rules for library objs:
 .c.obj:
-	wcc386 $(CFLAGS_LIB) $(CPPFLAGS) $(INCLUDES) -fo=$^@ $<
+	wcc386 $(CFLAGS_LIB) $(INCLUDES) -fo=$^@ $<
 # rules for player objs:
 getopt_long.obj: getopt_long.c
-	wcc386 $(CFLAGS_EXE) $(CPPFLAGS) $(INCLUDES) -fo=$^@ $<
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 wm_tty.obj: wm_tty.c
-	wcc386 $(CFLAGS_EXE) $(CPPFLAGS) $(INCLUDES) -fo=$^@ $<
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 wildmidi.obj: wildmidi.c
-	wcc386 $(CFLAGS_EXE) $(CPPFLAGS) $(INCLUDES) -fo=$^@ $<
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 
 !ifndef __UNIX__
 INCLUDES=-I. -I..\include
