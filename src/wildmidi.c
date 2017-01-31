@@ -58,10 +58,14 @@
 #include <io.h>
 #include "getopt_long.h"
 
-#elif defined(__OS2__)
+#elif defined(__OS2__) || defined(__EMX__)
 #define INCL_DOS
 #define INCL_DOSERRORS
 #define INCL_OS2MM
+#ifdef __EMX__
+#define INCL_KBD
+#define INCL_VIO
+#endif
 #include <os2.h>
 #include <os2me.h>
 #include <conio.h>
@@ -69,6 +73,19 @@
 #include <fcntl.h>
 #include <io.h>
 #include "getopt_long.h"
+#ifdef __EMX__
+int putch (int c) {
+	char ch = c;
+	VioWrtTTY(&ch, 1, 0);
+	return c;
+}
+int kbhit (void) {
+	KBDKEYINFO k;
+	if (KbdPeek(&k, 0))
+		return 0;
+	return (k.fbStatus & KBDTRF_FINAL_CHAR_IN);
+}
+#endif
 
 #elif defined(WILDMIDI_AMIGA)
 extern void amiga_sysinit (void);
@@ -266,7 +283,7 @@ static inline int wmidi_write (int fd, const void *buf, size_t size) {
 	return write(fd, buf, size);
 }
 
-#elif defined(__OS2__)
+#elif defined(__OS2__) || defined(__EMX__)
 static int audio_fd = -1;
 #define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
@@ -589,7 +606,7 @@ close_mm_output (void) {
 	mm_blocks = NULL;
 }
 
-#elif defined(__OS2__) && defined(AUDIODRV_OS2DART)
+#elif (defined(__OS2__) || defined(__EMX__)) && defined(AUDIODRV_OS2DART)
 /* based on Dart code originally written by Kevin Langman for XMP */
 
 #define open_audio_output open_dart_output
@@ -1676,7 +1693,7 @@ int main(int argc, char **argv) {
 					ch = _getch();
 					_putch(ch);
 				}
-#elif defined(__DJGPP__) || defined(__OS2__)
+#elif defined(__DJGPP__) || defined(__OS2__) || defined(__EMX__)
 				if (kbhit()) {
 					ch = getch();
 					putch(ch);
@@ -1844,7 +1861,7 @@ end2:		close_output();
 
 /* helper / replacement functions: */
 
-#if !defined(_WIN32) && !defined(__DJGPP__) && !defined(WILDMIDI_AMIGA) && !defined(__OS2__)
+#if !(defined(_WIN32) || defined(__DJGPP__) || defined(WILDMIDI_AMIGA) || defined(__OS2__) || defined(__EMX__))
 static int msleep(unsigned long milisec) {
 	struct timespec req = { 0, 0 };
 	time_t sec = (int) (milisec / 1000);

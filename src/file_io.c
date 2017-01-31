@@ -48,7 +48,7 @@
 #include <io.h>
 #include <dir.h>
 #include <unistd.h>
-#elif defined(__OS2__)
+#elif defined(__OS2__) || defined(__EMX__)
 #define INCL_DOS
 #define INCL_DOSERRORS
 #include <os2.h>
@@ -121,7 +121,7 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	int buffer_fd;
 	HANDLE h;
 	WIN32_FIND_DATA wfd;
-#elif defined(__OS2__)
+#elif defined(__OS2__) || defined(__EMX__)
 	int buffer_fd;
 	HDIR h = HDIR_CREATE;
 	FILEFINDBUF3 fb = {0};
@@ -197,7 +197,7 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	if (wfd.nFileSizeHigh != 0) /* too big */
 		*size = 0xffffffff;
 	else *size = wfd.nFileSizeLow;
-#elif defined(__OS2__)
+#elif defined(__OS2__) || defined(__EMX__)
 	if (DosFindFirst(buffer_file, &h, FILE_NORMAL, &fb, sizeof(fb), &cnt, FIL_STANDARD) != NO_ERROR) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
 		free(buffer_file);

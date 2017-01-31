@@ -24,7 +24,7 @@
 
 #include "config.h"
 
-#if !defined(_WIN32) && !defined(__DJGPP__) && !defined(WILDMIDI_AMIGA) && !defined(__OS2__)
+#if !(defined(_WIN32) || defined(__DJGPP__) || defined(WILDMIDI_AMIGA) || defined(__OS2__) || defined(__EMX__))
 
 #define _XOPEN_SOURCE 600 /* for ONLCR */
 
@@ -66,4 +66,4 @@ void wm_resetty(void) {
 	_tty.c_lflag = _res_lflg;
 	tcsetattr(STDIN_FILENO, TCSADRAIN, &_tty);
 }
-#endif /* !_WIN32, !__DJGPP__, !__OS2__ */
+#endif /* !(_WIN32,__DJGPP__,__OS2__) */

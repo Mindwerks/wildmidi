@@ -28,9 +28,9 @@
 void wm_inittty(void);
 void wm_resetty(void);
 
-#if defined(_WIN32)||defined(__DJGPP__)||defined(WILDMIDI_AMIGA)||defined(__OS2__)
+#if defined(_WIN32)||defined(__DJGPP__)||defined(WILDMIDI_AMIGA)||defined(__OS2__)||defined(__EMX__)
 #define wm_inittty() do {} while (0)
 #define wm_resetty() do {} while (0)
-#endif /* !_WIN32, !__DJGPP__, !__OS2__ */
+#endif /* _WIN32, __DJGPP__, __OS2__ */
 
 #endif /* wm_tty_h */

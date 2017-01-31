@@ -28,12 +28,12 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#elif defined __OS2__
+#elif defined(__OS2__) || defined(__EMX__)
 #define INCL_DOS
 #include <os2.h>
 #elif defined(WILDMIDI_AMIGA)
 #include <proto/dos.h>
-#else
+#else /* unixish ... */
 #define _GNU_SOURCE
 #include <unistd.h> /* usleep() */
 #endif
@@ -66,7 +66,7 @@ void _WM_Lock(int * wmlock) {
 	}
 #ifdef _WIN32
 	Sleep(10);
-#elif defined __OS2__
+#elif defined(__OS2__) || defined(__EMX__)
 	DosSleep(10);
 #elif defined(WILDMIDI_AMIGA)
 	Delay(1);
