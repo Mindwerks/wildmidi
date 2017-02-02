@@ -72,6 +72,7 @@
 #include "wm_error.h"
 #include "file_io.h"
 void * (*_WM_BufferFile)(const char *, uint32_t *)=_WM_BufferFileImpl;
+void(*_WM_FreeBufferFile)(void*) = _WM_FreeBufferFileImpl;
 
 #ifdef WILDMIDI_AMIGA
 static long AMIGA_filesize (const char *path) {
@@ -274,4 +275,8 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
 
     data[*size] = '\0';
     return data;
+}
+
+void  _WM_FreeBufferFileImpl(void* data_buffer) {
+    free(data_buffer);
 }
