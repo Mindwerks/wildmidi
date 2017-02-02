@@ -71,6 +71,7 @@
 
 #include "wm_error.h"
 #include "file_io.h"
+void * (*_WM_BufferFile)(const char *, uint32_t *)=_WM_BufferFileImpl;
 
 #ifdef WILDMIDI_AMIGA
 static long AMIGA_filesize (const char *path) {
@@ -109,7 +110,7 @@ static void AMIGA_close (BPTR fd) {
 }
 #endif
 
-void *_WM_BufferFile(const char *filename, uint32_t *size) {
+void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     char *buffer_file = NULL;
     uint8_t *data;
 #ifdef __DJGPP__
