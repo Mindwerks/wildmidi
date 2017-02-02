@@ -5,9 +5,10 @@ CC=gcc
 AS=as
 AR=ar
 RANLIB=ranlib
+LD=$(CC)
 
 INCLUDES=-I. -I../include/stdint -I../include
-CFLAGS = $(INCLUDE) -Wall -W -Zmt
+CFLAGS = $(INCLUDES) -Wall -W -Zmt
 LDFLAGS = -Zmt
 ARFLAGS = cr
 

@@ -74,6 +74,7 @@
 #include <io.h>
 #include "getopt_long.h"
 #ifdef __EMX__
+#include <sys/types.h> /* for off_t typedef */
 int putch (int c) {
 	char ch = c;
 	VioWrtTTY(&ch, 1, 0);
