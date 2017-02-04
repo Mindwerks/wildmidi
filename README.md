@@ -31,6 +31,7 @@ Requirements:
 * DOS port: DJGPP / GNU make
 * OS/2 port: OpenWatcom (tested with version 1.9)
 * Nintendo 3DS port: devkitARM
+* Nintendo Wii port: devkitPPC
 
 CHANGELOG
 
@@ -40,6 +41,7 @@ CHANGELOG
 * File i/o updates.
 * Support for OS/2.
 * Support for Nintendo 3DS
+* Support for Nintendo Wii
 * Support for AmigaOS and its variants like MorphOS and AROS.
 * Fixed a nasty bug in dBm_pan_volume. Other fixes and clean-ups.
 
