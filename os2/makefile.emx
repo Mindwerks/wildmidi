@@ -15,7 +15,7 @@ ARFLAGS = cr
 ifeq ($(DEBUG),1)
 CFLAGS += -g
 else
-CFLAGS += -O2 -fomit-frame-pointer -ffast-math
+CFLAGS += -O2 -ffast-math
 LDFLAGS+= -s
 endif
 
@@ -35,7 +35,7 @@ all: $(LIBSTATIC) $(PLAYER_STATIC)
 
 $(LIBSTATIC): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
-#	$(RANLIB) $@
+	-$(RANLIB) $@
 
 $(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
 	$(LD) -o $@ $(PLAYER_OBJ) $(PLAYER_LIBS) $(LDFLAGS)
