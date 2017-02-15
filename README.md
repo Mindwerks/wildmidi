@@ -35,6 +35,7 @@ CHANGELOG
 
 0.3.12
 * Fixed bug in handling of the "source" directive in config files.
+* CMake updates from 0.4.x. cmake-2.8.11 or newer is required now.
 * Extended OS/2 support to EMX/KLIBC.
 
 0.3.11

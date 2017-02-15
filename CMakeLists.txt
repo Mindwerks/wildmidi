@@ -1,6 +1,6 @@
 # ########## Project setup ##########
 PROJECT(wildmidi C)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
 # WildMIDI Version
 SET(VERSION_MAJOR 0)
@@ -22,89 +22,112 @@ INCLUDE(CheckIncludeFile)
 INCLUDE(TestBigEndian)
 
 # Set a default build type if none was specified
-IF(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-  MESSAGE(STATUS "Setting build type to 'Debug' as none was specified.")
-  SET(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-ENDIF()
+IF (NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    MESSAGE(STATUS "Setting build type to 'Debug' as none was specified.")
+    SET(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+    # Set the possible values of build type for cmake-gui
+    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+ENDIF ()
 SET(CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
 MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # Set our optoins
 OPTION(BUILD_SHARED_LIBS "Build a dynamic wildmidi library" ON)
-OPTION(WANT_PLAYER      "Build WildMIDI player in addition to the libraries" ON)
-OPTION(WANT_STATIC      "Build static library in addition to dynamic library" OFF)
+OPTION(WANT_PLAYER "Build WildMIDI player in addition to the libraries" ON)
+OPTION(WANT_STATIC "Build static library in addition to dynamic library" OFF)
 CMAKE_DEPENDENT_OPTION(WANT_PLAYERSTATIC "Build a statically linked WildMIDI player" ON "WANT_STATIC;WANT_PLAYER" OFF)
-OPTION(WANT_ALSA        "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
-OPTION(WANT_OSS         "Include OSS (Open Sound System) support" OFF)
-OPTION(WANT_OPENAL      "Include OpenAL suport (Cross Platform) support" OFF)
-IF(UNIX AND NOT APPLE)
-SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
-ELSE()
-SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
-ENDIF()
+OPTION(WANT_ALSA "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
+OPTION(WANT_OSS "Include OSS (Open Sound System) support" OFF)
+OPTION(WANT_OPENAL "Include OpenAL suport (Cross Platform) support" OFF)
+IF (UNIX AND NOT APPLE)
+    SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
+ELSE ()
+    SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
+ENDIF ()
 
-IF((NOT BUILD_SHARED_LIBS) AND (NOT WANT_STATIC))
+IF ((NOT BUILD_SHARED_LIBS) AND (NOT WANT_STATIC))
     MESSAGE(FATAL_ERROR "Neither dynamic nor static library build is selected.")
-ENDIF()
+ENDIF ()
+
 
 # Platform specific defines
-IF(UNIX)
+IF (UNIX)
     # allow 'large' files in 32 bit builds
     ADD_DEFINITIONS(
-        -D_LARGEFILE_SOURCE
-        -D_FILE_OFFSET_BITS=64
-        -D_LARGE_FILES
-        )
-ENDIF()
+            -D_LARGEFILE_SOURCE
+            -D_FILE_OFFSET_BITS=64
+            -D_LARGE_FILES
+    )
+ENDIF (UNIX)
 
-IF(WIN32)
+IF (OPENBSD)  # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
+    # use, i.e. don't skip the full RPATH for the build tree
+    SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+    # when building, don't use the install RPATH already
+    # (but later on when installing)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+    # add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+    # the RPATH to be used when installing, but only if it's not a system directory
+    LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+    IF ("${isSystemDir}" STREQUAL "-1")
+        SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+    ENDIF ()
+ENDIF (OPENBSD)
+
+IF (WIN32)
     ADD_DEFINITIONS(
-        -DWIN32_LEAN_AND_MEAN
-        -D_CRT_SECURE_NO_WARNINGS
-        )
-ENDIF()
+            -DNOMINMAX
+            -DWIN32_LEAN_AND_MEAN
+            -D_CRT_SECURE_NO_WARNINGS
+    )
+ENDIF (WIN32)
 
 # Compiler specific settings
 IF (CMAKE_COMPILER_IS_GNUCC OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
     ADD_DEFINITIONS(
-        -Wall -W
-        -fno-common
-        )
+            -Wall -W
+            -fno-common
+    )
 
-    IF(NOT WIN32 AND NOT CYGWIN)
+    IF (NOT WIN32 AND NOT CYGWIN)
         SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
         SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Werror")
         CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
                                  int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
-        IF(HAVE_VISIBILITY_DEFAULT)
+        IF (HAVE_VISIBILITY_DEFAULT)
             CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN)
-        ENDIF()
+        ENDIF ()
         SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
-    ENDIF()
+    ENDIF ()
 
     IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        ADD_DEFINITIONS( -ggdb3 -O0 )
-    ELSEIF(CMAKE_BUILD_TYPE STREQUAL "Release")
-        ADD_DEFINITIONS( -O3 )
-    ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
-ENDIF()
+        ADD_DEFINITIONS(-ggdb3 -O0)
+    ELSEIF (CMAKE_BUILD_TYPE STREQUAL "Release")
+        ADD_DEFINITIONS(-O3)
+    ENDIF (CMAKE_BUILD_TYPE STREQUAL "Debug")
+ENDIF ()
 
 IF (CMAKE_C_COMPILER_ID MATCHES "SunPro")
     SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -xldscope=hidden")
-# __SUNPRO_C >= 0x590
-#   CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
-#                            int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
-# __SUNPRO_C >= 0x550
+    # __SUNPRO_C >= 0x590
+    #   CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
+    #                            int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
+    # __SUNPRO_C >= 0x550
     CHECK_C_SOURCE_COMPILES("__global int foo(void);
                              int main(void) {return 0;}" HAVE_LDSCOPE_GLOBAL)
-    IF(HAVE_LDSCOPE_GLOBAL)# OR HAVE_VISIBILITY_DEFAULT
+    IF (HAVE_LDSCOPE_GLOBAL)# OR HAVE_VISIBILITY_DEFAULT
         SET(HAVE_LDSCOPE_HIDDEN 1)
-    ENDIF()
+    ENDIF ()
     SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
-ENDIF()
+ENDIF ()
 
 CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
 
@@ -122,75 +145,59 @@ SET(AUDIODRV_OSS)
 SET(AUDIODRV_OPENAL)
 
 # UNIX-like environments
-IF(UNIX AND NOT APPLE)
+IF (UNIX AND NOT APPLE)
 
     # Go looking for available sound packages for WildMIDI player
-    IF(WANT_PLAYER)
+    IF (WANT_PLAYER)
         FIND_PACKAGE(ALSA)
         FIND_PACKAGE(OpenAL)
         FIND_PACKAGE(OSS)
 
         # Set preferred output
-        IF(WANT_ALSA)
-            IF(NOT ALSA_FOUND)
+        IF (WANT_ALSA)
+            IF (NOT ALSA_FOUND)
                 MESSAGE(FATAL_ERROR "ALSA required but not found.")
-            ENDIF()
+            ENDIF ()
             SET(AUDIODRV_ALSA 1)
             SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-            # FIXME: we need to add ALSA_INCLUDE_DIR only to the wildmidi
-            # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-            # but that requires cmake-2.8.11 or newer
-            INCLUDE_DIRECTORIES(${ALSA_INCLUDE_DIR})
 
-        ELSEIF(WANT_OSS)
-            IF(NOT OSS_FOUND)
+        ELSEIF (WANT_OSS)
+            IF (NOT OSS_FOUND)
                 MESSAGE(FATAL_ERROR "OSS required but not found.")
-            ENDIF()
+            ENDIF ()
             # no special header paths
             SET(AUDIODRV_OSS 1)
             SET(AUDIO_LIBRARY ${OSS_LIBRARY})
 
-        ELSEIF(WANT_OPENAL)
-            IF(NOT OPENAL_FOUND)
+        ELSEIF (WANT_OPENAL)
+            IF (NOT OPENAL_FOUND)
                 MESSAGE(FATAL_ERROR "OpenAL required but not found.")
-            ENDIF()
+            ENDIF ()
             SET(AUDIODRV_OPENAL 1)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-            # FIXME: we need to add OPENAL_INCLUDE_DIR only to the wildmidi
-            # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-            # but that requires cmake-2.8.11 or newer
-            INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
-        ELSE() # Try to auto-detect
+        ELSE () # Try to auto-detect
 
-            IF(ALSA_FOUND)
+            IF (ALSA_FOUND)
                 SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
                 SET(AUDIODRV_ALSA 1)
-                # FIXME: we need to add ALSA_INCLUDE_DIR only to the wildmidi
-                # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-                # but that requires cmake-2.8.11 or newer
-                INCLUDE_DIRECTORIES(${ALSA_INCLUDE_DIR})
 
-            ELSEIF(OSS_FOUND)
+            ELSEIF (OSS_FOUND)
                 # no special header paths
                 SET(AUDIO_LIBRARY ${OSS_LIBRARY})
                 SET(AUDIODRV_OSS 1)
 
-            ELSEIF(OPENAL_FOUND)
+            ELSEIF (OPENAL_FOUND)
                 SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
                 SET(AUDIODRV_OPENAL 1)
-                # FIXME: we need to add OPENAL_INCLUDE_DIR only to the wildmidi
-                # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-                # but that requires cmake-2.8.11 or newer
-                INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
-            ELSE()
+            ELSE ()
                 MESSAGE(WARNING "Could not find an audio sub-system!")
                 SET(AUDIO_LIBRARY "")
-            ENDIF()
+            ENDIF ()
 
-        ENDIF()
-    ENDIF()
+        ENDIF ()
+    ENDIF ()
 
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m REQUIRED)
@@ -200,60 +207,56 @@ IF(UNIX AND NOT APPLE)
         ## Debian specific
     ELSE ()
         ## Non debian specific
-    ENDIF (DPKG_PROGRAM)
-ENDIF(UNIX AND NOT APPLE)
+    ENDIF ()
+ENDIF (UNIX AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
     FIND_PACKAGE(OpenAL)
 
-    IF(WANT_OPENAL)
-        IF(NOT OPENAL_FOUND)
+    IF (WANT_OPENAL)
+        IF (NOT OPENAL_FOUND)
             MESSAGE(FATAL_ERROR "OpenAL required but not found.")
-        ENDIF()
+        ENDIF ()
         SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
 
-    ELSE()
-        IF(OPENAL_FOUND)
+    ELSE ()
+        IF (OPENAL_FOUND)
             SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
             SET(AUDIODRV_OPENAL 1)
-            # FIXME: we need to add OPENAL_INCLUDE_DIR only to the wildmidi
-            # target in src/CMakeLists.txt using TARGET_INCLUDE_DIRECTORIES()
-            # but that requires cmake-2.8.11 or newer
-            INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 
-        ELSE()
+        ELSE ()
             MESSAGE(WARNING "Could not find an audio sub-system!")
             SET(AUDIO_LIBRARY "")
-        ENDIF()
+        ENDIF ()
 
-    ENDIF()
-ENDIF()
+    ENDIF ()
+ENDIF ()
 
-IF(WIN32)
+IF (WIN32)
     IF (WANT_PLAYER)
         LINK_LIBRARIES(winmm)
-    ENDIF()
-ENDIF(WIN32)
+    ENDIF ()
+ENDIF (WIN32)
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${CMAKE_SOURCE_DIR}/include")
-FILE (MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
+FILE(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 INCLUDE_DIRECTORIES(BEFORE "${CMAKE_BINARY_DIR}/include")
 
-IF(AMIGA OR AROS)
+IF (AMIGA OR AROS)
     SET(WILDMIDI_AMIGA 1)
-ENDIF()
+ENDIF ()
 
-IF(APPLE)
+IF (APPLE)
     SET(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
     SET(APP_BUNDLE_DIR "${wildmidi_BINARY_DIR}/${APP_BUNDLE_NAME}")
-ENDIF(APPLE)
+ENDIF (APPLE)
 
-IF(APPLE)
+IF (APPLE)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APP_BUNDLE_DIR}/Contents/MacOS")
-ELSE(APPLE)
+ELSE (APPLE)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${wildmidi_BINARY_DIR}")
-ENDIF(APPLE)
+ENDIF (APPLE)
 
 # Setup up our config file
 CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_BINARY_DIR}/include/config.h")
