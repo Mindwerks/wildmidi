@@ -218,7 +218,7 @@ IF (UNIX AND NOT APPLE)
         ## Debian specific
     ELSE ()
         ## Non debian specific
-    ENDIF (DPKG_PROGRAM)
+    ENDIF ()
 ENDIF (UNIX AND NOT APPLE)
 
 IF (APPLE AND WANT_PLAYER)
@@ -248,12 +248,6 @@ IF (WIN32)
         LINK_LIBRARIES(winmm)
     ENDIF ()
 ENDIF (WIN32)
-
-# pkg-config support
-find_package(PkgConfig)
-IF (NOT PKG_CONFIG_FOUND)
-    MESSAGE(STATUS "Will not provide a pkg-config file.")
-ENDIF (NOT PKG_CONFIG_FOUND)
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${CMAKE_SOURCE_DIR}/include")

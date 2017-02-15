@@ -243,11 +243,9 @@ IF (CMAKE_LIBRARY_ARCHITECTURE)
 ENDIF ()
 
 # prepare pkg-config file
-IF (PKG_CONFIG_FOUND)
-    SET(WILDMIDILIB_PREFIX "${CMAKE_INSTALL_PREFIX}")
-    SET(WILDMIDILIB_LIBDIR "${WILDMIDILIB_INSTALLDIR}")
-    CONFIGURE_FILE("wildmidi.pc.in" "${CMAKE_BINARY_DIR}/wildmidi.pc" @ONLY)
-ENDIF (PKG_CONFIG_FOUND)
+SET(WILDMIDILIB_PREFIX "${CMAKE_INSTALL_PREFIX}")
+SET(WILDMIDILIB_LIBDIR "${WILDMIDILIB_INSTALLDIR}")
+CONFIGURE_FILE("wildmidi.pc.in" "${CMAKE_BINARY_DIR}/wildmidi.pc" @ONLY)
 
 # install target (*nix OSes)
 IF (UNIX AND NOT APPLE)
@@ -272,9 +270,7 @@ IF (UNIX AND NOT APPLE)
     ENDIF (WANT_DEVTEST)
 
     # install pkg-config file
-    IF (PKG_CONFIG_FOUND)
-        INSTALL(FILES ${CMAKE_BINARY_DIR}/wildmidi.pc DESTINATION "${WILDMIDILIB_INSTALLDIR}/pkgconfig")
-    ENDIF (PKG_CONFIG_FOUND)
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/wildmidi.pc DESTINATION "${WILDMIDILIB_INSTALLDIR}/pkgconfig")
 
     # install supporting man pages and headers
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
@@ -309,9 +305,7 @@ IF (WIN32 AND CMAKE_COMPILER_IS_MINGW)
     ENDIF (WANT_DEVTEST)
 
     # install pkg-config file
-    IF (PKG_CONFIG_FOUND)
-        INSTALL(FILES ${CMAKE_BINARY_DIR}/wildmidi.pc DESTINATION "${WILDMIDILIB_INSTALLDIR}/pkgconfig")
-    ENDIF (PKG_CONFIG_FOUND)
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/wildmidi.pc DESTINATION "${WILDMIDILIB_INSTALLDIR}/pkgconfig")
 
     # install supporting man pages and headers
     INSTALL(FILES ${CMAKE_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
