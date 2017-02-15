@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.3.11
+Version: 0.3.12
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -32,6 +32,10 @@ Requirements:
 * OS/2 port: OpenWatcom (tested with version 1.9)
 
 CHANGELOG
+
+0.3.12
+* Fixed bug in handling of the "source" directive in config files.
+* Extended OS/2 support to EMX/KLIBC.
 
 0.3.11
 * Support for OS/2.

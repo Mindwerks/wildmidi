@@ -1,7 +1,7 @@
 /* wildmidi config for amigaos variants */
 #define WILDMIDI_AMIGA 1
 
-#define VERSION "0.3.11"
+#define VERSION "0.3.12"
 #define WILDMIDI_CFG "wildmidi.cfg"
 
 #define PACKAGE_URL "http://www.mindwerks.net/projects/wildmidi/"
