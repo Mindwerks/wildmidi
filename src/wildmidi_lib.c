@@ -354,7 +354,7 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
     return (token_data);
 }
 
-static int WM_LoadConfig(const char *config_file) {
+static int load_config(const char *config_file, const char *conf_dir) {
     uint32_t config_size = 0;
     char *config_buffer = NULL;
     const char *dir_end = NULL;
@@ -372,17 +372,26 @@ static int WM_LoadConfig(const char *config_file) {
         return (-1);
     }
 
-    dir_end = FIND_LAST_DIRSEP(config_file);
-    if (dir_end) {
-        config_dir = malloc((dir_end - config_file + 2));
-        if (config_dir == NULL) {
+    if (conf_dir) {
+        if (!(config_dir = wm_strdup(conf_dir))) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
             WM_FreePatches();
             free(config_buffer);
             return (-1);
         }
-        strncpy(config_dir, config_file, (dir_end - config_file + 1));
-        config_dir[dir_end - config_file + 1] = '\0';
+    } else {
+        dir_end = FIND_LAST_DIRSEP(config_file);
+        if (dir_end) {
+            config_dir = malloc((dir_end - config_file + 2));
+            if (config_dir == NULL) {
+                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+                WM_FreePatches();
+                free(config_buffer);
+                return (-1);
+            }
+            strncpy(config_dir, config_file, (dir_end - config_file + 1));
+            config_dir[dir_end - config_file + 1] = '\0';
+        }
     }
 
     config_ptr = 0;
@@ -450,7 +459,7 @@ static int WM_LoadConfig(const char *config_file) {
                                 return (-1);
                             }
                         }
-                        if (WM_LoadConfig(new_config) == -1) {
+                        if (load_config(new_config, config_dir) == -1) {
                             free(new_config);
                             free(line_tokens);
                             free(config_buffer);
@@ -760,6 +769,10 @@ static int WM_LoadConfig(const char *config_file) {
     free(config_dir);
 
     return (0);
+}
+
+static int WM_LoadConfig(const char *config_file) {
+    return load_config(config_file, NULL);
 }
 
 static int add_handle(void * handle) {
