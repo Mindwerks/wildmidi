@@ -36,6 +36,8 @@ Requirements:
 CHANGELOG
 
 0.4.1
+* Fixed bug in handling of the "source" directive in config files.
+* Fixed a nasty bug in dBm_pan_volume. Other fixes and clean-ups.
 * Build system updates. Install a pkg-config file on supported platforms
   such as Linux. New android ndk makefile.
 * File i/o updates.
@@ -43,7 +45,6 @@ CHANGELOG
 * Support for Nintendo 3DS
 * Support for Nintendo Wii
 * Support for AmigaOS and its variants like MorphOS and AROS.
-* Fixed a nasty bug in dBm_pan_volume. Other fixes and clean-ups.
 
 0.4.0
 * API change: The library now returns audio data in host-endian format,
