@@ -44,8 +44,6 @@ OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF)
 IF (WIN32 AND MSVC)
     OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF)
 ENDIF ()
-
-
 IF (UNIX AND NOT APPLE)
     SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
 ELSE ()
@@ -55,6 +53,7 @@ ENDIF ()
 IF ((NOT BUILD_SHARED_LIBS) AND (NOT WANT_STATIC))
     MESSAGE(FATAL_ERROR "Neither dynamic nor static library build is selected.")
 ENDIF ()
+
 
 # Platform specific defines
 IF (UNIX)
@@ -84,10 +83,8 @@ IF (OPENBSD)  # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
     LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
     IF ("${isSystemDir}" STREQUAL "-1")
         SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-    ENDIF ("${isSystemDir}" STREQUAL "-1")
-
+    ENDIF ()
 ENDIF (OPENBSD)
-
 
 IF (WIN32)
     ADD_DEFINITIONS(
