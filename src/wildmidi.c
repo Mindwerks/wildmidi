@@ -57,6 +57,9 @@
 #define msleep(s) Sleep((s))
 #include <io.h>
 #include "getopt_long.h"
+#ifdef __WATCOMC__
+#define _putch putch
+#endif
 
 #elif defined(__OS2__) || defined(__EMX__)
 #define INCL_DOS
