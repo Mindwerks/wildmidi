@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.4.1
+Version: 0.4.2
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -34,6 +34,9 @@ Requirements:
 * Nintendo Wii port: devkitPPC
 
 CHANGELOG
+
+0.4.2
+* 
 
 0.4.1
 * Fixed bug in handling of the "source" directive in config files.
@@ -144,4 +147,3 @@ CHANGELOG
 * initial CMake support.
 * process non-registered params. fix issue of notes ending before
   attack envelope completed. (sf.net svn r149/r151.)
-
