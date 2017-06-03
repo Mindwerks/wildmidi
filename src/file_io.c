@@ -117,8 +117,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
     struct ffblk f;
 #elif defined(_WIN32)
     int buffer_fd;
-    HANDLE h;
-    WIN32_FIND_DATA wfd;
+    WIN32_FILE_ATTRIBUTE_DATA wfd;
 #elif defined(__OS2__) || defined(__EMX__)
     int buffer_fd;
     HDIR h = HDIR_CREATE;
@@ -186,12 +185,11 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
     }
     *size = f.ff_fsize;
 #elif defined(_WIN32)
-    if ((h = FindFirstFile(buffer_file, &wfd)) == INVALID_HANDLE_VALUE) {
+    if (!GetFileAttributesExA(buffer_file, GetFileExInfoStandard, &wfd)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
         free(buffer_file);
         return NULL;
     }
-    FindClose(h);
     if (wfd.nFileSizeHigh != 0) /* too big */
         *size = 0xffffffff;
     else *size = wfd.nFileSizeLow;
