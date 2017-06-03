@@ -120,7 +120,7 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 #elif defined(_WIN32)
 	int buffer_fd;
 	HANDLE h;
-	WIN32_FIND_DATA wfd;
+	WIN32_FIND_DATAA wfd;
 #elif defined(__OS2__) || defined(__EMX__)
 	int buffer_fd;
 	HDIR h = HDIR_CREATE;
@@ -188,7 +188,7 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	}
 	*size = f.ff_fsize;
 #elif defined(_WIN32)
-	if ((h = FindFirstFile(buffer_file, &wfd)) == INVALID_HANDLE_VALUE) {
+	if ((h = FindFirstFileA(buffer_file, &wfd)) == INVALID_HANDLE_VALUE) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
 		free(buffer_file);
 		return NULL;
