@@ -575,7 +575,7 @@ void _WM_do_note_off_extra(struct _note *nte) {
 
         } else if (nte->hold) {
             nte->hold |= HOLD_OFF;
-
+/*
         } else if (nte->modes & SAMPLE_SUSTAIN) {
             if (nte->env < 3) {
                 nte->env = 3;
@@ -585,7 +585,7 @@ void _WM_do_note_off_extra(struct _note *nte) {
                     nte->env_inc = nte->sample->env_rate[3];
                 }
             }
-
+*/
         } else if (nte->modes & SAMPLE_CLAMPED) {
             if (nte->env < 5) {
                 nte->env = 5;
@@ -595,12 +595,12 @@ void _WM_do_note_off_extra(struct _note *nte) {
                     nte->env_inc = nte->sample->env_rate[5];
                 }
             }
-        } else if (nte->env < 4) {
-            nte->env = 4;
-            if (nte->env_level > nte->sample->env_target[4]) {
-                nte->env_inc = -nte->sample->env_rate[4];
+        } else if (nte->env < 3) {
+            nte->env = 3;
+            if (nte->env_level > nte->sample->env_target[3]) {
+                nte->env_inc = -nte->sample->env_rate[3];
             } else {
-                nte->env_inc = nte->sample->env_rate[4];
+                nte->env_inc = nte->sample->env_rate[3];
             }
         }
     }
@@ -882,24 +882,24 @@ void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) {
                                 if (note_data->env < 3) {
                                     note_data->env = 3;
                                     if (note_data->env_level
-                                        > note_data->sample->env_target[5]) {
+                                        > note_data->sample->env_target[3]) {
                                         note_data->env_inc =
-                                        -note_data->sample->env_rate[5];
+                                        -note_data->sample->env_rate[3];
                                     } else {
                                         note_data->env_inc =
-                                        note_data->sample->env_rate[5];
+                                        note_data->sample->env_rate[3];
                                     }
                                 }
-                            */
-                            } else if (note_data->env < 4) {
-                                note_data->env = 4;
+                             */
+                             } else if (note_data->env < 3) {
+                                note_data->env = 3;
                                 if (note_data->env_level
-                                    > note_data->sample->env_target[4]) {
+                                    > note_data->sample->env_target[3]) {
                                     note_data->env_inc =
-                                    -note_data->sample->env_rate[4];
+                                    -note_data->sample->env_rate[3];
                                 } else {
                                     note_data->env_inc =
-                                    note_data->sample->env_rate[4];
+                                    note_data->sample->env_rate[3];
                                 }
                             }
                         } else {

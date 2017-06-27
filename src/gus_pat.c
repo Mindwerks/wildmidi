@@ -825,81 +825,13 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                             | ((gus_sample->loop_fraction & 0xf0) >> 4);
         }
 
-        /*
-         FIXME: Experimental Hacky Fix
-
-         This looks for "dodgy" release envelope settings that faulty editors
-         may have set and attempts to corrects it.
-
-         if (fix_release)
-         Lets make this automatic ...
-         */
-        {
-            /*
-             After studying faulty gus_pats this way may work better
-             Testing to determine if any further adjustments are required
-             */
-            if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) {
-                uint8_t tmp_hack_rate = 0;
-
-                if (env_time_table[gus_patch[gus_ptr + 41]] < env_time_table[gus_patch[gus_ptr + 42]]) {
-                    // 1 2 3
-                    tmp_hack_rate = gus_patch[gus_ptr + 40];
-                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
-                    gus_patch[gus_ptr + 42] = tmp_hack_rate;
-                } else if (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]]) {
-                    // 1 2 2
-                    tmp_hack_rate = gus_patch[gus_ptr + 40];
-                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
-                    gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
-                    gus_patch[gus_ptr + 42] = tmp_hack_rate;
-
-                } else {
-                    if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 42]]) {
-                        // 1 3 2
-                        tmp_hack_rate = gus_patch[gus_ptr + 40];
-                        gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
-                        gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
-                        gus_patch[gus_ptr + 42] = tmp_hack_rate;
-                    } else {
-                        // 2 3 1 or 1 2 1
-                        tmp_hack_rate = gus_patch[gus_ptr + 40];
-                        gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
-                        gus_patch[gus_ptr + 41] = tmp_hack_rate;
-                    }
-                }
-            } else if (env_time_table[gus_patch[gus_ptr + 41]] < env_time_table[gus_patch[gus_ptr + 42]]) {
-                uint8_t tmp_hack_rate = 0;
-
-                if (env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 42]]) {
-                    // 2 1 3
-                    tmp_hack_rate = gus_patch[gus_ptr + 40];
-                    gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 42];
-                    gus_patch[gus_ptr + 42] = gus_patch[gus_ptr + 41];
-                    gus_patch[gus_ptr + 41] = tmp_hack_rate;
-                } else {
-                    // 3 1 2
-                    tmp_hack_rate = gus_patch[gus_ptr + 41];
-                    gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 42];
-                    gus_patch[gus_ptr + 42] = tmp_hack_rate;
-                }
-            }
-
-#if 0
-            if ((env_time_table[gus_patch[gus_ptr + 40]] < env_time_table[gus_patch[gus_ptr + 41]]) && (env_time_table[gus_patch[gus_ptr + 41]] == env_time_table[gus_patch[gus_ptr + 42]])) {
-                uint8_t tmp_hack_rate = 0;
-                tmp_hack_rate = gus_patch[gus_ptr + 41];
-                gus_patch[gus_ptr + 41] = gus_patch[gus_ptr + 40];
-                gus_patch[gus_ptr + 42] = gus_patch[gus_ptr + 40];
-                gus_patch[gus_ptr + 40] = tmp_hack_rate;
-                tmp_hack_rate = gus_patch[gus_ptr + 47];
-                gus_patch[gus_ptr + 47] = gus_patch[gus_ptr + 46];
-                gus_patch[gus_ptr + 48] = gus_patch[gus_ptr + 46];
-                gus_patch[gus_ptr + 46] = tmp_hack_rate;
-            }
-#endif
-        }
-
+        // kill "echo" envelopes because users dont want/like them
+        // and this is what timidity does which is why we sounded different
+        // NOTE: This may cause some pats to sound different to what their authers intended
+            gus_patch[gus_ptr + 41] = 0x3f;
+            gus_patch[gus_ptr + 42] = 0x3f;
+        
+        // lets set up the envelope data
         for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
             if (gus_sample->modes & SAMPLE_ENVELOPE) {
