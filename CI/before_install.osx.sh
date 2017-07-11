@@ -1,6 +1,5 @@
 #!/bin/sh
 
 brew update
-brew rm cmake || true
-brew rm pkgconfig || true
-brew install cmake pkgconfig
+brew outdated cmake || brew upgrade cmake
+brew outdated pkgconfig || brew upgrade pkgconfig
