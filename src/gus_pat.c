@@ -828,9 +828,9 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
         // kill "echo" envelopes because users dont want/like them
         // and this is what timidity does which is why we sounded different
         // NOTE: This may cause some pats to sound different to what their authers intended
-            gus_patch[gus_ptr + 41] = 0x3f;
-            gus_patch[gus_ptr + 42] = 0x3f;
-        
+        gus_patch[gus_ptr + 41] = 0x3f;
+        gus_patch[gus_ptr + 42] = 0x3f;
+
         // lets set up the envelope data
         for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
