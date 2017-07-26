@@ -38,7 +38,7 @@ CHANGELOG
 0.4.2
 * GUS patch processing changes to meet users expectations (Bug #132).
 * Worked around a build failure with newer FreeBSD versions failing to
-  retrieve the ONLCR macro (Bug #171).
+  retrieve the ONLCR constant (Bug #171).
 * Fixed a minor Windows unicode issue (PR #170).
 
 0.4.1
