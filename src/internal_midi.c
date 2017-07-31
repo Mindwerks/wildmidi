@@ -2298,7 +2298,6 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                  */
                 uint32_t sysex_len = 0;
                 uint8_t *sysex_store = NULL;
-                uint32_t sysex_store_len = 0;
 
                 if (*event_data > 0x7f) {
                     do {
@@ -2311,11 +2310,10 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 event_data++;
                 ret_cnt++;
 
-                sysex_store = realloc(sysex_store,sizeof(uint8_t) * (sysex_store_len + sysex_len));
-                memcpy(&sysex_store[sysex_store_len], event_data, sysex_len);
-                sysex_store_len += sysex_len;
+                sysex_store = malloc(sizeof(uint8_t) * sysex_len);
+                memcpy(sysex_store, event_data, sysex_len);
 
-                if (sysex_store[sysex_store_len - 1] == 0xF7) {
+                if (sysex_store[sysex_len - 1] == 0xF7) {
                     uint8_t rolandsysexid[] = { 0x41, 0x10, 0x42, 0x12 };
                     if (memcmp(rolandsysexid, sysex_store, 4) == 0) {
                         /* For Roland Sysex Messages */
@@ -2366,7 +2364,6 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 free(sysex_store);
                 sysex_store = NULL;
                 /*
-                sysex_store_len = 0;
                 event_data += sysex_len;
                 */
                 ret_cnt += sysex_len;
