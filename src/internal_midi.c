@@ -2308,6 +2308,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint8_t runn
                 }
                 sysex_len = (sysex_len << 7) + (*event_data & 0x7F);
                 event_data++;
+                if (!sysex_len) break;
                 ret_cnt++;
 
                 sysex_store = malloc(sizeof(uint8_t) * sysex_len);
