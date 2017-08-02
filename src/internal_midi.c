@@ -1962,7 +1962,7 @@ void _WM_freeMDI(struct _mdi *mdi) {
     free(mdi);
 }
 
-uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz, uint8_t running_event) {
+uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inlen, uint8_t running_event) {
     /*
      Only add standard MIDI and Sysex events in here.
      Non-standard events need to be handled by calling function
@@ -1978,13 +1978,13 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
     uint8_t data_2 = 0;
     char *text = NULL;
 
-    if (!siz) goto shortbuf;
+    if (!inlen) goto shortbuf;
 
     if (event_data[0] >= 0x80) {
         command = *event_data & 0xf0;
         channel = *event_data++ & 0x0f;
         ret_cnt++;
-        if (--siz == 0) goto shortbuf;
+        if (--inlen == 0) goto shortbuf;
     } else {
         command = running_event & 0xf0;
         channel = running_event & 0x0f;
@@ -1993,7 +1993,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
     switch(command) {
         case 0x80:
         _SETUP_NOTEOFF:
-            if (siz < 2) goto shortbuf;
+            if (inlen < 2) goto shortbuf;
             data_1 = *event_data++;
             data_2 = *event_data++;
             _WM_midi_setup_noteoff(mdi, channel, data_1, data_2);
@@ -2001,21 +2001,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
             break;
         case 0x90:
             if (event_data[1] == 0) goto _SETUP_NOTEOFF; /* A velocity of 0 in a note on is actually a note off */
-            if (siz < 2) goto shortbuf;
+            if (inlen < 2) goto shortbuf;
             data_1 = *event_data++;
             data_2 = *event_data++;
             midi_setup_noteon(mdi, channel, data_1, data_2);
             ret_cnt += 2;
             break;
         case 0xa0:
-            if (siz < 2) goto shortbuf;
+            if (inlen < 2) goto shortbuf;
             data_1 = *event_data++;
             data_2 = *event_data++;
             midi_setup_aftertouch(mdi, channel, data_1, data_2);
             ret_cnt += 2;
             break;
         case 0xb0:
-            if (siz < 2) goto shortbuf;
+            if (inlen < 2) goto shortbuf;
             data_1 = *event_data++;
             data_2 = *event_data++;
             midi_setup_control(mdi, channel, data_1, data_2);
@@ -2032,7 +2032,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
             ret_cnt++;
             break;
         case 0xe0:
-            if (siz < 2) goto shortbuf;
+            if (inlen < 2) goto shortbuf;
             data_1 = *event_data++;
             data_2 = *event_data++;
             midi_setup_pitch(mdi, channel, ((data_2 << 7) | (data_1 & 0x7f)));
@@ -2049,7 +2049,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      Sequence Number
                      We only setting this up here for WM_Event2Midi function
                      */
-                    if (siz < 4) goto shortbuf;
+                    if (inlen < 4) goto shortbuf;
                     midi_setup_sequenceno(mdi, ((event_data[2] << 8) + event_data[3]));
                     ret_cnt += 4;
                 } else if (event_data[0] == 0x01) {
@@ -2057,21 +2057,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    if (--siz < tmp_length) goto shortbuf;
-                    if (!tmp_length) break; /* bad file? */
+                    if (--inlen < tmp_length) goto shortbuf;
+                    if (!tmp_length) break;/* broken file? */
 
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
@@ -2085,21 +2085,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    if (--siz < tmp_length) goto shortbuf;
-                    if (!tmp_length) break; /* bad file? */
+                    if (--inlen < tmp_length) goto shortbuf;
+                    if (!tmp_length) break;/* broken file? */
 
                     /* Copy copyright info in the getinfo struct */
                     if (mdi->extra_info.copyright) {
@@ -2126,21 +2126,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    if (--siz < tmp_length) goto shortbuf;
-                    if (!tmp_length) break; /* bad file? */
+                    if (--inlen < tmp_length) goto shortbuf;
+                    if (!tmp_length) break;/* broken file? */
 
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
@@ -2154,21 +2154,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    if (--siz < tmp_length) goto shortbuf;
-                    if (!tmp_length) break; /* bad file? */
+                    if (--inlen < tmp_length) goto shortbuf;
+                    if (!tmp_length) break;/* broken file? */
 
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
@@ -2182,21 +2182,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    if (--siz < tmp_length) goto shortbuf;
-                    if (!tmp_length) break; /* bad file? */
+                    if (--inlen < tmp_length) goto shortbuf;
+                    if (!tmp_length) break;/* broken file? */
 
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
@@ -2210,21 +2210,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    if (--siz < tmp_length) goto shortbuf;
-                    if (!tmp_length) break; /* bad file? */
+                    if (--inlen < tmp_length) goto shortbuf;
+                    if (!tmp_length) break;/* broken file? */
 
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
@@ -2238,21 +2238,21 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                     /* Get Length */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     event_data++;
                     ret_cnt++;
-                    if (--siz < tmp_length) goto shortbuf;
-                    if (!tmp_length) break; /* bad file? */
+                    if (--inlen < tmp_length) goto shortbuf;
+                    if (!tmp_length) break;/* broken file? */
 
                     text = malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
@@ -2266,7 +2266,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      Channel Prefix
                      We only setting this up here for WM_Event2Midi function
                      */
-                    if (siz < 3) goto shortbuf;
+                    if (inlen < 3) goto shortbuf;
                     midi_setup_channelprefix(mdi, event_data[2]);
                     ret_cnt += 3;
                 } else if ((event_data[0] == 0x21) && (event_data[1] == 0x01)) {
@@ -2274,7 +2274,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      Port Prefix
                      We only setting this up here for WM_Event2Midi function
                      */
-                    if (siz < 3) goto shortbuf;
+                    if (inlen < 3) goto shortbuf;
                     midi_setup_portprefix(mdi, event_data[2]);
                     ret_cnt += 3;
                 } else if ((event_data[0] == 0x2F) && (event_data[1] == 0x00)) {
@@ -2283,7 +2283,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      Deal with this inside calling function
                      We only setting this up here for _WM_Event2Midi function
                      */
-                    if (siz < 2) goto shortbuf;
+                    if (inlen < 2) goto shortbuf;
                     _WM_midi_setup_endoftrack(mdi);
                     ret_cnt += 2;
                 } else if ((event_data[0] == 0x51) && (event_data[1] == 0x03)) {
@@ -2292,11 +2292,11 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      Deal with this inside calling function.
                      We only setting this up here for _WM_Event2Midi function
                      */
-                    if (siz < 5) goto shortbuf;
+                    if (inlen < 5) goto shortbuf;
                     _WM_midi_setup_tempo(mdi, ((event_data[2] << 16) + (event_data[3] << 8) + event_data[4]));
                     ret_cnt += 5;
                 } else if ((event_data[0] == 0x54) && (event_data[1] == 0x05)) {
-                    if (siz < 7) goto shortbuf;
+                    if (inlen < 7) goto shortbuf;
                     /*
                      SMPTE Offset
                      We only setting this up here for WM_Event2Midi function
@@ -2314,7 +2314,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      Time Signature
                      We only setting this up here for WM_Event2Midi function
                      */
-                    if (siz < 6) goto shortbuf;
+                    if (inlen < 6) goto shortbuf;
                     midi_setup_timesignature(mdi, ((event_data[2] << 24) + (event_data[3] << 16) + (event_data[4] << 8) + event_data[5]));
                     ret_cnt += 6;
                 } else if ((event_data[0] == 0x59) && (event_data[1] == 0x02)) {
@@ -2322,7 +2322,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      Key Signature
                      We only setting this up here for WM_Event2Midi function
                      */
-                    if (siz < 4) goto shortbuf;
+                    if (inlen < 4) goto shortbuf;
                     midi_setup_keysignature(mdi, ((event_data[2] << 8) + event_data[3]));
                     ret_cnt += 4;
                 } else {
@@ -2331,20 +2331,20 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
                      */
                     event_data++;
                     ret_cnt++;
-                    if (--siz && *event_data > 0x7f) {
+                    if (--inlen && *event_data > 0x7f) {
                         do {
-                            if (!siz) break;
+                            if (!inlen) break;
                             tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                             event_data++;
-                            siz--;
+                            inlen--;
                             ret_cnt++;
                         } while (*event_data > 0x7f);
                     }
-                    if (!siz) goto shortbuf;
+                    if (!inlen) goto shortbuf;
                     tmp_length = (tmp_length << 7) + (*event_data & 0x7f);
                     ret_cnt++;
                     ret_cnt += tmp_length;
-                    if (--siz < tmp_length) goto shortbuf;
+                    if (--inlen < tmp_length) goto shortbuf;
                 }
 
             } else if ((channel == 0) || (channel == 7)) {
@@ -2356,19 +2356,19 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz
 
                 if (*event_data > 0x7f) {
                     do {
-                        if (!siz) break;
+                        if (!inlen) break;
                         sysex_len = (sysex_len << 7) + (*event_data & 0x7F);
                         event_data++;
-                        siz--;
+                        inlen--;
                         ret_cnt++;
                     } while (*event_data > 0x7f);
                 }
-                if (!siz) goto shortbuf;
+                if (!inlen) goto shortbuf;
                 sysex_len = (sysex_len << 7) + (*event_data & 0x7F);
                 event_data++;
                 ret_cnt++;
-                if (--siz < sysex_len) goto shortbuf;
-                if (!sysex_len) break; /* bad file? */
+                if (--inlen < sysex_len) goto shortbuf;
+                if (!sysex_len) break;/* broken file? */
 
                 sysex_store = malloc(sizeof(uint8_t) * sysex_len);
                 memcpy(sysex_store, event_data, sysex_len);

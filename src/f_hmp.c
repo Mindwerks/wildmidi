@@ -57,18 +57,13 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     uint8_t *chunk_end;
     uint32_t chunk_num = 0;
     uint32_t hmp_track = 0;
-//  uint32_t j = 0;
     uint32_t smallest_delta = 0;
     uint32_t subtract_delta = 0;
-//  uint32_t chunks_finished = 0;
     uint32_t end_of_chunks = 0;
     uint32_t var_len_shift = 0;
 
     float tempo_f = 500000.0;
     float samples_per_delta_f = 0.0;
-
-//  uint8_t hmp_event = 0;
-//  uint8_t hmp_channel = 0;
 
     uint32_t sample_count = 0;
     float sample_count_f = 0;

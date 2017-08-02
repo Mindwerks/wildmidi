@@ -191,7 +191,7 @@ extern int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions);
 
 extern struct _mdi * _WM_initMDI(void);
 extern void _WM_freeMDI(struct _mdi *mdi);
-extern uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t siz, uint8_t running_event);
+extern uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t *event_data, uint32_t inlen, uint8_t running_event);
 extern void _WM_ResetToStart(struct _mdi *mdi);
 extern void _WM_do_pan_adjust(struct _mdi *mdi, uint8_t ch);
 extern void _WM_do_note_off_extra(struct _note *nte);
