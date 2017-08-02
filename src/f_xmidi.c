@@ -267,7 +267,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             setup_ret = 6;
                             goto _XMI_Next_Event;
                         }
-                        if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data,0)) == 0) {
+                        if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data, xmi_size, 0)) == 0) {
                             goto _xmi_end;
                         }
 

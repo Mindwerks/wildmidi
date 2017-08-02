@@ -235,6 +235,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
 
         // goto start of next chunk
         hmp_data = hmp_chunk[i] + chunk_length[i];
+        chunk_length[i] -= chunk_ofs[i];
         hmp_chunk[i] += chunk_ofs[i]++;
         chunk_end[i] = 0;
     }
@@ -273,10 +274,11 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                     // Reserved for loop markers
                     // TODO: still deciding what to do about these
                     hmp_chunk[i] += 3;
+                    chunk_length[i] -= 3;
                 } else {
                     uint32_t setup_ret = 0;
 
-                    if ((setup_ret = _WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], 0)) == 0) {
+                    if ((setup_ret = _WM_SetupMidiEvent(hmp_mdi, hmp_chunk[i], chunk_length[i], 0)) == 0) {
                         goto _hmp_end;
                     }
 
@@ -284,6 +286,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                         /* End of Chunk */
                         end_of_chunks++;
                         chunk_end[i] = 1;
+                        chunk_length[i] -= 3;
                         hmp_chunk[i] += 3;
                         goto NEXT_CHUNK;
                     } else if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x51) && (hmp_chunk[i][2] == 0x03)) {
@@ -296,18 +299,26 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                         fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);
                     }
                     hmp_chunk[i] += setup_ret;
+                    chunk_length[i] -= setup_ret;
                 }
                 var_len_shift = 0;
                 chunk_delta[i] = 0;
-                if (*hmp_chunk[i] < 0x80) {
+                if (chunk_length[i] && *hmp_chunk[i] < 0x80) {
                     do {
+                        if (! chunk_length[i]) break;
                         chunk_delta[i] = chunk_delta[i] + ((*hmp_chunk[i] & 0x7F) << var_len_shift);
                         var_len_shift += 7;
                         hmp_chunk[i]++;
+                        chunk_length[i]--;
                     } while (*hmp_chunk[i] < 0x80);
+                }
+                if (! chunk_length[i]) {
+                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
+                    goto _hmp_end;
                 }
                 chunk_delta[i] = chunk_delta[i] + ((*hmp_chunk[i] & 0x7F) << var_len_shift);
                 hmp_chunk[i]++;
+                chunk_length[i]--;
             } while (!chunk_delta[i]);
 
             if ((!smallest_delta) || (smallest_delta > chunk_delta[i])) {

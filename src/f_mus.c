@@ -61,7 +61,8 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     float tempo_f = 0.0;
     uint16_t mus_freq = 0;
     float samples_per_tick_f = 0.0;
-    uint8_t mus_event[] = { 0, 0, 0, 0 };
+#define MUS_SZ 4
+    uint8_t mus_event[MUS_SZ] = { 0, 0, 0, 0 };
     uint8_t mus_event_size = 0;
     uint8_t mus_prev_vol[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     uint32_t setup_ret = 0;
@@ -314,7 +315,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                 break;
         }
 
-        setup_ret = _WM_SetupMidiEvent(mus_mdi, (uint8_t *)mus_event, 0);
+        setup_ret = _WM_SetupMidiEvent(mus_mdi, (uint8_t *)mus_event, MUS_SZ, 0);
         if (setup_ret == 0) {
             goto _mus_end;
         }
