@@ -214,16 +214,16 @@ _WM_load_sample(struct _patch *sample_patch) {
             if (guspat->modes & SAMPLE_ENVELOPE) {
                 if (sample_patch->env[i].set & 0x02) {
                     guspat->env_target[i] = 16448
-                                                * (int32_t) (255.0 * sample_patch->env[i].level);
+                                                * (int32_t) (255.0f * sample_patch->env[i].level);
                 }
                 if (sample_patch->env[i].set & 0x01) {
-                    guspat->env_rate[i] = (int32_t) (4194303.0
+                    guspat->env_rate[i] = (int32_t) (4194303.0f
                                                      / ((float) _WM_SampleRate
-                                                        * (sample_patch->env[i].time / 1000.0)));
+                                                        * (sample_patch->env[i].time / 1000.0f)));
                 }
             } else {
                 guspat->env_target[i] = 4194303;
-                guspat->env_rate[i] = (int32_t) (4194303.0
+                guspat->env_rate[i] = (int32_t) (4194303.0f
                                                  / ((float) _WM_SampleRate * env_time_table[63]));
             }
         }
@@ -232,4 +232,3 @@ _WM_load_sample(struct _patch *sample_patch) {
     } while (guspat);
     return (0);
 }
-

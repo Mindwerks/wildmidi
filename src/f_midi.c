@@ -50,11 +50,11 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     uint32_t i;
     uint32_t divisions = 96;
     uint32_t tempo = 500000;
-    float samples_per_delta_f = 0.0;
+    float samples_per_delta_f = 0;
 
     uint32_t sample_count = 0;
-    float sample_count_f = 0.0;
-    float sample_remainder = 0.0;
+    float sample_count_f = 0;
+    float sample_remainder = 0;
     uint8_t *sysex_store = NULL;
 
     uint32_t *track_delta;
@@ -310,7 +310,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
         if (midi_type == 2) {
             mdi->is_type2 = 1;
         }
-        sample_remainder = 0.0;
+        sample_remainder = 0;
         for (i = 0; i < no_tracks; i++) {
             running_event[i] = 0;
             do {
@@ -419,9 +419,9 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint8_t running_event = 0;
     uint32_t divisions = 96;
     uint32_t tempo = 500000;
-    float samples_per_tick = 0.0;
+    float samples_per_tick = 0;
     uint32_t value = 0;
-    float value_f = 0.0;
+    float value_f = 0;
     struct _event *event = mdi->events;
     uint32_t track_size = 0;
     uint32_t track_start = 0;
@@ -893,7 +893,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         }
 
         value_f = (float)event->samples_to_next / samples_per_tick;
-        value = (uint32_t)(value_f + 0.5);
+        value = (uint32_t) (value_f + 0.5f);
 
         //DEBUG
         //fprintf(stderr,"\rDEBUG: STN %i, SPD %f, Delta %i\r\n", event->samples_to_next, samples_per_delta_f, value);

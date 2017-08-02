@@ -145,7 +145,7 @@ static void init_gauss(void) {
     }
 
     for (i = 0; i <= n; i++)
-        for (j = 0, sign = pow(-1, i); j <= i; j++, sign *= -1)
+        for (j = 0, sign = (int) pow(-1, i); j <= i; j++, sign *= -1)
             newt_coeffs[i][j] *= sign;
 
     t = malloc((1<<FPBITS) * (n + 1) * sizeof(double));
@@ -301,14 +301,14 @@ static int wm_strncasecmp(const char *s1, const char *s2, size_t n) {
 
 #define TOKEN_CNT_INC 8
 static char** WM_LC_Tokenize_Line(char *line_data) {
-    int line_length = strlen(line_data);
+    int line_length = (int) strlen(line_data);
     int token_data_length = 0;
     int line_ofs = 0;
     int token_start = 0;
     char **token_data = NULL;
     int token_count = 0;
 
-    if (line_length == 0) return (NULL);
+    if (!line_length) return (NULL);
 
     do {
         /* ignore everything after #  */

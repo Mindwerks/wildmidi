@@ -62,8 +62,8 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     uint32_t end_of_chunks = 0;
     uint32_t var_len_shift = 0;
 
-    float tempo_f = 500000.0;
-    float samples_per_delta_f = 0.0;
+    float tempo_f = 500000.0f;
+    float samples_per_delta_f = 0;
 
     uint32_t sample_count = 0;
     float sample_count_f = 0;
@@ -141,7 +141,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         tempo_f = (float) (60000000 / hmp_bpm);
     }
 
-    samples_per_delta_f = _WM_GetSamplesPerTick(hmp_divisions, tempo_f);
+    samples_per_delta_f = _WM_GetSamplesPerTick(hmp_divisions, (uint32_t) tempo_f);
 
     //DEBUG
     //fprintf(stderr, "DEBUG: Samples Per Delta Tick: %f\r\n",samples_per_delta_f);
@@ -287,8 +287,8 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                     } else if ((hmp_chunk[i][0] == 0xff) && (hmp_chunk[i][1] == 0x51) && (hmp_chunk[i][2] == 0x03)) {
                         /* Tempo */
                         tempo_f = (float)((hmp_chunk[i][3] << 16) + (hmp_chunk[i][4] << 8)+ hmp_chunk[i][5]);
-                        if (tempo_f == 0.0)
-                            tempo_f = 500000.0;
+                        if (tempo_f == 0.0f)
+                            tempo_f = 500000.0f;
 
                         // DEBUG
                         fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);

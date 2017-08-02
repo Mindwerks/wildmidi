@@ -53,7 +53,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     uint8_t *hmi_addr = NULL;
     uint32_t *hmi_track_header_length = NULL;
     struct _mdi *hmi_mdi = NULL;
-    uint32_t tempo_f = 5000000.0;
+    float tempo_f =  5000000.0f;
     uint32_t *hmi_track_end = NULL;
     uint8_t hmi_tracks_ended = 0;
     uint8_t *hmi_running_event = NULL;
@@ -67,7 +67,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     float sample_count_f = 0;
     float sample_remainder = 0;
 
-    float samples_per_delta_f = 0.0;
+    float samples_per_delta_f = 0;
 
     struct _note {
         uint32_t length;

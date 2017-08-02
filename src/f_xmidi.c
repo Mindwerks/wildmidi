@@ -49,9 +49,9 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     uint32_t xmi_divisions = 60;
     uint32_t xmi_tempo = 500000;
     uint32_t xmi_sample_count = 0;
-    float xmi_sample_count_f = 0.0;
-    float xmi_sample_remainder = 0.0;
-    float xmi_samples_per_delta_f = 0.0;
+    float xmi_sample_count_f = 0;
+    float xmi_sample_remainder = 0;
+    float xmi_samples_per_delta_f = 0;
     uint8_t xmi_ch = 0;
     uint8_t xmi_note = 0;
     uint32_t *xmi_notelen = NULL;
@@ -336,7 +336,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     _WM_ResetToStart(xmi_mdi);
 
 _xmi_end:
-    if (xmi_notelen != NULL) free(xmi_notelen);
+    if (xmi_notelen) free(xmi_notelen);
     if (xmi_mdi->reverb) return (xmi_mdi);
     _WM_freeMDI(xmi_mdi);
     return NULL;

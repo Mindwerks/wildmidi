@@ -492,8 +492,8 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
      NOTE: The lower the value the higher the chance of clipping.
      FIXME: Still needs tuning. Clipping heard at a value of 3.75
      */
-#define VOL_DIVISOR 4.0
-    volume_adj = ((float)_WM_MasterVolume / 1024.0) / VOL_DIVISOR;
+#define VOL_DIVISOR 4.0f
+    volume_adj = ((float)_WM_MasterVolume / 1024.0f) / VOL_DIVISOR;
 
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
 
@@ -507,16 +507,16 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
         premix_dBm_left += premix_dBm;
         premix_dBm_right += premix_dBm;
 
-        premix_left = (powf(10.0,(premix_dBm_left / 20.0))) * volume_adj;
-        premix_right = (powf(10.0,(premix_dBm_right / 20.0))) * volume_adj;
+        premix_left = (powf(10.0f, (premix_dBm_left / 20.0f))) * volume_adj;
+        premix_right = (powf(10.0f, (premix_dBm_right / 20.0f))) * volume_adj;
     } else {
-        premix_lin = (float)(_WM_lin_volume[vol_ofs]) / 1024.0;
+        premix_lin = (float)(_WM_lin_volume[vol_ofs]) / 1024.0f;
 
-        premix_left = premix_lin * powf(10.0, (premix_dBm_left / 20)) * volume_adj;
-        premix_right = premix_lin * powf(10.0, (premix_dBm_right / 20)) * volume_adj;
+        premix_left = premix_lin * powf(10.0f, (premix_dBm_left / 20)) * volume_adj;
+        premix_right = premix_lin * powf(10.0f, (premix_dBm_right / 20)) * volume_adj;
     }
-    nte->left_mix_volume = (int32_t)(premix_left * 1024.0);
-    nte->right_mix_volume = (int32_t)(premix_right * 1024.0);
+    nte->left_mix_volume = (int32_t)(premix_left * 1024.0f);
+    nte->right_mix_volume = (int32_t)(premix_right * 1024.0f);
 }
 
 /* Should be called in any function that effects channel volumes */

@@ -58,9 +58,9 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     uint16_t mus_instr_cnt = 0;
     struct _mdi *mus_mdi;
     uint32_t mus_divisions = 60;
-    float tempo_f = 0.0;
+    float tempo_f = 0;
     uint16_t mus_freq = 0;
-    float samples_per_tick_f = 0.0;
+    float samples_per_tick_f = 0;
 #define MUS_SZ 4
     uint8_t mus_event[MUS_SZ] = { 0, 0, 0, 0 };
     uint8_t mus_event_size = 0;
@@ -68,8 +68,8 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     uint32_t setup_ret = 0;
     uint32_t mus_ticks = 0;
     uint32_t sample_count = 0;
-    float sample_count_f = 0.0;
-    float sample_remainder = 0.0;
+    float sample_count_f = 0;
+    float sample_remainder = 0;
     uint16_t pitchbend_tmp = 0;
 
     if (mus_size < 17) {
