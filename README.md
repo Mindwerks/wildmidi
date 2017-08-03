@@ -36,10 +36,13 @@ Requirements:
 CHANGELOG
 
 0.4.2
+* Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
+  (Bug #175).
 * GUS patch processing changes to meet users expectations (Bug #132).
 * Worked around a build failure with newer FreeBSD versions failing to
   retrieve the ONLCR constant (Bug #171).
 * Fixed a minor Windows unicode issue (PR #170).
+* A few other fixes / clean-ups.
 
 0.4.1
 * Fixed bug in handling of the "source" directive in config files.
