@@ -438,6 +438,14 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 midi_data++;
                 midi_size--;
                 rtn_cnt++;
+                if (!sysex_size) {
+                    if (verbose) printf("Zero Sysex size\n");
+                    break;
+                }
+                if (sysex_size > midi_size) {
+                    printf("Bad Sysex size %lu\n", sysex_size);
+                    return -1;
+                }
 
                 sysex_store = realloc(sysex_store,
                                       (sysex_store_ofs + sysex_size));
