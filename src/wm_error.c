@@ -78,7 +78,7 @@ void _WM_GLOBAL_ERROR(const char *func, int lne, int wmerno, const char *wmfor, 
 
     if (_WM_Global_ErrorS != NULL) free(_WM_Global_ErrorS);
 
-    errorstring = malloc(MAX_ERROR_LEN+1);
+    errorstring = (char *) malloc(MAX_ERROR_LEN+1);
 
     if (error == 0) {
         if (wmfor == NULL) {
@@ -106,7 +106,7 @@ void _WM_ERROR_NEW(const char * wmfmt, ...) {
     char *errorstring;
     va_list args;
     va_start(args, wmfmt);
-    errorstring = malloc(MAX_ERROR_LEN+1);
+    errorstring = (char *) malloc(MAX_ERROR_LEN+1);
     vsprintf(errorstring, wmfmt, args);
     va_end(args);
     errorstring[MAX_ERROR_LEN] = 0;

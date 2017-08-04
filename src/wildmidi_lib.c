@@ -148,7 +148,7 @@ static void init_gauss(void) {
         for (j = 0, sign = (int) pow(-1, i); j <= i; j++, sign *= -1)
             newt_coeffs[i][j] *= sign;
 
-    t = malloc((1<<FPBITS) * (n + 1) * sizeof(double));
+    t = (double *) malloc((1<<FPBITS) * (n + 1) * sizeof(double));
     x_inc = 1.0 / (1<<FPBITS);
     for (m = 0, x = 0.0; m < (1<<FPBITS); m++, x += x_inc) {
         xz = (x + n_half) / (4 * M_PI);
@@ -328,7 +328,7 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
                 token_start = 1;
                 if (token_count >= token_data_length) {
                     token_data_length += TOKEN_CNT_INC;
-                    token_data = realloc(token_data, token_data_length * sizeof(char *));
+                    token_data = (char **) realloc(token_data, token_data_length * sizeof(char *));
                     if (token_data == NULL) {
                         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,"to parse config", errno);
                         return (NULL);
@@ -345,8 +345,7 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
     /* if we have found some tokens then add a null token to the end */
     if (token_count) {
         if (token_count >= token_data_length) {
-            token_data = realloc(token_data,
-                ((token_count + 1) * sizeof(char *)));
+            token_data = (char **) realloc(token_data, ((token_count + 1) * sizeof(char *)));
         }
         token_data[token_count] = NULL;
     }
@@ -382,7 +381,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
     } else {
         dir_end = FIND_LAST_DIRSEP(config_file);
         if (dir_end) {
-            config_dir = malloc((dir_end - config_file + 2));
+            config_dir = (char *) malloc((dir_end - config_file + 2));
             if (config_dir == NULL) {
                 _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                 WM_FreePatches();
@@ -439,7 +438,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             free(config_buffer);
                             return (-1);
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
-                            new_config = malloc(strlen(config_dir) + strlen(line_tokens[1]) + 1);
+                            new_config = (char *) malloc(strlen(config_dir) + strlen(line_tokens[1]) + 1);
                             if (new_config == NULL) {
                                 _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                 WM_FreePatches();
@@ -563,7 +562,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                         patchid = (patchid & 0xFF80)
                                 | (atoi(line_tokens[0]) & 0x7F);
                         if (_WM_patch[(patchid & 0x7F)] == NULL) {
-                            _WM_patch[(patchid & 0x7F)] = malloc(sizeof(struct _patch));
+                            _WM_patch[(patchid & 0x7F)] = (struct _patch *) malloc(sizeof(struct _patch));
                             if (_WM_patch[(patchid & 0x7F)] == NULL) {
                                 _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                 WM_FreePatches();
@@ -596,7 +595,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                         tmp_patch = tmp_patch->next;
                                     }
                                     if (tmp_patch->next == NULL) {
-                                        if ((tmp_patch->next = malloc(sizeof(struct _patch))) == NULL) {
+                                        if ((tmp_patch->next = (struct _patch *) malloc(sizeof(struct _patch))) == NULL) {
                                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
                                             WM_FreePatches();
                                             free(config_dir);
@@ -621,8 +620,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                         tmp_patch->note = 0;
                                     }
                                 } else {
-                                    tmp_patch->next = malloc(
-                                            sizeof(struct _patch));
+                                    tmp_patch->next = (struct _patch *) malloc(sizeof(struct _patch));
                                     if (tmp_patch->next == NULL) {
                                         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                         WM_FreePatches();
@@ -651,7 +649,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             free(config_buffer);
                             return (-1);
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
-                            tmp_patch->filename = malloc(strlen(config_dir) + strlen(line_tokens[1]) + 5);
+                            tmp_patch->filename = (char *) malloc(strlen(config_dir) + strlen(line_tokens[1]) + 5);
                             if (tmp_patch->filename == NULL) {
                                 _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
                                 WM_FreePatches();
@@ -779,7 +777,7 @@ static int add_handle(void * handle) {
     struct _hndl *tmp_handle = NULL;
 
     if (first_handle == NULL) {
-        first_handle = malloc(sizeof(struct _hndl));
+        first_handle = (struct _hndl *) malloc(sizeof(struct _hndl));
         if (first_handle == NULL) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, " to get ram", errno);
             return (-1);
@@ -793,7 +791,7 @@ static int add_handle(void * handle) {
             while (tmp_handle->next)
                 tmp_handle = tmp_handle->next;
         }
-        tmp_handle->next = malloc(sizeof(struct _hndl));
+        tmp_handle->next = (struct _hndl *) malloc(sizeof(struct _hndl));
         if (tmp_handle->next == NULL) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, " to get ram", errno);
             return (-1);
@@ -844,7 +842,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         } else {
             mdi->mix_buffer_size = size / 2;
         }
-        mdi->mix_buffer = realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        mdi->mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
     }
 
     tmp_buffer = mdi->mix_buffer;
@@ -1162,7 +1160,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
         } else {
             mdi->mix_buffer_size = size / 2;
         }
-        mdi->mix_buffer = realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        mdi->mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
     }
 
     tmp_buffer = mdi->mix_buffer;
@@ -1765,7 +1763,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
     if (mdi->extra_info.current_sample > *sample_pos) {
         /* no - reset some stuff */
         event = mdi->events;
-        _WM_ResetToStart(handle);
+        _WM_ResetToStart((struct _mdi *) handle);
         mdi->extra_info.current_sample = 0;
         mdi->samples_to_mix = 0;
     }
@@ -1869,7 +1867,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         }
         event_new = event;
         event = mdi->events;
-        _WM_ResetToStart(handle);
+        _WM_ResetToStart((struct _mdi *) handle);
 
     } else if (nextsong == 1) {
         /* goto start of next song */
@@ -1900,7 +1898,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         }
         event_new = event;
         event = mdi->events;
-        _WM_ResetToStart(handle);
+        _WM_ResetToStart((struct _mdi *) handle);
     }
 
     while (event != event_new) {
@@ -1968,7 +1966,7 @@ WM_SYMBOL int WildMidi_GetMidiOutput(midi * handle, int8_t **buffer, uint32_t *s
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(NULL buffer pointer)", 0);
         return (-1);
     }
-    return _WM_Event2Midi(handle, (uint8_t **)buffer, size);
+    return _WM_Event2Midi((struct _mdi *)handle, (uint8_t **)buffer, size);
 }
 
 
@@ -2042,7 +2040,7 @@ WildMidi_GetInfo(midi * handle) {
     }
     _WM_Lock(&mdi->lock);
     if (mdi->tmp_info == NULL) {
-        mdi->tmp_info = malloc(sizeof(struct _WM_Info));
+        mdi->tmp_info = (struct _WM_Info *) malloc(sizeof(struct _WM_Info));
         if (mdi->tmp_info == NULL) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set info", 0);
             _WM_Unlock(&mdi->lock);
@@ -2056,7 +2054,7 @@ WildMidi_GetInfo(midi * handle) {
     mdi->tmp_info->total_midi_time = (mdi->tmp_info->approx_total_samples * 1000) / _WM_SampleRate;
     if (mdi->extra_info.copyright) {
         free(mdi->tmp_info->copyright);
-        mdi->tmp_info->copyright = malloc(strlen(mdi->extra_info.copyright) + 1);
+        mdi->tmp_info->copyright = (char *) malloc(strlen(mdi->extra_info.copyright) + 1);
         if (mdi->tmp_info->copyright == NULL) {
             free(mdi->tmp_info);
             mdi->tmp_info = NULL;

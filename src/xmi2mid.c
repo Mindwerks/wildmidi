@@ -122,7 +122,7 @@ static void copy(struct xmi_ctx *ctx, char *b, uint32_t len)
 #define DST_CHUNK 8192
 static void resize_dst(struct xmi_ctx *ctx) {
     uint32_t pos = ctx->dst_ptr - ctx->dst;
-    ctx->dst = realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
+    ctx->dst = (uint8_t *) realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
     ctx->dstsize += DST_CHUNK;
     ctx->dstrem += DST_CHUNK;
     ctx->dst_ptr = ctx->dst + pos;
@@ -488,7 +488,7 @@ int _WM_xmi2midi(const uint8_t *in, uint32_t insize,
         goto _end;
     }
 
-    ctx.dst = malloc(DST_CHUNK);
+    ctx.dst = (uint8_t *) malloc(DST_CHUNK);
     ctx.dst_ptr = ctx.dst;
     ctx.dstsize = DST_CHUNK;
     ctx.dstrem = DST_CHUNK;
@@ -543,13 +543,13 @@ static void DeleteEventList(midi_event *mlist) {
 /* Sets current to the new event and updates list */
 static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
     if (!ctx->list) {
-        ctx->list = ctx->current = calloc(1, sizeof(midi_event));
+        ctx->list = ctx->current = (midi_event *) calloc(1, sizeof(midi_event));
         ctx->current->time = (time < 0)? 0 : time;
         return;
     }
 
     if (time < 0) {
-        midi_event *event = calloc(1, sizeof(midi_event));
+        midi_event *event = (midi_event *) calloc(1, sizeof(midi_event));
         event->next = ctx->list;
         ctx->list = ctx->current = event;
         return;
@@ -560,7 +560,7 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
 
     while (ctx->current->next) {
         if (ctx->current->next->time > time) {
-            midi_event *event = calloc(1, sizeof(midi_event));
+            midi_event *event = (midi_event *) calloc(1, sizeof(midi_event));
             event->next = ctx->current->next;
             ctx->current->next = event;
             ctx->current = event;
@@ -571,7 +571,7 @@ static void CreateNewEvent(struct xmi_ctx *ctx, int32_t time) {
         ctx->current = ctx->current->next;
     }
 
-    ctx->current->next = calloc(1, sizeof(midi_event));
+    ctx->current->next = (midi_event *) calloc(1, sizeof(midi_event));
     ctx->current = ctx->current->next;
     ctx->current->time = time;
 }
@@ -751,7 +751,7 @@ static int32_t ConvertSystemMessage(struct xmi_ctx *ctx, const int32_t time,
     if (!ctx->current->len)
         return (i);
 
-    ctx->current->buffer = malloc(sizeof(uint8_t)*ctx->current->len);
+    ctx->current->buffer = (uint8_t *) malloc(sizeof(uint8_t)*ctx->current->len);
     copy(ctx, (char *) ctx->current->buffer, ctx->current->len);
 
     return (i + ctx->current->len);
@@ -1084,8 +1084,8 @@ badfile:    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)
 static int ExtractTracks(struct xmi_ctx *ctx) {
     uint32_t i;
 
-    ctx->events = calloc(ctx->info.tracks, sizeof(midi_event*));
-    ctx->timing = calloc(ctx->info.tracks, sizeof(int16_t));
+    ctx->events = (midi_event **) calloc(ctx->info.tracks, sizeof(midi_event*));
+    ctx->timing = (int16_t *) calloc(ctx->info.tracks, sizeof(int16_t));
     /* type-2 for multi-tracks, type-0 otherwise */
     ctx->info.type = (ctx->info.tracks > 1)? 2 : 0;
 

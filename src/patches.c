@@ -93,7 +93,7 @@ void _WM_load_patch(struct _mdi *mdi, uint16_t patchid) {
     }
 
     mdi->patch_count++;
-    mdi->patches = realloc(mdi->patches,
+    mdi->patches = (struct _patch **) realloc(mdi->patches,
                            (sizeof(struct _patch*) * mdi->patch_count));
     mdi->patches[mdi->patch_count - 1] = tmp_patch;
     tmp_patch->inuse_count++;

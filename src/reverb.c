@@ -120,7 +120,7 @@ _WM_init_reverb(int rate, float room_x, float room_y, float listen_x,
     double SPR_LSN_YOFS = 0.0;
     double SPR_LSN_DST = 0.0;
 
-    struct _rvb *rtn_rvb = malloc(sizeof(struct _rvb));
+    struct _rvb *rtn_rvb = (struct _rvb *) malloc(sizeof(struct _rvb));
     int j = 0;
     int i = 0;
 
@@ -260,11 +260,11 @@ _WM_init_reverb(int rate, float room_x, float room_y, float listen_x,
 
     /* init the reverb buffers */
     rtn_rvb->l_buf_size = (int) ((float) rate * (MAXL_DST / 340.29));
-    rtn_rvb->l_buf = malloc(sizeof(int32_t) * (rtn_rvb->l_buf_size + 1));
+    rtn_rvb->l_buf = (int32_t *) malloc(sizeof(int32_t) * (rtn_rvb->l_buf_size + 1));
     rtn_rvb->l_out = 0;
 
     rtn_rvb->r_buf_size = (int) ((float) rate * (MAXR_DST / 340.29));
-    rtn_rvb->r_buf = malloc(sizeof(int32_t) * (rtn_rvb->r_buf_size + 1));
+    rtn_rvb->r_buf = (int32_t *) malloc(sizeof(int32_t) * (rtn_rvb->r_buf_size + 1));
     rtn_rvb->r_out = 0;
 
     for (i = 0; i < 4; i++) {

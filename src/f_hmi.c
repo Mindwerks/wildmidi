@@ -100,12 +100,12 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 
     _WM_midi_setup_tempo(hmi_mdi, (uint32_t)tempo_f);
 
-    hmi_track_offset = (uint32_t *)malloc(sizeof(uint32_t) * hmi_track_cnt);
-    hmi_track_header_length = malloc(sizeof(uint32_t) * hmi_track_cnt);
-    hmi_track_end = malloc(sizeof(uint32_t) * hmi_track_cnt);
-    hmi_delta = malloc(sizeof(uint32_t) * hmi_track_cnt);
-    note = malloc(sizeof(struct _note) * 128 * hmi_track_cnt);
-    hmi_running_event = malloc(sizeof(uint8_t) * 128 * hmi_track_cnt);
+    hmi_track_offset = (uint32_t *) malloc(sizeof(uint32_t) * hmi_track_cnt);
+    hmi_track_header_length = (uint32_t *) malloc(sizeof(uint32_t) * hmi_track_cnt);
+    hmi_track_end = (uint32_t *) malloc(sizeof(uint32_t) * hmi_track_cnt);
+    hmi_delta = (uint32_t *) malloc(sizeof(uint32_t) * hmi_track_cnt);
+    note = (struct _note *) malloc(sizeof(struct _note) * 128 * hmi_track_cnt);
+    hmi_running_event = (uint8_t *) malloc(sizeof(uint8_t) * 128 * hmi_track_cnt);
 
     hmi_data += 370;
 

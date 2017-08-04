@@ -133,7 +133,7 @@ struct mus_ctx {
 #define DST_CHUNK 8192
 static void resize_dst(struct mus_ctx *ctx) {
     uint32_t pos = ctx->dst_ptr - ctx->dst;
-    ctx->dst = realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
+    ctx->dst = (uint8_t *) realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
     ctx->dstsize += DST_CHUNK;
     ctx->dstrem += DST_CHUNK;
     ctx->dst_ptr = ctx->dst + pos;
@@ -260,7 +260,7 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
     ctx.src = ctx.src_ptr = in;
     ctx.srcsize = insize;
 
-    ctx.dst = calloc(DST_CHUNK, sizeof(uint8_t));
+    ctx.dst = (uint8_t *) calloc(DST_CHUNK, sizeof(uint8_t));
     ctx.dst_ptr = ctx.dst;
     ctx.dstsize = DST_CHUNK;
     ctx.dstrem = DST_CHUNK;
@@ -424,7 +424,8 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
         if (event & 128) {
             delta_time = 0;
             do {
-                delta_time = (delta_time * 128 + (*cur & 127)) * (140.0f / frequency);
+                delta_time = (int32_t)
+                              ((delta_time * 128 + (*cur & 127)) * (140.0f / frequency));
             } while ((*cur++ & 128));
         } else {
             delta_time = 0;

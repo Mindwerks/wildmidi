@@ -568,7 +568,7 @@ open_mm_output (void) {
 
     InitializeCriticalSection(&waveCriticalSection);
 
-    if((mm_buffer = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((MM_BLOCK_SIZE + sizeof(WAVEHDR)) * MM_BLOCK_COUNT))) == NULL) {
+    if((mm_buffer = (char *) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((MM_BLOCK_SIZE + sizeof(WAVEHDR)) * MM_BLOCK_COUNT))) == NULL) {
         fprintf(stderr, "Memory allocation error\r\n");
         return -1;
     }
@@ -1028,10 +1028,10 @@ static void close_ahi_output(void);
 static int open_ahi_output(void) {
     AHImp = CreateMsgPort();
     if (AHImp) {
-        AHIReq[0] = (struct AHIRequest *)CreateIORequest(AHImp, sizeof(struct AHIRequest));
+        AHIReq[0] = (struct AHIRequest *) CreateIORequest(AHImp, sizeof(struct AHIRequest));
         if (AHIReq[0]) {
             AHIReq[0]->ahir_Version = 4;
-            AHIReq[1] = AllocVec(sizeof(struct AHIRequest), MEMF_PUBLIC);
+            AHIReq[1] = (struct AHIRequest *) AllocVec(sizeof(struct AHIRequest), MEMF_PUBLIC);
             if (AHIReq[1]) {
                 if (!OpenDevice(AHINAME, AHI_DEFAULT_UNIT, (struct IORequest *)AHIReq[0], 0)) {
                     /*AHIReq[0]->ahir_Std.io_Message.mn_Node.ln_Pri = 0;*/
@@ -1044,9 +1044,9 @@ static int open_ahi_output(void) {
                     AHIReq[0]->ahir_Position = 0x8000;
                     CopyMem(AHIReq[0], AHIReq[1], sizeof(struct AHIRequest));
 
-                    AHIBuf[0] = AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+                    AHIBuf[0] = (int8_t *) AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
                     if (AHIBuf[0]) {
-                        AHIBuf[1] = AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+                        AHIBuf[1] = (int8_t *) AllocVec(BUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR);
                         if (AHIBuf[1]) {
                             send_output = write_ahi_output;
                             close_output = close_ahi_output;
@@ -1778,7 +1778,7 @@ int main(int argc, char **argv) {
     printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
     printf(" m  save as midi     p  Pause On/Off\n\n");
 
-    output_buffer = malloc(16384);
+    output_buffer = (int8_t *) malloc(16384);
     if (output_buffer == NULL) {
         fprintf(stderr, "Not enough memory, exiting\n");
         WildMidi_Shutdown();
@@ -1812,7 +1812,7 @@ int main(int argc, char **argv) {
             if (test_count == midi_test_max) {
                 break;
             }
-            test_data = malloc(midi_test[test_count].size);
+            test_data = (uint8_t *) malloc(midi_test[test_count].size);
             memcpy(test_data, midi_test[test_count].data,
                     midi_test[test_count].size);
             test_data[25] = test_bank;

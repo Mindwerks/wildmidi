@@ -41,7 +41,6 @@
 #define MUS_EVENT_DEBUG(dx,dy,dz)
 #endif
 
-
 /*
  Turns hmp file data into an event stream
  */
@@ -107,7 +106,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     }
 
     // Instrument definition
-    mus_mid_instr = malloc(mus_no_instr * sizeof(uint16_t));
+    mus_mid_instr = (uint16_t *) malloc(mus_no_instr * sizeof(uint16_t));
     for (mus_instr_cnt = 0; mus_instr_cnt < mus_no_instr; mus_instr_cnt++) {
         mus_mid_instr[mus_instr_cnt] = (mus_data[mus_data_ofs + 1] << 8) | mus_data[mus_data_ofs];
         mus_data_ofs += 2;

@@ -137,7 +137,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
 
     xmi_samples_per_delta_f = _WM_GetSamplesPerTick(xmi_divisions, xmi_tempo);
 
-    xmi_notelen = malloc(sizeof(uint32_t) * 16 * 128);
+    xmi_notelen = (uint32_t *) malloc(sizeof(uint32_t) * 16 * 128);
     memset(xmi_notelen, 0, (sizeof(uint32_t) * 16 * 128));
 
     for (i = 0; i < xmi_formcnt; i++) {

@@ -146,11 +146,11 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     mdi = _WM_initMDI();
     _WM_midi_setup_divisions(mdi,divisions);
 
-    tracks = malloc(sizeof(uint8_t *) * no_tracks);
-    track_size = malloc(sizeof(uint32_t) * no_tracks);
-    track_delta = malloc(sizeof(uint32_t) * no_tracks);
-    track_end = malloc(sizeof(uint8_t) * no_tracks);
-    running_event = malloc(sizeof(uint8_t) * no_tracks);
+    tracks = (uint8_t **) malloc(sizeof(uint8_t *) * no_tracks);
+    track_size = (uint32_t *) malloc(sizeof(uint32_t) * no_tracks);
+    track_delta = (uint32_t *) malloc(sizeof(uint32_t) * no_tracks);
+    track_end = (uint8_t *) malloc(sizeof(uint8_t) * no_tracks);
+    running_event = (uint8_t *) malloc(sizeof(uint8_t) * no_tracks);
 
     smallest_delta = 0xffffffff;
     for (i = 0; i < no_tracks; i++) {
@@ -438,7 +438,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
      Note: This isn't accurate but will allow enough space for
             events plus delta values.
      */
-    (*out) = malloc (sizeof(uint8_t) * (mdi->event_count * 12));
+    (*out) = (uint8_t *) malloc (sizeof(uint8_t) * (mdi->event_count * 12));
 
     /* Midi Header */
     (*out)[0] = 'M';
@@ -928,7 +928,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     (*out)[10] = (track_count >> 8) & 0xff;
     (*out)[11] = track_count & 0xff;
 
-    (*out) = realloc((*out), out_ofs);
+    (*out) = (uint8_t *) realloc((*out), out_ofs);
     (*outsize) = out_ofs;
 
     return 0;

@@ -171,11 +171,11 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     _WM_midi_setup_divisions(hmp_mdi, hmp_divisions);
     _WM_midi_setup_tempo(hmp_mdi, (uint32_t)tempo_f);
 
-    hmp_chunk = malloc(sizeof(uint8_t *) * hmp_chunks);
-    chunk_length = malloc(sizeof(uint32_t) * hmp_chunks);
-    chunk_delta = malloc(sizeof(uint32_t) * hmp_chunks);
-    chunk_ofs = malloc(sizeof(uint32_t) * hmp_chunks);
-    chunk_end = malloc(sizeof(uint8_t) * hmp_chunks);
+    hmp_chunk = (uint8_t **) malloc(sizeof(uint8_t *) * hmp_chunks);
+    chunk_length = (uint32_t *) malloc(sizeof(uint32_t) * hmp_chunks);
+    chunk_delta = (uint32_t *) malloc(sizeof(uint32_t) * hmp_chunks);
+    chunk_ofs = (uint32_t *) malloc(sizeof(uint32_t) * hmp_chunks);
+    chunk_end = (uint8_t *) malloc(sizeof(uint8_t) * hmp_chunks);
 
     smallest_delta = 0xffffffff;
     // store chunk info for use, and check chunk lengths

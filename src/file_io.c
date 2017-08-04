@@ -78,7 +78,7 @@ static long AMIGA_filesize (const char *path) {
     BPTR fh = Open((const STRPTR) path, MODE_OLDFILE);
     if (fh) {
         struct FileInfoBlock *fib = (struct FileInfoBlock*)
-                                AllocDosObject(DOS_FIB, NULL);
+                              AllocDosObject(DOS_FIB, NULL);
         if (fib != NULL) {
             if (ExamineFH(fh, fib))
                 size = fib->fib_Size;
@@ -140,13 +140,14 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
     char buffer_dir[1024];
 
     if (strncmp(filename, "~/", 2) == 0) {
-        if ((pwd_ent = getpwuid(getuid()))) {
+        pwd_ent = getpwuid(getuid());
+        if (pwd_ent) {
             home = pwd_ent->pw_dir;
         } else {
             home = getenv("HOME");
         }
         if (home) {
-            buffer_file = malloc(strlen(filename) + strlen(home) + 1);
+            buffer_file = (char *) malloc(strlen(filename) + strlen(home) + 1);
             if (buffer_file == NULL) {
                 _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, errno);
                 return NULL;
@@ -157,7 +158,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
     } else if (filename[0] != '/') {
         char* cwdresult = getcwd(buffer_dir, 1024);
         if (cwdresult != NULL)
-            buffer_file = malloc(strlen(filename) + strlen(buffer_dir) + 2);
+            buffer_file = (char *) malloc(strlen(filename) + strlen(buffer_dir) + 2);
         if (buffer_file == NULL || cwdresult == NULL) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, errno);
             return NULL;
@@ -170,7 +171,7 @@ void *_WM_BufferFile(const char *filename, uint32_t *size) {
 #endif /* unix builds */
 
     if (buffer_file == NULL) {
-        buffer_file = malloc(strlen(filename) + 1);
+        buffer_file = (char *) malloc(strlen(filename) + 1);
         if (buffer_file == NULL) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, errno);
             return NULL;

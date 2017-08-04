@@ -557,7 +557,7 @@ float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
 static void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
     if ((mdi->event_count + 1) >= mdi->events_size) {
         mdi->events_size += MEM_CHUNK;
-        mdi->events = realloc(mdi->events,
+        mdi->events = (struct _event *) realloc(mdi->events,
                               (mdi->events_size * sizeof(struct _event)));
     }
 }
@@ -1878,7 +1878,7 @@ struct _mdi *
 _WM_initMDI(void) {
     struct _mdi *mdi;
 
-    mdi = malloc(sizeof(struct _mdi));
+    mdi = (struct _mdi *) malloc(sizeof(struct _mdi));
     memset(mdi, 0, (sizeof(struct _mdi)));
 
     mdi->extra_info.copyright = NULL;
@@ -1887,7 +1887,7 @@ _WM_initMDI(void) {
     _WM_load_patch(mdi, 0x0000);
 
     mdi->events_size = MEM_CHUNK;
-    mdi->events = malloc(mdi->events_size * sizeof(struct _event));
+    mdi->events = (struct _event *) malloc(mdi->events_size * sizeof(struct _event));
     mdi->event_count = 0;
     mdi->current_event = mdi->events;
 
@@ -2073,7 +2073,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                     if (--input_length < tmp_length) goto shortbuf;
                     if (!tmp_length) break;/* broken file? */
 
-                    text = malloc(tmp_length + 1);
+                    text = (char *) malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_text(mdi, text);
@@ -2103,18 +2103,18 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
 
                     /* Copy copyright info in the getinfo struct */
                     if (mdi->extra_info.copyright) {
-                        mdi->extra_info.copyright = realloc(mdi->extra_info.copyright,(strlen(mdi->extra_info.copyright) + 1 + tmp_length + 1));
+                        mdi->extra_info.copyright = (char *) realloc(mdi->extra_info.copyright,(strlen(mdi->extra_info.copyright) + 1 + tmp_length + 1));
                         memcpy(&mdi->extra_info.copyright[strlen(mdi->extra_info.copyright) + 1], event_data, tmp_length);
                         mdi->extra_info.copyright[strlen(mdi->extra_info.copyright) + 1 + tmp_length] = '\0';
                         mdi->extra_info.copyright[strlen(mdi->extra_info.copyright)] = '\n';
                     } else {
-                        mdi->extra_info.copyright = malloc(tmp_length + 1);
+                        mdi->extra_info.copyright = (char *) malloc(tmp_length + 1);
                         memcpy(mdi->extra_info.copyright, event_data, tmp_length);
                         mdi->extra_info.copyright[tmp_length] = '\0';
                     }
 
                     /* NOTE: free'd when events are cleared during closure of mdi */
-                    text = malloc(tmp_length + 1);
+                    text = (char *) malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_copyright(mdi, text);
@@ -2142,7 +2142,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                     if (--input_length < tmp_length) goto shortbuf;
                     if (!tmp_length) break;/* broken file? */
 
-                    text = malloc(tmp_length + 1);
+                    text = (char *) malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_trackname(mdi, text);
@@ -2170,7 +2170,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                     if (--input_length < tmp_length) goto shortbuf;
                     if (!tmp_length) break;/* broken file? */
 
-                    text = malloc(tmp_length + 1);
+                    text = (char *) malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_instrumentname(mdi, text);
@@ -2198,7 +2198,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                     if (--input_length < tmp_length) goto shortbuf;
                     if (!tmp_length) break;/* broken file? */
 
-                    text = malloc(tmp_length + 1);
+                    text = (char *) malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_lyric(mdi, text);
@@ -2226,7 +2226,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                     if (--input_length < tmp_length) goto shortbuf;
                     if (!tmp_length) break;/* broken file? */
 
-                    text = malloc(tmp_length + 1);
+                    text = (char *) malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_marker(mdi, text);
@@ -2254,7 +2254,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                     if (--input_length < tmp_length) goto shortbuf;
                     if (!tmp_length) break;/* broken file? */
 
-                    text = malloc(tmp_length + 1);
+                    text = (char *) malloc(tmp_length + 1);
                     memcpy(text, event_data, tmp_length);
                     text[tmp_length] = '\0';
                     midi_setup_cuepoint(mdi, text);
@@ -2370,7 +2370,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                 if (--input_length < sysex_len) goto shortbuf;
                 if (!sysex_len) break;/* broken file? */
 
-                sysex_store = malloc(sizeof(uint8_t) * sysex_len);
+                sysex_store = (uint8_t *) malloc(sizeof(uint8_t) * sysex_len);
                 memcpy(sysex_store, event_data, sysex_len);
 
                 if (sysex_store[sysex_len - 1] == 0xF7) {
