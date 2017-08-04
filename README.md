@@ -38,6 +38,8 @@ CHANGELOG
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
   (Bug #175).
+* Fixed WildMidi_Open() might read beyond buffer with too short inputs
+  (Bug #178).
 * GUS patch processing changes to meet users expectations (Bug #132).
 * Worked around a build failure with newer FreeBSD versions failing to
   retrieve the ONLCR constant (Bug #171).

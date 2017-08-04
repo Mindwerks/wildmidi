@@ -1655,6 +1655,10 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
     if ((mididata = (uint8_t *) _WM_BufferFile(midifile, &midisize)) == NULL) {
         return (NULL);
     }
+    if (midisize < 18) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        return (NULL);
+    }
     if (memcmp(mididata,"HMIMIDIP", 8) == 0) {
         ret = (void *) _WM_ParseNewHmp(mididata, midisize);
     } else if (memcmp(mididata, "HMI-MIDISONG061595", 18) == 0) {
@@ -1694,6 +1698,10 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
     if (size > WM_MAXFILESIZE) {
         /* don't bother loading suspiciously long files */
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LONGFIL, NULL, 0);
+        return (NULL);
+    }
+    if (size < 18) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
         return (NULL);
     }
     if (memcmp(midibuffer,"HMIMIDIP", 8) == 0) {
