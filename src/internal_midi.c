@@ -1474,6 +1474,7 @@ int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel,
                            uint8_t note, uint8_t velocity) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
     _WM_CheckEventMemoryPool(mdi);
+    note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
     mdi->events[mdi->event_count].do_event = *_WM_do_note_off;
     mdi->events[mdi->event_count].event_data.channel = channel;
     mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
@@ -1486,6 +1487,7 @@ static int midi_setup_noteon(struct _mdi *mdi, uint8_t channel,
                              uint8_t note, uint8_t velocity) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
     _WM_CheckEventMemoryPool(mdi);
+    note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
     mdi->events[mdi->event_count].do_event = *_WM_do_note_on;
     mdi->events[mdi->event_count].event_data.channel = channel;
     mdi->events[mdi->event_count].event_data.data.value = (note << 8) | velocity;
@@ -1501,6 +1503,7 @@ static int midi_setup_aftertouch(struct _mdi *mdi, uint8_t channel,
                                  uint8_t note, uint8_t pressure) {
     MIDI_EVENT_DEBUG(__FUNCTION__,channel, note);
     _WM_CheckEventMemoryPool(mdi);
+    note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
     mdi->events[mdi->event_count].do_event = *_WM_do_aftertouch;
     mdi->events[mdi->event_count].event_data.channel = channel;
     mdi->events[mdi->event_count].event_data.data.value = (note << 8) | pressure;
