@@ -42,7 +42,7 @@
 #endif
 
 /*
- Turns hmp file data into an event stream
+ Turns mus file data into an event stream.
  */
 struct _mdi *
 _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
@@ -304,14 +304,11 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
             case 5:
                 mus_event_size = 1;
                 goto _mus_next_data;
-                break;
             case 6:
                 goto _mus_end_of_song;
-                break;
             case 7:
                 mus_event_size = 1;
                 goto _mus_next_data;
-                break;
         }
 
         setup_ret = _WM_SetupMidiEvent(mus_mdi, (uint8_t *)mus_event, MUS_SZ, 0);
