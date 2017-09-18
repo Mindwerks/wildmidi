@@ -689,6 +689,8 @@ static HMTX dart_mutex;
 static LONG APIENTRY OS2_Dart_UpdateBuffers
     (ULONG ulStatus, PMCI_MIX_BUFFER pBuffer, ULONG ulFlags) {
 
+    (void) pBuffer;/* unused param */
+
     if ((ulFlags == MIX_WRITE_COMPLETE) ||
         ((ulFlags == (MIX_WRITE_COMPLETE | MIX_STREAM_ERROR)) &&
          (ulStatus == ERROR_DEVICE_UNDERRUN))) {
