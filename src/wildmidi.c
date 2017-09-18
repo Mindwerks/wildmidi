@@ -458,7 +458,7 @@ static int open_wav_output(void) {
         wav_hdr[31] = (bytes_per_sec >> 24) & 0xFF;
     }
 
-    if (wmidi_write(audio_fd, &wav_hdr, 44) < 0) {
+    if (wmidi_write(audio_fd, wav_hdr, 44) < 0) {
         fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(wmidi_geterrno()));
         wmidi_close(audio_fd);
         audio_fd = WM_BADF;
@@ -504,7 +504,7 @@ static void close_wav_output(void) {
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
     wmidi_seekset(audio_fd, 40);
-    if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
+    if (wmidi_write(audio_fd, wav_count, 4) < 0) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
         goto end;
     }
@@ -515,7 +515,7 @@ static void close_wav_output(void) {
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
     wmidi_seekset(audio_fd, 4);
-    if (wmidi_write(audio_fd, &wav_count, 4) < 0) {
+    if (wmidi_write(audio_fd, wav_count, 4) < 0) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
         goto end;
     }
