@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.4.2
+Version: 0.4.3
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -34,6 +34,9 @@ Requirements:
 * Nintendo Wii port: devkitPPC
 
 CHANGELOG
+
+0.4.3
+* 
 
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
