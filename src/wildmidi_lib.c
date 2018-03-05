@@ -2052,6 +2052,7 @@ static void WM_ResetToStart(midi * handle) {
 
 static int midi_setup_noteoff(struct _mdi *mdi, unsigned char channel,
 		unsigned char note, unsigned char velocity) {
+	note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_note_off;
@@ -2071,6 +2072,7 @@ static int midi_setup_noteoff(struct _mdi *mdi, unsigned char channel,
 
 static int midi_setup_noteon(struct _mdi *mdi, unsigned char channel,
 		unsigned char note, unsigned char velocity) {
+	note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_note_on;
@@ -2093,6 +2095,7 @@ static int midi_setup_noteon(struct _mdi *mdi, unsigned char channel,
 
 static int midi_setup_aftertouch(struct _mdi *mdi, unsigned char channel,
 		unsigned char note, unsigned char pressure) {
+	note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
 		mdi->events[mdi->event_count - 1].do_event = *do_aftertouch;
