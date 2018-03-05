@@ -2798,6 +2798,8 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 						running_event[i] = 0;
 
+						if (!sysex_len) break;
+
 						sysex_store = realloc(sysex_store,
 								sizeof(unsigned char)
 										* (sysex_store_len + sysex_len));
@@ -3102,6 +3104,8 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						tracks[i]++;
 
 						running_event[i] = 0;
+
+						if (!sysex_len) break;
 
 						sysex_store = realloc(sysex_store,
 								sizeof(unsigned char)
