@@ -2432,7 +2432,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	struct _mdi *mdi;
 	unsigned int tmp_val;
 	unsigned int midi_type;
-	unsigned int track_size;
+	unsigned int *track_size;
 	unsigned char **tracks;
 	unsigned int end_of_tracks = 0;
 	unsigned int no_tracks;
@@ -2551,6 +2551,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	mdi = Init_MDI();
 
 	tracks = malloc(sizeof(unsigned char *) * no_tracks);
+	track_size = malloc(sizeof(unsigned int) * no_tracks);
 	track_delta = malloc(sizeof(unsigned long int) * no_tracks);
 	track_end = malloc(sizeof(unsigned char) * no_tracks);
 	running_event = malloc(sizeof(unsigned char) * no_tracks);
@@ -2567,28 +2568,30 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		midi_data += 4;
 		midi_size -= 4;
 
-		track_size = *midi_data++ << 24;
-		track_size |= *midi_data++ << 16;
-		track_size |= *midi_data++ << 8;
-		track_size |= *midi_data++;
+		/* track size */
+		tmp_val = *midi_data++ << 24;
+		tmp_val |= *midi_data++ << 16;
+		tmp_val |= *midi_data++ << 8;
+		tmp_val |= *midi_data++;
 		midi_size -= 4;
-		if (midi_size < track_size) {
+		if (midi_size < tmp_val) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 			goto _end;
 		}
-		if (track_size < 3) {
+		if (tmp_val < 3) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(bad track size)", 0);
 			goto _end;
 		}
-		if ((midi_data[track_size - 3] != 0xFF)
-				|| (midi_data[track_size - 2] != 0x2F)
-				|| (midi_data[track_size - 1] != 0x00)) {
+		if ((midi_data[tmp_val - 3] != 0xFF)
+				|| (midi_data[tmp_val - 2] != 0x2F)
+				|| (midi_data[tmp_val - 1] != 0x00)) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing EOT)", 0);
 			goto _end;
 		}
 		tracks[i] = midi_data;
-		midi_data += track_size;
-		midi_size -= track_size;
+		track_size[i] = tmp_val;
+		midi_data += tmp_val;
+		midi_size -= tmp_val;
 		track_end[i] = 0;
 		running_event[i] = 0;
 		track_delta[i] = 0;
@@ -2596,9 +2599,11 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 		while (*tracks[i] > 0x7F) {
 			track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
 			tracks[i]++;
+			track_size[i]--;
 		}
 		track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
 		tracks[i]++;
+		track_size[i]--;
 	}
 
 	/*
@@ -2625,9 +2630,11 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 				}
 			}
 			do {
+				if (!track_size[i]) break;
 				if (*tracks[i] > 0x7F) {
 					current_event = *tracks[i];
 					tracks[i]++;
+					track_size[i]--;
 				} else {
 					current_event = running_event[i];
 					if (running_event[i] < 0x80) {
@@ -2635,10 +2642,13 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						goto _end;
 					}
 				}
+				if (!track_size[i]) goto shortbuf;
 				current_event_ch = current_event & 0x0F;
 				switch (current_event >> 4) {
 				case 0x8:
-					NOTEOFF: midi_setup_noteoff(mdi, current_event_ch,
+					NOTEOFF:
+					if (track_size[i] < 2) goto shortbuf;
+					midi_setup_noteoff(mdi, current_event_ch,
 							tracks[i][0], tracks[i][1]);
 					/* To better calculate samples needed after the end of midi,
 					 * we calculate samples for decay for note off */
@@ -2665,44 +2675,57 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						}
 					}
 
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0x9:
+					if (track_size[i] < 2) goto shortbuf;
 					if (tracks[i][1] == 0) {
 						goto NOTEOFF;
 					}
 					midi_setup_noteon(mdi, (current_event & 0x0F), tracks[i][0],
 							tracks[i][1]);
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0xA:
+					if (track_size[i] < 2) goto shortbuf;
 					midi_setup_aftertouch(mdi, (current_event & 0x0F),
 							tracks[i][0], tracks[i][1]);
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0xB:
+					if (track_size[i] < 2) goto shortbuf;
 					midi_setup_control(mdi, (current_event & 0x0F),
 							tracks[i][0], tracks[i][1]);
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0xC:
+					if (track_size[i] < 1) goto shortbuf;
 					midi_setup_patch(mdi, (current_event & 0x0F), *tracks[i]);
+					track_size[i]--;
 					tracks[i]++;
 					running_event[i] = current_event;
 					break;
 				case 0xD:
+					if (track_size[i] < 1) goto shortbuf;
 					midi_setup_channel_pressure(mdi, (current_event & 0x0F),
 							*tracks[i]);
+					track_size[i]--;
 					tracks[i]++;
 					running_event[i] = current_event;
 					break;
 				case 0xE:
+					if (track_size[i] < 2) goto shortbuf;
 					midi_setup_pitch(mdi, (current_event & 0x0F),
 							((tracks[i][1] << 7) | (tracks[i][0] & 0x7F)));
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
@@ -2711,14 +2734,20 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						if (tracks[i][0] == 0x02) { /* Copyright Event */
 							/* Get Length */
 							tmp_length = 0;
+							if (! --track_size[i]) goto shortbuf;
 							tracks[i]++;
 							while (*tracks[i] > 0x7f) {
+								if (!track_size[i]) break;
 								tmp_length = (tmp_length << 7)
 										+ (*tracks[i] & 0x7f);
 								tracks[i]++;
+								track_size[i]--;
 							}
+							if (!track_size[i]) goto shortbuf;
 							tmp_length = (tmp_length << 7)
 									+ (*tracks[i] & 0x7f);
+							if (--track_size[i] < tmp_length) goto shortbuf;
+							if (!tmp_length) break; /* bad file? */
 							/* Copy copyright info in the getinfo struct */
 							if (mdi->info.copyright) {
 								mdi->info.copyright = realloc(
@@ -2739,6 +2768,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 										tmp_length);
 								mdi->info.copyright[tmp_length] = '\0';
 							}
+							track_size[i] -= tmp_length;
 							tracks[i] += tmp_length + 1;
 						} else if ((tracks[i][0] == 0x2F)
 								&& (tracks[i][1] == 0x00)) {
@@ -2749,8 +2779,10 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						} else if ((tracks[i][0] == 0x51)
 								&& (tracks[i][1] == 0x03)) {
 							/* Tempo */
+							if (track_size[i] < 5) goto shortbuf;
 							tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8)
 									+ tracks[i][4];
+							track_size[i] -= 5;
 							tracks[i] += 5;
 							if (!tempo)
 								tempo = 500000;
@@ -2775,30 +2807,39 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 						} else {
 							tmp_length = 0;
+							if (! --track_size[i]) goto shortbuf;
 							tracks[i]++;
 							while (*tracks[i] > 0x7f) {
+								if (!track_size[i]) break;
 								tmp_length = (tmp_length << 7)
 										+ (*tracks[i] & 0x7f);
 								tracks[i]++;
+								track_size[i]--;
 							}
+							if (!track_size[i]) goto shortbuf;
 							tmp_length = (tmp_length << 7)
 									+ (*tracks[i] & 0x7f);
+							if (--track_size[i] < tmp_length) goto shortbuf;
 							tracks[i] += tmp_length + 1;
+							track_size[i] -= tmp_length;
 						}
 					} else if ((current_event == 0xF0)
 							|| (current_event == 0xF7)) {
 						/* Roland Sysex Events */
 						unsigned long int sysex_len = 0;
 						while (*tracks[i] > 0x7F) {
+							if (!track_size[i]) break;
 							sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
 							tracks[i]++;
+							track_size[i]--;
 						}
+						if (!track_size[i]) goto shortbuf;
 						sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
 						tracks[i]++;
+						if (--track_size[i] < sysex_len) goto shortbuf;
+						if (!sysex_len) break; /* bad file? */
 
 						running_event[i] = 0;
-
-						if (!sysex_len) break;
 
 						sysex_store = realloc(sysex_store,
 								sizeof(unsigned char)
@@ -2865,9 +2906,12 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 					track_delta[i] = (track_delta[i] << 7)
 							+ (*tracks[i] & 0x7F);
 					tracks[i]++;
+					if (! --track_size[i]) break;
 				}
+				if (!track_size[i]) goto shortbuf;
 				track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
 				tracks[i]++;
+				track_size[i]--;
 			} while (!track_delta[i]);
 			if ((!smallest_delta) || (smallest_delta > track_delta[i])) {
 				smallest_delta = track_delta[i];
@@ -2931,9 +2975,11 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						decay_samples = 0;
 					}
 				}
+				if (!track_size[i]) break;
 				if (*tracks[i] > 0x7F) {
 					current_event = *tracks[i];
 					tracks[i]++;
+					track_size[i]--;
 				} else {
 					current_event = running_event[i];
 					if (running_event[i] < 0x80) {
@@ -2941,10 +2987,13 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						goto _end;
 					}
 				}
+				if (!track_size[i]) goto shortbuf;
 				current_event_ch = current_event & 0x0F;
 				switch (current_event >> 4) {
 				case 0x8:
-					NOTEOFF2: midi_setup_noteoff(mdi, current_event_ch,
+					NOTEOFF2:
+					if (track_size[i] < 2) goto shortbuf;
+					midi_setup_noteoff(mdi, current_event_ch,
 							tracks[i][0], tracks[i][1]);
 					/* To better calculate samples needed after the end of midi,
 					 * we calculate samples for decay for note off */
@@ -2972,44 +3021,57 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						}
 					}
 
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0x9:
+					if (track_size[i] < 2) goto shortbuf;
 					if (tracks[i][1] == 0) {
 						goto NOTEOFF2;
 					}
 					midi_setup_noteon(mdi, (current_event & 0x0F), tracks[i][0],
 							tracks[i][1]);
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0xA:
+					if (track_size[i] < 2) goto shortbuf;
 					midi_setup_aftertouch(mdi, (current_event & 0x0F),
 							tracks[i][0], tracks[i][1]);
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0xB:
+					if (track_size[i] < 2) goto shortbuf;
 					midi_setup_control(mdi, (current_event & 0x0F),
 							tracks[i][0], tracks[i][1]);
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
 				case 0xC:
+					if (track_size[i] < 1) goto shortbuf;
 					midi_setup_patch(mdi, (current_event & 0x0F), *tracks[i]);
+					track_size[i]--;
 					tracks[i]++;
 					running_event[i] = current_event;
 					break;
 				case 0xD:
+					if (track_size[i] < 1) goto shortbuf;
 					midi_setup_channel_pressure(mdi, (current_event & 0x0F),
 							*tracks[i]);
+					track_size[i]--;
 					tracks[i]++;
 					running_event[i] = current_event;
 					break;
 				case 0xE:
+					if (track_size[i] < 2) goto shortbuf;
 					midi_setup_pitch(mdi, (current_event & 0x0F),
 							((tracks[i][1] << 7) | (tracks[i][0] & 0x7F)));
+					track_size[i] -= 2;
 					tracks[i] += 2;
 					running_event[i] = current_event;
 					break;
@@ -3018,14 +3080,20 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						if (tracks[i][0] == 0x02) { /* Copyright Event */
 							/* Get Length */
 							tmp_length = 0;
+							if (! --track_size[i]) goto shortbuf;
 							tracks[i]++;
 							while (*tracks[i] > 0x7f) {
+								if (!track_size[i]) break;
 								tmp_length = (tmp_length << 7)
 										+ (*tracks[i] & 0x7f);
 								tracks[i]++;
+								track_size[i]--;
 							}
+							if (!track_size[i]) goto shortbuf;
 							tmp_length = (tmp_length << 7)
 									+ (*tracks[i] & 0x7f);
+							if (--track_size[i] < tmp_length) goto shortbuf;
+							if (!tmp_length) break; /* bad file? */
 							/* Copy copyright info in the getinfo struct */
 							if (mdi->info.copyright) {
 								mdi->info.copyright = realloc(
@@ -3046,6 +3114,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 										tmp_length);
 								mdi->info.copyright[tmp_length] = '\0';
 							}
+							track_size[i] -= tmp_length;
 							tracks[i] += tmp_length + 1;
 						} else if ((tracks[i][0] == 0x2F)
 								&& (tracks[i][1] == 0x00)) {
@@ -3056,8 +3125,10 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 						} else if ((tracks[i][0] == 0x51)
 								&& (tracks[i][1] == 0x03)) {
 							/* Tempo */
+							if (track_size[i] < 5) goto shortbuf;
 							tempo = (tracks[i][2] << 16) + (tracks[i][3] << 8)
 									+ tracks[i][4];
+							track_size[i] -= 5;
 							tracks[i] += 5;
 							if (!tempo)
 								tempo = 500000;
@@ -3082,30 +3153,39 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 
 						} else {
 							tmp_length = 0;
+							if (! --track_size[i]) goto shortbuf;
 							tracks[i]++;
 							while (*tracks[i] > 0x7f) {
+								if (!track_size[i]) break;
 								tmp_length = (tmp_length << 7)
 										+ (*tracks[i] & 0x7f);
 								tracks[i]++;
+								track_size[i]--;
 							}
+							if (!track_size[i]) goto shortbuf;
 							tmp_length = (tmp_length << 7)
 									+ (*tracks[i] & 0x7f);
+							if (--track_size[i] < tmp_length) goto shortbuf;
 							tracks[i] += tmp_length + 1;
+							track_size[i] -= tmp_length;
 						}
 					} else if ((current_event == 0xF0)
 							|| (current_event == 0xF7)) {
 						/* Roland Sysex Events */
 						unsigned long int sysex_len = 0;
 						while (*tracks[i] > 0x7F) {
+							if (!track_size[i]) break;
 							sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
 							tracks[i]++;
+							track_size[i]--;
 						}
+						if (!track_size[i]) goto shortbuf;
 						sysex_len = (sysex_len << 7) + (*tracks[i] & 0x7F);
 						tracks[i]++;
+						if (--track_size[i] < sysex_len) goto shortbuf;
+						if (!sysex_len) break; /* bad file? */
 
 						running_event[i] = 0;
-
-						if (!sysex_len) break;
 
 						sysex_store = realloc(sysex_store,
 								sizeof(unsigned char)
@@ -3173,9 +3253,12 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 					track_delta[i] = (track_delta[i] << 7)
 							+ (*tracks[i] & 0x7F);
 					tracks[i]++;
+					if (! --track_size[i]) break;
 				}
+				if (!track_size[i]) goto shortbuf;
 				track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
 				tracks[i]++;
+				track_size[i]--;
 				NEXT_TRACK2:
 				smallest_delta = track_delta[i]; /* Added just to keep Xcode happy */
 				UNUSED(smallest_delta); /* Added to just keep clang happy */
@@ -3230,7 +3313,10 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	mdi->note = NULL;
 
 	WM_ResetToStart(mdi);
+	goto _end;
 
+shortbuf:
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
 _end:	free(sysex_store);
 	free(track_end);
 	free(track_delta);
