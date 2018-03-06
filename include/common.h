@@ -1,7 +1,5 @@
 /*
-	common.h
-
-	Midi Wavetable Processing library
+    common.h - Midi Wavetable Processing library
 
     Copyright (C) Chris Ison 2001-2011
     Copyright (C) Bret Curtis 2013-2016
@@ -26,6 +24,12 @@
 
 #ifndef __COMMON_H
 #define __COMMON_H
+
+#ifndef __VBCC__
+#define WMIDI_UNUSED(x) (void)(x)
+#else
+#define WMIDI_UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
+#endif
 
 #define SAMPLE_16BIT 0x01
 #define SAMPLE_UNSIGNED 0x02

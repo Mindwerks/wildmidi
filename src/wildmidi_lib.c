@@ -26,12 +26,6 @@
 
 #include "config.h"
 
-#ifndef __VBCC__
-#define UNUSED(x) (void)(x)
-#else
-#define UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
-#endif
-
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
@@ -2037,7 +2031,7 @@ static void do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 		do_pan_adjust(mdi, i);
 	}
 	mdi->channel[9].isdrum = 1;
-	UNUSED(data); /* NOOP, to please the compiler gods */
+	WMIDI_UNUSED(data); /* NOOP, to please the compiler gods */
 }
 
 static void WM_ResetToStart(midi * handle) {
@@ -3264,7 +3258,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 				track_size[i]--;
 				NEXT_TRACK2:
 				smallest_delta = track_delta[i]; /* Added just to keep Xcode happy */
-				UNUSED(smallest_delta); /* Added to just keep clang happy */
+				WMIDI_UNUSED(smallest_delta); /* Added to just keep clang happy */
 			} while (track_end[i] == 0);
 			/*
 			 * Add decay at the end of each song
