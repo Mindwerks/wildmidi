@@ -3325,6 +3325,7 @@ _end:	free(sysex_store);
 	free(track_delta);
 	free(running_event);
 	free(tracks);
+	free(track_size);
 	if (mdi->reverb) return mdi;
 	freeMDI(mdi);
 	return NULL;
