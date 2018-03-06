@@ -103,7 +103,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_file_length += (*hmp_data++ << 24);
     hmp_size -= 4;
 
-    UNUSED(hmp_file_length);
+    WMIDI_UNUSED(hmp_file_length);
 
     // Next 12 bytes are normally \0 so skipping over them
     hmp_data += 12;
@@ -122,7 +122,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_unknown += (*hmp_data++ << 24);
     hmp_size -= 4;
 
-    UNUSED(hmp_unknown);
+    WMIDI_UNUSED(hmp_unknown);
 
     // Defaulting: experimenting has found this to be the ideal value
     hmp_divisions = 60;
@@ -156,7 +156,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     // DEBUG
     //fprintf(stderr,"DEBUG: ??DIVISIONS??: %u, BPM: %u, ??SONG TIME??: %u:%.2u\r\n",hmp_divisions, hmp_bpm, (hmp_song_time / 60), (hmp_song_time % 60));
 
-    UNUSED(hmp_song_time);
+    WMIDI_UNUSED(hmp_song_time);
 
     if (is_hmp2) {
         hmp_data += 840;
@@ -189,7 +189,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_num += (*hmp_data++ << 24);
         chunk_ofs[i] += 4;
 
-        UNUSED(chunk_num);
+        WMIDI_UNUSED(chunk_num);
 
         chunk_length[i] = *hmp_data++;
         chunk_length[i] += (*hmp_data++ << 8);
@@ -209,7 +209,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         hmp_track += (*hmp_data++ << 24);
         chunk_ofs[i] += 4;
 
-        UNUSED(hmp_track);
+        WMIDI_UNUSED(hmp_track);
 
         // Start of Midi Data
         chunk_delta[i] = 0;

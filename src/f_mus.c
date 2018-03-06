@@ -90,8 +90,8 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8];
     mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10];
 
-    UNUSED(mus_ch_cnt1);
-    UNUSED(mus_ch_cnt2);
+    WMIDI_UNUSED(mus_ch_cnt1);
+    WMIDI_UNUSED(mus_ch_cnt2);
 
     // Number of instruments defined
     mus_no_instr = (mus_data[13] << 8) | mus_data[12];
@@ -134,7 +134,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 
     // lets do this
     do {
-        // Build the event
+     // Build the event
     _mus_build_event:
 #if 1
         // Mus drums happen on channel 15, swap channel 9 & 15

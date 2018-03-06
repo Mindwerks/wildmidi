@@ -343,7 +343,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 
         _hmi_next_track:
             hmi_tmp = 0;
-            UNUSED(hmi_tmp);
+            WMIDI_UNUSED(hmi_tmp);
         }
 
         // convert smallest delta to samples till next

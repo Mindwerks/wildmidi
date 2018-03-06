@@ -724,7 +724,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
     };
     uint32_t tmp_loop;
 
-    UNUSED(fix_release);
+    WMIDI_UNUSED(fix_release);
 
     SAMPLE_CONVERT_DEBUG(__FUNCTION__); SAMPLE_CONVERT_DEBUG(filename);
 

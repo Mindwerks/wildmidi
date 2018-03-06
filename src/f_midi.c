@@ -366,7 +366,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 mdi->extra_info.approx_total_samples += sample_count;
             NEXT_TRACK2:
                 smallest_delta = track_delta[i]; /* Added just to keep Xcode happy */
-                UNUSED(smallest_delta); /* Added to just keep clang happy */
+                WMIDI_UNUSED(smallest_delta); /* Added to just keep clang happy */
             } while (track_end[i] == 0);
         }
     }

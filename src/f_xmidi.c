@@ -122,7 +122,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_catlen |= *xmi_data++;
     xmi_size -= 4;
 
-    UNUSED(xmi_catlen);
+    WMIDI_UNUSED(xmi_catlen);
 
     if (memcmp(xmi_data,"XMID",4)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);

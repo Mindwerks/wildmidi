@@ -25,9 +25,9 @@
 #define __COMMON_H
 
 #ifndef __VBCC__
-#define UNUSED(x) (void)(x)
+#define WMIDI_UNUSED(x) (void)(x)
 #else
-#define UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
+#define WMIDI_UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
 #endif
 #define MEM_CHUNK 8192
 

@@ -58,7 +58,7 @@
 #include <getopt.h>
 #endif
 
-#define UNUSED(x) (void)(x)
+#define WMIDI_UNUSED(x) (void)(x)
 
 static struct option const long_options[] = {
     { "debug-level", 1, 0, 'd' },

@@ -610,8 +610,8 @@ void _WM_do_note_off_extra(struct _note *nte) {
 void _WM_do_midi_divisions(struct _mdi *mdi, struct _event_data *data) {
     // placeholder function so we can record divisions in the event stream
     // for conversion function _WM_Event2Midi()
-    UNUSED(mdi);
-    UNUSED(data);
+    WMIDI_UNUSED(mdi);
+    WMIDI_UNUSED(data);
     return;
 }
 
@@ -1050,9 +1050,9 @@ void _WM_do_control_dummy(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
 }
 
 void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
@@ -1166,7 +1166,7 @@ void _WM_do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
     _WM_do_sysex_gm_reset(mdi,data);
 }
@@ -1176,7 +1176,7 @@ void _WM_do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
     _WM_do_sysex_gm_reset(mdi,data);
 }
@@ -1184,20 +1184,20 @@ void _WM_do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data) {
 void _WM_Release_Allowance(struct _mdi *mdi) {
     uint32_t release = 0;
     uint32_t longest_release = 0;
-    
+
     struct _note *note = mdi->note;
-    
+
     while (note != NULL) {
-        
+
         if (note->modes & SAMPLE_ENVELOPE) {
             //ensure envelope isin a release state
             if (note->env < 4) {
                 note->env = 4;
             }
-        
+
             // make sure this is set
             note->env_inc = -note->sample->env_rate[note->env];
-        
+
             release = note->env_level / -note->env_inc;
         } else {
             // Sample release
@@ -1206,14 +1206,14 @@ void _WM_Release_Allowance(struct _mdi *mdi) {
             }
             release = note->sample->data_length - note->sample_pos;
         }
-        
+
         if (release > longest_release) longest_release = release;
         note->replay = NULL;
         note = note->next;
     }
-    
+
     mdi->samples_to_mix = longest_release;
-    
+
     return;
 }
 
@@ -1224,7 +1224,7 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
 
     _WM_Release_Allowance(mdi);
@@ -1238,9 +1238,9 @@ void _WM_do_meta_tempo(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1251,9 +1251,9 @@ void _WM_do_meta_timesignature(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1264,9 +1264,9 @@ void _WM_do_meta_keysignature(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1277,9 +1277,9 @@ void _WM_do_meta_sequenceno(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1290,9 +1290,9 @@ void _WM_do_meta_channelprefix(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1303,9 +1303,9 @@ void _WM_do_meta_portprefix(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1316,9 +1316,9 @@ void _WM_do_meta_smpteoffset(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_DEBUG(__FUNCTION__, ch, data->data.value);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1343,9 +1343,9 @@ void _WM_do_meta_copyright(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_SDEBUG(__FUNCTION__, ch, data->data.string);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1356,9 +1356,9 @@ void _WM_do_meta_trackname(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_SDEBUG(__FUNCTION__, ch, data->data.string);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1369,9 +1369,9 @@ void _WM_do_meta_instrumentname(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_SDEBUG(__FUNCTION__, ch, data->data.string);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1395,9 +1395,9 @@ void _WM_do_meta_marker(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_SDEBUG(__FUNCTION__, ch, data->data.string);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
@@ -1408,9 +1408,9 @@ void _WM_do_meta_cuepoint(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     MIDI_EVENT_SDEBUG(__FUNCTION__, ch, data->data.string);
 #else
-    UNUSED(data);
+    WMIDI_UNUSED(data);
 #endif
-    UNUSED(mdi);
+    WMIDI_UNUSED(mdi);
     return;
 }
 
