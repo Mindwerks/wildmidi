@@ -486,12 +486,24 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 						printf("Sysex Event which we mostly ignore\n");
 					running_event = 0;
 					while (*midi_data > 0x7F) {
+						if (!midi_size) break;
 						sysex_size = (sysex_size << 7) | (*midi_data & 0x7F);
 						midi_data++;
+						midi_size--;
 					}
+					if (!midi_size) goto _bad_sysex;
 					sysex_size = (sysex_size << 7) | (*midi_data & 0x7F);
 					midi_data++;
 
+					if (--midi_size < sysex_size) {
+					_bad_sysex:
+						printf("Corrupt SysEx Data\n");
+						return -1;
+					}
+					if (!sysex_size) {
+						if (verbose) printf("Zero Sysex size\n");
+						break;
+					}
 					sysex_store = realloc(sysex_store,
 							(sysex_store_ofs + sysex_size));
 					memcpy(&sysex_store[sysex_store_ofs], midi_data,
@@ -568,6 +580,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 					sysex_store_ofs = 0;
 
 					midi_data += sysex_size;
+					midi_size -= sysex_size;
 				} else if (event == 0xFF) {
 					if (*midi_data == 0x02) {
 						if (verbose)
