@@ -1,4 +1,4 @@
-#define VERSION "0.3.12"
+#define VERSION "0.3.13"
 #define WILDMIDI_CFG "wildmidi.cfg"
 
 #define PACKAGE_URL "http://www.mindwerks.net/projects/wildmidi/"
