@@ -837,6 +837,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 							| ((gus_sample->loop_fraction & 0xf0) >> 4);
 		}
 
+#if 0
 		/*
 		 FIXME: Experimental Hacky Fix
 		 */
@@ -848,7 +849,17 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 				gus_patch[gus_ptr + 40] = tmp_hack_rate;
 			}
 		}
+#else
+		WMIDI_UNUSED(fix_release);
+#endif
 
+		// kill "echo" envelopes because users dont want/like them
+		// and this is what timidity does which is why we sounded different
+		// NOTE: This may cause some pats to sound different to what their authers intended
+		gus_patch[gus_ptr + 41] = 0x3f;
+		gus_patch[gus_ptr + 42] = 0x3f;
+
+		// lets set up the envelope data
 		for (i = 0; i < 6; i++) {
 			if (gus_sample->modes & SAMPLE_ENVELOPE) {
 				unsigned char env_rate = gus_patch[gus_ptr + 37 + i];
