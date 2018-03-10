@@ -2047,6 +2047,9 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                  MIDI Meta Events
                  */
                 uint32_t tmp_length = 0;
+
+                if (input_length < 2)
+                    goto shortbuf;
                 if ((event_data[0] == 0x00) && (event_data[1] == 0x02)) {
                     /*
                      Sequence Number
@@ -2286,7 +2289,6 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                      Deal with this inside calling function
                      We only setting this up here for _WM_Event2Midi function
                      */
-                    if (input_length < 2) goto shortbuf;
                     _WM_midi_setup_endoftrack(mdi);
                     ret_cnt += 2;
                 } else if ((event_data[0] == 0x51) && (event_data[1] == 0x03)) {
