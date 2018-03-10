@@ -38,6 +38,7 @@ CHANGELOG
   (Bug #175).
 * Fixed a buffer overflow during playback with malformed midi files
   (Bug #180).
+* GUS patch processing changes to meet users expectations (Bug #132).
 * Worked around a build failure with newer FreeBSD versions failing to
   retrieve the ONLCR constant (Bug #171).
 * Fixed a minor Windows unicode issue (PR #170).
