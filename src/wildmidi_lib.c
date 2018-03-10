@@ -2728,6 +2728,8 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 					break;
 				case 0xF: /* Meta Event */
 					if (current_event == 0xFF) {
+						if (track_size[i] < 2)
+							goto shortbuf;
 						if (tracks[i][0] == 0x02) { /* Copyright Event */
 							/* Get Length */
 							tmp_length = 0;
@@ -3074,6 +3076,8 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 					break;
 				case 0xF: /* Meta Event */
 					if (current_event == 0xFF) {
+						if (track_size[i] < 2)
+							goto shortbuf;
 						if (tracks[i][0] == 0x02) { /* Copyright Event */
 							/* Get Length */
 							tmp_length = 0;
