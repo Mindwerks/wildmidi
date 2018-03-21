@@ -224,7 +224,8 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
     int32_t delta_time;/* Delta time for midi event */
     int temp, ret = -1;
     int channel_volume[MIDI_MAXCHANNELS];
-    int channelMap[MIDI_MAXCHANNELS], currentChannel;
+    int channelMap[MIDI_MAXCHANNELS];
+    int currentChannel;
 
     if (insize < MUS_HEADERSIZE) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
