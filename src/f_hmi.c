@@ -42,6 +42,7 @@ struct _mdi *
 _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     uint32_t hmi_tmp = 0;
     uint8_t *hmi_base = hmi_data;
+    uint8_t *hmi_end = hmi_data + hmi_size;
     uint32_t data_size;
     uint16_t hmi_bpm = 0;
     uint16_t hmi_division = 0;
@@ -134,7 +135,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 
     for (i = 0; i < hmi_track_cnt; i++) {
         /* FIXME: better and/or more size checks??? */
-        if (hmi_data - hmi_base < 4) {
+        if (hmi_end - hmi_data < 4) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
             goto _hmi_end;
         }
