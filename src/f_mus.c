@@ -1,5 +1,5 @@
 /*
- * mus_wm.c -- Midi Wavetable Processing library
+ * mus.c -- Midi Wavetable Processing library
  *
  * Copyright (C) WildMIDI Developers 2001-2016
  *
@@ -71,8 +71,8 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     float sample_remainder = 0;
     uint16_t pitchbend_tmp = 0;
 
-    if (mus_size < 17) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, "File too short", 0);
+    if (mus_size < 18) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
         return NULL;
     }
 
@@ -101,7 +101,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 
     // Check that we have enough data to check the rest
     if (mus_size < (mus_data_ofs + (mus_no_instr << 1) + mus_song_len)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, "File too short", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
         return NULL;
     }
 
