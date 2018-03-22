@@ -69,6 +69,11 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     float sample_count_f = 0;
     float sample_remainder = 0;
 
+    if (hmp_size < 776) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+        return NULL;
+    }
+
     if (memcmp(hmp_data, "HMIMIDIP", 8)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
         return NULL;
@@ -77,6 +82,10 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_size -= 8;
 
     if (!memcmp(hmp_data, "013195", 6)) {
+        if (hmp_size < 896) {
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+            return NULL;
+        }
         hmp_data += 6;
         hmp_size -= 6;
         is_hmp2 = 1;
@@ -115,6 +124,11 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_chunks += (*hmp_data++ << 24);
     hmp_size -= 4;
 
+    if (!hmp_chunks) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
+        return NULL;
+    }
+
     // Still decyphering what this is
     hmp_unknown = *hmp_data++;
     hmp_unknown += (*hmp_data++ << 8);
@@ -133,6 +147,11 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_bpm += (*hmp_data++ << 16);
     hmp_bpm += (*hmp_data++ << 24);
     hmp_size -= 4;
+
+    if (!hmp_bpm) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(bad bpm)", 0);
+        return NULL;
+    }
 
     /* Slow but needed for accuracy */
     if ((_WM_MixerOptions & WM_MO_ROUNDTEMPO)) {
@@ -180,6 +199,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     smallest_delta = 0xffffffff;
     // store chunk info for use, and check chunk lengths
     for (i = 0; i < hmp_chunks; i++) {
+        /* FIXME: add proper size checks!!! */
         hmp_chunk[i] = hmp_data;
         chunk_ofs[i] = 0;
 
