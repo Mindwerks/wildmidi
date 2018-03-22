@@ -75,6 +75,11 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     } *note;
 
 
+    if (hmi_size <= 370) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+        return NULL;
+    }
+
     if (memcmp(hmi_data, "HMI-MIDISONG061595", 18)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
         return NULL;
@@ -86,6 +91,20 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     hmi_division = 60;
 
     hmi_track_cnt = hmi_data[228];
+
+    if (!hmi_track_cnt) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
+        return NULL;
+    }
+    if (!hmi_bpm) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(bad bpm)", 0);
+        return NULL;
+    }
+
+    if (hmi_size < (370 + (hmi_track_cnt * 17))) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+        return NULL;
+    }
 
     hmi_mdi = _WM_initMDI();
 
@@ -111,14 +130,15 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 
     smallest_delta = 0xffffffff;
 
-    if (hmi_size < (370 + (hmi_track_cnt * 17))) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
-        goto _hmi_end;
-    }
-
     hmi_track_offset[0] = *hmi_data; // To keep Xcode happy
 
     for (i = 0; i < hmi_track_cnt; i++) {
+        /* FIXME: better and/or more size checks??? */
+        if (hmi_data - hmi_base < 4) {
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+            goto _hmi_end;
+        }
+
         hmi_track_offset[i] = *hmi_data++;
         hmi_track_offset[i] += (*hmi_data++ << 8);
         hmi_track_offset[i] += (*hmi_data++ << 16);
