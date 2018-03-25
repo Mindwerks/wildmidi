@@ -67,7 +67,7 @@ ENDIF (UNIX)
 
 # Usage of RPATH for macOS is enabled by default; this just suppresses the CMP0042 warning
 # when building libwildmidi_dynamic.
-if (POLICY CMP0042)
+IF (POLICY CMP0042)
     CMAKE_POLICY(SET CMP0042 NEW)
 ENDIF ()
 
