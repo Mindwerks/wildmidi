@@ -31,14 +31,14 @@ ENDIF ()
 SET(CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
 MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
-# Set our optoins
+# Set our options
 OPTION(BUILD_SHARED_LIBS "Build a dynamic wildmidi library" ON)
 OPTION(WANT_PLAYER "Build WildMIDI player in addition to the libraries" ON)
 OPTION(WANT_STATIC "Build static library in addition to dynamic library" OFF)
 CMAKE_DEPENDENT_OPTION(WANT_PLAYERSTATIC "Build a statically linked WildMIDI player" ON "WANT_STATIC;WANT_PLAYER" OFF)
 OPTION(WANT_ALSA "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_OSS "Include OSS (Open Sound System) support" OFF)
-OPTION(WANT_OPENAL "Include OpenAL suport (Cross Platform) support" OFF)
+OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
 OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF)
 IF (WIN32 AND MSVC)
@@ -64,6 +64,12 @@ IF (UNIX)
             -D_LARGE_FILES
     )
 ENDIF (UNIX)
+
+# Usage of RPATH for macOS is enabled by default; this just suppresses the CMP0042 warning
+# when building libwildmidi_dynamic.
+IF (POLICY CMP0042)
+    CMAKE_POLICY(SET CMP0042 NEW)
+ENDIF ()
 
 IF (OPENBSD)  # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
     # use, i.e. don't skip the full RPATH for the build tree
