@@ -2380,7 +2380,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
 
                 if (sysex_store[sysex_len - 1] == 0xF7) {
                     uint8_t rolandsysexid[] = { 0x41, 0x10, 0x42, 0x12 };
-                    if (memcmp(rolandsysexid, sysex_store, 4) == 0) {
+                    if (sysex_len >= 4 && memcmp(rolandsysexid, sysex_store, 4) == 0) {
                         /* For Roland Sysex Messages */
                         /* checksum */
                         uint8_t sysex_cs = 0;
@@ -2417,10 +2417,10 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                         uint8_t gm_reset[] = {0x7e, 0x7f, 0x09, 0x01, 0xf7};
                         uint8_t yamaha_reset[] = {0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
 
-                        if (memcmp(gm_reset, sysex_store, 5) == 0) {
+                        if (sysex_len >= 5 && memcmp(gm_reset, sysex_store, 5) == 0) {
                             /* GM Reset */
                             midi_setup_sysex_gm_reset(mdi);
-                        } else if (memcmp(yamaha_reset,sysex_store,8) == 0) {
+                        } else if (sysex_len >= 8 && memcmp(yamaha_reset,sysex_store,8) == 0) {
                             /* Yamaha Reset */
                             midi_setup_sysex_yamaha_reset(mdi);
                         }

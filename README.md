@@ -37,6 +37,7 @@ CHANGELOG
 
 0.4.3
 * Fixed a thinko in one of the buffer size checks added in v0.4.2.
+* Fix possible out of bounds reads in sysex commands. (Bug #190).
 
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
