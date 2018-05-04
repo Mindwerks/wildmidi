@@ -887,7 +887,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
 
         } else {
             // DEBUG
-            fprintf(stderr,"Unknown Event %.2x %.4x\n",event->event_data.channel, event->event_data.data.value);
+            // fprintf(stderr,"Unknown Event %.2x %.4x\n",event->event_data.channel, event->event_data.data.value);
             event++;
             continue;
         }

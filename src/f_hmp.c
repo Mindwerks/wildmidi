@@ -311,7 +311,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                             tempo_f = 500000.0f;
 
                         // DEBUG
-                        fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);
+                        // fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);
                     }
                     hmp_chunk[i] += setup_ret;
                     chunk_length[i] -= setup_ret;
