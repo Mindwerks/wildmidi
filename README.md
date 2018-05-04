@@ -14,7 +14,7 @@ PLATFORMS:
 
 * Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS, OpenAL output)
 * Windows: x86 and x64
-* OSX: x86, x64 and powerpc (in Xterm. player: OpenAL output)
+* OSX: x86, x64 and powerpc (player: OpenAL output)
 * BSD: Debian, FreeBSD, NetBSD, OpenBSD. (player: OSS output)
 * kFreeBSD: Debian (player: OSS output)
 * Hurd: Debian
@@ -25,7 +25,6 @@ PLATFORMS:
 BUILD FROM SOURCE:
 
 Requirements:
-* git
 * cmake
 * GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
 * DOS port: DJGPP / GNU make
