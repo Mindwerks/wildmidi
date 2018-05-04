@@ -14,7 +14,7 @@ PLATFORMS:
 
 * Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS, OpenAL output)
 * Windows: x86 and x64
-* OSX: x86, x64 and powerpc (in Xterm. player: OpenAL output)
+* OSX: x86, x64 and powerpc (player: OpenAL output)
 * BSD: Debian, FreeBSD, NetBSD, OpenBSD. (player: OSS output)
 * kFreeBSD: Debian (player: OSS output)
 * Hurd: Debian
@@ -25,7 +25,6 @@ PLATFORMS:
 BUILD FROM SOURCE:
 
 Requirements:
-* git
 * cmake
 * GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
 * DOS port: DJGPP / GNU make
@@ -42,8 +41,7 @@ CHANGELOG
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
   (Bug #175).
-* Fixed WildMidi_Open() might read beyond buffer with too short inputs
-  (Bug #178).
+* Fixed CVE-2017-1000418 (Bug #178).
 * Fixed a buffer overflow during playback with malformed midi files
   (Bug #180).
 * GUS patch processing changes to meet users expectations (Bug #132).
@@ -161,3 +159,4 @@ CHANGELOG
 * initial CMake support.
 * process non-registered params. fix issue of notes ending before
   attack envelope completed. (sf.net svn r149/r151.)
+
