@@ -366,12 +366,13 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     } while (*tracks[i] > 0x7f);
                 }
                 if (!track_size[i]) {
-                    if (midi_type != 0)
+                    if (midi_type != 0) {
                         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
                         goto _end;
-                } else {
-                    track_end[i] = 1;
-                    goto NEXT_TRACK2;
+                    } else {
+                        track_end[i] = 1;
+                        goto NEXT_TRACK2;
+                    }
                 }
                 track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
                 tracks[i]++;
@@ -439,7 +440,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint32_t divisions = 96;
     uint32_t tempo = 500000;
     float samples_per_tick = 0;
-    uint32_t value = 0;
+    unsigned long int value = 0;
     float value_f = 0;
     struct _event *event = mdi->events;
     uint32_t track_size = 0;
