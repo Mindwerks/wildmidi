@@ -708,7 +708,7 @@ static float time_secs = 0.0f;
 static float secs_per_tick = 0.0f;
 static float frequency = 0.0f;
 
-static void set_secs_per_tick (uint32_t divisions, uint32_t tempo) {
+static void set_secs_per_tick (unsigned long int divisions, unsigned long int tempo) {
     float microseconds_per_tick;
 
     /* Slow but needed for accuracy */
@@ -742,7 +742,7 @@ static void add_and_display_time(int add_ticks) {
 }
 
 
-static int8_t test_mus(uint8_t * mus_data, uint32_t mus_size, uint32_t verbose) {
+static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_t verbose) {
     uint32_t mus_data_ofs = 0;
     uint32_t mus_song_ofs = 0;
     uint32_t mus_song_len = 0;
@@ -958,7 +958,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     int32_t check_ret = 0;
     uint8_t hmi_running_event = 0;
     uint32_t hmi_track_header_length = 0;
-    uint32_t hmi_file_end = hmi_size;
+    uint32_t hmi_file_end = (uint32_t)hmi_size;
 
     // Check header
     if (strncmp((char *) hmi_data,"HMI-MIDISONG061595", 18) != 0) {
