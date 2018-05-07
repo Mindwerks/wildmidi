@@ -366,8 +366,12 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                     } while (*tracks[i] > 0x7f);
                 }
                 if (!track_size[i]) {
-                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-                    goto _end;
+                    if (midi_type != 0)
+                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+                        goto _end;
+                } else {
+                    track_end[i] = 1;
+                    goto NEXT_TRACK2;
                 }
                 track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
                 tracks[i]++;
