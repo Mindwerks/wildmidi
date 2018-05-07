@@ -182,8 +182,23 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
         if ((midi_data[tmp_val - 3] != 0xFF)
                 || (midi_data[tmp_val - 2] != 0x2F)
                 || (midi_data[tmp_val - 1] != 0x00)) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing EOT)", 0);
-            goto _end;
+            /*
+             * Lets do some additional checks
+             *
+             * We ca ignore this for type 0
+             */
+            if (!(midi_type == 0)) {
+                /*
+                 * Lets also ignore for editors that have added
+                 * an extra byte to the end of the track
+                 */
+                if ((midi_data[tmp_val - 4] != 0xFF)
+                    || (midi_data[tmp_val - 3] != 0x2F)
+                    || (midi_data[tmp_val - 2] != 0x00)) {
+                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing EOT)", 0);
+                    goto _end;
+                }
+            }
         }
         tracks[i] = midi_data;
         track_size[i] = tmp_val;
