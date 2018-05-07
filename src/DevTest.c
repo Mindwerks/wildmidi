@@ -1554,6 +1554,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
 static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                      int verbose) {
     unsigned int tmp_val;
+    unsigned int midi_type;
     unsigned int track_size;
     unsigned char *next_track;
     unsigned int delta;
@@ -1607,15 +1608,15 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
     /*
      * Get Midi Format - we only support 0, 1 and 2
      */
-    tmp_val = *midi_data++ << 8;
-    tmp_val |= *midi_data++;
+    midi_type = *midi_data++ << 8;
+    midi_type |= *midi_data++;
     midi_size -= 2;
     total_count += 2;
 
     if (verbose)
         printf("Format: %i\n", tmp_val);
 
-    if (tmp_val > 2) {
+    if (midi_type > 2) {
         printf("Midi Format Not Supported\n");
         return -1;
     }
@@ -1773,20 +1774,42 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 
 //          printf("Midi data remaining: %lu\n", midi_size);
 
-            if (midi_size == 0) {
-                /* check for end of track being at end */
-                if ((midi_data[0] == 0xff) && (midi_data[1] == 0x2f) && (midi_data[2] == 0x0)) {
+            // Check if we're at the end of the track/file
+            if (midi_type == 0) {
+                /*
+                 * For this MIDI type we are going to assume that
+                 * we are at the end of the file without checking
+                 * for EOT.
+                 * Additionally we check size <= 1 because some
+                 * MIDI files have an additional byte after EOT.
+                 */
+                if (midi_size <= 1) {
                     return 0;
-                } else {
-                    printf("Corrupt Midi, Missing or Corrupt Track Data\n");
+                }
+            } else {
+                unsigned char *tmp_ptr = midi_data + check_ret;
+                
+                if (tmp_ptr > next_track) {
+                    printf("Corrupt Midi, Track Data went beyond track boundries.\n");
                     return -1;
                 }
-            }
-            midi_data += check_ret;
-
-            if (midi_data > next_track) {
-                printf("Corrupt Midi, Track Data went beyond track boundries.\n");
-                return -1;
+                    
+                /*
+                 * For type 1 & 2 we do check for EOT
+                 */
+                
+                if ((midi_data[0] == 0xff) && (midi_data[1] == 0x2f) && (midi_data[2] == 0x0)) {
+                    /*
+                     * Because some Midi files have data after EOT we just ignore the
+                     * extra data and move to the next track
+                     */
+                    midi_data = next_track;
+                } else if (midi_size == 0) {
+                    printf("Corrupt Midi, Track Data went beyond track boundries.\n");
+                    return -1;
+                } else {
+                    midi_data += check_ret;
+                }
             }
         }
     }
