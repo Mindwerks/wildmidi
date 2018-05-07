@@ -623,7 +623,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                         return -1;
                     }
                     if (verbose) {
-                        printf("Meta Event: SMPTE Offset: %.2x %.2x %.2x %.2x %2.x\n", midi_data[2], midi_data[3], midi_data[4], midi_data[5], midi_data[6]);
+                        printf("Meta Event: SMPTE Offset: %.2x %.2x %.2x %.2x %.2x\n", midi_data[2], midi_data[3], midi_data[4], midi_data[5], midi_data[6]);
                     }
 
                 } else if (*midi_data == 0x58) {
@@ -691,6 +691,8 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                         midi_data++;
                     }
                     printf("\n");
+                } else {
+                    midi_data += meta_length;
                 }
                 rtn_cnt += meta_length;
             } else {
@@ -741,6 +743,10 @@ static void add_and_display_time(int add_ticks) {
     return;
 }
 
+static void reset_time() {
+    time_mins = 0;
+    time_secs = 0.0;
+}
 
 static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_t verbose) {
     uint32_t mus_data_ofs = 0;
@@ -974,6 +980,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     if (verbose) {
         printf("Beats per minute: %u\n",hmi_division);
         set_secs_per_tick (60, (uint32_t)(60000000.0f / (float)hmi_division));
+        reset_time();
     }
 
     hmi_data += 15;
@@ -1038,7 +1045,9 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
             hmi_track_end = hmi_file_end;
         }
 //      printf("DEBUG: 0x%.8x\n",hmi_track_end);
-
+        if (verbose) {
+            reset_time();
+        }
         while (hmi_dbg < hmi_track_end) {
             /*
             printf("DEBUG @ 0x%.8x: ",hmi_dbg);
@@ -1558,6 +1567,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
     unsigned int track_size;
     unsigned char *next_track;
     unsigned int delta;
+    unsigned int new_delta;
     unsigned long int delta_accum;
     unsigned int no_tracks;
     unsigned int i;
@@ -1566,7 +1576,10 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
     unsigned long int tempo = 500000;
     int check_ret = 0;
     unsigned int total_count = 0;
-
+    
+    unsigned long int changeTempoAtTick[256][2] = {{0}};
+    unsigned long int changeTempoOfs = 0;
+    
     if (strncmp((char *) midi_data, "RIFF", 4) == 0) {
         midi_data += 20;
         midi_size -= 20;
@@ -1655,12 +1668,11 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
         }
 
         set_secs_per_tick (divisions, tempo);
+        reset_time();
     }
 
     for (i = 0; i < no_tracks; i++) {
-        time_mins = 0;
-        time_secs = 0.0;
-
+        
         if (midi_size < 8) {
             printf("Midi File Too Short\n");
             return -1;
@@ -1671,9 +1683,17 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
             return -1;
         }
 
-        if (verbose)
+        if (verbose) {
             printf("Start of Track\n");
-
+            if (midi_type != 2)
+                reset_time();
+            delta_accum = 0;
+            changeTempoOfs = 0;
+            
+            tempo = 500000;
+            set_secs_per_tick (divisions, tempo);
+            
+        }
         midi_data += 4;
         midi_size -= 4;
         total_count += 4;
@@ -1691,15 +1711,18 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
             printf("Midi File Too Short: Missing Track Data\n");
             return -1;
         }
-        if ((midi_data[track_size - 3] != 0xFF)
-                || (midi_data[track_size - 2] != 0x2F)
-                || (midi_data[track_size - 1] != 0x00)) {
-            printf("Corrupt Midi, Expected EOT\n");
-            return -1;
+        
+        // Ignore EOT check for type 0
+        if (midi_type != 0) {
+            if ((midi_data[track_size - 3] != 0xFF)
+                    || (midi_data[track_size - 2] != 0x2F)
+                    || (midi_data[track_size - 1] != 0x00)) {
+                printf("Corrupt Midi, Expected EOT\n");
+                return -1;
+            }
         }
-
         next_track = midi_data + track_size;
-        delta_accum = 0;
+
         while (midi_data < next_track) {
             delta = 0;
 //          printf("Get Delta: ");
@@ -1716,8 +1739,31 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 }
             }
             delta = (delta << 7) | (*midi_data & 0x7F);
-            if (verbose)
+            
+            if (verbose) {
+                delta_accum += delta;
+                
+                if ((midi_type == 1) && (i != 0)) {
+                    /*
+                     * since type 1 midi's store tempo info on first track
+                     * we only need to do this check for subsiquent tracks.
+                     */
+                    if ((changeTempoOfs == 0) || changeTempoAtTick[changeTempoOfs][0] > 0) {
+                        if (changeTempoAtTick[changeTempoOfs][0] <= delta_accum) {
+                            
+                            new_delta = delta_accum - changeTempoAtTick[changeTempoOfs][0];
+                            delta -= new_delta;
+                            add_time(delta);
+                            set_secs_per_tick (divisions, changeTempoAtTick[changeTempoOfs][1]);
+                            changeTempoOfs++;
+                            delta = new_delta;
+                            
+                        }
+                    }
+                }
                 add_and_display_time(delta);
+            }
+           
             midi_data++;
             if (midi_size == 0) {
                 printf("Corrupt Midi, Missing or Corrupt Track Data\n");
@@ -1725,18 +1771,11 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
             }
             midi_size--;
             total_count++;
-            delta_accum += delta;
-            /* tempo microseconds per quarter note
-             * divisions pulses per quarter note */
-            /*if (verbose) printf("Est Seconds: %f\n",(((float)tempo/(float)divisions*(float)delta_accum)/1000000.0));*/
-            /*
-            if (verbose)
-                printf("Delta: %i, Accumilated Delta: %ld\n", delta,
-                        delta_accum);
-            */
+            
             if (*midi_data < 0x80) {
                 if (running_event == 0) {
                     printf("Currupt Midi: expected event, got data\n");
+                    printf("%.4x %.2x %.2x %.2x %.2x\n", total_count, midi_data[0], midi_data[1], midi_data[2], midi_data[3]);
                     return -1;
                 }
             }
@@ -1766,6 +1805,12 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 if (verbose) {
                     /* Slow but needed for accuracy */
                     set_secs_per_tick (divisions, tempo);
+                
+                    if ((midi_type == 1) && (i == 0)) {
+                        changeTempoAtTick[changeTempoOfs][0] = delta_accum;
+                        changeTempoAtTick[changeTempoOfs][1] = tempo;
+                        changeTempoOfs++;
+                    }
                 }
             }
 
@@ -1786,6 +1831,8 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 if (midi_size <= 1) {
                     return 0;
                 }
+                midi_data += check_ret;
+                
             } else {
                 unsigned char *tmp_ptr = midi_data + check_ret;
                 
