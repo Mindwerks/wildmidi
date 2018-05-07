@@ -37,15 +37,6 @@
 #include "wildmidi_lib.h"
 #include "patches.h"
 #include "internal_midi.h"
-#ifdef __DJGPP__
-#define powf pow /* prefer C89 pow() from libc.a instead of powf() from libm. */
-#endif
-#ifdef WILDMIDI_AMIGA
-#define powf pow
-#endif
-#if defined(__WATCOMC__) || defined(__EMX__)
-#define powf pow
-#endif
 
 #define HOLD_OFF 0x02
 
@@ -71,7 +62,7 @@ int16_t _WM_lin_volume[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96,
     951, 959, 967, 975, 983, 991, 999, 1007, 1015, 1024 };
 
 /* f: As per midi 2 standard */
-static float dBm_volume[] = { -999999.999999f, -84.15214884f, -72.11094901f,
+static double dBm_volume[] = { -999999.999999f, -84.15214884f, -72.11094901f,
     -65.06729865f, -60.06974919f, -56.19334866f, -53.02609882f, -50.34822724f,
     -48.02854936f, -45.98244846f, -44.15214884f, -42.49644143f, -40.984899f,
     -39.59441475f, -38.30702741f, -37.10849848f, -35.98734953f, -34.93419198f,
@@ -99,7 +90,7 @@ static float dBm_volume[] = { -999999.999999f, -84.15214884f, -72.11094901f,
     -0.5559443807f, -0.4152814317f, -0.2757483179f, -0.1373270335f, 0.0f };
 
 /* f: As per midi 2 standard */
-static float dBm_pan_volume[] = { -999999.999999f, -38.15389834f, -32.13396282f,
+static double dBm_pan_volume[] = { -999999.999999f, -38.15389834f, -32.13396282f,
     -28.61324502f, -26.1160207f, -24.179814f, -22.5986259f, -21.26257033f,
     -20.10605521f, -19.08677237f, -18.17583419f, -17.35263639f, -16.60196565f,
     -15.91226889f, -15.2745658f, -14.6817375f, -14.12804519f, -13.60879499f,
@@ -464,14 +455,14 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
 
 /* Should be called in any function that effects note volumes */
 void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
-    float premix_dBm;
-    float premix_lin;
+    double premix_dBm;
+    double premix_lin;
     uint8_t pan_ofs;
-    float premix_dBm_left;
-    float premix_dBm_right;
-    float premix_left;
-    float premix_right;
-    float volume_adj;
+    double premix_dBm_left;
+    double premix_dBm_right;
+    double premix_left;
+    double premix_right;
+    double volume_adj;
     uint32_t vol_ofs;
 
     /*
@@ -493,7 +484,7 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
      FIXME: Still needs tuning. Clipping heard at a value of 3.75
      */
 #define VOL_DIVISOR 4.0f
-    volume_adj = ((float)_WM_MasterVolume / 1024.0f) / VOL_DIVISOR;
+    volume_adj = ((double)_WM_MasterVolume / 1024.0f) / VOL_DIVISOR;
 
     MIDI_EVENT_DEBUG(__FUNCTION__,ch, 0);
 
@@ -507,13 +498,13 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
         premix_dBm_left += premix_dBm;
         premix_dBm_right += premix_dBm;
 
-        premix_left = (powf(10.0f, (premix_dBm_left / 20.0f))) * volume_adj;
-        premix_right = (powf(10.0f, (premix_dBm_right / 20.0f))) * volume_adj;
+        premix_left = (pow(10.0f, (premix_dBm_left / 20.0f))) * volume_adj;
+        premix_right = (pow(10.0f, (premix_dBm_right / 20.0f))) * volume_adj;
     } else {
         premix_lin = (float)(_WM_lin_volume[vol_ofs]) / 1024.0f;
 
-        premix_left = premix_lin * powf(10.0f, (premix_dBm_left / 20)) * volume_adj;
-        premix_right = premix_lin * powf(10.0f, (premix_dBm_right / 20)) * volume_adj;
+        premix_left = premix_lin * pow(10.0f, (premix_dBm_left / 20)) * volume_adj;
+        premix_right = premix_lin * pow(10.0f, (premix_dBm_right / 20)) * volume_adj;
     }
     nte->left_mix_volume = (int32_t)(premix_left * 1024.0f);
     nte->right_mix_volume = (int32_t)(premix_right * 1024.0f);
