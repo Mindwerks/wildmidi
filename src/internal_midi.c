@@ -1932,8 +1932,6 @@ void _WM_freeMDI(struct _mdi *mdi) {
             /* Free up the string event storage */
             if (mdi->events[i].do_event == _WM_do_meta_text) {
                 free(mdi->events[i].event_data.data.string);
-            } else if (mdi->events[i].do_event == _WM_do_meta_text) {
-                free(mdi->events[i].event_data.data.string);
             } else if (mdi->events[i].do_event == _WM_do_meta_copyright) {
                 free(mdi->events[i].event_data.data.string);
             } else if (mdi->events[i].do_event == _WM_do_meta_trackname) {
