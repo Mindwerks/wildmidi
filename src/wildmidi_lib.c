@@ -2049,13 +2049,13 @@ static int midi_setup_noteoff(struct _mdi *mdi, unsigned char channel,
 	note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *do_note_off;
+		mdi->events[mdi->event_count - 1].do_event = do_note_off;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| velocity;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_note_off;
+		mdi->events[mdi->event_count].do_event = do_note_off;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = (note << 8) | velocity;
 		mdi->events[mdi->event_count].samples_to_next = 0;
@@ -2069,13 +2069,13 @@ static int midi_setup_noteon(struct _mdi *mdi, unsigned char channel,
 	note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *do_note_on;
+		mdi->events[mdi->event_count - 1].do_event = do_note_on;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| velocity;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_note_on;
+		mdi->events[mdi->event_count].do_event = do_note_on;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = (note << 8) | velocity;
 		mdi->events[mdi->event_count].samples_to_next = 0;
@@ -2092,13 +2092,13 @@ static int midi_setup_aftertouch(struct _mdi *mdi, unsigned char channel,
 	note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *do_aftertouch;
+		mdi->events[mdi->event_count - 1].do_event = do_aftertouch;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = (note << 8)
 				| pressure;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_aftertouch;
+		mdi->events[mdi->event_count].do_event = do_aftertouch;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = (note << 8) | pressure;
 		mdi->events[mdi->event_count].samples_to_next = 0;
@@ -2186,12 +2186,12 @@ static int midi_setup_patch(struct _mdi *mdi, unsigned char channel,
 		unsigned char patch) {
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *do_patch;
+		mdi->events[mdi->event_count - 1].do_event = do_patch;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = patch;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_patch;
+		mdi->events[mdi->event_count].do_event = do_patch;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = patch;
 		mdi->events[mdi->event_count].samples_to_next = 0;
@@ -2212,12 +2212,12 @@ static int midi_setup_channel_pressure(struct _mdi *mdi, unsigned char channel,
 
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *do_channel_pressure;
+		mdi->events[mdi->event_count - 1].do_event = do_channel_pressure;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pressure;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_channel_pressure;
+		mdi->events[mdi->event_count].do_event = do_channel_pressure;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = pressure;
 		mdi->events[mdi->event_count].samples_to_next = 0;
@@ -2231,12 +2231,12 @@ static int midi_setup_pitch(struct _mdi *mdi, unsigned char channel,
 		unsigned short pitch) {
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *do_pitch;
+		mdi->events[mdi->event_count - 1].do_event = do_pitch;
 		mdi->events[mdi->event_count - 1].event_data.channel = channel;
 		mdi->events[mdi->event_count - 1].event_data.data = pitch;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_pitch;
+		mdi->events[mdi->event_count].do_event = do_pitch;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = pitch;
 		mdi->events[mdi->event_count].samples_to_next = 0;
@@ -2255,7 +2255,7 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 		mdi->events[mdi->event_count - 1].event_data.data = setting;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_sysex_roland_drum_track;
+		mdi->events[mdi->event_count].do_event = do_sysex_roland_drum_track;
 		mdi->events[mdi->event_count].event_data.channel = channel;
 		mdi->events[mdi->event_count].event_data.data = setting;
 		mdi->events[mdi->event_count].samples_to_next = 0;
@@ -2274,12 +2274,12 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
 	if ((mdi->event_count)
 			&& (mdi->events[mdi->event_count - 1].do_event == NULL)) {
-		mdi->events[mdi->event_count - 1].do_event = *do_sysex_roland_reset;
+		mdi->events[mdi->event_count - 1].do_event = do_sysex_roland_reset;
 		mdi->events[mdi->event_count - 1].event_data.channel = 0;
 		mdi->events[mdi->event_count - 1].event_data.data = 0;
 	} else {
 		WM_CheckEventMemoryPool(mdi);
-		mdi->events[mdi->event_count].do_event = *do_sysex_roland_reset;
+		mdi->events[mdi->event_count].do_event = do_sysex_roland_reset;
 		mdi->events[mdi->event_count].event_data.channel = 0;
 		mdi->events[mdi->event_count].event_data.data = 0;
 		mdi->events[mdi->event_count].samples_to_next = 0;
