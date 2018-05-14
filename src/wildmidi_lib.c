@@ -361,6 +361,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
     uint32_t config_ptr = 0;
     uint32_t line_start_ptr = 0;
     uint16_t patchid = 0;
+    const char *dotpat;
     struct _patch * tmp_patch;
     char **line_tokens = NULL;
     int token_count = 0;
@@ -670,7 +671,8 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                 return (-1);
                             }
                         }
-                        if (wm_strncasecmp(&tmp_patch->filename[strlen(tmp_patch->filename) - 4], ".pat", 4) != 0) {
+                        dotpat = strrchr(tmp_patch->filename, '.');
+                        if (!dotpat || wm_strncasecmp(dotpat, ".pat", 4) != 0) {
                             strcat(tmp_patch->filename, ".pat");
                         }
                         tmp_patch->env[0].set = 0x00;
