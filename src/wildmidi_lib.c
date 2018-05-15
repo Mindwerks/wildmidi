@@ -1873,10 +1873,10 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
 
     } else if (nextsong == 1) {
         /* goto start of next song */
-        while (event->do_event != NULL) {
+        while (event->evtype != ev_null) {
             if (event->evtype == ev_meta_endoftrack) {
                 event++;
-                if (event->do_event == NULL) {
+                if (event->evtype == ev_null) {
                     event--;
                     goto START_THIS_SONG;
                 } else {

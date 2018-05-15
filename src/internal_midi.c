@@ -1416,6 +1416,7 @@ void _WM_ResetToStart(struct _mdi *mdi) {
 
     /* Ensure last event is NULL */
     _WM_CheckEventMemoryPool(mdi);
+    mdi->events[mdi->event_count].evtype = ev_null;
     mdi->events[mdi->event_count].do_event = NULL;
     mdi->events[mdi->event_count].event_data.channel = 0;
     mdi->events[mdi->event_count].event_data.data.value = 0;

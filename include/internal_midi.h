@@ -75,6 +75,7 @@ struct _note {
 struct _mdi;
 
 enum _event_type {
+    ev_null = -1,
     ev_midi_divisions,
     ev_note_off,
     ev_note_on,

@@ -793,7 +793,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[track_start - 2] = (track_size >> 8) & 0xff;
                 (*out)[track_start - 1] = track_size & 0xff;
 
-                if (event[1].do_event != NULL) {
+                if (event[1].evtype != ev_null) {
                     (*out)[out_ofs++] = 'M';
                     (*out)[out_ofs++] = 'T';
                     (*out)[out_ofs++] = 'r';
@@ -967,7 +967,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         (*out)[out_ofs++] = (value & 0x7f);
     NEXT_EVENT:
         event++;
-    } while (event->do_event != NULL);
+    } while (event->ev_type != ev_null);
 
     if ((_WM_MixerOptions & WM_MO_SAVEASTYPE0) || (!mdi->is_type2)) {
         /* Write end of track marker */
