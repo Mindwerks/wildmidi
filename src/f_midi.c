@@ -492,14 +492,16 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
 
     do {
         /* TODO Is there a better way? */
-        if (event->do_event == _WM_do_midi_divisions) {
+        switch (event->evtype) {
+        case ev_midi_divisions:
             // DEBUG
             // fprintf(stderr,"Division: %u\r\n",event->event_data.data);
             divisions = event->event_data.data.value;
             (*out)[12] = (divisions >> 8) & 0xff;
             (*out)[13] = divisions & 0xff;
             samples_per_tick = _WM_GetSamplesPerTick(divisions, tempo);
-        } else if (event->do_event == _WM_do_note_off) {
+            break;
+        case ev_note_off:
             // DEBUG
             // fprintf(stderr,"Note Off: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0x80 | event->event_data.channel)) {
@@ -508,7 +510,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = (event->event_data.data.value >> 8) & 0xff;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_note_on) {
+            break;
+        case ev_note_on:
             // DEBUG
             // fprintf(stderr,"Note On: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0x90 | event->event_data.channel)) {
@@ -517,7 +520,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = (event->event_data.data.value >> 8) & 0xff;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_aftertouch) {
+            break;
+        case ev_aftertouch:
             // DEBUG
             // fprintf(stderr,"Aftertouch: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xa0 | event->event_data.channel)) {
@@ -526,7 +530,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = (event->event_data.data.value >> 8) & 0xff;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_bank_select) {
+            break;
+        case ev_control_bank_select:
             // DEBUG
             // fprintf(stderr,"Control Bank Select: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -535,7 +540,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 0;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_data_entry_course) {
+            break;
+        case ev_control_data_entry_course:
             // DEBUG
             // fprintf(stderr,"Control Data Entry Course: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -544,7 +550,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 6;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_channel_volume) {
+            break;
+        case ev_control_channel_volume:
             // DEBUG
             // fprintf(stderr,"Control Channel Volume: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -553,7 +560,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 7;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_channel_balance) {
+            break;
+        case ev_control_channel_balance:
             // DEBUG
             // fprintf(stderr,"Control Channel Balance: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -562,7 +570,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 8;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_channel_pan) {
+            break;
+        case ev_control_channel_pan:
             // DEBUG
             // fprintf(stderr,"Control Channel Pan: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -571,7 +580,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 10;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_channel_expression) {
+            break;
+        case ev_control_channel_expression:
             // DEBUG
             // fprintf(stderr,"Control Channel Expression: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -580,7 +590,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 11;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_data_entry_fine) {
+            break;
+        case ev_control_data_entry_fine:
             // DEBUG
             // fprintf(stderr,"Control Data Entry Fine: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -589,7 +600,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 38;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_channel_hold) {
+            break;
+        case ev_control_channel_hold:
             // DEBUG
             // fprintf(stderr,"Control Channel Hold: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -598,7 +610,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 64;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_data_increment) {
+            break;
+        case ev_control_data_increment:
             // DEBUG
             // fprintf(stderr,"Control Data Increment: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -607,7 +620,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 96;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_data_decrement) {
+            break;
+        case ev_control_data_decrement:
             // DEBUG
             //fprintf(stderr,"Control Data Decrement: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -616,7 +630,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 97;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_non_registered_param_fine) {
+            break;
+        case ev_control_non_registered_param_fine:
             // DEBUG
             // fprintf(stderr,"Control Non Registered Param: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -625,7 +640,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 98;
             (*out)[out_ofs++] = event->event_data.data.value & 0x7f;
-        } else if (event->do_event == _WM_do_control_non_registered_param_course) {
+            break;
+        case ev_control_non_registered_param_course:
             // DEBUG
             // fprintf(stderr,"Control Non Registered Param: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -634,7 +650,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 99;
             (*out)[out_ofs++] = (event->event_data.data.value >> 7) & 0x7f;
-        } else if (event->do_event == _WM_do_control_registered_param_fine) {
+            break;
+        case ev_control_registered_param_fine:
             // DEBUG
             // fprintf(stderr,"Control Registered Param Fine: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -643,7 +660,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 100;
             (*out)[out_ofs++] = event->event_data.data.value & 0x7f;
-        } else if (event->do_event == _WM_do_control_registered_param_course) {
+            break;
+        case ev_control_registered_param_course:
             // DEBUG
             // fprintf(stderr,"Control Registered Param Course: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -652,7 +670,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 101;
             (*out)[out_ofs++] = (event->event_data.data.value >> 7) & 0x7f;
-        } else if (event->do_event == _WM_do_control_channel_sound_off) {
+            break;
+        case ev_control_channel_sound_off:
             // DEBUG
             // fprintf(stderr,"Control Channel Sound Off: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -661,7 +680,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 120;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_channel_controllers_off) {
+            break;
+        case ev_control_channel_controllers_off:
             // DEBUG
             // fprintf(stderr,"Control Channel Controllers Off: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -670,7 +690,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 121;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_channel_notes_off) {
+            break;
+        case ev_control_channel_notes_off:
             // DEBUG
             // fprintf(stderr,"Control Channel Notes Off: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -679,7 +700,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = 123;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_control_dummy) {
+            break;
+        case ev_control_dummy:
             // DEBUG
             // fprintf(stderr,"Control Dummy Event: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xb0 | event->event_data.channel)) {
@@ -688,7 +710,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = (event->event_data.data.value >> 8) & 0xff;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_patch) {
+            break;
+        case ev_patch:
             // DEBUG
             // fprintf(stderr,"Patch: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xc0 | event->event_data.channel)) {
@@ -696,7 +719,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_channel_pressure) {
+            break;
+        case ev_channel_pressure:
             // DEBUG
             // fprintf(stderr,"Channel Pressure: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xd0 | event->event_data.channel)) {
@@ -704,7 +728,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 running_event = (*out)[out_ofs - 1];
             }
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
-        } else if (event->do_event == _WM_do_pitch) {
+            break;
+        case ev_pitch:
             // DEBUG
             // fprintf(stderr,"Pitch: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             if (running_event != (0xe0 | event->event_data.channel)) {
@@ -713,7 +738,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             }
             (*out)[out_ofs++] = event->event_data.data.value & 0x7f;
             (*out)[out_ofs++] = (event->event_data.data.value >> 7) & 0x7f;
-        } else if (event->do_event == _WM_do_sysex_roland_drum_track) {
+            break;
+        case ev_sysex_roland_drum_track: {
             // DEBUG
             // fprintf(stderr,"Sysex Roland Drum Track: %u %.4x\r\n",event->event_data.channel, event->event_data.data);
             uint8_t foo[] = {0xf0, 0x09, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x15, 0x00, 0xf7};
@@ -728,28 +754,32 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             memcpy(&((*out)[out_ofs]),foo,11);
             out_ofs += 11;
             running_event = 0;
-        } else if (event->do_event == _WM_do_sysex_gm_reset) {
+          } break;
+        case ev_sysex_gm_reset: {
             // DEBUG
             // fprintf(stderr,"Sysex GM Reset\r\n");
             uint8_t foo[] = {0xf0, 0x05, 0x7e, 0x7f, 0x09, 0x01, 0xf7};
             memcpy(&((*out)[out_ofs]),foo,7);
             out_ofs += 7;
             running_event = 0;
-        } else if (event->do_event == _WM_do_sysex_roland_reset) {
+          } break;
+        case ev_sysex_roland_reset: {
             // DEBUG
             // fprintf(stderr,"Sysex Roland Reset\r\n");
             uint8_t foo[] = {0xf0, 0x0a, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7f, 0x00, 0x41, 0xf7};
             memcpy(&((*out)[out_ofs]),foo,12);
             out_ofs += 12;
             running_event = 0;
-        } else if (event->do_event == _WM_do_sysex_yamaha_reset) {
+          } break;
+        case ev_sysex_yamaha_reset: {
             // DEBUG
             // fprintf(stderr,"Sysex Yamaha Reset\r\n");
             uint8_t foo[] = {0xf0, 0x08, 0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7};
             memcpy(&((*out)[out_ofs]),foo,10);
             out_ofs += 10;
             running_event = 0;
-        } else if (event->do_event == _WM_do_meta_endoftrack) {
+          } break;
+        case ev_meta_endoftrack:
             // DEBUG
             // fprintf(stderr,"End Of Track\r\n");
             if ((!(_WM_MixerOptions & WM_MO_SAVEASTYPE0)) && (mdi->is_type2)) {
@@ -763,7 +793,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 (*out)[track_start - 2] = (track_size >> 8) & 0xff;
                 (*out)[track_start - 1] = track_size & 0xff;
 
-                if (event[1].do_event != NULL) {
+                if (event[1].evtype != ev_null) {
                     (*out)[out_ofs++] = 'M';
                     (*out)[out_ofs++] = 'T';
                     (*out)[out_ofs++] = 'r';
@@ -779,7 +809,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
                 }
             }
             goto NEXT_EVENT;
-        } else if (event->do_event == _WM_do_meta_tempo) {
+        case ev_meta_tempo:
             // DEBUG
             // fprintf(stderr,"Tempo: %u\r\n",event->event_data.data);
             tempo = event->event_data.data.value & 0xffffff;
@@ -795,7 +825,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = (tempo & 0xff0000) >> 16;
             (*out)[out_ofs++] = (tempo & 0xff00) >> 8;
             (*out)[out_ofs++] = (tempo & 0xff);
-        } else if (event->do_event == _WM_do_meta_timesignature) {
+            break;
+        case ev_meta_timesignature:
             // DEBUG
             // fprintf(stderr,"Time Signature: %x\r\n",event->event_data.data);
             (*out)[out_ofs++] = 0xff;
@@ -805,7 +836,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff0000) >> 16;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff00) >> 8;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff);
-        } else if (event->do_event == _WM_do_meta_keysignature) {
+            break;
+        case ev_meta_keysignature:
             // DEBUG
             // fprintf(stderr,"Key Signature: %x\r\n",event->event_data.data);
             (*out)[out_ofs++] = 0xff;
@@ -813,7 +845,8 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = 0x02;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff00) >> 8;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff);
-        } else if (event->do_event == _WM_do_meta_sequenceno) {
+            break;
+        case ev_meta_sequenceno:
             // DEBUG
             // fprintf(stderr,"Sequence Number: %x\r\n",event->event_data.data);
             (*out)[out_ofs++] = 0xff;
@@ -821,21 +854,24 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = 0x02;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff00) >> 8;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff);
-        } else if (event->do_event == _WM_do_meta_channelprefix) {
+            break;
+        case ev_meta_channelprefix:
             // DEBUG
             // fprintf(stderr,"Channel Prefix: %x\r\n",event->event_data.data);
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x20;
             (*out)[out_ofs++] = 0x01;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff);
-        } else if (event->do_event == _WM_do_meta_portprefix) {
+            break;
+        case ev_meta_portprefix:
             // DEBUG
             // fprintf(stderr,"Port Prefix: %x\r\n",event->event_data.data);
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x21;
             (*out)[out_ofs++] = 0x01;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff);
-        } else if (event->do_event == _WM_do_meta_smpteoffset) {
+            break;
+        case ev_meta_smpteoffset:
             // DEBUG
             // fprintf(stderr,"SMPTE Offset: %x\r\n",event->event_data.data);
             (*out)[out_ofs++] = 0xff;
@@ -849,44 +885,45 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff0000) >> 16;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff00) >> 8;
             (*out)[out_ofs++] = (event->event_data.data.value & 0xff);
+            break;
 
-        } else if (event->do_event == _WM_do_meta_text) {
+        case ev_meta_text:
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x01;
 
             goto _WRITE_TEXT;
 
-        } else if (event->do_event == _WM_do_meta_copyright) {
+        case ev_meta_copyright:
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x02;
 
             goto _WRITE_TEXT;
 
-        } else if (event->do_event == _WM_do_meta_trackname) {
+        case ev_meta_trackname:
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x03;
 
             goto _WRITE_TEXT;
 
-        } else if (event->do_event == _WM_do_meta_instrumentname) {
+        case ev_meta_instrumentname:
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x04;
 
             goto _WRITE_TEXT;
 
-        } else if (event->do_event == _WM_do_meta_lyric) {
+        case ev_meta_lyric:
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x05;
 
             goto _WRITE_TEXT;
 
-        } else if (event->do_event == _WM_do_meta_marker) {
+        case ev_meta_marker:
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x06;
 
             goto _WRITE_TEXT;
 
-        } else if (event->do_event == _WM_do_meta_cuepoint) {
+        case ev_meta_cuepoint:
             (*out)[out_ofs++] = 0xff;
             (*out)[out_ofs++] = 0x07;
 
@@ -904,8 +941,9 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
 
             memcpy(&(*out)[out_ofs], event->event_data.data.string, value);
             out_ofs += value;
+            break;
 
-        } else {
+        default:
             // DEBUG
             // fprintf(stderr,"Unknown Event %.2x %.4x\n",event->event_data.channel, event->event_data.data.value);
             event++;
@@ -929,7 +967,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         (*out)[out_ofs++] = (value & 0x7f);
     NEXT_EVENT:
         event++;
-    } while (event->do_event != NULL);
+    } while (event->evtype != ev_null);
 
     if ((_WM_MixerOptions & WM_MO_SAVEASTYPE0) || (!mdi->is_type2)) {
         /* Write end of track marker */

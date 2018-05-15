@@ -35,6 +35,8 @@ Requirements:
 CHANGELOG
 
 0.4.3
+* Fixed Visual Studio optimized builds. (Bug #192, function pointer
+  issue.)
 * Fixed a thinko in one of the buffer size checks added in v0.4.2.
 * Fix possible out of bounds reads in sysex commands. (Bug #190).
 
