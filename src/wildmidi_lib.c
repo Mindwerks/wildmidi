@@ -856,7 +856,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].do_event == _WM_do_meta_endoftrack)) {
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack)) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
@@ -1174,7 +1174,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].do_event == _WM_do_meta_endoftrack)) {
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack)) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
@@ -1859,7 +1859,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
          */
         uint8_t eof_cnt = 1;
         while (event != mdi->events) {
-            if (event[-1].do_event == _WM_do_meta_endoftrack) {
+            if (event[-1].evtype == ev_meta_endoftrack) {
                 if (eof_cnt == 0) {
                     break;
                 }
@@ -1874,7 +1874,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
     } else if (nextsong == 1) {
         /* goto start of next song */
         while (event->do_event != NULL) {
-            if (event->do_event == _WM_do_meta_endoftrack) {
+            if (event->evtype == ev_meta_endoftrack) {
                 event++;
                 if (event->do_event == NULL) {
                     event--;
@@ -1893,7 +1893,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         /* goto start of this song */
         /* first find the offset */
         while (event != mdi->events) {
-            if (event[-1].do_event == _WM_do_meta_endoftrack) {
+            if (event[-1].evtype == ev_meta_endoftrack) {
                 break;
             }
             event--;

@@ -74,7 +74,55 @@ struct _note {
 
 struct _mdi;
 
+enum _event_type {
+    ev_midi_divisions,
+    ev_note_off,
+    ev_note_on,
+    ev_aftertouch,
+    ev_control_bank_select,
+    ev_control_data_entry_course,
+    ev_control_channel_volume,
+    ev_control_channel_balance,
+    ev_control_channel_pan,
+    ev_control_channel_expression,
+    ev_control_data_entry_fine,
+    ev_control_channel_hold,
+    ev_control_data_increment,
+    ev_control_data_decrement,
+    ev_control_non_registered_param_fine,
+    ev_control_non_registered_param_course,
+    ev_control_registered_param_fine,
+    ev_control_registered_param_course,
+    ev_control_channel_sound_off,
+    ev_control_channel_controllers_off,
+    ev_control_channel_notes_off,
+    ev_control_dummy,
+    ev_patch,
+    ev_channel_pressure,
+    ev_pitch,
+    ev_sysex_roland_drum_track,
+    ev_sysex_gm_reset,
+    ev_sysex_roland_reset,
+    ev_sysex_yamaha_reset,
+    ev_meta_endoftrack,
+    ev_meta_tempo,
+    ev_meta_timesignature,
+    ev_meta_keysignature,
+    ev_meta_sequenceno,
+    ev_meta_channelprefix,
+    ev_meta_portprefix,
+    ev_meta_smpteoffset,
+    ev_meta_text,
+    ev_meta_copyright,
+    ev_meta_trackname,
+    ev_meta_instrumentname,
+    ev_meta_lyric,
+    ev_meta_marker,
+    ev_meta_cuepoint
+};
+
 struct _event {
+    enum _event_type evtype;
     void (*do_event)(struct _mdi *mdi, struct _event_data *data);
     struct _event_data event_data;
     uint32_t samples_to_next;
