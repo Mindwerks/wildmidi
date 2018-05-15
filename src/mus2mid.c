@@ -132,7 +132,13 @@ struct mus_ctx {
 #define DST_CHUNK 8192
 static void resize_dst(struct mus_ctx *ctx) {
     uint32_t pos = ctx->dst_ptr - ctx->dst;
-    ctx->dst = (uint8_t *) realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
+    uint8_t *new_dst = (uint8_t *) realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
+    if (!new_dst){
+        free(ctx->dst);
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, "Unable to reallocate memory.", 0);
+        return;
+    }
+    ctx->dst = new_dst;
     ctx->dstsize += DST_CHUNK;
     ctx->dstrem += DST_CHUNK;
     ctx->dst_ptr = ctx->dst + pos;
