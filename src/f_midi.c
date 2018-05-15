@@ -967,7 +967,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
         (*out)[out_ofs++] = (value & 0x7f);
     NEXT_EVENT:
         event++;
-    } while (event->ev_type != ev_null);
+    } while (event->evtype != ev_null);
 
     if ((_WM_MixerOptions & WM_MO_SAVEASTYPE0) || (!mdi->is_type2)) {
         /* Write end of track marker */
