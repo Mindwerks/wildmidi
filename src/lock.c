@@ -33,6 +33,10 @@
 #include <os2.h>
 #elif defined(WILDMIDI_AMIGA)
 #include <proto/dos.h>
+#elif defined(__vita__)
+#include <psp2/kernel/processmgr.h>
+#elif defined(__SWITCH__)
+#include <switch.h>
 #else /* unixish ... */
 #define _GNU_SOURCE
 #include <unistd.h> /* usleep() */
@@ -70,6 +74,10 @@ void _WM_Lock(int * wmlock) {
     DosSleep(10);
 #elif defined(WILDMIDI_AMIGA)
     Delay(1);
+#elif defined(__vita__)
+    sceKernelDelayThread(500);
+#elif defined(__SWITCH__)
+    svcSleepThread(500 * 1000);
 #else
     usleep(500);
 #endif

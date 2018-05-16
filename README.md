@@ -31,6 +31,8 @@ Requirements:
 * OS/2 port: OpenWatcom (tested with version 1.9)
 * Nintendo 3DS port: devkitARM
 * Nintendo Wii port: devkitPPC
+* Nintendo Switch port: devkitA64
+* PSVita port: Vitasdk
 
 CHANGELOG
 
@@ -40,6 +42,8 @@ CHANGELOG
 * Fixed a thinko in one of the buffer size checks added in v0.4.2.
 * Fix possible out of bounds reads in sysex commands. (Bug #190).
 * Fix invalid reads during config parse with short patch file names.
+* Support for Nintendo Switch
+* Support for PS Vita
 
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
