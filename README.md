@@ -42,8 +42,9 @@ CHANGELOG
 * Fixed a thinko in one of the buffer size checks added in v0.4.2.
 * Fix possible out of bounds reads in sysex commands. (Bug #190).
 * Fix invalid reads during config parse with short patch file names.
-* Support for Nintendo Switch
-* Support for PS Vita
+* Do not treat a missing end-of-track marker as an error for type-0
+  midi files. (Bug #183).
+* Support for Nintendo Switch and PS Vita.
 
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
