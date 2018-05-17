@@ -26,6 +26,9 @@
 #define __FILE_IO_H
 
 #define WM_MAXFILESIZE 0x1fffffff
-extern void *_WM_BufferFile (const char *filename, uint32_t *size);
+extern void *_WM_BufferFileImpl(const char *filename, uint32_t *size);
+extern void  _WM_FreeBufferFileImpl(void*);
+extern void * (*_WM_BufferFile)(const char *, uint32_t *);
+extern void   (*_WM_FreeBufferFile)(void*);
 
 #endif /* __FILE_IO_H */
