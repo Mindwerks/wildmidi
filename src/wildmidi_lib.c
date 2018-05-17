@@ -376,7 +376,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
         if (!(config_dir = wm_strdup(conf_dir))) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
             WM_FreePatches();
-            free(config_buffer);
+            _WM_FreeBufferFile(config_buffer);
             return (-1);
         }
     } else {
@@ -417,13 +417,13 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(missing name in dir line)", 0);
                             WM_FreePatches();
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         } else if (!(config_dir = wm_strdup(line_tokens[1]))) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                             WM_FreePatches();
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         }
                         if (!IS_DIR_SEPARATOR(config_dir[strlen(config_dir) - 1])) {
@@ -436,7 +436,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(missing name in source line)", 0);
                             WM_FreePatches();
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
                             new_config = (char *) malloc(strlen(config_dir) + strlen(line_tokens[1]) + 1);
@@ -445,7 +445,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
-                                free(config_buffer);
+                                _WM_FreeBufferFile(config_buffer);
                                 return (-1);
                             }
                             strcpy(new_config, config_dir);
@@ -455,14 +455,14 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                 _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
                                 WM_FreePatches();
                                 free(line_tokens);
-                                free(config_buffer);
+                                _WM_FreeBufferFile(config_buffer);
                                 return (-1);
                             }
                         }
                         if (load_config(new_config, config_dir) == -1) {
                             free(new_config);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             free(config_dir);
                             return (-1);
                         }
@@ -473,7 +473,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         }
                         patchid = (atoi(line_tokens[1]) & 0xFF) << 8;
@@ -483,7 +483,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         }
                         patchid = ((atoi(line_tokens[1]) & 0xFF) << 8) | 0x80;
@@ -493,7 +493,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         }
                         _WM_reverb_room_width = (float) atof(line_tokens[1]);
@@ -510,7 +510,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         }
                         _WM_reverb_room_length = (float) atof(line_tokens[1]);
@@ -527,7 +527,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         }
                         _WM_reverb_listen_posx = (float) atof(line_tokens[1]);
@@ -543,7 +543,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         }
                         _WM_reverb_listen_posy = (float) atof(line_tokens[1]);
@@ -569,7 +569,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
-                                free(config_buffer);
+                                _WM_FreeBufferFile(config_buffer);
                                 return (-1);
                             }
                             tmp_patch = _WM_patch[(patchid & 0x7F)];
@@ -601,7 +601,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                             WM_FreePatches();
                                             free(config_dir);
                                             free(line_tokens);
-                                            free(config_buffer);
+                                            _WM_FreeBufferFile(config_buffer);
                                             return (-1);
                                         }
                                         tmp_patch = tmp_patch->next;
@@ -627,7 +627,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                         WM_FreePatches();
                                         free(config_dir);
                                         free(line_tokens);
-                                        free(config_buffer);
+                                        _WM_FreeBufferFile(config_buffer);
                                         return (-1);
                                     }
                                     tmp_patch = tmp_patch->next;
@@ -647,7 +647,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             WM_FreePatches();
                             free(config_dir);
                             free(line_tokens);
-                            free(config_buffer);
+                            _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
                             tmp_patch->filename = (char *) malloc(strlen(config_dir) + strlen(line_tokens[1]) + 5);
@@ -656,7 +656,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
-                                free(config_buffer);
+                                _WM_FreeBufferFile(config_buffer);
                                 return (-1);
                             }
                             strcpy(tmp_patch->filename, config_dir);
@@ -667,7 +667,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
-                                free(config_buffer);
+                                _WM_FreeBufferFile(config_buffer);
                                 return (-1);
                             }
                         }
@@ -754,7 +754,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                 else if (_WM_Global_ErrorI) { /* malloc() failure in WM_LC_Tokenize_Line() */
                     WM_FreePatches();
                     free(line_tokens);
-                    free(config_buffer);
+                    _WM_FreeBufferFile(config_buffer);
                     return (-1);
                 }
                 /* free up tokens */
@@ -765,7 +765,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
         config_ptr++;
     }
 
-    free(config_buffer);
+    _WM_FreeBufferFile(config_buffer);
     free(config_dir);
 
     return (0);
@@ -1468,6 +1468,46 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
     return (buffer_used);
 }
 
+static int _WM_Init(const char *config_file, uint16_t rate, uint16_t mixer_options) {
+    if (WM_Initialized) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_ALR_INIT, NULL, 0);
+        return (-1);
+    }
+
+    if (config_file == NULL) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+            "(NULL config file pointer)", 0);
+        return (-1);
+    }
+    WM_InitPatches();
+    if (WM_LoadConfig(config_file) == -1) {
+        return (-1);
+    }
+
+    if (mixer_options & 0x0FF0) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
+            0);
+        WM_FreePatches();
+        return (-1);
+    }
+    _WM_MixerOptions = mixer_options;
+
+    if (rate < 11025) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+            "(rate out of bounds, range is 11025 - 65535)", 0);
+        WM_FreePatches();
+        return (-1);
+    }
+    _WM_SampleRate = rate;
+
+    gauss_lock = 0;
+    _WM_patch_lock = 0;
+    _WM_MasterVolume = 948;
+    WM_Initialized = 1;
+
+    return (0);
+}
+
 /*
  * =========================
  * External Functions
@@ -1487,7 +1527,7 @@ WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t 
     }
 
     ret = WildMidi_ConvertBufferToMidi(buf, *size, out, size);
-    free(buf);
+    _WM_FreeBufferFile(buf);
     return ret;
 }
 
@@ -1541,38 +1581,39 @@ WM_SYMBOL int WildMidi_Init(const char *config_file, uint16_t rate, uint16_t mix
         return (-1);
     }
 
-    if (config_file == NULL) {
+    _WM_BufferFile = _WM_BufferFileImpl;
+    _WM_FreeBufferFile = _WM_FreeBufferFileImpl;
+
+    return _WM_Init(config_file, rate, mixer_options);
+}
+
+WM_SYMBOL int WildMidi_InitVIO(struct _WM_VIO * callbacks, const char *config_file, uint16_t rate, uint16_t mixer_options) {
+    if (WM_Initialized) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_ALR_INIT, NULL, 0);
+        return (-1);
+    }
+
+    if (callbacks == NULL) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-                "(NULL config file pointer)", 0);
-        return (-1);
-    }
-    WM_InitPatches();
-    if (WM_LoadConfig(config_file) == -1) {
+            "(NULL callbacks pointer)", 0);
         return (-1);
     }
 
-    if (mixer_options & 0x0FF0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(invalid option)",
-                0);
-        WM_FreePatches();
-        return (-1);
-    }
-    _WM_MixerOptions = mixer_options;
-
-    if (rate < 11025) {
+    if (callbacks->allocate_file == NULL) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-                "(rate out of bounds, range is 11025 - 65535)", 0);
-        WM_FreePatches();
+            "(NULL allocate callback pointer)", 0);
         return (-1);
     }
-    _WM_SampleRate = rate;
 
-    gauss_lock = 0;
-    _WM_patch_lock = 0;
-    _WM_MasterVolume = 948;
-    WM_Initialized = 1;
+    if (callbacks->free_file == NULL) {
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
+            "(NULL allocate callback pointer)", 0);
+        return (-1);
+    }
+    _WM_BufferFile = callbacks->allocate_file;
+    _WM_FreeBufferFile = callbacks->free_file;
 
-    return (0);
+    return _WM_Init(config_file, rate, mixer_options);
 }
 
 WM_SYMBOL int WildMidi_MasterVolume(uint8_t master_volume) {
@@ -1670,7 +1711,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
     } else {
         ret = (void *) _WM_ParseNewMidi(mididata, midisize);
     }
-    free(mididata);
+    _WM_FreeBufferFile(mididata);
 
     if (ret) {
         if (add_handle(ret) != 0) {
