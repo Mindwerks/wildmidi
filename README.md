@@ -33,7 +33,6 @@ Requirements:
 * Nintendo Wii port: devkitPPC
 * Nintendo Switch port: devkitA64
 * PSVita port: Vitasdk
-* Several clean-ups.
 
 CHANGELOG
 
@@ -50,6 +49,7 @@ CHANGELOG
 * Do not treat a missing end-of-track marker as an error for type-0
   midi files. (Bug #183).
 * Support for Nintendo Switch and PS Vita.
+* Several clean-ups.
 
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
