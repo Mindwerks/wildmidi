@@ -802,11 +802,11 @@ static int load_config(const char *config_file, const char *conf_dir) {
 						reverb_room_width = (float) atof(line_tokens[1]);
 						if (reverb_room_width < 1.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_width < 1 meter, setting to minimum of 1 meter)", 0);
+									"(reverb_room_width < 1m, setting to 1m)", 0);
 							reverb_room_width = 1.0f;
 						} else if (reverb_room_width > 100.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_width > 100 meters, setting to maximum of 100 meters)", 0);
+									"(reverb_room_width > 100m, setting to 100m)", 0);
 							reverb_room_width = 100.0f;
 						}
 					} else if (wm_strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
@@ -822,11 +822,11 @@ static int load_config(const char *config_file, const char *conf_dir) {
 						reverb_room_length = (float) atof(line_tokens[1]);
 						if (reverb_room_length < 1.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_length < 1 meter, setting to minimum of 1 meter)", 0);
+									"(reverb_room_length < 1m, setting to 1m)", 0);
 							reverb_room_length = 1.0f;
 						} else if (reverb_room_length > 100.0f) {
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_length > 100 meters, setting to maximum of 100 meters)", 0);
+									"(reverb_room_length > 100m, setting to 100m)", 0);
 							reverb_room_length = 100.0f;
 						}
 					} else if (wm_strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
