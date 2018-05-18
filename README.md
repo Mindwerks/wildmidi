@@ -33,6 +33,7 @@ Requirements:
 * Nintendo Wii port: devkitPPC
 * Nintendo Switch port: devkitA64
 * PSVita port: Vitasdk
+* Several clean-ups.
 
 CHANGELOG
 
