@@ -1,29 +1,30 @@
 /*
- DevTest.c: Display Information about the Gravis Ultrasound patch file.
-            Display Information about MIDI file.
-
- NOTE: This file is intended for developer use to aide in feature development, and bug hunting.
- COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
-
- Copyright (C) Chris Ison  2001-2016
- Copyright (C) Bret Curtis 2013-2016
-
- This file is part of WildMIDI.
-
- WildMIDI is free software: you can redistribute and/or modify the library
- under the terms of the GNU Lesser General Public License and you can
- redistribute the player and DevTest under the terms of the GNU General
- Public License as published by the Free Software Foundation, either
- version 3 of the licenses, or(at your option) any later version.
-
- WildMIDI is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
- the GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU General Public License and the
- GNU Lesser General Public License along with WildMIDI.  If not,  see
- <http://www.gnu.org/licenses/>.
+ * DevTest.c: Display Information about Gravis Ultrasound patch files.
+ *            Display Information about MIDI files.
+ *
+ * NOTE: This file is intended for developer use to aide in
+ *       feature development, and bug hunting.
+ * COMPILING: gcc -Wall -W -O2 -o devtest DevTest.c
+ *
+ * Copyright (C) Chris Ison  2001-2016
+ * Copyright (C) Bret Curtis 2013-2016
+ *
+ * This file is part of WildMIDI.
+ *
+ * WildMIDI is free software: you can redistribute and/or modify the library
+ * under the terms of the GNU Lesser General Public License and you can
+ * redistribute the player and DevTest under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either
+ * version 3 of the licenses, or(at your option) any later version.
+ *
+ * WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+ * the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License and the
+ * GNU Lesser General Public License along with WildMIDI.  If not,  see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #include <errno.h>

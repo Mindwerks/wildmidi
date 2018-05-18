@@ -1,4 +1,4 @@
-/* include/config.h.  Generated from config.h.cmake by configure.  */
+/* config.h -- generated from config.h.cmake */
 
 /* Name of package */
 #define PACKAGE "wildmidi"
