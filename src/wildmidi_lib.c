@@ -330,7 +330,7 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
                     token_data_length += TOKEN_CNT_INC;
                     token_data = (char **) realloc(token_data, token_data_length * sizeof(char *));
                     if (token_data == NULL) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,"to parse config", errno);
+                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
                         return (NULL);
                     }
                 }
@@ -374,7 +374,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 
     if (conf_dir) {
         if (!(config_dir = wm_strdup(conf_dir))) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
             WM_FreePatches();
             _WM_FreeBufferFile(config_buffer);
             return (-1);
@@ -384,7 +384,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
         if (dir_end) {
             config_dir = (char *) malloc((dir_end - config_file + 2));
             if (config_dir == NULL) {
-                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
                 WM_FreePatches();
                 free(config_buffer);
                 return (-1);
@@ -420,7 +420,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             _WM_FreeBufferFile(config_buffer);
                             return (-1);
                         } else if (!(config_dir = wm_strdup(line_tokens[1]))) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
                             WM_FreePatches();
                             free(line_tokens);
                             _WM_FreeBufferFile(config_buffer);
@@ -441,7 +441,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
                             new_config = (char *) malloc(strlen(config_dir) + strlen(line_tokens[1]) + 1);
                             if (new_config == NULL) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
@@ -452,7 +452,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             strcpy(&new_config[strlen(config_dir)], line_tokens[1]);
                         } else {
                             if (!(new_config = wm_strdup(line_tokens[1]))) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
                                 WM_FreePatches();
                                 free(line_tokens);
                                 _WM_FreeBufferFile(config_buffer);
@@ -565,7 +565,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                         if (_WM_patch[(patchid & 0x7F)] == NULL) {
                             _WM_patch[(patchid & 0x7F)] = (struct _patch *) malloc(sizeof(struct _patch));
                             if (_WM_patch[(patchid & 0x7F)] == NULL) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
@@ -597,7 +597,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                     }
                                     if (tmp_patch->next == NULL) {
                                         if ((tmp_patch->next = (struct _patch *) malloc(sizeof(struct _patch))) == NULL) {
-                                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
+                                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
                                             WM_FreePatches();
                                             free(config_dir);
                                             free(line_tokens);
@@ -623,7 +623,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                                 } else {
                                     tmp_patch->next = (struct _patch *) malloc(sizeof(struct _patch));
                                     if (tmp_patch->next == NULL) {
-                                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, errno);
+                                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
                                         WM_FreePatches();
                                         free(config_dir);
                                         free(line_tokens);
@@ -652,7 +652,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                         } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
                             tmp_patch->filename = (char *) malloc(strlen(config_dir) + strlen(line_tokens[1]) + 5);
                             if (tmp_patch->filename == NULL) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
@@ -663,7 +663,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             strcat(tmp_patch->filename, line_tokens[1]);
                         } else {
                             if (!(tmp_patch->filename = wm_strdup(line_tokens[1]))) {
-                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, config_file, 0);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
                                 WM_FreePatches();
                                 free(config_dir);
                                 free(line_tokens);
@@ -781,7 +781,7 @@ static int add_handle(void * handle) {
     if (first_handle == NULL) {
         first_handle = (struct _hndl *) malloc(sizeof(struct _hndl));
         if (first_handle == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, " to get ram", errno);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
             return (-1);
         }
         first_handle->handle = handle;
@@ -795,7 +795,7 @@ static int add_handle(void * handle) {
         }
         tmp_handle->next = (struct _hndl *) malloc(sizeof(struct _hndl));
         if (tmp_handle->next == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, " to get ram", errno);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
             return (-1);
         }
         tmp_handle->next->prev = tmp_handle;
@@ -2063,7 +2063,7 @@ WildMidi_GetInfo(midi * handle) {
     if (mdi->tmp_info == NULL) {
         mdi->tmp_info = (struct _WM_Info *) malloc(sizeof(struct _WM_Info));
         if (mdi->tmp_info == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set info", 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
             _WM_Unlock(&mdi->lock);
             return (NULL);
         }
@@ -2079,7 +2079,7 @@ WildMidi_GetInfo(midi * handle) {
         if (mdi->tmp_info->copyright == NULL) {
             free(mdi->tmp_info);
             mdi->tmp_info = NULL;
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set copyright", 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
             _WM_Unlock(&mdi->lock);
             return (NULL);
         } else {

@@ -126,7 +126,7 @@ static int convert_8sp(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -152,7 +152,7 @@ static int convert_8sr(uint8_t *data, struct _sample *gus_sample) {
         gus_sample->modes ^= SAMPLE_REVERSE;
         return 0;
     }
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -203,7 +203,7 @@ static int convert_8srp(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -223,7 +223,7 @@ static int convert_8u(uint8_t *data, struct _sample *gus_sample) {
         gus_sample->modes ^= SAMPLE_UNSIGNED;
         return 0;
     }
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -275,7 +275,7 @@ static int convert_8up(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -301,7 +301,7 @@ static int convert_8ur(uint8_t *data, struct _sample *gus_sample) {
         gus_sample->modes ^= SAMPLE_REVERSE | SAMPLE_UNSIGNED;
         return 0;
     }
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -351,7 +351,7 @@ static int convert_8urp(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -375,7 +375,7 @@ static int convert_16s(uint8_t *data, struct _sample *gus_sample) {
         gus_sample->data_length >>= 1;
         return 0;
     }
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -435,7 +435,7 @@ static int convert_16sp(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -465,7 +465,7 @@ static int convert_16sr(uint8_t *data, struct _sample *gus_sample) {
         gus_sample->modes ^= SAMPLE_REVERSE;
         return 0;
     }
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -520,7 +520,7 @@ static int convert_16srp(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -544,7 +544,7 @@ static int convert_16u(uint8_t *data, struct _sample *gus_sample) {
         gus_sample->modes ^= SAMPLE_UNSIGNED;
         return 0;
     }
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -604,7 +604,7 @@ static int convert_16up(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -634,7 +634,7 @@ static int convert_16ur(uint8_t *data, struct _sample *gus_sample) {
         gus_sample->modes ^= SAMPLE_REVERSE | SAMPLE_UNSIGNED;
         return 0;
     }
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -689,7 +689,7 @@ static int convert_16urp(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse sample", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
     return -1;
 }
 
@@ -768,7 +768,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             gus_sample = gus_sample->next;
         }
         if (gus_sample == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, filename, 0);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
             _WM_FreeBufferFile(gus_patch);
             return NULL;
         }

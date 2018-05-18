@@ -341,7 +341,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 _mus_end_of_song:
     // Finalise mdi structure
     if ((mus_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
         goto _mus_end;
     }
     _WM_midi_setup_endoftrack(mus_mdi);

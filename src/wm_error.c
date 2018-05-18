@@ -41,7 +41,7 @@ void _WM_DEBUG_MSG(const char * wmfmt, ...) {
 static const char *errors[WM_ERR_MAX+1] = {
     "No Error",
 
-    "Unable to obtain memory",
+    "Unable to allocate memory",
     "Unable to stat",
     "Unable to load",
     "Unable to open",
