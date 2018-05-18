@@ -628,7 +628,7 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
 					token_data_length += TOKEN_CNT_INC;
 					token_data = realloc(token_data, token_data_length * sizeof(char *));
 					if (token_data == NULL) {
-						_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,"to parse config", errno);
+						_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 						return NULL;
 					}
 				}
@@ -673,8 +673,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 
 	if (conf_dir) {
 		if (!(config_dir = wm_strdup(conf_dir))) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse config",
-					errno);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
 			WM_FreePatches();
 			free(config_buffer);
@@ -685,8 +684,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 		if (dir_end) {
 			config_dir = malloc((dir_end - config_file + 2));
 			if (config_dir == NULL) {
-				_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to parse config",
-						errno);
+				_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 				_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, config_file, 0);
 				WM_FreePatches();
 				free(config_buffer);
@@ -725,8 +723,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 							free(config_buffer);
 							return -1;
 						} else if (!(config_dir = wm_strdup(line_tokens[1]))) {
-							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
-									"to parse config", errno);
+							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 									config_file, 0);
 							WM_FreePatches();
@@ -754,8 +751,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 									strlen(config_dir) + strlen(line_tokens[1])
 											+ 1);
 							if (new_config == NULL) {
-								_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
-										"to parse config", errno);
+								_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 								_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 										config_file, 0);
 								WM_FreePatches();
@@ -768,8 +764,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 							strcpy(&new_config[strlen(config_dir)], line_tokens[1]);
 						} else {
 							if (!(new_config = wm_strdup(line_tokens[1]))) {
-								_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM,
-										"to parse config", errno);
+								_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 								_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD,
 										config_file, 0);
 								WM_FreePatches();
@@ -2294,7 +2289,7 @@ static int add_handle(void * handle) {
 	if (first_handle == NULL) {
 		first_handle = malloc(sizeof(struct _hndl));
 		if (first_handle == NULL) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, " to get ram", errno);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 			return -1;
 		}
 		first_handle->handle = handle;
@@ -2308,7 +2303,7 @@ static int add_handle(void * handle) {
 		}
 		tmp_handle->next = malloc(sizeof(struct _hndl));
 		if (tmp_handle->next == NULL) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, " to get ram", errno);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 			return -1;
 		}
 		tmp_handle->next->prev = tmp_handle;
@@ -3304,7 +3299,7 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 	if ((mdi->reverb = _WM_init_reverb(_WM_SampleRate, reverb_room_width,
 			reverb_room_length, reverb_listen_posx, reverb_listen_posy))
 			== NULL) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to init reverb", 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
 		goto _end;
 	}
 
@@ -4365,7 +4360,7 @@ WildMidi_GetInfo(midi * handle) {
 	if (mdi->tmp_info == NULL) {
 		mdi->tmp_info = malloc(sizeof(struct _WM_Info));
 		if (mdi->tmp_info == NULL) {
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, "to set info", 0);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
 			_WM_Unlock(&mdi->lock);
 			return NULL;
 		}
