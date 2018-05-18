@@ -73,7 +73,7 @@ static int convert_8s(uint8_t *data, struct _sample *gus_sample) {
         return 0;
     }
 
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, 0, "calloc failed", errno);
+    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 
     return -1;
 }
