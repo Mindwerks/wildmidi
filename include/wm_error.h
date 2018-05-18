@@ -43,6 +43,7 @@ enum {
 	WM_ERR_MAX
 };
 
+/* prints the error message to stderr */
 extern void _WM_ERROR(const char *func, int lne, int wmerno, const char * wmfor, int error);
 
 /* prints a debug message to stderr */
