@@ -15,22 +15,18 @@ Initializes libWildMidi in preparation for playback, and sets the function point
 .PP
 .IP \fIcallbacks\fP
 Pointer to a file IO callbacks structure.  The _WM_VIO structure is like the following:
-.in +4n
 .nf
 struct _WM_VIO {
-    /* This function should allocate a buffer which has the size
-     * of the requested file plus one (size+1), fill the buffer
-     * with the file content, and the second parameter with the
-     * size of the file.
-     * The buffer is in possession of wildmidi until the free_file
-     * function is called with the buffer address as argument.  */
+ /* This function should allocate a buffer which has the size
+  * of the requested file plus one (size+1), fill the buffer
+  * with the file content, and the second parameter with the
+  * size of the file. */
     void * (* allocate_file)(const char *, uint32_t *);
 
-    /* This function should free the memory of the given buffer. */
+ /* This function should free the memory of the given buffer */
     void   (* free_file)    (void *);
 };
 .fi
-.in
 .PP
 .IP \fIconfig-file\fP
 The file that contains the instrument configuration for the library.
