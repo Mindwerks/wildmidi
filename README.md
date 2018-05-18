@@ -37,6 +37,10 @@ Requirements:
 CHANGELOG
 
 0.4.3
+* New API addition: WildMidi_InitVIO().  It is like WildMidi_Init(),
+  but tells the library to use caller-provided functions for file IO.
+  See wildmidi_lib.h or the man page WildMidi_InitVIO(3) for details.
+  This was suggested and implemented by Christian Breitwieser.
 * Fixed Visual Studio optimized builds. (Bug #192, function pointer
   issue.)
 * Fixed a thinko in one of the buffer size checks added in v0.4.2.
