@@ -98,9 +98,31 @@ struct _WM_Info {
 
 typedef void midi;
 
+typedef void * (*_WM_VIO_Allocate)(const char *, uint32_t *);
+typedef void   (*_WM_VIO_Free)(void *);
+
+struct _WM_VIO {
+    /*
+    This function should allocate a buffer which has the size
+    of the requested file plus one (size+1), fill the buffer
+    with the file content, and the second parameter with the
+    size of the file.
+
+    The buffer is in possession of wildmidi until the free_file
+    function is called with the buffer address as argument.
+    */
+    _WM_VIO_Allocate allocate_file;
+
+    /*
+    This function should free the memory of the given buffer.
+    */
+    _WM_VIO_Free free_file;
+};
+
 WM_SYMBOL const char * WildMidi_GetString (uint16_t info);
 WM_SYMBOL long WildMidi_GetVersion (void);
 WM_SYMBOL int WildMidi_Init (const char *config_file, uint16_t rate, uint16_t mixer_options);
+WM_SYMBOL int WildMidi_InitVIO(struct _WM_VIO * callbacks, const char *config_file, uint16_t rate, uint16_t mixer_options);
 WM_SYMBOL int WildMidi_MasterVolume (uint8_t master_volume);
 WM_SYMBOL midi * WildMidi_Open (const char *midifile);
 WM_SYMBOL midi * WildMidi_OpenBuffer (uint8_t *midibuffer, uint32_t size);
