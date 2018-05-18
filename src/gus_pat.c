@@ -73,8 +73,7 @@ static int convert_8s(unsigned char *data, struct _sample *gus_sample) {
 		return 0;
 	}
 
-	_WM_ERROR_NEW("(%s:%i) ERROR: calloc failed (%s)", __FUNCTION__, __LINE__,
-			strerror(errno));
+	_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
 	return -1;
 }
 
