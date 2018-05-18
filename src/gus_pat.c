@@ -1,27 +1,25 @@
 /*
- gus_pat.c
-
- Midi Wavetable Processing library
-
- Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2016
-
- This file is part of WildMIDI.
-
- WildMIDI is free software: you can redistribute and/or modify the player
- under the terms of the GNU General Public License and you can redistribute
- and/or modify the library under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation, either version 3 of
- the licenses, or(at your option) any later version.
-
- WildMIDI is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
- the GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU General Public License and the
- GNU Lesser General Public License along with WildMIDI.  If not,  see
- <http://www.gnu.org/licenses/>.
+ * gus_pat.c -- Midi Wavetable Processing library
+ *
+ * Copyright (C) Chris Ison  2001-2011
+ * Copyright (C) Bret Curtis 2013-2016
+ *
+ * This file is part of WildMIDI.
+ *
+ * WildMIDI is free software: you can redistribute and/or modify the player
+ * under the terms of the GNU General Public License and you can redistribute
+ * and/or modify the library under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either version 3 of
+ * the licenses, or(at your option) any later version.
+ *
+ * WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+ * the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License and the
+ * GNU Lesser General Public License along with WildMIDI.  If not,  see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -744,29 +742,22 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 	}
 	if (gus_size < 239) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
 		free(gus_patch);
 		return NULL;
 	}
 	if (memcmp(gus_patch, "GF1PATCH110\0ID#000002", 22)
 			&& memcmp(gus_patch, "GF1PATCH100\0ID#000002", 22)) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
-				0);
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)", 0);
 		free(gus_patch);
 		return NULL;
 	}
 	if (gus_patch[82] > 1) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
-				0);
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)", 0);
 		free(gus_patch);
 		return NULL;
 	}
 	if (gus_patch[151] > 1) {
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)",
-				0);
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
+		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(unsupported format)", 0);
 		free(gus_patch);
 		return NULL;
 	}
@@ -786,7 +777,6 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
 		}
 		if (gus_sample == NULL) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, 0);
 			free(gus_patch);
 			return NULL;
 		}

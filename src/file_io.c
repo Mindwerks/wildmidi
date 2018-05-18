@@ -1,27 +1,25 @@
 /*
- file_io.c
-
- file handling
-
- Copyright (C) Chris Ison  2001-2011
- Copyright (C) Bret Curtis 2013-2016
-
- This file is part of WildMIDI.
-
- WildMIDI is free software: you can redistribute and/or modify the player
- under the terms of the GNU General Public License and you can redistribute
- and/or modify the library under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation, either version 3 of
- the licenses, or(at your option) any later version.
-
- WildMIDI is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
- the GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU General Public License and the
- GNU Lesser General Public License along with WildMIDI.  If not,  see
- <http://www.gnu.org/licenses/>.
+ * file_io.c -- file handling
+ *
+ * Copyright (C) Chris Ison  2001-2011
+ * Copyright (C) Bret Curtis 2013-2016
+ *
+ * This file is part of WildMIDI.
+ *
+ * WildMIDI is free software: you can redistribute and/or modify the player
+ * under the terms of the GNU General Public License and you can redistribute
+ * and/or modify the library under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either version 3 of
+ * the licenses, or(at your option) any later version.
+ *
+ * WildMIDI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License and
+ * the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License and the
+ * GNU Lesser General Public License along with WildMIDI.  If not,  see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -148,7 +146,6 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 			buffer_file = malloc(strlen(filename) + strlen(home) + 1);
 			if (buffer_file == NULL) {
 				_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-				_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
 				return NULL;
 			}
 			strcpy(buffer_file, home);
@@ -160,7 +157,6 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 			buffer_file = malloc(strlen(filename) + strlen(buffer_dir) + 2);
 		if (buffer_file == NULL || cwdresult == NULL) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
 			return NULL;
 		}
 		strcpy(buffer_file, buffer_dir);
@@ -174,7 +170,6 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 		buffer_file = malloc(strlen(filename) + 1);
 		if (buffer_file == NULL) {
 			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
 			return NULL;
 		}
 		strcpy(buffer_file, filename);
@@ -235,7 +230,6 @@ unsigned char *_WM_BufferFile(const char *filename, unsigned long int *size) {
 	data = (unsigned char *) malloc(*size + 1);
 	if (data == NULL) {
 		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
-		_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_LOAD, filename, errno);
 		free(buffer_file);
 		return NULL;
 	}
