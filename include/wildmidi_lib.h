@@ -104,9 +104,10 @@ typedef void   (*_WM_VIO_Free)(void *);
 struct _WM_VIO {
     /*
     This function should allocate a buffer which has the size
-    of the requested file plus one (size+1) and fill the second
-    parameter with the size of the file.
-    
+    of the requested file plus one (size+1), fill the buffer
+    with the file content, and the second parameter with the
+    size of the file.
+
     The buffer is in possession of wildmidi until the free_file
     function is called with the buffer address as argument.
     */
