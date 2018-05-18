@@ -498,10 +498,10 @@ static int load_config(const char *config_file, const char *conf_dir) {
                         }
                         _WM_reverb_room_width = (float) atof(line_tokens[1]);
                         if (_WM_reverb_room_width < 1.0f) {
-                            _WM_DEBUG_MSG("%s: reverb_room_width < 1 meter, setting to minimum of 1 meter", config_file);
+                            _WM_DEBUG_MSG("%s: reverb_room_width < 1m, setting to 1m", config_file);
                             _WM_reverb_room_width = 1.0f;
                         } else if (_WM_reverb_room_width > 100.0f) {
-                            _WM_DEBUG_MSG("%s: reverb_room_width > 100 meters, setting to maximum of 100 meters", config_file);
+                            _WM_DEBUG_MSG("%s: reverb_room_width > 100m, setting to 100m", config_file);
                             _WM_reverb_room_width = 100.0f;
                         }
                     } else if (wm_strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
@@ -515,10 +515,10 @@ static int load_config(const char *config_file, const char *conf_dir) {
                         }
                         _WM_reverb_room_length = (float) atof(line_tokens[1]);
                         if (_WM_reverb_room_length < 1.0f) {
-                            _WM_DEBUG_MSG("%s: reverb_room_length < 1 meter, setting to minimum of 1 meter", config_file);
+                            _WM_DEBUG_MSG("%s: reverb_room_length < 1m, setting to 1m", config_file);
                             _WM_reverb_room_length = 1.0f;
                         } else if (_WM_reverb_room_length > 100.0f) {
-                            _WM_DEBUG_MSG("%s: reverb_room_length > 100 meters, setting to maximum of 100 meters", config_file);
+                            _WM_DEBUG_MSG("%s: reverb_room_length > 100m, setting to 100m", config_file);
                             _WM_reverb_room_length = 100.0f;
                         }
                     } else if (wm_strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
@@ -1860,7 +1860,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         return (-1);
     }
     if ((nextsong > 1) || (nextsong < -1)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(Invalid nextsong setting. -1 is previous song, 0 start of current song, 1 is next song)", 0);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG, "(Invalid nextsong: -1 is previous song, 0 is start of current song, 1 is next song)", 0);
         _WM_Unlock(&mdi->lock);
         return (-1);
     }
