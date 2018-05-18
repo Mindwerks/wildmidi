@@ -29,7 +29,7 @@
 #include <stdarg.h>
 #include "wm_error.h"
 
-void _WM_ERROR_NEW(const char * wmfmt, ...) {
+void _WM_DEBUG_MSG(const char * wmfmt, ...) {
 	va_list args;
 	fprintf(stderr, "\r");
 	va_start(args, wmfmt);

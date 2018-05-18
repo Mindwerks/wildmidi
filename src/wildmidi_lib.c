@@ -801,12 +801,10 @@ static int load_config(const char *config_file, const char *conf_dir) {
 						}
 						reverb_room_width = (float) atof(line_tokens[1]);
 						if (reverb_room_width < 1.0f) {
-							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_width < 1m, setting to 1m)", 0);
+							_WM_DEBUG_MSG("%s: reverb_room_width < 1m, setting to 1m", config_file);
 							reverb_room_width = 1.0f;
 						} else if (reverb_room_width > 100.0f) {
-							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_width > 100m, setting to 100m)", 0);
+							_WM_DEBUG_MSG("%s: reverb_room_width > 100m, setting to 100m", config_file);
 							reverb_room_width = 100.0f;
 						}
 					} else if (wm_strcasecmp(line_tokens[0], "reverb_room_length") == 0) {
@@ -821,12 +819,10 @@ static int load_config(const char *config_file, const char *conf_dir) {
 						}
 						reverb_room_length = (float) atof(line_tokens[1]);
 						if (reverb_room_length < 1.0f) {
-							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_length < 1m, setting to 1m)", 0);
+							_WM_DEBUG_MSG("%s: reverb_room_length < 1m, setting to 1m", config_file);
 							reverb_room_length = 1.0f;
 						} else if (reverb_room_length > 100.0f) {
-							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_room_length > 100m, setting to 100m)", 0);
+							_WM_DEBUG_MSG("%s: reverb_room_length > 100m, setting to 100m", config_file);
 							reverb_room_length = 100.0f;
 						}
 					} else if (wm_strcasecmp(line_tokens[0], "reverb_listener_posx") == 0) {
@@ -842,8 +838,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 						reverb_listen_posx = (float) atof(line_tokens[1]);
 						if ((reverb_listen_posx > reverb_room_width)
 								|| (reverb_listen_posx < 0.0f)) {
-							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_listen_posx set outside of room)", 0);
+							_WM_DEBUG_MSG("%s: reverb_listen_posx set outside of room)", config_file);
 							reverb_listen_posx = reverb_room_width / 2.0f;
 						}
 					} else if (wm_strcasecmp(line_tokens[0],
@@ -860,8 +855,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 						reverb_listen_posy = (float) atof(line_tokens[1]);
 						if ((reverb_listen_posy > reverb_room_width)
 								|| (reverb_listen_posy < 0.0f)) {
-							_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID_ARG,
-									"(reverb_listen_posy set outside of room)", 0);
+							_WM_DEBUG_MSG("%s: reverb_listen_posy set outside of room", config_file);
 							reverb_listen_posy = reverb_room_length * 0.75f;
 						}
 					} else if (wm_strcasecmp(line_tokens[0],
@@ -1011,83 +1005,52 @@ static int load_config(const char *config_file, const char *conf_dir) {
 							if (wm_strncasecmp(line_tokens[token_count], "amp=", 4)
 									== 0) {
 								if (!wm_isdigit(line_tokens[token_count][4])) {
-									_WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID_ARG,
-											"(syntax error in patch line)", 0);
+									_WM_DEBUG_MSG("%s: syntax error in patch line", config_file);
 								} else {
-									tmp_patch->amp = (atoi(
-											&line_tokens[token_count][4]) << 10)
-											/ 100;
+									tmp_patch->amp = (atoi(&line_tokens[token_count][4]) << 10) / 100;
 								}
-							} else if (wm_strncasecmp(line_tokens[token_count],
-									"note=", 5) == 0) {
+							} else if (wm_strncasecmp(line_tokens[token_count], "note=", 5) == 0) {
 								if (!wm_isdigit(line_tokens[token_count][5])) {
-									_WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID_ARG,
-											"(syntax error in patch line)", 0);
+									_WM_DEBUG_MSG("%s: syntax error in patch line", config_file);
 								} else {
-									tmp_patch->note = atoi(
-											&line_tokens[token_count][5]);
+									tmp_patch->note = atoi(&line_tokens[token_count][5]);
 								}
-							} else if (wm_strncasecmp(line_tokens[token_count],
-									"env_time", 8) == 0) {
-								if ((!wm_isdigit(line_tokens[token_count][8]))
-										|| (!wm_isdigit(
-												line_tokens[token_count][10]))
-										|| (line_tokens[token_count][9] != '=')) {
-									_WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID_ARG,
-											"(syntax error in patch line)", 0);
+							} else if (wm_strncasecmp(line_tokens[token_count], "env_time", 8) == 0) {
+								if ((!wm_isdigit(line_tokens[token_count][8])) ||
+								    (!wm_isdigit(line_tokens[token_count][10])) ||
+								    (line_tokens[token_count][9] != '=')) {
+									_WM_DEBUG_MSG("%s: syntax error in patch line", config_file);
 								} else {
-									unsigned int env_no = atoi(
-											&line_tokens[token_count][8]);
+									unsigned int env_no = atoi(&line_tokens[token_count][8]);
 									if (env_no > 5) {
-										_WM_ERROR(__FUNCTION__, __LINE__,
-												WM_ERR_INVALID_ARG,
-												"(syntax error in patch line)", 0);
+										_WM_DEBUG_MSG("%s: syntax error in patch line", config_file);
 									} else {
 										tmp_patch->env[env_no].time =
-												(float) atof(
-														&line_tokens[token_count][10]);
-										if ((tmp_patch->env[env_no].time
-												> 45000.0f)
-												|| (tmp_patch->env[env_no].time
-														< 1.47f)) {
-											_WM_ERROR(__FUNCTION__, __LINE__,
-													WM_ERR_INVALID_ARG,
-													"(range error in patch line)", 0);
+												(float) atof(&line_tokens[token_count][10]);
+										if ((tmp_patch->env[env_no].time > 45000.0f) ||
+										    (tmp_patch->env[env_no].time < 1.47f)) {
+											_WM_DEBUG_MSG("%s: range error in patch line", config_file);
 											tmp_patch->env[env_no].set &= 0xFE;
 										} else {
 											tmp_patch->env[env_no].set |= 0x01;
 										}
 									}
 								}
-							} else if (wm_strncasecmp(line_tokens[token_count],
-									"env_level", 9) == 0) {
-								if ((!wm_isdigit(line_tokens[token_count][9]))
-										|| (!wm_isdigit(
-												line_tokens[token_count][11]))
-										|| (line_tokens[token_count][10] != '=')) {
-									_WM_ERROR(__FUNCTION__, __LINE__,
-											WM_ERR_INVALID_ARG,
-											"(syntax error in patch line)", 0);
+							} else if (wm_strncasecmp(line_tokens[token_count], "env_level", 9) == 0) {
+								if ((!wm_isdigit(line_tokens[token_count][9])) ||
+								    (!wm_isdigit(line_tokens[token_count][11])) ||
+								    (line_tokens[token_count][10] != '=')) {
+									_WM_DEBUG_MSG("%s: syntax error in patch line", config_file);
 								} else {
-									unsigned int env_no = atoi(
-											&line_tokens[token_count][9]);
+									unsigned int env_no = atoi(&line_tokens[token_count][9]);
 									if (env_no > 5) {
-										_WM_ERROR(__FUNCTION__, __LINE__,
-												WM_ERR_INVALID_ARG,
-												"(syntax error in patch line)", 0);
+										_WM_DEBUG_MSG("%s: syntax error in patch line", config_file);
 									} else {
 										tmp_patch->env[env_no].level =
-												(float) atof(
-														&line_tokens[token_count][11]);
-										if ((tmp_patch->env[env_no].level > 1.0f)
-												|| (tmp_patch->env[env_no].level
-														< 0.0f)) {
-											_WM_ERROR(__FUNCTION__, __LINE__,
-													WM_ERR_INVALID_ARG,
-													"(range error in patch line)", 0);
+												(float) atof(&line_tokens[token_count][11]);
+										if ((tmp_patch->env[env_no].level > 1.0f) ||
+										    (tmp_patch->env[env_no].level < 0.0f)) {
+											_WM_DEBUG_MSG("%s: range error in patch line", config_file);
 											tmp_patch->env[env_no].set &= 0xFD;
 										} else {
 											tmp_patch->env[env_no].set |= 0x02;
