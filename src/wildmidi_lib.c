@@ -2120,6 +2120,9 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
 
     if (_WM_Global_ErrorS != NULL) free(_WM_Global_ErrorS);
 
+    _WM_BufferFile = _WM_BufferFileImpl;
+    _WM_FreeBufferFile = _WM_FreeBufferFileImpl;
+
     return (0);
 }
 
