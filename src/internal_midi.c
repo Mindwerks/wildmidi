@@ -586,12 +586,12 @@ void _WM_do_note_off_extra(struct _note *nte) {
                     nte->env_inc = nte->sample->env_rate[5];
                 }
             }
-        } else if (nte->env < 3) {
-            nte->env = 3;
-            if (nte->env_level > nte->sample->env_target[3]) {
-                nte->env_inc = -nte->sample->env_rate[3];
+        } else if (nte->env < 4) {
+            nte->env = 4;
+            if (nte->env_level > nte->sample->env_target[4]) {
+                nte->env_inc = -nte->sample->env_rate[4];
             } else {
-                nte->env_inc = nte->sample->env_rate[3];
+                nte->env_inc = nte->sample->env_rate[4];
             }
         }
     }

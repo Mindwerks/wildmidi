@@ -825,12 +825,25 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                             | ((gus_sample->loop_fraction & 0xf0) >> 4);
         }
 
-        // kill "echo" envelopes because users dont want/like them
-        // and this is what timidity does which is why we sounded different
-        // NOTE: This may cause some pats to sound different to what their authers intended
-        gus_patch[gus_ptr + 41] = 0x3f;
-        gus_patch[gus_ptr + 42] = 0x3f;
-
+        {
+            // All sorts of annoying things happen with pat files.
+            // One of them is that the sustained release time and
+            // normal release time gets mixed up because software got muddled
+            uint8_t envsusreltime = gus_patch[gus_ptr + 40];
+            uint8_t envreltime = gus_patch[gus_ptr + 41];
+            if (envsusreltime < envreltime) {
+               // EXPERIMENTAL
+                gus_patch[gus_ptr + 40] = envreltime;
+                gus_patch[gus_ptr + 41] = 0x3f;  // timidity does this
+                gus_patch[gus_ptr + 42] = 0x3f;  // timidity does this
+                
+                gus_patch[gus_ptr + 46] = gus_patch[gus_ptr + 47];
+                gus_patch[gus_ptr + 47] = 0;
+                gus_patch[gus_ptr + 48] = 0;
+                
+            }
+        }
+       
         // lets set up the envelope data
         for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
