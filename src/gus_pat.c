@@ -829,11 +829,11 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             // All sorts of annoying things happen with pat files.
             // One of them is that the sustained release time and
             // normal release time gets mixed up because software got muddled
-            uint8_t envsusreltime = gus_patch[gus_ptr + 40];
-            uint8_t envreltime = gus_patch[gus_ptr + 41];
+            uint8_t envsusreltime = env_time_table[gus_patch[gus_ptr + 40]];
+            uint8_t envreltime = env_time_table[gus_patch[gus_ptr + 41]];
             if (envsusreltime < envreltime) {
                // EXPERIMENTAL
-                gus_patch[gus_ptr + 40] = envreltime;
+                gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
                 gus_patch[gus_ptr + 41] = 0x3f;  // timidity does this
                 gus_patch[gus_ptr + 42] = 0x3f;  // timidity does this
                 
