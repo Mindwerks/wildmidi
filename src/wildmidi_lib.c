@@ -993,11 +993,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                             RESAMPLE_DEBUGS("Next Note: SAMPLE_SUSTAIN");
                             continue;
                         } else {
-                            if (note_data->modes & SAMPLE_CLAMPED) {
-                                env_ptr = 5;
-                            } else {
-                                env_ptr = 4;
-                            }
+                            env_ptr = (note_data->modes & SAMPLE_CLAMPED)? 5 : 4;
                             note_data->env = env_ptr;
                             if (note_data->env_level
                                     > note_data->sample->env_target[env_ptr]) {
@@ -1343,19 +1339,15 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                                 note_data = note_data->next;
                                 continue;
                             } else {
-                                if (note_data->modes & SAMPLE_CLAMPED) {
-                                    env_ptr = 5;
-                                } else {
-                                    env_ptr = 4;
-                                }
+                                env_ptr = (note_data->modes & SAMPLE_CLAMPED)? 5 : 4;
                                 note_data->env = env_ptr;
                                 if (note_data->env_level
-                                    > note_data->sample->env_target[env_ptr]) {
+                                        > note_data->sample->env_target[env_ptr]) {
                                     note_data->env_inc =
-                                    -note_data->sample->env_rate[env_ptr];
+                                        -note_data->sample->env_rate[env_ptr];
                                 } else {
                                     note_data->env_inc =
-                                    note_data->sample->env_rate[env_ptr];
+                                        note_data->sample->env_rate[env_ptr];
                                 }
                                 continue;
                             }

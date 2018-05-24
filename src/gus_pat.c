@@ -700,6 +700,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
     uint32_t gus_size;
     uint32_t gus_ptr;
     uint8_t no_of_samples;
+    uint8_t envsusreltime, envreltime;
     struct _sample *gus_sample = NULL;
     struct _sample *first_gus_sample = NULL;
     uint32_t i = 0;
@@ -825,25 +826,23 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                             | ((gus_sample->loop_fraction & 0xf0) >> 4);
         }
 
-        {
-            // All sorts of annoying things happen with pat files.
-            // One of them is that the sustained release time and
-            // normal release time gets mixed up because software got muddled
-            uint8_t envsusreltime = env_time_table[gus_patch[gus_ptr + 40]];
-            uint8_t envreltime = env_time_table[gus_patch[gus_ptr + 41]];
-            if (envsusreltime < envreltime) {
-               // EXPERIMENTAL
-                gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
-                gus_patch[gus_ptr + 41] = 0x3f;  // timidity does this
-                gus_patch[gus_ptr + 42] = 0x3f;  // timidity does this
-                
-                gus_patch[gus_ptr + 46] = gus_patch[gus_ptr + 47];
-                gus_patch[gus_ptr + 47] = 0;
-                gus_patch[gus_ptr + 48] = 0;
-                
-            }
+        // All sorts of annoying things happen with pat files.
+        // One of them is that the sustained release time and
+        // normal release time gets mixed up because software got muddled
+        envsusreltime = env_time_table[gus_patch[gus_ptr + 40]];
+        envreltime = env_time_table[gus_patch[gus_ptr + 41]];
+        if (envsusreltime < envreltime) {
+            // EXPERIMENTAL
+            gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
+            // timidity does this:
+            gus_patch[gus_ptr + 41] = 0x3f;
+            gus_patch[gus_ptr + 42] = 0x3f;
+
+            gus_patch[gus_ptr + 46] = gus_patch[gus_ptr + 47];
+            gus_patch[gus_ptr + 47] = 0;
+            gus_patch[gus_ptr + 48] = 0;
         }
-       
+
         // lets set up the envelope data
         for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
@@ -856,7 +855,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                 GUSPAT_INT_DEBUG("Envelope Rate",gus_sample->env_rate[i]); GUSPAT_INT_DEBUG("GUSPAT Rate",env_rate);
                 if (gus_sample->env_rate[i] == 0) {
                     _WM_DEBUG_MSG("%s: Warning: found invalid envelope(%u) rate setting in %s. Using %f instead.",
-                            __FUNCTION__, i, filename, env_time_table[63]);
+                                  __FUNCTION__, i, filename, env_time_table[63]);
                     gus_sample->env_rate[i] = (int32_t) (4194303.0f
                             / ((float) _WM_SampleRate * env_time_table[63]));
                     GUSPAT_FLOAT_DEBUG("Envelope Time",env_time_table[63]);
