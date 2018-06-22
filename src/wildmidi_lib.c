@@ -557,7 +557,7 @@ static inline int wm_isupper(int c) {
 static inline int wm_tolower(int c) {
 	return ((wm_isupper(c)) ? (c | ('a' - 'A')) : c);
 }
-#if 0 /* clang whines that these aren't used. */
+#if 0 /* not used for now. */
 static inline int wm_islower(int c) {
 	return (c >= 'a' && c <= 'z');
 }
@@ -988,7 +988,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
 							}
 						}
 						dotpat = strrchr(tmp_patch->filename, '.');
-						if (!dotpat || wm_strncasecmp(dotpat, ".pat", 4) != 0) {
+						if (!dotpat || wm_strcasecmp(dotpat, ".pat") != 0) {
 							strcat(tmp_patch->filename, ".pat");
 						}
 						tmp_patch->env[0].set = 0x00;
