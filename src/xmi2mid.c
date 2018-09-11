@@ -601,7 +601,10 @@ static int GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant) {
     int32_t data;
 
     *quant = 0;
-    for (i = 0; i < 4; i++) {
+    /* see https://github.com/Mindwerks/wildmidi/issues/199 */
+    for (i = 0; /*i < 4*/; i++) {
+        if (getsrcpos(ctx) == getsrcsize(ctx))
+            break;
         data = read1(ctx);
         if (data & 0x80) {
             skipsrc(ctx, -1);
@@ -609,6 +612,7 @@ static int GetVLQ2(struct xmi_ctx *ctx, uint32_t *quant) {
         }
         *quant += data;
     }
+    /*if (i > 4) __builtin_printf("i=%d\n", i);*/
     return (i);
 }
 
