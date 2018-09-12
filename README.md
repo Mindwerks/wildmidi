@@ -34,16 +34,16 @@ CHANGELOG
 
 0.3.14
 * Fix invalid reads during config parse with short patch file names.
-* Several clean-ups.
+* Lots of clean-ups.
 
 0.3.13
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
-  (Bug #175).
+  (bug #175).
 * Fixed a buffer overflow during playback with malformed midi files
-  (Bug #180).
-* GUS patch processing changes to meet users expectations (Bug #132).
+  (bug #180).
+* GUS patch processing changes to meet users expectations (bug #132).
 * Worked around a build failure with newer FreeBSD versions failing to
-  retrieve the ONLCR constant (Bug #171).
+  retrieve the ONLCR constant (bug #171).
 * Fixed a minor Windows unicode issue (PR #170).
 * A few other fixes / clean-ups.
 
