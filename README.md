@@ -41,25 +41,29 @@ CHANGELOG
   but tells the library to use caller-provided functions for file IO.
   See wildmidi_lib.h or the man page WildMidi_InitVIO(3) for details.
   This was suggested and implemented by Christian Breitwieser.
-* Fixed Visual Studio optimized builds. (Bug #192, function pointer
-  issue.)
+* Fixed Visual Studio optimized builds (bug #192, function ptr issue.)
 * Fixed a thinko in one of the buffer size checks added in v0.4.2.
-* Fix possible out of bounds reads in sysex commands. (Bug #190).
-* Fix invalid reads during config parse with short patch file names.
+* Fixed possible out of bounds reads in sysex commands (bug #190).
+* Fixed invalid reads during config parse with short patch file names.
 * Do not treat a missing end-of-track marker as an error for type-0
-  midi files. (Bug #183).
+  midi files (bug #183).
+* Fixed bad reading of high delta values in XMI converter (bug #199).
+* Fixed slurred/echoy playback at quick tempos on looped instruments
+  (bug #185).
+* Fixed certain midis sounding different compared to timidity, as if
+  instruments not turned off (bug #186).
 * Support for Nintendo Switch and PS Vita.
 * Several clean-ups.
 
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
-  (Bug #175).
-* Fixed CVE-2017-1000418 (Bug #178).
+  (bug #175).
+* Fixed CVE-2017-1000418 (bug #178).
 * Fixed a buffer overflow during playback with malformed midi files
-  (Bug #180).
-* GUS patch processing changes to meet users expectations (Bug #132).
+  (bug #180).
+* GUS patch processing changes to meet users expectations (bug #132).
 * Worked around a build failure with newer FreeBSD versions failing to
-  retrieve the ONLCR constant (Bug #171).
+  retrieve the ONLCR constant (bug #171).
 * Fixed a minor Windows unicode issue (PR #170).
 * A few other fixes / clean-ups.
 
