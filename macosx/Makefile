@@ -28,6 +28,7 @@ LIBSTATIC=lib$(LIBNAME).a
 LIBSHARED=lib$(LIBNAME).dylib
 LIBSHARED_FULL=lib$(LIBNAME).$(DYLIB_MAJ).$(DYLIB_MID).$(DYLIB_MIN).dylib
 LIBSHARED_MAJ=lib$(LIBNAME).$(DYLIB_MAJ).dylib
+LIB_INSTALLNAME=$(LIBSHARED_MAJ)
 PLAYER=wildmidi
 PLAYER_STATIC=wildmidi-static
 
@@ -52,7 +53,7 @@ CFLAGS_LIB=$(CFLAGS) -DWILDMIDI_BUILD
 LDFLAGS_LIB=$(LDFLAGS)
 LDLIBS_LIB=$(LDLIBS)
 LDFLAGS_LIB+=-dynamiclib -Wl,-single_module
-LDFLAGS_LIB+=-Wl,-install_name,"@executable_path/$(LIBSHARED)"
+LDFLAGS_LIB+=-Wl,-install_name,"@executable_path/$(LIB_INSTALLNAME)"
 LDFLAGS_LIB+=-Wl,-compatibility_version,$(DYLIB_MAJ).0.0 -Wl,-current_version,$(DYLIB_MAJ).$(DYLIB_MID).$(DYLIB_MIN)
 
 CFLAGS_EXE=$(CFLAGS)
@@ -64,8 +65,9 @@ LDFLAGS_EXE+=-Wl,-framework,OpenAL
 LDLIBS_EXE+=-L. -l$(LIBNAME)
 
 # Objects
-LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ= wm_tty.o wildmidi.o
+LIB_OBJ = wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
+LIB_OBJ+= f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
+PLAYER_OBJ = wm_tty.o wildmidi.o
 
 .PHONY: clean distclean
 
