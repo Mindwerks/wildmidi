@@ -3,6 +3,8 @@ Edit files for version number (and possibly other changes) :
 - os2/config.h
 - amiga/config.h
 - android/jni/config.h
+- macosx/config.h
+- macosx/Makefile
 
 Edit files for possibly other changes:
 - djgpp/Makefile
@@ -11,3 +13,4 @@ Edit files for possibly other changes:
 - amiga/*.cfg
 - android/*
 - android/jni/*.mk
+- macosx/Makefile
