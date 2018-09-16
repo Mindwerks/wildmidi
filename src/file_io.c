@@ -129,7 +129,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
 #elif defined(WILDMIDI_AMIGA)
     BPTR buffer_fd;
     long filsize;
-#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__)
+#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__)
     int buffer_fd;
     struct stat buffer_stat;
 #else /* unix builds */

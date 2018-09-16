@@ -394,3 +394,11 @@ IF (WIN32 AND MSVC)
     ENDIF ()
 
 ENDIF ()
+
+IF (RISCOS AND WANT_PLAYERSTATIC)
+    SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES LINK_FLAGS "-static")
+    ADD_CUSTOM_COMMAND(OUTPUT ${EXECUTABLE_OUTPUT_PATH}/wildmidi,ff8
+                       COMMAND elf2aif ${EXECUTABLE_OUTPUT_PATH}/wildmidi-static ${EXECUTABLE_OUTPUT_PATH}/wildmidi,ff8
+                       DEPENDS wildmidi-static)
+    ADD_CUSTOM_TARGET(wildmidi-aif ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/wildmidi,ff8)
+ENDIF ()
