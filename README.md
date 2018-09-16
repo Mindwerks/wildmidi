@@ -52,7 +52,7 @@ CHANGELOG
   (bug #185).
 * Fixed certain midis sounding different compared to timidity, as if
   instruments not turned off (bug #186).
-* Support for Nintendo Switch and PS Vita.
+* Support for RISC OS, Nintendo Switch and PS Vita.
 * Several clean-ups.
 
 0.4.2
