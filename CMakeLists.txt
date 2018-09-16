@@ -214,7 +214,10 @@ IF (UNIX AND NOT APPLE)
     ENDIF ()
 
     # find our math lib
-    FIND_LIBRARY(M_LIBRARY m REQUIRED)
+    FIND_LIBRARY(M_LIBRARY m)
+    IF (NOT M_FOUND)
+        SET(M_LIBRARY "")
+    ENDIF ()
 
     ## Debian and non debian Linux building
     IF (DPKG_PROGRAM)
