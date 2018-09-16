@@ -73,8 +73,8 @@ PLAYER_OBJ = wm_tty.o wildmidi.o
 help:
 	@echo "Valid targets:"
 	@echo ""
-	@echo "  $(MAKE) shared
-	@echo "  $(MAKE) static
+	@echo "  $(MAKE) shared"
+	@echo "  $(MAKE) static"
 	@echo ""
 
 shared: $(LIBSHARED) $(PLAYER)
