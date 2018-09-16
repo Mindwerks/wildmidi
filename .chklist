@@ -13,4 +13,4 @@ Edit files for possibly other changes:
 - amiga/*.cfg
 - android/*
 - android/jni/*.mk
-- macosx/Makefile
+- macosx/Makefile (make sure to update dylib versions here..)
