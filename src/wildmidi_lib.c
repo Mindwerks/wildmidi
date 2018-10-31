@@ -2274,9 +2274,12 @@ static void freeMDI(struct _mdi *mdi) {
 	}
 
 	free(mdi->events);
-	free(mdi->tmp_info);
 	_WM_free_reverb(mdi->reverb);
 	free(mdi->mix_buffer);
+	if (mdi->tmp_info) {
+		free(mdi->tmp_info->copyright);
+		free(mdi->tmp_info);
+	}
 	free(mdi);
 }
 
