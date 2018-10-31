@@ -166,8 +166,8 @@ IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
 
     TARGET_LINK_LIBRARIES(wildmidi
             ${WILDMIDILIB}
-            ${M_LIBRARY}
             ${AUDIO_LIBRARY}
+            ${M_LIBRARY}
             )
 ENDIF ()
 
@@ -197,8 +197,8 @@ IF (WANT_PLAYERSTATIC)
 
     TARGET_LINK_LIBRARIES(wildmidi-static
             ${WILDMIDILIBSTATIC}
-            ${M_LIBRARY}
             ${AUDIO_LIBRARY}
+            ${M_LIBRARY}
             )
 ENDIF (WANT_PLAYERSTATIC)
 
