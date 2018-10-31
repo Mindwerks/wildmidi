@@ -48,6 +48,7 @@ CHANGELOG
 * Do not treat a missing end-of-track marker as an error for type-0
   midi files (bug #183).
 * Fixed bad reading of high delta values in XMI converter (bug #199).
+* Fixed a memory leak when freeing a midi (bug #204).
 * Fixed slurred/echoy playback at quick tempos on looped instruments
   (bug #185).
 * Fixed certain midis sounding different compared to timidity, as if
