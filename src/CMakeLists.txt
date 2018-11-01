@@ -84,6 +84,7 @@ IF (WANT_STATIC)
             )
 
     TARGET_LINK_LIBRARIES(libwildmidi_static
+            ${EXTRA_LDFLAGS}
             ${M_LIBRARY}
             )
 
@@ -101,6 +102,7 @@ IF (BUILD_SHARED_LIBS)
             )
 
     TARGET_LINK_LIBRARIES(libwildmidi_dynamic
+            ${EXTRA_LDFLAGS}
             ${M_LIBRARY}
             )
 
@@ -185,6 +187,7 @@ IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
     ENDIF ()
 
     TARGET_LINK_LIBRARIES(wildmidi
+            ${EXTRA_LDFLAGS}
             ${WILDMIDILIB}
             ${AUDIO_LIBRARY}
             ${M_LIBRARY}
@@ -216,6 +219,7 @@ IF (WANT_PLAYERSTATIC)
     ENDIF ()
 
     TARGET_LINK_LIBRARIES(wildmidi-static
+            ${EXTRA_LDFLAGS}
             ${WILDMIDILIBSTATIC}
             ${AUDIO_LIBRARY}
             ${M_LIBRARY}

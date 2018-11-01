@@ -149,6 +149,19 @@ CHECK_C_SOURCE_COMPILES("static __inline__ int static_foo() {return 0;}
 CHECK_C_SOURCE_COMPILES("static __inline int static_foo() {return 0;}
                          int main(void) {return 0;}" HAVE_C___INLINE)
 
+# we must not have any unresolved symbols:
+if (APPLE)
+    SET(EXTRA_LDFLAGS "-Wl,-undefined,error")
+ELSE()
+    SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Wl,--no-undefined")
+    CHECK_C_COMPILER_FLAG("" HAVE_NO_UNDEFINED)
+    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
+    IF (HAVE_NO_UNDEFINED)
+        SET(EXTRA_LDFLAGS "-Wl,--no-undefined")
+    ENDIF()
+ENDIF()
+
 CHECK_INCLUDE_FILE(stdint.h HAVE_STDINT_H)
 CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
 
