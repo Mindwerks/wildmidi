@@ -215,7 +215,8 @@ IF (UNIX AND NOT APPLE)
 
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m)
-    IF (NOT M_FOUND)
+    MESSAGE(STATUS "M_LIBRARY: ${M_LIBRARY}")
+    IF (NOT M_LIBRARY)
         SET(M_LIBRARY "")
     ENDIF ()
 
