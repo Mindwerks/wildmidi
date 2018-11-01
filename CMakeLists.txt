@@ -159,6 +159,8 @@ ELSE()
     SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
     IF (HAVE_NO_UNDEFINED)
         SET(EXTRA_LDFLAGS "-Wl,--no-undefined")
+    ELSE()
+        SET(EXTRA_LDFLAGS "")
     ENDIF()
 ENDIF()
 
