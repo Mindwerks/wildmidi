@@ -33,6 +33,7 @@ Requirements:
 CHANGELOG
 
 0.3.15
+* Fixed a possible memory leak when freeing a midi (cf bug #204).
 * Fixed compilation on systems without libm.
 
 0.3.14
