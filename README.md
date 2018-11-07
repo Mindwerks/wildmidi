@@ -53,6 +53,7 @@ CHANGELOG
   (bug #185).
 * Fixed certain midis sounding different compared to timidity, as if
   instruments not turned off (bug #186).
+* Fixed compilation on systems without libm.
 * Support for RISC OS, Nintendo Switch and PS Vita.
 * Several clean-ups.
 
