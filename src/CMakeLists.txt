@@ -83,11 +83,6 @@ IF (WANT_STATIC)
             ${wildmidi_library_HDRS}
             )
 
-    TARGET_LINK_LIBRARIES(libwildmidi_static
-            ${EXTRA_LDFLAGS}
-            ${M_LIBRARY}
-            )
-
     SET_TARGET_PROPERTIES(libwildmidi_static PROPERTIES
             OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
             COMPILE_DEFINITIONS WILDMIDI_BUILD
