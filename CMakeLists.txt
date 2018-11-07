@@ -144,6 +144,21 @@ CHECK_C_SOURCE_COMPILES("static __inline__ int static_foo() {return 0;}
 CHECK_C_SOURCE_COMPILES("static __inline int static_foo() {return 0;}
                          int main(void) {return 0;}" HAVE_C___INLINE)
 
+# we must not have any unresolved symbols:
+if (APPLE)
+    SET(EXTRA_LDFLAGS "-Wl,-undefined,error")
+ELSE()
+    SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Wl,--no-undefined")
+    CHECK_C_COMPILER_FLAG("" HAVE_NO_UNDEFINED)
+    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
+    IF (HAVE_NO_UNDEFINED)
+        SET(EXTRA_LDFLAGS "-Wl,--no-undefined")
+    ELSE()
+        SET(EXTRA_LDFLAGS "")
+    ENDIF()
+ENDIF()
+
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
 SET(AUDIODRV_ALSA)
@@ -206,7 +221,11 @@ IF (UNIX AND NOT APPLE)
     ENDIF ()
 
     # find our math lib
-    FIND_LIBRARY(M_LIBRARY m REQUIRED)
+    FIND_LIBRARY(M_LIBRARY m)
+    MESSAGE(STATUS "M_LIBRARY: ${M_LIBRARY}")
+    IF (NOT M_LIBRARY)
+        SET(M_LIBRARY "")
+    ENDIF ()
 
     ## Debian and non debian Linux building
     IF (DPKG_PROGRAM)
