@@ -53,6 +53,7 @@ CFLAGS_LIB=$(CFLAGS) -DWILDMIDI_BUILD
 LDFLAGS_LIB=$(LDFLAGS)
 LDLIBS_LIB=$(LDLIBS)
 LDFLAGS_LIB+=-dynamiclib -Wl,-single_module
+LDFLAGS_LIB+=-Wl,-undefined,error
 LDFLAGS_LIB+=-Wl,-install_name,"@executable_path/$(LIB_INSTALLNAME)"
 LDFLAGS_LIB+=-Wl,-compatibility_version,$(DYLIB_MAJ).0.0 -Wl,-current_version,$(DYLIB_MAJ).$(DYLIB_MID).$(DYLIB_MIN)
 
