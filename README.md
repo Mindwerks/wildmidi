@@ -33,10 +33,10 @@ Requirements:
 CHANGELOG
 
 0.3.15
-* Fix compilation on systems without libm
+* Fixed compilation on systems without libm.
 
 0.3.14
-* Fix invalid reads during config parse with short patch file names.
+* Fixed invalid reads during config parse with short patch file names.
 * Lots of clean-ups.
 
 0.3.13
