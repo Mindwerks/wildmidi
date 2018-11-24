@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.4.3
+Version: 0.4.4
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -35,6 +35,9 @@ Requirements:
 * PSVita port: Vitasdk
 
 CHANGELOG
+
+0.4.4
+* [no changes yet]
 
 0.4.3
 * New API addition: WildMidi_InitVIO().  It is like WildMidi_Init(),
