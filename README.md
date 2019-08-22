@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.3.15
+Version: 0.3.16
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -31,6 +31,9 @@ Requirements:
 * OS/2 port: OpenWatcom (tested with version 1.9)
 
 CHANGELOG
+
+0.3.16
+* [no changes yet]
 
 0.3.15
 * Fixed a possible memory leak when freeing a midi (cf bug #204).
