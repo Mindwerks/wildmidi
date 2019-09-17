@@ -391,6 +391,28 @@ static void resume_output_nop(void) {
  */
 static char midi_file[1024];
 
+static void mk_midifile_name(const char *src) {
+    char *p;
+    int len;
+
+    strncpy(midi_file, src, sizeof(midi_file) - 1);
+    midi_file[sizeof(midi_file) - 1] = 0;
+
+    p = strrchr(midi_file, '.');
+    if (p && (len = strlen(p)) <= 4) {
+        if (p - midi_file <= (int)sizeof(midi_file) - 5) {
+            memcpy(p, ".mid", 5);
+            return;
+        }
+    }
+
+    len = strlen(midi_file);
+    if (len > (int)sizeof(midi_file) - 5)
+        len = (int)sizeof(midi_file) - 5;
+    p = &midi_file[len];
+    memcpy(p, ".mid", 5);
+}
+
 static int write_midi_output(void *output_data, int output_size) {
     if (midi_file[0] == '\0')
         return (-1);
@@ -1977,13 +1999,7 @@ int main(int argc, char **argv) {
                         char *real_file = FIND_LAST_DIRSEP(argv[optind-1]);
                         if (!real_file) real_file = argv[optind];
                         else real_file++;
-
-                        strncpy(midi_file, real_file, strlen(real_file));
-                        midi_file[strlen(real_file)-4] = '.';
-                        midi_file[strlen(real_file)-3] = 'm';
-                        midi_file[strlen(real_file)-2] = 'i';
-                        midi_file[strlen(real_file)-1] = 'd';
-
+                        mk_midifile_name(real_file);
                         printf("\rWriting %s: %u bytes.\r\n", midi_file, getmidisize);
                         write_midi_output(getmidibuffer,getmidisize);
                         free(getmidibuffer);
