@@ -40,6 +40,7 @@
 struct termios _tty;
 static tcflag_t _res_oflg = 0;
 static tcflag_t _res_lflg = 0;
+static int _res_block = 0;
 
 void wm_inittty(void) {
 	if (!isatty(STDIN_FILENO))
@@ -49,6 +50,7 @@ void wm_inittty(void) {
 	tcgetattr(STDIN_FILENO, &_tty);
 	_res_oflg = _tty.c_oflag;
 	_res_lflg = _tty.c_lflag;
+	_res_block=fcntl(STDIN_FILENO, F_GETFL, FNONBLOCK);
 
 	/* set raw: */
 	_tty.c_lflag &= ~(ICANON | ICRNL | ISIG);
@@ -66,5 +68,7 @@ void wm_resetty(void) {
 	_tty.c_oflag = _res_oflg;
 	_tty.c_lflag = _res_lflg;
 	tcsetattr(STDIN_FILENO, TCSADRAIN, &_tty);
+
+	fcntl(STDIN_FILENO, F_SETFL, _res_block);
 }
 #endif /* !(_WIN32,__DJGPP__,__OS2__) */
