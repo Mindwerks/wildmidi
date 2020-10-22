@@ -1,8 +1,8 @@
-/*	$OpenBSD: getopt_long.c,v 1.26 2013/06/08 22:47:56 millert Exp $	*/
+/*	$OpenBSD: getopt_long.c,v 1.32 2020/05/27 22:25:09 schwarze Exp $	*/
 /*	$NetBSD: getopt_long.c,v 1.15 2002/01/31 22:43:40 tv Exp $	*/
 
 /*
- * Copyright (c) 2002 Todd C. Miller <Todd.Miller@courtesan.com>
+ * Copyright (c) 2002 Todd C. Miller <millert@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -142,9 +142,7 @@ permute_args(int panonopt_start, int panonopt_end, int opt_end,
 			else
 				pos += nopts;
 			swap = nargv[pos];
-			/* LINTED const cast */
-			((char **) nargv)[pos] = nargv[cstart];
-			/* LINTED const cast */
+			((char **)nargv)[pos] = nargv[cstart];
 			((char **)nargv)[cstart] = swap;
 		}
 	}
@@ -413,15 +411,7 @@ start:
 	}
 
 	if ((optchar = (int)*place++) == (int)':' ||
-	    (optchar == (int)'-' && *place != '\0') ||
 	    (oli = strchr(options, optchar)) == NULL) {
-		/*
-		 * If the user specified "-" and  '-' isn't listed in
-		 * options, return -1 (non-option) as per POSIX.
-		 * Otherwise, it is an unknown option character (or ':').
-		 */
-		if (optchar == (int)'-' && *place == '\0')
-			return (-1);
 		if (!*place)
 			++optind;
 		if (PRINT_ERROR)
@@ -473,12 +463,11 @@ start:
 /*
  * getopt --
  *	Parse argc/argv argument vector.
- *
- * [eventually this will replace the BSD getopt]
  */
 int
 getopt(int nargc, char * const *nargv, const char *options)
 {
+
 	/*
 	 * We don't pass FLAG_PERMUTE to getopt_internal() since
 	 * the BSD getopt(3) (unlike GNU) has never done this.
@@ -498,6 +487,7 @@ int
 getopt_long(int nargc, char * const *nargv, const char *options,
     const struct option *long_options, int *idx)
 {
+
 	return (getopt_internal(nargc, nargv, options, long_options, idx,
 	    FLAG_PERMUTE));
 }
@@ -510,6 +500,7 @@ int
 getopt_long_only(int nargc, char * const *nargv, const char *options,
     const struct option *long_options, int *idx)
 {
+
 	return (getopt_internal(nargc, nargv, options, long_options, idx,
 	    FLAG_PERMUTE|FLAG_LONGONLY));
 }

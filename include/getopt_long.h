@@ -32,6 +32,7 @@
 
 #ifndef _GETOPT_H_
 #define _GETOPT_H_
+
 /*
  * GNU-like getopt_long()
  */
