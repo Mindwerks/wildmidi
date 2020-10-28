@@ -1,0 +1,33 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        config:
+          - { os: macos-latest, c: "clang", player: "ON", static: "ON", alsa: "OFF", openal: "ON", oss: "OFF" }
+          - { os: ubuntu-latest, c: "clang", player: "ON", static: "ON", alsa: "ON", openal: "ON", oss: "ON" }
+          - { os: ubuntu-latest, c: "gcc", player: "ON", static: "ON", alsa: "ON", openal: "ON", oss: "ON" }
+          - { os: windows-latest, c: "cl", player: "OFF", static: "ON", alsa: "OFF", openal: "OFF", oss: "OFF" }
+    runs-on: ${{ matrix.config.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies (Linux)
+        if: matrix.config.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install libasound2-dev libopenal-dev
+      - name: Install dependencies (macOS)
+        if: matrix.config.os == 'macos-latest'
+        run: |
+          brew install openal-soft
+      - name: Build with ${{ matrix.config.os }} / ${{ matrix.config.c }}
+        env:
+          CC: ${{ matrix.config.c }}
+        run: |
+          cmake -B build -DWANT_PLAYER=${{ matrix.config.player }} -DWANT_STATIC=${{ matrix.config.static }} -DWANT_ALSA=${{ matrix.config.alsa }} -DWANT_OPENAL=${{ matrix.config.openal }} -DWANT_OSS=${{ matrix.config.oss }}
+          cmake --build build -j2
+
