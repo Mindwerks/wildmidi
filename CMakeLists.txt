@@ -1,12 +1,9 @@
 # ########## Project setup ##########
-PROJECT(wildmidi C)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+PROJECT(wildmidi LANGUAGES C VERSION 0.4.4)
 
 # WildMIDI Version
-SET(VERSION_MAJOR 0)
-SET(VERSION_MINOR 4)
-SET(VERSION_RELEASE 4)
-SET(WILDMIDI_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_RELEASE}")
+SET(WILDMIDI_VERSION ${PROJECT_VERSION})
 
 # Lib Versions
 SET(SOVERSION 2)
@@ -65,12 +62,6 @@ IF (UNIX)
     )
 ENDIF (UNIX)
 
-# Usage of RPATH for macOS is enabled by default; this just suppresses the CMP0042 warning
-# when building libwildmidi_dynamic.
-IF (POLICY CMP0042)
-    CMAKE_POLICY(SET CMP0042 NEW)
-ENDIF ()
-
 IF (OPENBSD)  # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
     # use, i.e. don't skip the full RPATH for the build tree
     SET(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -101,7 +92,7 @@ IF (WIN32)
 ENDIF (WIN32)
 
 # Compiler specific settings
-IF (CMAKE_COMPILER_IS_GNUCC OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
+IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
     ADD_DEFINITIONS(
             -Wall -W
             -fno-common
@@ -233,13 +224,6 @@ IF (UNIX AND NOT APPLE)
     MESSAGE(STATUS "M_LIBRARY: ${M_LIBRARY}")
     IF (NOT M_LIBRARY)
         SET(M_LIBRARY "")
-    ENDIF ()
-
-    ## Debian and non debian Linux building
-    IF (DPKG_PROGRAM)
-        ## Debian specific
-    ELSE ()
-        ## Non debian specific
     ENDIF ()
 ENDIF (UNIX AND NOT APPLE)
 

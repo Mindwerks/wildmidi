@@ -41,14 +41,10 @@ SET(wildmidi_library_HDRS
 
 IF (MSVC)
     SET(GETOPT getopt_long.c)
-ELSE ()
-    SET(GETOPT)
 ENDIF ()
 
 IF (AMIGA OR AROS)
     SET(SYS_OTHER amiga.c)
-ELSE ()
-    SET(SYS_OTHER)
 ENDIF ()
 
 SET(wildmidi_executable_SRCS
