@@ -39,20 +39,18 @@ SET(wildmidi_library_HDRS
         ../include/xmi2mid.h
         )
 
-IF (MSVC)
-    SET(GETOPT getopt_long.c)
-ENDIF ()
-
-IF (AMIGA OR AROS)
-    SET(SYS_OTHER amiga.c)
-ENDIF ()
-
 SET(wildmidi_executable_SRCS
-        ${GETOPT}
-        ${SYS_OTHER}
         wm_tty.c
         wildmidi.c
         )
+
+IF (MSVC)
+    LIST(APPEND wildmidi_executable_SRCS getopt_long.c)
+ENDIF ()
+
+IF (AMIGA OR AROS)
+    LIST(APPEND wildmidi_executable_SRCS amiga.c)
+ENDIF ()
 
 SET(wildmidi_executable_HDRS
         ../include/wm_tty.h
@@ -195,9 +193,11 @@ ENDIF (WANT_PLAYERSTATIC)
 
 IF (WANT_DEVTEST)
     SET(wildmidi-devtest_executable_SRCS
-            ${GETOPT}
             DevTest.c
             )
+    IF (MSVC)
+        LIST(APPEND wildmidi-devtest_executable_SRCS getopt_long.c)
+    ENDIF ()
     ADD_EXECUTABLE(wildmidi-devtest
             ${wildmidi-devtest_executable_SRCS}
             )
