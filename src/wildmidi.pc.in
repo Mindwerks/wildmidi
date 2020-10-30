@@ -1,9 +1,9 @@
 # WildMIDI pkg-config file
 
-prefix=@WILDMIDILIB_PREFIX@
+prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
-libdir=${exec_prefix}/@WILDMIDILIB_LIBDIR@
-includedir=${exec_prefix}/include
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${exec_prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 
 Name: WildMIDI
 Description: software synthesizer library

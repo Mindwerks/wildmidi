@@ -16,6 +16,7 @@ INCLUDE(CMakeDependentOption)
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CheckCSourceCompiles)
 INCLUDE(CheckIncludeFile)
+INCLUDE(GNUInstallDirs)
 INCLUDE(TestBigEndian)
 
 # Set a default build type if none was specified
@@ -249,16 +250,8 @@ IF (APPLE AND WANT_PLAYER)
     ENDIF ()
 ENDIF ()
 
-IF (WIN32)
-    IF (WANT_PLAYER)
-        LINK_LIBRARIES(winmm)
-    ENDIF ()
-ENDIF (WIN32)
-
 # ######### General setup ##########
-INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include")
-FILE(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include")
-INCLUDE_DIRECTORIES(BEFORE "${PROJECT_BINARY_DIR}/include")
+INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")
 IF (NOT HAVE_STDINT_H) # AND NOT HAVE_INTTYPES_H
     INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include/stdint")
 ENDIF ()
