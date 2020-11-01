@@ -39,24 +39,18 @@ SET(wildmidi_library_HDRS
         ../include/xmi2mid.h
         )
 
-IF (MSVC)
-    SET(GETOPT getopt_long.c)
-ELSE ()
-    SET(GETOPT)
-ENDIF ()
-
-IF (AMIGA OR AROS)
-    SET(SYS_OTHER amiga.c)
-ELSE ()
-    SET(SYS_OTHER)
-ENDIF ()
-
 SET(wildmidi_executable_SRCS
-        ${GETOPT}
-        ${SYS_OTHER}
         wm_tty.c
         wildmidi.c
         )
+
+IF (MSVC)
+    LIST(APPEND wildmidi_executable_SRCS getopt_long.c)
+ENDIF ()
+
+IF (AMIGA OR AROS)
+    LIST(APPEND wildmidi_executable_SRCS amiga.c)
+ENDIF ()
 
 SET(wildmidi_executable_HDRS
         ../include/wm_tty.h
@@ -134,40 +128,12 @@ IF (BUILD_SHARED_LIBS)
     ENDIF ()
 ENDIF (BUILD_SHARED_LIBS)
 
-# Set our default and then look at the possible locations
-SET(WILDMIDILIB "${PROJECT_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
-SET(WILDMIDILIBSTATIC "${PROJECT_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
-
-# MS Visual Studio
-IF (MSVC)
-    SET(WILDMIDILIB "${PROJECT_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
-    SET(WILDMIDILIBSTATIC "${PROJECT_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_STATIC_NAME}.lib")
-ENDIF (MSVC)
-
-# MinGW or MinGW-w64
-IF (CMAKE_COMPILER_IS_MINGW)
-    SET(WILDMIDILIB "${PROJECT_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.dll.a")
-    SET(WILDMIDIDLL "${PROJECT_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.dll")
-    SET(WILDMIDILIBSTATIC "${PROJECT_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
-ENDIF (CMAKE_COMPILER_IS_MINGW)
-
-# Apple's Xcode
-IF (CMAKE_GENERATOR STREQUAL "Xcode")
-    SET(WILDMIDILIB "${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib${LIBRARY_DYN_NAME}.dylib")
-    SET(WILDMIDILIBSTATIC "${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib${LIBRARY_STATIC_NAME}.a")
-ELSEIF (APPLE) # Apple's CLI default
-    SET(WILDMIDILIB "${PROJECT_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.dylib")
-    SET(WILDMIDILIBSTATIC "${PROJECT_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
-ENDIF (CMAKE_GENERATOR STREQUAL "Xcode")
-
 # do we want the wildmidi player?
 IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
     ADD_EXECUTABLE(wildmidi
             ${wildmidi_executable_SRCS}
             ${wildmidi_executable_HDRS}
             )
-
-    ADD_DEPENDENCIES(wildmidi libwildmidi_dynamic)
 
     IF (AUDIODRV_OPENAL)
         TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
@@ -183,10 +149,13 @@ IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
 
     TARGET_LINK_LIBRARIES(wildmidi
             ${EXTRA_LDFLAGS}
-            ${WILDMIDILIB}
+            libwildmidi_dynamic
             ${AUDIO_LIBRARY}
             ${M_LIBRARY}
             )
+    IF (WIN32)
+        TARGET_LINK_LIBRARIES(wildmidi winmm)
+    ENDIF ()
 ENDIF ()
 
 IF (WANT_PLAYERSTATIC)
@@ -194,8 +163,6 @@ IF (WANT_PLAYERSTATIC)
             ${wildmidi_executable_SRCS}
             ${wildmidi_executable_HDRS}
             )
-
-    ADD_DEPENDENCIES(wildmidi-static libwildmidi_static)
 
     SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES
             COMPILE_DEFINITIONS WILDMIDI_STATIC
@@ -215,101 +182,74 @@ IF (WANT_PLAYERSTATIC)
 
     TARGET_LINK_LIBRARIES(wildmidi-static
             ${EXTRA_LDFLAGS}
-            ${WILDMIDILIBSTATIC}
+            libwildmidi_static
             ${AUDIO_LIBRARY}
             ${M_LIBRARY}
             )
+    IF (WIN32)
+        TARGET_LINK_LIBRARIES(wildmidi-static winmm)
+    ENDIF ()
 ENDIF (WANT_PLAYERSTATIC)
 
 IF (WANT_DEVTEST)
     SET(wildmidi-devtest_executable_SRCS
-            ${GETOPT}
             DevTest.c
             )
+    IF (MSVC)
+        LIST(APPEND wildmidi-devtest_executable_SRCS getopt_long.c)
+    ENDIF ()
     ADD_EXECUTABLE(wildmidi-devtest
             ${wildmidi-devtest_executable_SRCS}
             )
 ENDIF (WANT_DEVTEST)
 
-# convenience variables
-SET(WILDMIDILIB_INSTALLDIR "lib${LIB_SUFFIX}")
-SET(WILDMIDIDLL_INSTALLDIR "bin${LIB_SUFFIX}")
-
-# add multiarch folder, if needed
-IF (CMAKE_LIBRARY_ARCHITECTURE)
-    SET(WILDMIDILIB_INSTALLDIR "${WILDMIDILIB_INSTALLDIR}/${CMAKE_LIBRARY_ARCHITECTURE}")
-    SET(WILDMIDIDLL_INSTALLDIR "${WILDMIDIDLL_INSTALLDIR}/${CMAKE_LIBRARY_ARCHITECTURE}")
-ENDIF ()
-
 # prepare pkg-config file
-SET(WILDMIDILIB_PREFIX "${CMAKE_INSTALL_PREFIX}")
-SET(WILDMIDILIB_LIBDIR "${WILDMIDILIB_INSTALLDIR}")
 CONFIGURE_FILE("wildmidi.pc.in" "${PROJECT_BINARY_DIR}/wildmidi.pc" @ONLY)
 
-# install target (*nix OSes)
-IF (UNIX AND NOT APPLE)
-    # install our libraries
-    IF (WANT_STATIC)
-        INSTALL(TARGETS libwildmidi_static DESTINATION ${WILDMIDILIB_INSTALLDIR})
-        IF (WANT_PLAYERSTATIC)
-            INSTALL(TARGETS wildmidi-static DESTINATION bin)
-        ENDIF ()
-    ENDIF (WANT_STATIC)
-
-    IF (BUILD_SHARED_LIBS)
-        INSTALL(TARGETS libwildmidi_dynamic DESTINATION ${WILDMIDILIB_INSTALLDIR})
-        IF (WANT_PLAYER)
-            INSTALL(TARGETS wildmidi DESTINATION bin)
-        ENDIF ()
+IF (WANT_STATIC)
+    INSTALL(TARGETS libwildmidi_static EXPORT WildMidi-export LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    IF (WANT_PLAYER_STATIC)
+        INSTALL(TARGETS wildmidi-static BIN DESTINATION ${CMAKE_INSTALL_BINDIR})
     ENDIF ()
+ENDIF (WANT_STATIC)
 
-    # install our devtest if asked for
-    IF (WANT_DEVTEST)
-        INSTALL(TARGETS wildmidi-devtest DESTINATION bin)
-    ENDIF (WANT_DEVTEST)
-
-    # install pkg-config file
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/wildmidi.pc DESTINATION "${WILDMIDILIB_INSTALLDIR}/pkgconfig")
-
-    # install supporting man pages and headers
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
-    INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/docs/man/ DESTINATION share/man)
-ENDIF (UNIX AND NOT APPLE)
-
-# install target (Windows: MinGW or MinGW-w64)
-IF (WIN32 AND CMAKE_COMPILER_IS_MINGW)
-    IF ("${CMAKE_INSTALL_PREFIX}" STREQUAL "")
-        MESSAGE("INSTALL PREFIX IS EMPTY")
-        SET(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/wildmidi_lib" CACHE STRING "Install Prefix" FORCE)
-        MESSAGE("INSTALL PREFIX NOW: ${CMAKE_INSTALL_PREFIX}")
-    ENDIF ("${CMAKE_INSTALL_PREFIX}" STREQUAL "")
-    # install our libraries
-    IF (WANT_STATIC)
-        INSTALL(TARGETS libwildmidi_static DESTINATION ${WILDMIDILIB_INSTALLDIR})
-        IF (WANT_PLAYERSTATIC)
-            INSTALL(TARGETS wildmidi-static DESTINATION bin)
-        ENDIF ()
-    ENDIF (WANT_STATIC)
-    IF (BUILD_SHARED_LIBS)
-        INSTALL(FILES ${WILDMIDILIB} DESTINATION ${WILDMIDILIB_INSTALLDIR})
-        INSTALL(FILES ${WILDMIDIDLL} DESTINATION ${WILDMIDIDLL_INSTALLDIR})
-        IF (WANT_PLAYER)
-            INSTALL(TARGETS wildmidi DESTINATION bin)
-        ENDIF ()
+IF (BUILD_SHARED_LIBS)
+    INSTALL(TARGETS libwildmidi_dynamic EXPORT WildMidi-export LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    IF (WANT_PLAYER)
+        INSTALL(TARGETS wildmidi RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     ENDIF ()
+ENDIF (BUILD_SHARED_LIBS)
+IF (WANT_DEVTEST)
+    INSTALL(TARGETS wildmidi-devtest DESTINATION ${CMAKE_INSTALL_BINDIR})
+ENDIF (WANT_DEVTEST)
 
-    # install our devtest if asked for
-    IF (WANT_DEVTEST)
-        INSTALL(TARGETS wildmidi-devtest DESTINATION bin)
-    ENDIF (WANT_DEVTEST)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/wildmidi.pc DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/docs/man/ DESTINATION ${CMAKE_INSTALL_MANDIR})
+INSTALL(EXPORT WildMidi-export FILE WildMidiTargets.cmake
+    NAMESPACE WildMidi:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/WildMidi
+    )
 
-    # install pkg-config file
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/wildmidi.pc DESTINATION "${WILDMIDILIB_INSTALLDIR}/pkgconfig")
+INCLUDE(CMakePackageConfigHelpers)
+CONFIGURE_PACKAGE_CONFIG_FILE(
+    "${PROJECT_SOURCE_DIR}/src/WildMidiConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/WildMidiConfig.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/WildMidi"
+    NO_SET_AND_CHECK_MACRO
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+    )
 
-    # install supporting man pages and headers
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION include)
-    INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/docs/man/ DESTINATION share/man)
-ENDIF (WIN32 AND CMAKE_COMPILER_IS_MINGW)
+WRITE_BASIC_PACKAGE_VERSION_FILE(
+    "${PROJECT_BINARY_DIR}/WildMidiConfigVersion.cmake"
+    VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+    COMPATIBILITY AnyNewerVersion
+    )
+
+INSTALL(FILES
+    "${PROJECT_BINARY_DIR}/WildMidiConfig.cmake"
+    "${PROJECT_BINARY_DIR}/WildMidiConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/WildMidi"
+    )
 
 IF (WIN32 AND MSVC)
     IF (WANT_MP_BUILD)
