@@ -1,9 +1,17 @@
 os:
   - linux
   - osx
-osx_image: xcode8.3
-dist: trusty
-sudo: required
+dist: focal
+
+addons:
+  apt:
+    packages:
+      - libopenal-dev
+  homebrew:
+    packages:
+      - openal-soft
+      - pkg-config
+
 language: c
 env:
   - BUILD_TYPE=Debug
@@ -12,7 +20,7 @@ matrix:
   include:
     - os: linux
       env:
-        ANALYZE="scan-build-3.6 --use-cc clang-3.6 --use-c++ clang++-3.6 "
+        ANALYZE="scan-build --use-cc clang --use-c++ clang++"
       compiler: clang
 branches:
   only:
@@ -20,15 +28,9 @@ branches:
     - coverity_scan
     - /wildmidi-.*$/
 
-before_install:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then ./CI/before_install.linux.sh; fi
-  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ./CI/before_install.osx.sh; fi
-before_script:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then ./CI/before_script.linux.sh; fi
-  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ./CI/before_script.osx.sh; fi
 script:
-  - cd ./build
-  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then ${ANALYZE}make -j3; fi
+  - cmake -B build -DWANT_PLAYER=ON -DWANT_ALSA=OFF -DWANT_OPENAL=ON -DWANT_OSS=OFF
+  - ${ANALYZE} cmake --build build -j3 --verbose
 
 notifications:
   irc:
