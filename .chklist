@@ -5,6 +5,7 @@ Edit files for version number (and possibly other changes) :
 - android/jni/config.h
 - macosx/config.h
 - macosx/Makefile
+- mingw/config.h
 
 Edit files for possibly other changes:
 - djgpp/Makefile
@@ -14,4 +15,5 @@ Edit files for possibly other changes:
 - android/*
 - android/jni/*.mk
 - macosx/Makefile (make sure to update dylib versions here..)
+- mingw/makefile
 
