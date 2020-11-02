@@ -81,6 +81,7 @@ IF (WANT_STATIC)
             OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
             COMPILE_DEFINITIONS WILDMIDI_BUILD
             )
+    LIST(APPEND wildmidi_lib_install libwildmidi_static)
 ENDIF (WANT_STATIC)
 
 IF (BUILD_SHARED_LIBS)
@@ -126,6 +127,7 @@ IF (BUILD_SHARED_LIBS)
                 COMPILE_DEFINITIONS WILDMIDI_BUILD
                 )
     ENDIF ()
+    LIST(APPEND wildmidi_lib_install libwildmidi_dynamic)
 ENDIF (BUILD_SHARED_LIBS)
 
 # do we want the wildmidi player?
@@ -156,6 +158,7 @@ IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
     IF (WIN32)
         TARGET_LINK_LIBRARIES(wildmidi winmm)
     ENDIF ()
+    LIST(APPEND wildmidi_install wildmidi)
 ENDIF ()
 
 IF (WANT_PLAYERSTATIC)
@@ -189,6 +192,7 @@ IF (WANT_PLAYERSTATIC)
     IF (WIN32)
         TARGET_LINK_LIBRARIES(wildmidi-static winmm)
     ENDIF ()
+    LIST(APPEND wildmidi_install wildmidi-static)
 ENDIF (WANT_PLAYERSTATIC)
 
 IF (WANT_DEVTEST)
@@ -201,27 +205,21 @@ IF (WANT_DEVTEST)
     ADD_EXECUTABLE(wildmidi-devtest
             ${wildmidi-devtest_executable_SRCS}
             )
+    LIST(APPEND wildmidi_install wildmidi-devtest)
 ENDIF (WANT_DEVTEST)
 
 # prepare pkg-config file
 CONFIGURE_FILE("wildmidi.pc.in" "${PROJECT_BINARY_DIR}/wildmidi.pc" @ONLY)
 
-IF (WANT_STATIC)
-    INSTALL(TARGETS libwildmidi_static EXPORT WildMidi-export LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    IF (WANT_PLAYER_STATIC)
-        INSTALL(TARGETS wildmidi-static BIN DESTINATION ${CMAKE_INSTALL_BINDIR})
-    ENDIF ()
-ENDIF (WANT_STATIC)
-
-IF (BUILD_SHARED_LIBS)
-    INSTALL(TARGETS libwildmidi_dynamic EXPORT WildMidi-export LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    IF (WANT_PLAYER)
-        INSTALL(TARGETS wildmidi RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    ENDIF ()
-ENDIF (BUILD_SHARED_LIBS)
-IF (WANT_DEVTEST)
-    INSTALL(TARGETS wildmidi-devtest DESTINATION ${CMAKE_INSTALL_BINDIR})
-ENDIF (WANT_DEVTEST)
+INSTALL(TARGETS ${wildmidi_lib_install}
+    EXPORT WildMidi-export
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+INSTALL(TARGETS ${wildmidi_install}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 
 INSTALL(FILES ${PROJECT_BINARY_DIR}/wildmidi.pc DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 INSTALL(FILES ${PROJECT_SOURCE_DIR}/include/wildmidi_lib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
