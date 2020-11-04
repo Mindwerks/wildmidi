@@ -94,9 +94,9 @@ static int convert_8sp(uint8_t *data, struct _sample *gus_sample) {
     gus_sample->data = (int16_t *) calloc((new_length + 2), sizeof(int16_t));
     if (__builtin_expect((gus_sample->data != NULL), 1)) {
         write_data = gus_sample->data;
-        do {
+        while (read_data < read_end) {
             *write_data++ = (*read_data++) << 8;
-        } while (read_data != read_end);
+        }
 
         *write_data = (*read_data++ << 8);
         write_data_a = write_data + dloop_length;
@@ -114,10 +114,8 @@ static int convert_8sp(uint8_t *data, struct _sample *gus_sample) {
         *write_data = (*read_data++ << 8);
         *write_data_b++ = *write_data;
         read_end = data + gus_sample->data_length;
-        if (__builtin_expect((read_data != read_end), 1)) {
-            do {
-                *write_data_b++ = (*read_data++) << 8;
-            } while (read_data != read_end);
+        while (read_data < read_end) {
+            *write_data_b++ = (*read_data++) << 8;
         }
         gus_sample->loop_start += loop_length;
         gus_sample->loop_end += dloop_length;
@@ -243,9 +241,9 @@ static int convert_8up(uint8_t *data, struct _sample *gus_sample) {
     gus_sample->data = (int16_t *) calloc((new_length + 2), sizeof(int16_t));
     if (__builtin_expect((gus_sample->data != NULL), 1)) {
         write_data = gus_sample->data;
-        do {
+        while (read_data < read_end) {
             *write_data++ = ((*read_data++) ^ 0x80) << 8;
-        } while (read_data != read_end);
+        }
 
         *write_data = ((*read_data++) ^ 0x80) << 8;
         write_data_a = write_data + dloop_length;
@@ -263,11 +261,10 @@ static int convert_8up(uint8_t *data, struct _sample *gus_sample) {
         *write_data = ((*read_data++) ^ 0x80) << 8;
         *write_data_b++ = *write_data;
         read_end = data + gus_sample->data_length;
-        if (__builtin_expect((read_data != read_end), 1)) {
-            do {
-                *write_data_b++ = ((*read_data++) ^ 0x80) << 8;
-            } while (read_data != read_end);
+        while (read_data < read_end) {
+            *write_data_b++ = ((*read_data++) ^ 0x80) << 8;
         }
+
         gus_sample->loop_start += loop_length;
         gus_sample->loop_end += dloop_length;
         gus_sample->data_length = new_length;
