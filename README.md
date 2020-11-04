@@ -33,7 +33,8 @@ Requirements:
 CHANGELOG
 
 0.3.16
-* Fixed wrong variable use in rebverb code (bug #210).
+* Fixed 8 bit ping pong GUS patch loaders (bug #207).
+* Fixed wrong variable use in reverb code (bug #210).
 * Reset block status of tty after playback (bug #211).
 
 0.3.15
