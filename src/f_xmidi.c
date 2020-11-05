@@ -228,6 +228,14 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                                 xmi_tmpdata = xmi_delta;
                             }
 
+                            if ((float)xmi_tmpdata >= 0x7fffffff / xmi_samples_per_delta_f) {
+                                //DEBUG
+                                //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+                                //        xmi_samples_per_delta_f, xmi_tmpdata);
+                                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+                                goto _xmi_end;
+                            }
+
                             xmi_sample_count_f= (((float) xmi_tmpdata * xmi_samples_per_delta_f) + xmi_sample_remainder);
 
                             xmi_sample_count = (uint32_t) xmi_sample_count_f;
