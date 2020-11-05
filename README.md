@@ -33,6 +33,8 @@ Requirements:
 CHANGELOG
 
 0.3.16
+* Fixed integer overflow in midi parser sample count calculation
+ (bug #200).
 * Fixed 8 bit ping pong GUS patch loaders (bug #207).
 * Fixed wrong variable use in reverb code (bug #210).
 * Reset block status of tty after playback (bug #211).

@@ -2821,6 +2821,13 @@ WM_ParseNewMidi(unsigned char *midi_data, unsigned int midi_size) {
 			NEXT_TRACK: continue;
 		}
 
+		if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+			// DEBUG
+			//fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %lu)\n",
+			//	samples_per_delta_f, smallest_delta);
+			_WM_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+			goto _end;
+		}
 		subtract_delta = smallest_delta;
 		sample_count_tmp = (((float) smallest_delta * samples_per_delta_f)
 				+ sample_remainder);
