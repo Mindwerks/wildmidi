@@ -129,7 +129,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 
     hmi_data += 370;
 
-    smallest_delta = 0xffffffff;
+    smallest_delta = 0x7fffffff;
 
     hmi_track_offset[0] = *hmi_data; // To keep Xcode happy
 
@@ -191,6 +191,21 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
             note[hmi_tmp].length = 0;
             note[hmi_tmp].channel = 0;
         }
+    }
+
+    if (smallest_delta >= 0x7fffffff) {
+        //DEBUG
+        //fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        goto _hmi_end;
+    }
+
+    if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+        //DEBUG
+        //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+        //        samples_per_delta_f, smallest_delta);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        goto _hmi_end;
     }
 
     subtract_delta = smallest_delta;
@@ -368,6 +383,13 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         }
 
         // convert smallest delta to samples till next
+        if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+            //DEBUG
+            //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+            //        samples_per_delta_f, smallest_delta);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+            goto _hmi_end;
+        }
         subtract_delta = smallest_delta;
         sample_count_f= (((float) smallest_delta * samples_per_delta_f) + sample_remainder);
 

@@ -152,7 +152,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     track_end = (uint8_t *) malloc(sizeof(uint8_t) * no_tracks);
     running_event = (uint8_t *) malloc(sizeof(uint8_t) * no_tracks);
 
-    smallest_delta = 0xffffffff;
+    smallest_delta = 0x7fffffff;
     for (i = 0; i < no_tracks; i++) {
         if (midi_size < 8) {
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
@@ -228,6 +228,21 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
              */
             if (i == 0) smallest_delta = track_delta[i];
         }
+    }
+
+    if (smallest_delta >= 0x7fffffff) {
+        //DEBUG
+        //fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        goto _end;
+    }
+
+    if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+        //DEBUG
+        //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+        //        samples_per_delta_f, smallest_delta);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        goto _end;
     }
 
     subtract_delta = smallest_delta;
@@ -310,6 +325,13 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
             NEXT_TRACK: continue;
             }
 
+            if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+                //DEBUG
+                //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+                //        samples_per_delta_f, smallest_delta);
+                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+                goto _end;
+            }
             subtract_delta = smallest_delta;
             sample_count_f = (((float) smallest_delta * samples_per_delta_f)
                               + sample_remainder);
@@ -377,6 +399,13 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
                 tracks[i]++;
                 track_size[i]--;
 
+                if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+                    //DEBUG
+                    //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+                    //        samples_per_delta_f, smallest_delta);
+                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+                    goto _end;
+                }
                 sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
                                   + sample_remainder);
                 sample_count = (uint32_t) sample_count_f;

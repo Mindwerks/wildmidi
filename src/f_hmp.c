@@ -196,7 +196,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     chunk_ofs = (uint32_t *) malloc(sizeof(uint32_t) * hmp_chunks);
     chunk_end = (uint8_t *) malloc(sizeof(uint8_t) * hmp_chunks);
 
-    smallest_delta = 0xffffffff;
+    smallest_delta = 0x7fffffff;
     // store chunk info for use, and check chunk lengths
     for (i = 0; i < hmp_chunks; i++) {
         /* FIXME: add proper size checks!!! */
@@ -253,6 +253,21 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_length[i] -= chunk_ofs[i];
         hmp_chunk[i] += chunk_ofs[i]++;
         chunk_end[i] = 0;
+    }
+
+    if (smallest_delta >= 0x7fffffff) {
+        //DEBUG
+        //fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        goto _hmp_end;
+    }
+
+    if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+        //DEBUG
+        //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+        //        samples_per_delta_f, smallest_delta);
+        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        goto _hmp_end;
     }
 
     subtract_delta = smallest_delta;
@@ -340,6 +355,14 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                 smallest_delta = chunk_delta[i];
             }
         NEXT_CHUNK: continue;
+        }
+
+        if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+            //DEBUG
+            //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
+            //        samples_per_delta_f, smallest_delta);
+            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+            goto _hmp_end;
         }
 
         subtract_delta = smallest_delta;
