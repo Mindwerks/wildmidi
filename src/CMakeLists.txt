@@ -48,7 +48,7 @@ SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 SET(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 # set our library names
-IF (WIN32 AND NOT CMAKE_COMPILER_IS_MINGW) # windows uses *.lib for both static and dynamic, workaround
+IF (MSVC) # windows uses *.lib for both static and dynamic, workaround
     SET(LIBRARY_DYN_NAME "libWildMidi")
     SET(LIBRARY_STATIC_NAME "libWildMidi-static")
 ELSE () # everyone else uses .a and .so
