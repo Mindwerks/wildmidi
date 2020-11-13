@@ -40,8 +40,8 @@ SET(wildmidi_library_HDRS
         )
 
 SET(wildmidi_executable_SRCS
-        wm_tty.c
-        wildmidi.c
+    player/wm_tty.c
+    player/wildmidi.c
         )
 
 IF (MSVC)
@@ -49,11 +49,11 @@ IF (MSVC)
 ENDIF ()
 
 IF (AMIGA OR AROS)
-    LIST(APPEND wildmidi_executable_SRCS amiga.c)
+    LIST(APPEND wildmidi_executable_SRCS player/amiga.c)
 ENDIF ()
 
 SET(wildmidi_executable_HDRS
-        ../include/wm_tty.h
+        ../include/player/wm_tty.h
         ../include/getopt_long.h
         )
 

@@ -131,9 +131,9 @@ static int msleep(unsigned long millisec);
 #endif
 #endif /* !_WIN32, !__DJGPP__ (unix build) */
 
-#include "wildmidi_lib.h"
-#include "wm_tty.h"
 #include "filenames.h"
+#include "player/wm_tty.h"
+#include "wildmidi_lib.h"
 
 struct _midi_test {
     uint8_t *data;
