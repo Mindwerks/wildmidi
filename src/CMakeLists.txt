@@ -150,7 +150,7 @@ IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
             ${wildmidi_executable_SRCS}
             ${wildmidi_executable_HDRS}
             )
-
+    TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
     IF (AUDIODRV_OPENAL)
         TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
                 ${OPENAL_INCLUDE_DIR}
@@ -180,7 +180,7 @@ IF (WANT_PLAYERSTATIC)
             ${wildmidi_executable_SRCS}
             ${wildmidi_executable_HDRS}
             )
-
+    TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
     SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES
             COMPILE_DEFINITIONS WILDMIDI_STATIC
             )

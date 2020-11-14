@@ -64,7 +64,12 @@
 /* Define our audio drivers */
 #cmakedefine HAVE_SYS_SOUNDCARD_H
 
-#cmakedefine AUDIODRV_ALSA
-#cmakedefine AUDIODRV_OSS
-#cmakedefine AUDIODRV_OPENAL
-#cmakedefine AUDIODRV_AHI
+#define AUDIODRV_NONE 1
+#define AUDIODRV_WAVE 1
+#cmakedefine01 AUDIODRV_ALSA
+#cmakedefine01 AUDIODRV_OSS
+#cmakedefine01 AUDIODRV_OPENAL
+#cmakedefine01 AUDIODRV_AHI
+#cmakedefine01 AUDIODRV_WIN32_MM
+#cmakedefine01 AUDIODRV_OS2DART
+#cmakedefine01 AUDIODRV_DOSSB

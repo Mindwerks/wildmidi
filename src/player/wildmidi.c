@@ -22,12 +22,26 @@
  */
 
 #include "config.h"
+#include "wildplay.h"
 
 #include <stdint.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// available outputs
+wildmidi_info available_outputs[TOTAL_OUT] = {
+    { "noout", "No output", AUDIODRV_NONE },
+    { "wave", "Save stream to WAVE file", AUDIODRV_WAVE },
+    { "alsa", "Advanced Linux Sound Architecture (ALSA) output", AUDIODRV_ALSA },
+    { "oss", "Open Sound System (OSS) output", AUDIODRV_OSS },
+    { "openal", "OpenAL output", AUDIODRV_OPENAL },
+    { "ahi", "Amiga AHI output", AUDIODRV_AHI },
+    { "win32mm", "Windows MM output", AUDIODRV_WIN32_MM },
+    { "os2dart", "OS/2 DART output", AUDIODRV_OS2DART },
+    { "dossb", "DOS SoundBlaster output", AUDIODRV_DOSSB },
+};
 
 #if defined(__DJGPP__)
 #include <sys/types.h>
@@ -116,11 +130,11 @@ static int msleep(unsigned long millisec);
 #include <unistd.h>
 #include <getopt.h>
 #include <time.h>
-#ifdef AUDIODRV_ALSA
+#if AUDIODRV_ALSA == 1
 #  include <alsa/asoundlib.h>
-#elif defined AUDIODRV_OSS
+#elif AUDIODRV_OSS == 1
 #  include <sys/soundcard.h>
-#elif defined AUDIODRV_OPENAL
+#elif AUDIODRV_OPENAL == 1
 #   ifndef __APPLE__
 #   include <al.h>
 #   include <alc.h>
@@ -553,7 +567,7 @@ end:    printf("\n");
     audio_fd = WM_BADF;
 }
 
-#if (defined _WIN32) || (defined __CYGWIN__)
+#if ((defined _WIN32) || (defined __CYGWIN__)) && (AUDIODRV_WIN32_MM == 1)
 
 static HWAVEOUT hWaveOut = NULL;
 static CRITICAL_SECTION waveCriticalSection;
@@ -691,7 +705,7 @@ close_mm_output (void) {
     mm_blocks = NULL;
 }
 
-#elif (defined(__OS2__) || defined(__EMX__)) && defined(AUDIODRV_OS2DART)
+#elif (defined(__OS2__) || defined(__EMX__)) && (AUDIODRV_OS2DART == 1)
 /* based on Dart code originally written by Kevin Langman for XMP */
 
 #define open_audio_output open_dart_output
@@ -867,7 +881,7 @@ close_dart_output (void) {
     }
 }
 
-#elif defined(__DJGPP__) && defined(AUDIODRV_DOSSB)
+#elif defined(__DJGPP__) && (AUDIODRV_DOSSB == 1)
 /* SoundBlaster/Pro/16/AWE32 driver for DOS -- adapted from
  * libMikMod,  written by Andrew Zabolotny <bit@eltech.ru>,
  * further fixes by O.Sezer <sezero@users.sourceforge.net>.
@@ -1036,7 +1050,7 @@ static int open_sb_output(void)
     return 0;
 }
 
-#elif defined(WILDMIDI_AMIGA) && defined(AUDIODRV_AHI)
+#elif defined(WILDMIDI_AMIGA) && (AUDIODRV_AHI == 1)
 
 /* Driver for output to native Amiga AHI device:
  * Written by Szilárd Biró <col.lawrence@gmail.com>, loosely based
@@ -1151,7 +1165,7 @@ static void close_ahi_output(void) {
 }
 
 #else
-#ifdef AUDIODRV_ALSA
+#if (AUDIODRV_ALSA == 1)
 
 static int alsa_first_time = 1;
 static snd_pcm_t *pcm = NULL;
@@ -1278,7 +1292,7 @@ static void close_alsa_output(void) {
     pcm = NULL;
 }
 
-#elif defined AUDIODRV_OSS
+#elif AUDIODRV_OSS == 1
 
 #if !defined(AFMT_S16_NE)
 #ifdef WORDS_BIGENDIAN
@@ -1380,7 +1394,7 @@ static void close_oss_output(void) {
     audio_fd = -1;
 }
 
-#elif defined AUDIODRV_OPENAL
+#elif AUDIODRV_OPENAL == 1
 
 #define NUM_BUFFERS 4
 
@@ -1516,6 +1530,7 @@ static int open_noaudio_output(void) {
 static struct option const long_options[] = {
     { "version", 0, 0, 'v' },
     { "help", 0, 0, 'h' },
+    { "playback", 1, 0, 'P'},
     { "rate", 1, 0, 'r' },
     { "mastervol", 1, 0, 'm' },
     { "config", 1, 0, 'c' },
@@ -1529,7 +1544,7 @@ static struct option const long_options[] = {
     { "test_bank", 1, 0, 'k' },
     { "test_patch", 1, 0, 'p' },
     { "enhanced", 0, 0, 'e' },
-#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
     { "device", 1, 0, 'd' },
 #endif
     { "roundtempo", 0, 0, 'n' },
@@ -1543,7 +1558,7 @@ static struct option const long_options[] = {
 static void do_help(void) {
     printf("  -v    --version     Display version info and exit\n");
     printf("  -h    --help        Display this help and exit\n");
-#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
     printf("  -d D  --device=D    Use device D for audio output instead of default\n");
 #endif
     printf("MIDI Options:\n");
@@ -1551,6 +1566,7 @@ static void do_help(void) {
     printf("  -s    --skipsilentstart Skips any silence at the start of playback\n");
     printf("  -t    --test_midi   Listen to test MIDI\n");
     printf("Non-MIDI Options:\n");
+    printf("  -P P  --playback=P  Set P as playback output.\n");
     printf("  -x    --tomidi      Convert file to midi and save to file\n");
     printf("  -g    --convert     Convert XMI: 0 - No Conversion (default)\n");
     printf("                                   1 - MT32 to GM\n");
@@ -1563,7 +1579,17 @@ static void do_help(void) {
     printf("  -c P  --config=P    Point to your wildmidi.cfg config file name/path\n");
     printf("                      defaults to: %s\n", WILDMIDI_CFG);
     printf("  -m V  --mastervol=V Set the master volume (0..127), default is 100\n");
-    printf("  -b    --reverb      Enable final output reverb engine\n");
+    printf("  -b    --reverb      Enable final output reverb engine\n\n");
+}
+
+static void do_available_outputs(void) {
+    printf("Available playback outputs (option -P):\n");
+    for (int i = 0 ; i < TOTAL_OUT; i++) {
+        if (available_outputs[i].enabled == 1) {
+            printf("  %-20s%s\n",
+                 available_outputs[i].name, available_outputs[i].description);
+        }
+    }
 }
 
 static void do_version(void) {
@@ -1586,6 +1612,7 @@ static char config_file[1024];
 int main(int argc, char **argv) {
     struct _WM_Info *wm_info;
     int i, res;
+    int playback_id = NO_OUT;
     int option_index = 0;
     uint16_t mixer_options = 0;
     void *midi_ptr;
@@ -1625,7 +1652,7 @@ int main(int argc, char **argv) {
     memset(lyrics,' ',MAX_LYRIC_CHAR);
     memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
 
-#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+#if (AUDIODRV_OSS == 1) || (AUDIODRV_ALSA == 1)
     pcmname[0] = 0;
 #endif
     config_file[0] = 0;
@@ -1634,7 +1661,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:f:lr:c:m:btak:p:ed:nsi:j:", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -1644,7 +1671,25 @@ int main(int argc, char **argv) {
         case 'h': /* help */
             do_syntax();
             do_help();
+            do_available_outputs();
             return (0);
+        case 'P': /* Playback */
+            if (!*optarg) {
+                fprintf(stderr, "Error: empty playback name.\n");
+                return (1);
+            } else {
+                for (i = 0; i < TOTAL_OUT; i++) {
+                    if (strcmp(available_outputs[i].name, optarg) == 0) {
+                        playback_id = i;
+                        break;
+                    }
+                }
+            }
+            if (playback_id == NO_OUT) {
+                fprintf(stderr, "Error: chosen playback %s is not available.\n", optarg);
+                return (1);
+            }
+            break;
         case 'r': /* Sample Rate */
             res = atoi(optarg);
             if (res < 0 || res > 65535) {
@@ -1689,7 +1734,7 @@ int main(int argc, char **argv) {
             strncpy(config_file, optarg, sizeof(config_file));
             config_file[sizeof(config_file) - 1] = 0;
             break;
-#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+#if (AUDIODRV_OSS == 1) || (AUDIODRV_ALSA == 1)
         case 'd': /* Output device */
             if (!*optarg) {
                 fprintf(stderr, "Error: empty device name.\n");
@@ -1780,7 +1825,7 @@ int main(int argc, char **argv) {
         config_file[sizeof(config_file) - 1] = 0;
     }
 
-    printf("Initializing Sound System\n");
+    printf("Initializing Sound System (%s)\n", available_outputs[playback_id].name);
     if (wav_file[0] != '\0') {
         if (open_wav_output() == -1) {
             return (1);
