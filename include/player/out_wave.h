@@ -1,5 +1,5 @@
 /*
- * wildplay.h -- WildMidi player header
+ * out_openal.h -- WAVE output
  *
  * Copyright (C) WildMidi Developers 2020
  *
@@ -21,39 +21,28 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WILDPLAY_H
-#define WILDPLAY_H
+#ifndef OUT_WAVE_H
+#define OUT_WAVE_H
 
+#include "config.h"
+
+#include <errno.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
-// Macros to suppress unused variables warnings
-#define UNUSED(x) (void)(x)
+#if (AUDIODRV_WAVE == 1)
 
-// Supported sound backends
-enum {
-    NO_OUT,       // No out
-    WAVE_OUT,     // WAVe raw output
-    ALSA_OUT,     // ALSA
-    OSS_OUT,      // OSS
-    OPENAL_OUT,   // OpenAL
-    AHI_OUT,      // Amiga AHI output
-    WIN32_MM_OUT, // Windows native output
-    OS2DART_OUT,  // DART OS/2 output
-    DOSSB_OUT,    // SoundBlaster output (DOS)
-    // Add here new output backends
+int open_wav_output(void);
+int write_wav_output(int8_t *output_data, int output_size);
+void close_wav_output(void);
 
-    TOTAL_OUT     // Total supported outputs
-};
+#else // AUDIODRV_WAVE == 1
 
-typedef struct {
-    char * name;
-    char * description;
-    int enabled;
-    int (* open_out)();
-    int (* send_out)(int8_t *, int);
-    void (* close_out)();
-    void (* pause_out)();
-    void (* resume_out)();
-} wildmidi_info;
+#define open_wav_output open_output_noout
+#define write_wav_output send_output_noout
+#define close_wav_output close_output_noout
 
-#endif // __WILDPLAY_H
+#endif // AUDIODRV_WAVE == 1
+
+#endif // OUT_WAVE_H

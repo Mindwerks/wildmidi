@@ -1,5 +1,5 @@
 /*
- * wildplay.h -- WildMidi player header
+ * out_openal.h -- OpenAL output
  *
  * Copyright (C) WildMidi Developers 2020
  *
@@ -21,39 +21,38 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WILDPLAY_H
-#define WILDPLAY_H
+#ifndef OUT_OPENAL_H
+#define OUT_OPENAL_H
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-// Macros to suppress unused variables warnings
-#define UNUSED(x) (void)(x)
+#include "config.h"
 
-// Supported sound backends
-enum {
-    NO_OUT,       // No out
-    WAVE_OUT,     // WAVe raw output
-    ALSA_OUT,     // ALSA
-    OSS_OUT,      // OSS
-    OPENAL_OUT,   // OpenAL
-    AHI_OUT,      // Amiga AHI output
-    WIN32_MM_OUT, // Windows native output
-    OS2DART_OUT,  // DART OS/2 output
-    DOSSB_OUT,    // SoundBlaster output (DOS)
-    // Add here new output backends
+#if (AUDIODRV_OPENAL == 1)
 
-    TOTAL_OUT     // Total supported outputs
-};
+#ifndef __APPLE__
+#include <al.h>
+#include <alc.h>
+#else
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#endif
 
-typedef struct {
-    char * name;
-    char * description;
-    int enabled;
-    int (* open_out)();
-    int (* send_out)(int8_t *, int);
-    void (* close_out)();
-    void (* pause_out)();
-    void (* resume_out)();
-} wildmidi_info;
+int open_openal_output(void);
+void pause_output_openal(void);
+int write_openal_output(int8_t *output_data, int output_size);
+void close_openal_output(void);
 
-#endif // __WILDPLAY_H
+#else // AUDIODRV_OPENAL == 1
+
+#define open_openal_output open_output_noout
+#define pause_output_openal pause_output_noout
+#define write_openal_output send_output_noout
+#define close_openal_output close_output_noout
+
+#endif // AUDIODRV_OPENAL == 1
+
+#endif // OUT_OPENAL_H

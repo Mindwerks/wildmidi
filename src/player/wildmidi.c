@@ -30,17 +30,102 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "out_noout.h"
+#include "out_openal.h"
+#include "out_wave.h"
+
 // available outputs
 wildmidi_info available_outputs[TOTAL_OUT] = {
-    { "noout", "No output", AUDIODRV_NONE },
-    { "wave", "Save stream to WAVE file", AUDIODRV_WAVE },
-    { "alsa", "Advanced Linux Sound Architecture (ALSA) output", AUDIODRV_ALSA },
-    { "oss", "Open Sound System (OSS) output", AUDIODRV_OSS },
-    { "openal", "OpenAL output", AUDIODRV_OPENAL },
-    { "ahi", "Amiga AHI output", AUDIODRV_AHI },
-    { "win32mm", "Windows MM output", AUDIODRV_WIN32_MM },
-    { "os2dart", "OS/2 DART output", AUDIODRV_OS2DART },
-    { "dossb", "DOS SoundBlaster output", AUDIODRV_DOSSB },
+    {
+        "noout",
+        "No output",
+        AUDIODRV_NONE,
+        open_output_noout,
+        send_output_noout,
+        close_output_noout,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "wave",
+        "Save stream to WAVE file",
+        AUDIODRV_WAVE,
+        open_wav_output,
+        write_wav_output,
+        close_wav_output,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "alsa",
+        "Advanced Linux Sound Architecture (ALSA) output",
+        AUDIODRV_ALSA,
+        open_output_noout,
+        send_output_noout,
+        close_output_noout,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "oss",
+        "Open Sound System (OSS) output",
+        AUDIODRV_OSS,
+        open_output_noout,
+        send_output_noout,
+        close_output_noout,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "openal",
+        "OpenAL output",
+        AUDIODRV_OPENAL,
+        open_openal_output,
+        write_openal_output,
+        close_openal_output,
+        pause_output_openal,
+        resume_output_noout
+    },
+    {
+        "ahi",
+        "Amiga AHI output",
+        AUDIODRV_AHI,
+        open_output_noout,
+        send_output_noout,
+        close_output_noout,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "win32mm",
+        "Windows MM output",
+        AUDIODRV_WIN32_MM,
+        open_output_noout,
+        send_output_noout,
+        close_output_noout,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "os2dart",
+        "OS/2 DART output",
+        AUDIODRV_OS2DART,
+        open_output_noout,
+        send_output_noout,
+        close_output_noout,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "dossb",
+        "DOS SoundBlaster output",
+        AUDIODRV_DOSSB,
+        open_output_noout,
+        send_output_noout,
+        close_output_noout,
+        pause_output_noout,
+        resume_output_noout
+    },
 };
 
 #if defined(__DJGPP__)
@@ -134,19 +219,11 @@ static int msleep(unsigned long millisec);
 #  include <alsa/asoundlib.h>
 #elif AUDIODRV_OSS == 1
 #  include <sys/soundcard.h>
-#elif AUDIODRV_OPENAL == 1
-#   ifndef __APPLE__
-#   include <al.h>
-#   include <alc.h>
-#   else
-#   include <OpenAL/al.h>
-#   include <OpenAL/alc.h>
-#   endif
 #endif
 #endif /* !_WIN32, !__DJGPP__ (unix build) */
 
 #include "filenames.h"
-#include "player/wm_tty.h"
+#include "wm_tty.h"
 #include "wildmidi_lib.h"
 
 struct _midi_test {
@@ -261,16 +338,11 @@ static int midi_test_max = 1;
  ==============================
  */
 
-static unsigned int rate = 32072;
-
-static int (*send_output)(int8_t *output_data, int output_size);
-static void (*close_output)(void);
-static void (*pause_output)(void);
-static void (*resume_output)(void);
+unsigned int rate = 32072;
 
 #define wmidi_geterrno() errno /* generic case */
 #if defined(_WIN32)
-static int audio_fd = -1;
+int audio_fd = -1;
 #define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
 static inline int wmidi_fileexists (const char *path) {
@@ -290,7 +362,7 @@ static inline int wmidi_write (int fd, const void *buf, size_t size) {
 }
 
 #elif defined(__DJGPP__)
-static int audio_fd = -1;
+int audio_fd = -1;
 #define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
 static inline int wmidi_fileexists (const char *path) {
@@ -311,7 +383,7 @@ static inline int wmidi_write (int fd, const void *buf, size_t size) {
 }
 
 #elif defined(__OS2__) || defined(__EMX__)
-static int audio_fd = -1;
+int audio_fd = -1;
 #define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
 static inline int wmidi_fileexists (const char *path) {
@@ -332,7 +404,7 @@ static inline int wmidi_write (int fd, const void *buf, size_t size) {
 }
 
 #elif defined(WILDMIDI_AMIGA)
-static BPTR audio_fd = 0;
+BPTR audio_fd = 0;
 #define WM_IS_BADF(_fd) ((_fd)==0)
 #define WM_BADF 0
 #undef wmidi_geterrno
@@ -369,31 +441,26 @@ static LONG wmidi_write (BPTR fd, /*const*/ void *buf, LONG size) {
 }
 
 #else /* common posix case */
-static int audio_fd = -1;
+int audio_fd = -1;
 #define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF -1
-static inline int wmidi_fileexists (const char *path) {
+#define WM_BADF (-1)
+int wmidi_fileexists (const char *path) {
     struct stat st;
     return (stat(path, &st) == 0);
 }
-static inline int wmidi_open_write (const char *path) {
+int wmidi_open_write (const char *path) {
     return open(path, (O_RDWR | O_CREAT | O_TRUNC), (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
 }
-static inline int wmidi_close (int fd) {
+int wmidi_close (int fd) {
     return close(fd);
 }
-static inline off_t wmidi_seekset (int fd, off_t ofs) {
+off_t wmidi_seekset (int fd, off_t ofs) {
     return lseek(fd, ofs, SEEK_SET);
 }
-static inline ssize_t wmidi_write (int fd, const void *buf, size_t size) {
+ssize_t wmidi_write (int fd, const void *buf, size_t size) {
     return write(fd, buf, size);
 }
 #endif
-
-static void pause_output_nop(void) {
-}
-static void resume_output_nop(void) {
-}
 
 /*
  MIDI Output Functions
@@ -456,116 +523,8 @@ static int write_midi_output(void *output_data, int output_size) {
  Wav Output Functions
  */
 
-static char wav_file[1024];
-static uint32_t wav_size;
-
-static int write_wav_output(int8_t *output_data, int output_size);
-static void close_wav_output(void);
-
-static int open_wav_output(void) {
-    uint8_t wav_hdr[] = {
-        0x52, 0x49, 0x46, 0x46, /* "RIFF"  */
-        0x00, 0x00, 0x00, 0x00, /* riffsize: pcm size + 36 (filled when closing.) */
-        0x57, 0x41, 0x56, 0x45, /* "WAVE"  */
-        0x66, 0x6D, 0x74, 0x20, /* "fmt "  */
-        0x10, 0x00, 0x00, 0x00, /* length of this RIFF block: 16  */
-        0x01, 0x00,             /* wave format == 1 (WAVE_FORMAT_PCM)  */
-        0x02, 0x00,             /* channels == 2  */
-        0x00, 0x00, 0x00, 0x00, /* sample rate (filled below)  */
-        0x00, 0x00, 0x00, 0x00, /* bytes_per_sec: rate * channels * format bytes  */
-        0x04, 0x00,             /* block alignment: channels * format bytes == 4  */
-        0x10, 0x00,             /* format bits == 16  */
-        0x64, 0x61, 0x74, 0x61, /* "data"  */
-        0x00, 0x00, 0x00, 0x00  /* datasize: the pcm size (filled when closing.)  */
-    };
-
-    if (wav_file[0] == '\0')
-        return (-1);
-
-    audio_fd = wmidi_open_write(wav_file);
-    if (WM_IS_BADF(audio_fd)) {
-        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(wmidi_geterrno()));
-        return (-1);
-    } else {
-        uint32_t bytes_per_sec;
-
-        wav_hdr[24] = (rate) & 0xFF;
-        wav_hdr[25] = (rate >> 8) & 0xFF;
-
-        bytes_per_sec = rate * 4;
-        wav_hdr[28] = (bytes_per_sec) & 0xFF;
-        wav_hdr[29] = (bytes_per_sec >> 8) & 0xFF;
-        wav_hdr[30] = (bytes_per_sec >> 16) & 0xFF;
-        wav_hdr[31] = (bytes_per_sec >> 24) & 0xFF;
-    }
-
-    if (wmidi_write(audio_fd, wav_hdr, 44) < 0) {
-        fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n", strerror(wmidi_geterrno()));
-        wmidi_close(audio_fd);
-        audio_fd = WM_BADF;
-        return (-1);
-    }
-
-    wav_size = 0;
-    send_output = write_wav_output;
-    close_output = close_wav_output;
-    pause_output = pause_output_nop;
-    resume_output = resume_output_nop;
-    return (0);
-}
-
-static int write_wav_output(int8_t *output_data, int output_size) {
-#ifdef WORDS_BIGENDIAN
-/* libWildMidi outputs host-endian, *.wav must have little-endian. */
-    uint16_t *swp = (uint16_t *) output_data;
-    int i = (output_size / 2) - 1;
-    for (; i >= 0; --i) {
-        swp[i] = (swp[i] << 8) | (swp[i] >> 8);
-    }
-#endif
-    if (wmidi_write(audio_fd, output_data, output_size) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
-        wmidi_close(audio_fd);
-        audio_fd = WM_BADF;
-        return (-1);
-    }
-
-    wav_size += output_size;
-    return (0);
-}
-
-static void close_wav_output(void) {
-    uint8_t wav_count[4];
-    if (WM_IS_BADF(audio_fd))
-        return;
-
-    printf("Finishing and closing wav output\r");
-    wav_count[0] = (wav_size) & 0xFF;
-    wav_count[1] = (wav_size >> 8) & 0xFF;
-    wav_count[2] = (wav_size >> 16) & 0xFF;
-    wav_count[3] = (wav_size >> 24) & 0xFF;
-    wmidi_seekset(audio_fd, 40);
-    if (wmidi_write(audio_fd, wav_count, 4) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
-        goto end;
-    }
-
-    wav_size += 36;
-    wav_count[0] = (wav_size) & 0xFF;
-    wav_count[1] = (wav_size >> 8) & 0xFF;
-    wav_count[2] = (wav_size >> 16) & 0xFF;
-    wav_count[3] = (wav_size >> 24) & 0xFF;
-    wmidi_seekset(audio_fd, 4);
-    if (wmidi_write(audio_fd, wav_count, 4) < 0) {
-        fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n", strerror(wmidi_geterrno()));
-        goto end;
-    }
-
-end:    printf("\n");
-    if (!WM_IS_BADF(audio_fd))
-        wmidi_close(audio_fd);
-    audio_fd = WM_BADF;
-}
+// FIXME get rid of this
+char wav_file[1024];
 
 #if ((defined _WIN32) || (defined __CYGWIN__)) && (AUDIODRV_WIN32_MM == 1)
 
@@ -1396,133 +1355,7 @@ static void close_oss_output(void) {
 
 #elif AUDIODRV_OPENAL == 1
 
-#define NUM_BUFFERS 4
-
-static ALCdevice *device;
-static ALCcontext *context;
-static ALuint sourceId = 0;
-static ALuint buffers[NUM_BUFFERS];
-static ALuint frames = 0;
-
-#define open_audio_output open_openal_output
-
-static void pause_output_openal(void) {
-    alSourcePause(sourceId);
-}
-
-static int write_openal_output(int8_t *output_data, int output_size) {
-    ALint processed, state;
-    ALuint bufid;
-
-    if (frames < NUM_BUFFERS) { /* initial state: fill the buffers */
-        alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data,
-                     output_size, rate);
-
-        /* Now queue and start playback! */
-        if (++frames == NUM_BUFFERS) {
-            alSourceQueueBuffers(sourceId, frames, buffers);
-            alSourcePlay(sourceId);
-        }
-        return 0;
-    }
-
-    /* Get relevant source info */
-    alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-    if (state == AL_PAUSED) { /* resume it, then.. */
-        alSourcePlay(sourceId);
-        if (alGetError() != AL_NO_ERROR) {
-            fprintf(stderr, "\nError restarting playback\r\n");
-            return (-1);
-        }
-    }
-
-    processed = 0;
-    while (processed == 0) { /* Wait until we have a processed buffer */
-        alGetSourcei(sourceId, AL_BUFFERS_PROCESSED, &processed);
-    }
-
-    /* Unqueue and handle each processed buffer */
-    alSourceUnqueueBuffers(sourceId, 1, &bufid);
-
-    /* Read the next chunk of data, refill the buffer, and queue it
-     * back on the source */
-    alBufferData(bufid, AL_FORMAT_STEREO16, output_data, output_size, rate);
-    alSourceQueueBuffers(sourceId, 1, &bufid);
-    if (alGetError() != AL_NO_ERROR) {
-        fprintf(stderr, "\nError buffering data\r\n");
-        return (-1);
-    }
-
-    /* Make sure the source hasn't underrun */
-    alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-    /*printf("STATE: %#08x - %d\n", state, queued);*/
-    if (state != AL_PLAYING) {
-        ALint queued;
-
-        /* If no buffers are queued, playback is finished */
-        alGetSourcei(sourceId, AL_BUFFERS_QUEUED, &queued);
-        if (queued == 0) {
-            fprintf(stderr, "\nNo buffers queued for playback\r\n");
-            return (-1);
-        }
-
-        alSourcePlay(sourceId);
-    }
-
-    return (0);
-}
-
-static void close_openal_output(void) {
-    if (!context) return;
-    printf("Shutting down sound output\r\n");
-    alSourceStop(sourceId);         /* stop playing */
-    alSourcei(sourceId, AL_BUFFER, 0);  /* unload buffer from source */
-    alDeleteBuffers(NUM_BUFFERS, buffers);
-    alDeleteSources(1, &sourceId);
-    alcDestroyContext(context);
-    alcCloseDevice(device);
-    context = NULL;
-    device = NULL;
-    frames = 0;
-}
-
-static int open_openal_output(void) {
-    /* setup our audio devices and contexts */
-    device = alcOpenDevice(NULL);
-    if (!device) {
-        fprintf(stderr, "OpenAL: Unable to open default device.\r\n");
-        return (-1);
-    }
-
-    context = alcCreateContext(device, NULL);
-    if (context == NULL || alcMakeContextCurrent(context) == ALC_FALSE) {
-        if (context != NULL)
-            alcDestroyContext(context);
-        alcCloseDevice(device);
-        context = NULL;
-        device = NULL;
-        fprintf(stderr, "OpenAL: Failed to create the default context.\r\n");
-        return (-1);
-    }
-
-    /* setup our sources and buffers */
-    alGenSources(1, &sourceId);
-    alGenBuffers(NUM_BUFFERS, buffers);
-
-    send_output = write_openal_output;
-    close_output = close_openal_output;
-    pause_output = pause_output_openal;
-    resume_output = resume_output_nop;
-    return (0);
-}
-
 #else /* no audio output driver compiled in: */
-
-#define open_audio_output open_noaudio_output
-static int open_noaudio_output(void) {
-    fprintf(stderr, "No audio output driver was selected at compile time.\r\n");
-    return -1;
-}
 
 #endif /* AUDIODRV_ALSA */
 #endif /* _WIN32 || __CYGWIN__ */
@@ -1827,11 +1660,12 @@ int main(int argc, char **argv) {
 
     printf("Initializing Sound System (%s)\n", available_outputs[playback_id].name);
     if (wav_file[0] != '\0') {
-        if (open_wav_output() == -1) {
+        // FIXME merge with common case
+        if (available_outputs[WAVE_OUT].open_out() == -1) {
             return (1);
         }
     } else {
-        if (open_audio_output() == -1) {
+        if (available_outputs[playback_id].open_out() == -1) {
             return (1);
         }
     }
@@ -1974,11 +1808,11 @@ int main(int argc, char **argv) {
                     if (inpause) {
                         inpause = 0;
                         fprintf(stderr, "       \r");
-                        resume_output();
+                        available_outputs[playback_id].resume_out();
                     } else {
                         inpause = 1;
                         fprintf(stderr, "Paused \r");
-                        pause_output();
+                        available_outputs[playback_id].pause_out();
                         continue;
                     }
                     break;
@@ -2116,7 +1950,7 @@ int main(int argc, char **argv) {
                 display_lyrics, modes, (int)master_volume, pro_mins,
                 pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
-            if (send_output(output_buffer, res) < 0) {
+            if (available_outputs[playback_id].send_out(output_buffer, res) < 0) {
             /* driver prints an error message already. */
                 printf("\r");
                 goto end2;
@@ -2128,12 +1962,14 @@ int main(int argc, char **argv) {
             fprintf(stderr, "OOPS: failed closing midi handle!\r\n%s\r\n",ret_err);
         }
         memset(output_buffer, 0, 16384);
-        send_output(output_buffer, 16384);
+        available_outputs[playback_id].send_out(output_buffer, 16384);
     }
-end1: memset(output_buffer, 0, 16384);
-    send_output(output_buffer, 16384);
+end1:
+    memset(output_buffer, 0, 16384);
+    available_outputs[playback_id].send_out(output_buffer, 16384);
     msleep(5);
-end2: close_output();
+end2:
+    available_outputs[playback_id].close_out();
     free(output_buffer);
     if (WildMidi_Shutdown() == -1) {
         ret_err = WildMidi_GetError();

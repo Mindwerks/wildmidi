@@ -40,6 +40,8 @@ SET(wildmidi_library_HDRS
         )
 
 SET(wildmidi_executable_SRCS
+    player/out_openal.c
+    player/out_wave.c
     player/wm_tty.c
     player/wildmidi.c
         )
@@ -53,9 +55,13 @@ IF (AMIGA OR AROS)
 ENDIF ()
 
 SET(wildmidi_executable_HDRS
-        ../include/player/wm_tty.h
-        ../include/getopt_long.h
-        )
+    ../include/player/out_noout.h
+    ../include/player/out_openal.h
+    ../include/player/out_wave.h
+    ../include/player/wildplay.h
+    ../include/player/wm_tty.h
+    ../include/getopt_long.h
+)
 
 # set our target paths
 SET(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}")

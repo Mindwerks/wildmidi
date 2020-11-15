@@ -1,5 +1,5 @@
 /*
- * wildplay.h -- WildMidi player header
+ * out_noout.h -- NULL output
  *
  * Copyright (C) WildMidi Developers 2020
  *
@@ -21,39 +21,24 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WILDPLAY_H
-#define WILDPLAY_H
+#ifndef OUT_NOOUT_H
+#define OUT_NOOUT_H
 
 #include <stdint.h>
 
-// Macros to suppress unused variables warnings
-#define UNUSED(x) (void)(x)
+#include "wildplay.h"
 
-// Supported sound backends
-enum {
-    NO_OUT,       // No out
-    WAVE_OUT,     // WAVe raw output
-    ALSA_OUT,     // ALSA
-    OSS_OUT,      // OSS
-    OPENAL_OUT,   // OpenAL
-    AHI_OUT,      // Amiga AHI output
-    WIN32_MM_OUT, // Windows native output
-    OS2DART_OUT,  // DART OS/2 output
-    DOSSB_OUT,    // SoundBlaster output (DOS)
-    // Add here new output backends
+static inline int open_output_noout(void) {
+    fprintf(stderr, "No audio output driver was selected at compile time.\r\n");
+    return (-1);
+}
+static inline int send_output_noout(int8_t *output_data, int output_size) {
+  UNUSED(output_data);
+  UNUSED(output_size);
+  return (-1);
+}
+static inline void close_output_noout(void) {}
+static inline void pause_output_noout(void) {}
+static inline void resume_output_noout(void) {}
 
-    TOTAL_OUT     // Total supported outputs
-};
-
-typedef struct {
-    char * name;
-    char * description;
-    int enabled;
-    int (* open_out)();
-    int (* send_out)(int8_t *, int);
-    void (* close_out)();
-    void (* pause_out)();
-    void (* resume_out)();
-} wildmidi_info;
-
-#endif // __WILDPLAY_H
+#endif // OUT_NOOUT_H
