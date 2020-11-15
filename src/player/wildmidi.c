@@ -31,7 +31,9 @@
 #include <string.h>
 
 #include "out_noout.h"
+#include "out_alsa.h"
 #include "out_openal.h"
+#include "out_oss.h"
 #include "out_wave.h"
 
 // available outputs
@@ -60,9 +62,9 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         "alsa",
         "Advanced Linux Sound Architecture (ALSA) output",
         AUDIODRV_ALSA,
-        open_output_noout,
-        send_output_noout,
-        close_output_noout,
+        open_alsa_output,
+        write_alsa_output,
+        close_alsa_output,
         pause_output_noout,
         resume_output_noout
     },
@@ -70,10 +72,10 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         "oss",
         "Open Sound System (OSS) output",
         AUDIODRV_OSS,
-        open_output_noout,
-        send_output_noout,
-        close_output_noout,
-        pause_output_noout,
+        open_oss_output,
+        write_oss_output,
+        close_oss_output,
+        pause_oss_output,
         resume_output_noout
     },
     {
@@ -215,11 +217,6 @@ static int msleep(unsigned long millisec);
 #include <unistd.h>
 #include <getopt.h>
 #include <time.h>
-#if AUDIODRV_ALSA == 1
-#  include <alsa/asoundlib.h>
-#elif AUDIODRV_OSS == 1
-#  include <sys/soundcard.h>
-#endif
 #endif /* !_WIN32, !__DJGPP__ (unix build) */
 
 #include "filenames.h"
@@ -1125,234 +1122,11 @@ static void close_ahi_output(void) {
 
 #else
 #if (AUDIODRV_ALSA == 1)
-
-static int alsa_first_time = 1;
-static snd_pcm_t *pcm = NULL;
-static char pcmname[64];
-
-#define open_audio_output open_alsa_output
-static int write_alsa_output(int8_t *output_data, int output_size);
-static void close_alsa_output(void);
-
-static int open_alsa_output(void) {
-    snd_pcm_hw_params_t *hw;
-    snd_pcm_sw_params_t *sw;
-    int err;
-    unsigned int alsa_buffer_time;
-    unsigned int alsa_period_time;
-    unsigned int r;
-
-    if (!pcmname[0]) {
-        strcpy(pcmname, "default");
-    }
-
-    if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-        fprintf(stderr, "Error: audio open error: %s\r\n", snd_strerror(err));
-        return -1;
-    }
-
-    snd_pcm_hw_params_alloca(&hw);
-
-    if ((err = snd_pcm_hw_params_any(pcm, hw)) < 0) {
-        fprintf(stderr, "ERROR: No configuration available for playback: %s\r\n",
-                snd_strerror(err));
-        goto fail;
-    }
-
-    if ((err = snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-        fprintf(stderr, "Cannot set access mode: %s.\r\n", snd_strerror(err));
-        goto fail;
-    }
-
-    if (snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_S16) < 0) {
-        fprintf(stderr, "ALSA does not support 16bit signed audio for your soundcard\r\n");
-        goto fail;
-    }
-
-    if (snd_pcm_hw_params_set_channels(pcm, hw, 2) < 0) {
-        fprintf(stderr, "ALSA does not support stereo for your soundcard\r\n");
-        goto fail;
-    }
-
-    r = rate;
-    if (snd_pcm_hw_params_set_rate_near(pcm, hw, &rate, 0) < 0) {
-        fprintf(stderr, "ALSA does not support %uHz for your soundcard\r\n", rate);
-        goto fail;
-    }
-    if (r != rate) {
-        fprintf(stderr, "ALSA: sample rate set to %uHz instead of %u\r\n", rate, r);
-    }
-
-    alsa_buffer_time = 500000;
-    alsa_period_time = 50000;
-
-    if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw, &alsa_buffer_time, 0)) < 0) {
-        fprintf(stderr, "Set buffer time failed: %s.\r\n", snd_strerror(err));
-        goto fail;
-    }
-
-    if ((err = snd_pcm_hw_params_set_period_time_near(pcm, hw, &alsa_period_time, 0)) < 0) {
-        fprintf(stderr, "Set period time failed: %s.\r\n", snd_strerror(err));
-        goto fail;
-    }
-
-    if (snd_pcm_hw_params(pcm, hw) < 0) {
-        fprintf(stderr, "Unable to install hw params\r\n");
-        goto fail;
-    }
-
-    snd_pcm_sw_params_alloca(&sw);
-    snd_pcm_sw_params_current(pcm, sw);
-    if (snd_pcm_sw_params(pcm, sw) < 0) {
-        fprintf(stderr, "Unable to install sw params\r\n");
-        goto fail;
-    }
-
-    send_output = write_alsa_output;
-    close_output = close_alsa_output;
-    pause_output = pause_output_nop;
-    resume_output = resume_output_nop;
-    return (0);
-
-fail:   close_alsa_output();
-    return -1;
-}
-
-static int write_alsa_output(int8_t *output_data, int output_size) {
-    int err;
-    snd_pcm_uframes_t frames;
-
-    while (output_size > 0) {
-        frames = snd_pcm_bytes_to_frames(pcm, output_size);
-        if ((err = snd_pcm_writei(pcm, output_data, frames)) < 0) {
-            if (snd_pcm_state(pcm) == SND_PCM_STATE_XRUN) {
-                if ((err = snd_pcm_prepare(pcm)) < 0)
-                    fprintf(stderr, "\nsnd_pcm_prepare() failed.\r\n");
-                alsa_first_time = 1;
-                continue;
-            }
-            return err;
-        }
-
-        output_size -= snd_pcm_frames_to_bytes(pcm, err);
-        output_data += snd_pcm_frames_to_bytes(pcm, err);
-        if (alsa_first_time) {
-            alsa_first_time = 0;
-            snd_pcm_start(pcm);
-        }
-    }
-    return (0);
-}
-
-static void close_alsa_output(void) {
-    if (!pcm) return;
-    printf("Shutting down sound output\r\n");
-    snd_pcm_close(pcm);
-    pcm = NULL;
-}
-
+// FIXME get rid of this
+char pcmname[64];
 #elif AUDIODRV_OSS == 1
-
-#if !defined(AFMT_S16_NE)
-#ifdef WORDS_BIGENDIAN
-#define AFMT_S16_NE AFMT_S16_BE
-#else
-#define AFMT_S16_NE AFMT_S16_LE
-#endif
-#endif
-
-#define DEFAULT_FRAGSIZE 14
-#define DEFAULT_NUMFRAGS 16
-
-static char pcmname[64];
-
-#define open_audio_output open_oss_output
-static int write_oss_output(int8_t *output_data, int output_size);
-static void close_oss_output(void);
-
-static void pause_output_oss(void) {
-    ioctl(audio_fd, SNDCTL_DSP_POST, 0);
-}
-
-static int open_oss_output(void) {
-    int tmp;
-    unsigned int r;
-
-    if (!pcmname[0]) {
-        strcpy(pcmname, "/dev/dsp");
-    }
-
-    if ((audio_fd = open(pcmname, O_WRONLY)) < 0) {
-        fprintf(stderr, "ERROR: Unable to open dsp (%s)\r\n", strerror(errno));
-        return (-1);
-    }
-    if (ioctl(audio_fd, SNDCTL_DSP_RESET, 0) < 0) {
-        fprintf(stderr, "ERROR: Unable to reset dsp\r\n");
-        goto fail;
-    }
-
-    tmp = AFMT_S16_NE;
-    if (ioctl(audio_fd, SNDCTL_DSP_SETFMT, &tmp) < 0) {
-        fprintf(stderr, "ERROR: Unable to set 16bit sound format\r\n");
-        goto fail;
-    }
-
-    tmp = 2;
-    if (ioctl(audio_fd, SNDCTL_DSP_CHANNELS, &tmp) < 0) {
-        fprintf(stderr, "ERROR: Unable to set stereo\r\n");
-        goto fail;
-    }
-
-    r = rate;
-    if (ioctl(audio_fd, SNDCTL_DSP_SPEED, &rate) < 0) {
-        fprintf(stderr, "ERROR: Unable to set %uHz sample rate\r\n", rate);
-        goto fail;
-    }
-    if (r != rate) {
-        fprintf(stderr, "OSS: sample rate set to %uHz instead of %u\r\n", rate, r);
-    }
-
-    tmp = (DEFAULT_NUMFRAGS<<16)|DEFAULT_FRAGSIZE;
-    if (ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &tmp) < 0) {
-        fprintf(stderr, "ERROR: Unable to set fragment size\r\n");
-        goto fail;
-    }
-
-    send_output = write_oss_output;
-    close_output = close_oss_output;
-    pause_output = pause_output_oss;
-    resume_output = resume_output_nop;
-    return (0);
-
-fail:   close_oss_output();
-    return (-1);
-}
-
-static int write_oss_output(int8_t *output_data, int output_size) {
-    int res = 0;
-    while (output_size > 0) {
-        res = write(audio_fd, output_data, output_size);
-        if (res > 0) {
-            output_size -= res;
-            output_data += res;
-        } else {
-            fprintf(stderr, "\nOSS: write failure to dsp: %s.\r\n",
-                    strerror(errno));
-            return (-1);
-        }
-    }
-    return (0);
-}
-
-static void close_oss_output(void) {
-    if (audio_fd < 0)
-        return;
-    printf("Shutting down sound output\r\n");
-    ioctl(audio_fd, SNDCTL_DSP_RESET, 0);
-    close(audio_fd);
-    audio_fd = -1;
-}
-
+// FIXME get rid of this
+char pcmname[64];
 #elif AUDIODRV_OPENAL == 1
 
 #else /* no audio output driver compiled in: */
