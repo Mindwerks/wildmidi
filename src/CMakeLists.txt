@@ -44,6 +44,7 @@ SET(wildmidi_executable_SRCS
     player/out_openal.c
     player/out_oss.c
     player/out_wave.c
+    player/out_win32mm.c
     player/wm_tty.c
     player/wildmidi.c
         )
@@ -62,6 +63,7 @@ SET(wildmidi_executable_HDRS
     ../include/player/out_openal.h
     ../include/player/out_oss.h
     ../include/player/out_wave.h
+    ../include/player/out_win32mm.h
     ../include/player/wildplay.h
     ../include/player/wm_tty.h
     ../include/getopt_long.h

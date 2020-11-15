@@ -35,6 +35,7 @@
 #include "out_openal.h"
 #include "out_oss.h"
 #include "out_wave.h"
+#include "out_win32mm.h"
 
 // available outputs
 wildmidi_info available_outputs[TOTAL_OUT] = {
@@ -102,9 +103,9 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         "win32mm",
         "Windows MM output",
         AUDIODRV_WIN32_MM,
-        open_output_noout,
-        send_output_noout,
-        close_output_noout,
+        open_mm_output,
+        write_mm_output,
+        close_mm_output,
         pause_output_noout,
         resume_output_noout
     },
@@ -524,142 +525,6 @@ static int write_midi_output(void *output_data, int output_size) {
 char wav_file[1024];
 
 #if ((defined _WIN32) || (defined __CYGWIN__)) && (AUDIODRV_WIN32_MM == 1)
-
-static HWAVEOUT hWaveOut = NULL;
-static CRITICAL_SECTION waveCriticalSection;
-
-#define open_audio_output open_mm_output
-static int write_mm_output (int8_t *output_data, int output_size);
-static void close_mm_output (void);
-
-static WAVEHDR *mm_blocks = NULL;
-#define MM_BLOCK_SIZE 16384
-#define MM_BLOCK_COUNT 3
-
-static DWORD mm_free_blocks = MM_BLOCK_COUNT;
-static DWORD mm_current_block = 0;
-
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-typedef DWORD DWORD_PTR;
-#endif
-
-static void CALLBACK mmOutProc (HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
-    /* unused params */
-    (void)hWaveOut;
-    (void)dwParam1;
-    (void)dwParam2;
-
-    if(uMsg != WOM_DONE)
-        return;
-    /* increment mm_free_blocks */
-    EnterCriticalSection(&waveCriticalSection);
-    (*(DWORD *)dwInstance)++;
-    LeaveCriticalSection(&waveCriticalSection);
-}
-
-static int
-open_mm_output (void) {
-    WAVEFORMATEX wfx;
-    char *mm_buffer;
-    int i;
-
-    InitializeCriticalSection(&waveCriticalSection);
-
-    if((mm_buffer = (char *) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((MM_BLOCK_SIZE + sizeof(WAVEHDR)) * MM_BLOCK_COUNT))) == NULL) {
-        fprintf(stderr, "Memory allocation error\r\n");
-        return -1;
-    }
-
-    mm_blocks = (WAVEHDR*)mm_buffer;
-    mm_buffer += sizeof(WAVEHDR) * MM_BLOCK_COUNT;
-
-    for(i = 0; i < MM_BLOCK_COUNT; i++) {
-        mm_blocks[i].dwBufferLength = MM_BLOCK_SIZE;
-        mm_blocks[i].lpData = mm_buffer;
-        mm_buffer += MM_BLOCK_SIZE;
-    }
-
-    wfx.nSamplesPerSec = rate;
-    wfx.wBitsPerSample = 16;
-    wfx.nChannels = 2;
-    wfx.cbSize = 0;
-    wfx.wFormatTag = WAVE_FORMAT_PCM;
-    wfx.nBlockAlign = (wfx.wBitsPerSample >> 3) * wfx.nChannels;
-    wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
-
-    if(waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, (DWORD_PTR)mmOutProc, (DWORD_PTR)&mm_free_blocks, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) {
-        fprintf(stderr, "unable to open WAVE_MAPPER device\r\n");
-        HeapFree(GetProcessHeap(), 0, mm_blocks);
-        hWaveOut = NULL;
-        mm_blocks = NULL;
-        return -1;
-    }
-
-    send_output = write_mm_output;
-    close_output = close_mm_output;
-    pause_output = pause_output_nop;
-    resume_output = resume_output_nop;
-    return (0);
-}
-
-static int
-write_mm_output (int8_t *output_data, int output_size) {
-    WAVEHDR* current;
-    int free_size = 0;
-    int data_read = 0;
-    current = &mm_blocks[mm_current_block];
-
-    while (output_size) {
-        if(current->dwFlags & WHDR_PREPARED)
-            waveOutUnprepareHeader(hWaveOut, current, sizeof(WAVEHDR));
-        free_size = MM_BLOCK_SIZE - current->dwUser;
-        if (free_size > output_size)
-            free_size = output_size;
-
-        memcpy(current->lpData + current->dwUser, &output_data[data_read], free_size);
-        current->dwUser += free_size;
-        output_size -= free_size;
-        data_read += free_size;
-
-        if (current->dwUser < MM_BLOCK_SIZE) {
-            return (0);
-        }
-
-        current->dwBufferLength = MM_BLOCK_SIZE;
-        waveOutPrepareHeader(hWaveOut, current, sizeof(WAVEHDR));
-        waveOutWrite(hWaveOut, current, sizeof(WAVEHDR));
-        EnterCriticalSection(&waveCriticalSection);
-        mm_free_blocks--;
-        LeaveCriticalSection(&waveCriticalSection);
-        while(!mm_free_blocks)
-            Sleep(10);
-        mm_current_block++;
-        mm_current_block %= MM_BLOCK_COUNT;
-        current = &mm_blocks[mm_current_block];
-        current->dwUser = 0;
-    }
-    return (0);
-}
-
-static void
-close_mm_output (void) {
-    int i;
-
-    if (!hWaveOut) return;
-
-    printf("Shutting down sound output\r\n");
-    for (i = 0; i < MM_BLOCK_COUNT; i++) {
-        while (waveOutUnprepareHeader(hWaveOut, &mm_blocks[i], sizeof(WAVEHDR))
-                == WAVERR_STILLPLAYING) {
-            Sleep(10);
-        }
-    }
-
-    waveOutClose (hWaveOut);
-    HeapFree(GetProcessHeap(), 0, mm_blocks);
-    hWaveOut = NULL;
-    mm_blocks = NULL;
-}
 
 #elif (defined(__OS2__) || defined(__EMX__)) && (AUDIODRV_OS2DART == 1)
 /* based on Dart code originally written by Kevin Langman for XMP */
