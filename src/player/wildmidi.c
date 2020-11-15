@@ -344,20 +344,20 @@ unsigned int rate = 32072;
 #if defined(_WIN32)
 int audio_fd = -1;
 #define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF -1
-static inline int wmidi_fileexists (const char *path) {
+#define WM_BADF (-1)
+int wmidi_fileexists (const char *path) {
     return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES);
 }
-static inline int wmidi_open_write (const char *path) {
+int wmidi_open_write (const char *path) {
     return _open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
 }
-static inline void wmidi_close (int fd) {
+void wmidi_close (int fd) {
     _close(fd);
 }
-static inline long wmidi_seekset (int fd, long ofs) {
+long wmidi_seekset (int fd, long ofs) {
     return _lseek(fd, ofs, SEEK_SET);
 }
-static inline int wmidi_write (int fd, const void *buf, size_t size) {
+int wmidi_write (int fd, const void *buf, size_t size) {
     return _write(fd, buf, size);
 }
 
