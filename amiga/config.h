@@ -17,4 +17,12 @@
 #define __builtin_expect(x,c) x
 #endif
 
-#define AUDIODRV_AHI 1 /* AHI output for player app */
+#define AUDIODRV_NONE 1
+#define AUDIODRV_WAVE 1
+#define AUDIODRV_ALSA 0
+#define AUDIODRV_OSS 0
+#define AUDIODRV_OPENAL 0
+#define AUDIODRV_AHI 1
+#define AUDIODRV_WIN32_MM 0
+#define AUDIODRV_OS2DART 0
+#define AUDIODRV_DOSSB 0

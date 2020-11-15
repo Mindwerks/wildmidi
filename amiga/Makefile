@@ -21,7 +21,7 @@ AR=$(CROSS)-ar
 RANLIB=$(CROSS)-ranlib
 endif
 
-INCLUDE = -I. -I../include
+INCLUDE = -I. -I../include -I../include/player
 CFLAGS = $(INCLUDE) -Wall -W -fno-common
 ARFLAGS = cr
 LD = $(CC)
@@ -51,10 +51,12 @@ endif
 	$(CC) -c $(CFLAGS) -o $@ $<
 %.o: ../src/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
+%.o: ../src/player/%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 # Objects
 LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ= getopt_long.o wm_tty.o amiga.o wildmidi.o
+PLAYER_OBJ= getopt_long.o wm_tty.o out_wave.o out_ahi.o fileops.o amiga.o wildmidi.o
 
 # Build targets
 .PHONY: clean distclean

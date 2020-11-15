@@ -31,7 +31,10 @@
 #include <string.h>
 
 #include "out_noout.h"
+#include "out_ahi.h"
 #include "out_alsa.h"
+#include "out_dart.h"
+#include "out_dossb.h"
 #include "out_openal.h"
 #include "out_oss.h"
 #include "out_wave.h"
@@ -93,9 +96,9 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         "ahi",
         "Amiga AHI output",
         AUDIODRV_AHI,
-        open_output_noout,
-        send_output_noout,
-        close_output_noout,
+        open_ahi_output,
+        write_ahi_output,
+        close_ahi_output,
         pause_output_noout,
         resume_output_noout
     },
@@ -113,9 +116,9 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         "os2dart",
         "OS/2 DART output",
         AUDIODRV_OS2DART,
-        open_output_noout,
-        send_output_noout,
-        close_output_noout,
+        open_dart_output,
+        write_dart_output,
+        close_dart_output,
         pause_output_noout,
         resume_output_noout
     },
@@ -123,10 +126,10 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         "dossb",
         "DOS SoundBlaster output",
         AUDIODRV_DOSSB,
-        open_output_noout,
-        send_output_noout,
-        close_output_noout,
-        pause_output_noout,
+        open_sb_output,
+        write_sb_s16stereo,   // FIXME
+        close_sb_output,
+        sb_silence_s16,       // FIXME
         resume_output_noout
     },
 };
@@ -527,463 +530,10 @@ char wav_file[1024];
 #if ((defined _WIN32) || (defined __CYGWIN__)) && (AUDIODRV_WIN32_MM == 1)
 
 #elif (defined(__OS2__) || defined(__EMX__)) && (AUDIODRV_OS2DART == 1)
-/* based on Dart code originally written by Kevin Langman for XMP */
-
-#define open_audio_output open_dart_output
-static int write_dart_output (int8_t *output_data, int output_size);
-static void close_dart_output (void);
-
-#define BUFFERCOUNT 4
-
-static MCI_MIX_BUFFER MixBuffers[BUFFERCOUNT];
-static MCI_MIXSETUP_PARMS MixSetupParms;
-static MCI_BUFFER_PARMS BufferParms;
-static MCI_GENERIC_PARMS GenericParms;
-
-static ULONG DeviceID = 0;
-static ULONG bsize = 16;
-static short next = 2;
-static short ready = 1;
-
-static HMTX dart_mutex;
-
-/* Buffer update thread (created and called by DART) */
-static LONG APIENTRY OS2_Dart_UpdateBuffers
-    (ULONG ulStatus, PMCI_MIX_BUFFER pBuffer, ULONG ulFlags) {
-
-    (void) pBuffer;/* unused param */
-
-    if ((ulFlags == MIX_WRITE_COMPLETE) ||
-        ((ulFlags == (MIX_WRITE_COMPLETE | MIX_STREAM_ERROR)) &&
-         (ulStatus == ERROR_DEVICE_UNDERRUN))) {
-        DosRequestMutexSem(dart_mutex, SEM_INDEFINITE_WAIT);
-        ready++;
-        DosReleaseMutexSem(dart_mutex);
-    }
-    return (TRUE);
-}
-
-static int
-open_dart_output(void) {
-    int i;
-    MCI_AMP_OPEN_PARMS AmpOpenParms;
-
-    if (DosCreateMutexSem(NULL, &dart_mutex, 0, 0) != NO_ERROR) {
-        fprintf(stderr, "Failed creating a MutexSem.\r\n");
-        return (-1);
-    }
-
-    /* compute a size for circa 1/4" of playback. */
-    bsize = rate >> 2;
-    bsize <<= 1; /* stereo */
-    bsize <<= 1; /* 16 bit */
-    for (i = 15; i >= 12; i--) {
-        if (bsize & (1 << i))
-            break;
-    }
-    bsize = (1 << i);
-    /* make sure buffer is not greater than 64 Kb: DART can't handle it. */
-    if (bsize > 65536)
-        bsize = 65536;
-
-    MixBuffers[0].pBuffer = NULL; /* marker */
-    memset(&GenericParms, 0, sizeof(MCI_GENERIC_PARMS));
-
-    /* open AMP device */
-    memset(&AmpOpenParms, 0, sizeof(MCI_AMP_OPEN_PARMS));
-    AmpOpenParms.usDeviceID = 0;
-
-    AmpOpenParms.pszDeviceType =
-        (PSZ) MAKEULONG(MCI_DEVTYPE_AUDIO_AMPMIX, 0); /* 0: default waveaudio device */
-
-    if(mciSendCommand(0, MCI_OPEN, MCI_WAIT|MCI_OPEN_TYPE_ID|MCI_OPEN_SHAREABLE,
-                       (PVOID) &AmpOpenParms, 0) != MCIERR_SUCCESS) {
-        fprintf(stderr, "Failed opening DART audio device\r\n");
-        return (-1);
-    }
-
-    DeviceID = AmpOpenParms.usDeviceID;
-
-    /* setup playback parameters */
-    memset(&MixSetupParms, 0, sizeof(MCI_MIXSETUP_PARMS));
-
-    MixSetupParms.ulBitsPerSample = 16;
-    MixSetupParms.ulFormatTag = MCI_WAVE_FORMAT_PCM;
-    MixSetupParms.ulSamplesPerSec = rate;
-    MixSetupParms.ulChannels = 2;
-    MixSetupParms.ulFormatMode = MCI_PLAY;
-    MixSetupParms.ulDeviceType = MCI_DEVTYPE_WAVEFORM_AUDIO;
-    MixSetupParms.pmixEvent = OS2_Dart_UpdateBuffers;
-
-    if (mciSendCommand(DeviceID, MCI_MIXSETUP,
-                       MCI_WAIT | MCI_MIXSETUP_INIT,
-                       (PVOID) & MixSetupParms, 0) != MCIERR_SUCCESS) {
-
-        mciSendCommand(DeviceID, MCI_CLOSE, MCI_WAIT,
-                       (PVOID) & GenericParms, 0);
-        fprintf(stderr, "Failed DART mixer setup\r\n");
-        return (-1);
-    }
-
-    /*bsize = MixSetupParms.ulBufferSize;*/
-    /*printf("Dart Buffer Size = %lu\n", bsize);*/
-
-    BufferParms.ulNumBuffers = BUFFERCOUNT;
-    BufferParms.ulBufferSize = bsize;
-    BufferParms.pBufList = MixBuffers;
-
-    if (mciSendCommand(DeviceID, MCI_BUFFER,
-                       MCI_WAIT | MCI_ALLOCATE_MEMORY,
-                       (PVOID) & BufferParms, 0) != MCIERR_SUCCESS) {
-        fprintf(stderr, "DART Memory allocation error\r\n");
-        mciSendCommand(DeviceID, MCI_CLOSE, MCI_WAIT,
-                       (PVOID) & GenericParms, 0);
-        return (-1);
-    }
-
-    for (i = 0; i < BUFFERCOUNT; i++) {
-        MixBuffers[i].ulBufferLength = bsize;
-    }
-
-    /* Start Playback */
-    memset(MixBuffers[0].pBuffer, /*32767 */ 0, bsize);
-    memset(MixBuffers[1].pBuffer, /*32767 */ 0, bsize);
-    MixSetupParms.pmixWrite(MixSetupParms.ulMixHandle, MixBuffers, 2);
-
-    send_output = write_dart_output;
-    close_output = close_dart_output;
-    pause_output = pause_output_nop;
-    resume_output = resume_output_nop;
-
-    return (0);
-}
-
-static int
-write_dart_output (int8_t *output_data, int output_size) {
-    static int idx = 0;
-
-    if (idx + output_size > bsize) {
-        do {
-            DosRequestMutexSem(dart_mutex, SEM_INDEFINITE_WAIT);
-            if (ready != 0) {
-                DosReleaseMutexSem(dart_mutex);
-                break;
-            }
-            DosReleaseMutexSem(dart_mutex);
-            DosSleep(20);
-        } while (TRUE);
-
-        MixBuffers[next].ulBufferLength = idx;
-        MixSetupParms.pmixWrite(MixSetupParms.ulMixHandle, &(MixBuffers[next]), 1);
-        ready--;
-        next++;
-        idx = 0;
-        if (next == BUFFERCOUNT) {
-            next = 0;
-        }
-    }
-    memcpy(&((char *)MixBuffers[next].pBuffer)[idx], output_data, output_size);
-    idx += output_size;
-    return (0);
-}
-
-static void
-close_dart_output (void) {
-    printf("Shutting down sound output\r\n");
-    if (MixBuffers[0].pBuffer) {
-        mciSendCommand(DeviceID, MCI_BUFFER,
-                       MCI_WAIT | MCI_DEALLOCATE_MEMORY, &BufferParms, 0);
-        MixBuffers[0].pBuffer = NULL;
-    }
-    if (DeviceID) {
-        mciSendCommand(DeviceID, MCI_CLOSE, MCI_WAIT,
-                       (PVOID) &GenericParms, 0);
-        DeviceID = 0;
-    }
-}
 
 #elif defined(__DJGPP__) && (AUDIODRV_DOSSB == 1)
-/* SoundBlaster/Pro/16/AWE32 driver for DOS -- adapted from
- * libMikMod,  written by Andrew Zabolotny <bit@eltech.ru>,
- * further fixes by O.Sezer <sezero@users.sourceforge.net>.
- * Timer callback functionality replaced by a push mechanism
- * to keep the wildmidi player changes to a minimum, for now.
- */
-
-/* The last buffer byte filled with sound */
-static unsigned int buff_tail = 0;
-
-static int write_sb_output(int8_t *data, unsigned int siz) {
-    unsigned int dma_size, dma_pos;
-    unsigned int cnt;
-
-    sb_query_dma(&dma_size, &dma_pos);
-    /* There isn't much sense in filling less than 256 bytes */
-    dma_pos &= ~255;
-
-    /* If nothing to mix, quit */
-    if (buff_tail == dma_pos)
-        return 0;
-
-    /* If DMA pointer still didn't wrapped around ... */
-    if (dma_pos > buff_tail) {
-        if ((cnt = dma_pos - buff_tail) > siz)
-            cnt = siz;
-        memcpy(sb.dma_buff->linear + buff_tail, data, cnt);
-        buff_tail += cnt;
-        /* If we arrived right to the DMA buffer end, jump to the beginning */
-        if (buff_tail >= dma_size)
-            buff_tail = 0;
-    } else {
-        /* If wrapped around, fill first to the end of buffer */
-        if ((cnt = dma_size - buff_tail) > siz)
-            cnt = siz;
-        memcpy(sb.dma_buff->linear + buff_tail, data, cnt);
-        buff_tail += cnt;
-        siz -= cnt;
-        if (!siz) return cnt;
-
-        /* Now fill from buffer beginning to current DMA pointer */
-        if (dma_pos > siz) dma_pos = siz;
-        data += cnt;
-        cnt += dma_pos;
-
-        memcpy(sb.dma_buff->linear, data, dma_pos);
-        buff_tail = dma_pos;
-    }
-    return cnt;
-}
-
-static int write_sb_s16stereo(int8_t *data, int siz) {
-/* libWildMidi sint16 stereo -> SB16 sint16 stereo */
-    int i;
-    while (1) {
-        i = write_sb_output(data, siz);
-        if ((siz -= i) <= 0) return 0;
-        data += i;
-        /*usleep(100);*/
-    }
-}
-
-static int write_sb_u8stereo(int8_t *data, int siz) {
-/* libWildMidi sint16 stereo -> SB uint8 stereo */
-    int16_t *src = (int16_t *) data;
-    uint8_t *dst = (uint8_t *) data;
-    int i = (siz /= 2);
-    for (; i >= 0; --i) {
-        *dst++ = (*src++ >> 8) + 128;
-    }
-    while (1) {
-        i = write_sb_output(data, siz);
-        if ((siz -= i) <= 0) return 0;
-        data += i;
-        /*usleep(100);*/
-    }
-}
-
-static int write_sb_u8mono(int8_t *data, int siz) {
-/* libWildMidi sint16 stereo -> SB uint8 mono */
-    int16_t *src = (int16_t *) data;
-    uint8_t *dst = (uint8_t *) data;
-    int i = (siz /= 4); int val;
-    for (; i >= 0; --i) {
-    /* do a cheap (left+right)/2 */
-        val  = *src++;
-        val += *src++;
-        *dst++ = (val >> 9) + 128;
-    }
-    while (1) {
-        i = write_sb_output(data, siz);
-        if ((siz -= i) <= 0) return 0;
-        data += i;
-        /*usleep(100);*/
-    }
-}
-
-static void sb_silence_s16(void) {
-    memset(sb.dma_buff->linear, 0, sb.dma_buff->size);
-}
-
-static void sb_silence_u8(void) {
-    memset(sb.dma_buff->linear, 0x80, sb.dma_buff->size);
-}
-
-static void close_sb_output(void)
-{
-    sb.timer_callback = NULL;
-    sb_output(FALSE);
-    sb_stop_dma();
-    sb_close();
-}
-
-#define open_audio_output open_sb_output
-static int open_sb_output(void)
-{
-    if (!sb_open()) {
-        fprintf(stderr, "Sound Blaster initialization failed.\n");
-        return -1;
-    }
-
-    if (rate < 4000) rate = 4000;
-    if (sb.caps & SBMODE_STEREO) {
-        if (rate > sb.maxfreq_stereo)
-            rate = sb.maxfreq_stereo;
-    } else {
-        if (rate > sb.maxfreq_mono)
-            rate = sb.maxfreq_mono;
-    }
-
-    /* Enable speaker output */
-    sb_output(TRUE);
-
-    /* Set our routine to be called during SB IRQs */
-    buff_tail = 0;
-    sb.timer_callback = NULL;/* see above  */
-
-    /* Start cyclic DMA transfer */
-    if (!sb_start_dma(((sb.caps & SBMODE_16BITS) ? SBMODE_16BITS | SBMODE_SIGNED : 0) |
-                            (sb.caps & SBMODE_STEREO), rate)) {
-        sb_output(FALSE);
-        sb_close();
-        fprintf(stderr, "Sound Blaster: DMA start failed.\n");
-        return -1;
-    }
-
-    if (sb.caps & SBMODE_16BITS) { /* can do stereo, too */
-        send_output = write_sb_s16stereo;
-        pause_output = sb_silence_s16;
-        resume_output = resume_output_nop;
-        printf("Sound Blaster 16 or compatible (16 bit, stereo, %u Hz)\n", rate);
-    } else if (sb.caps & SBMODE_STEREO) {
-        send_output = write_sb_u8stereo;
-        pause_output = sb_silence_u8;
-        resume_output = resume_output_nop;
-        printf("Sound Blaster Pro or compatible (8 bit, stereo, %u Hz)\n", rate);
-    } else {
-        send_output = write_sb_u8mono;
-        pause_output = sb_silence_u8;
-        resume_output = resume_output_nop;
-        printf("Sound Blaster %c or compatible (8 bit, mono, %u Hz)\n",
-               (sb.dspver < SBVER_20)? '1' : '2', rate);
-    }
-    close_output = close_sb_output;
-
-    return 0;
-}
 
 #elif defined(WILDMIDI_AMIGA) && (AUDIODRV_AHI == 1)
-
-/* Driver for output to native Amiga AHI device:
- * Written by Szilárd Biró <col.lawrence@gmail.com>, loosely based
- * on an old AOS4 version by Fredrik Wikstrom <fredrik@a500.org>
- */
-
-#define BUFFERSIZE (4 << 10)
-
-static struct MsgPort *AHImp = NULL;
-static struct AHIRequest *AHIReq[2] = { NULL, NULL };
-static int active = 0;
-static int8_t *AHIBuf[2] = { NULL, NULL };
-
-#define open_audio_output open_ahi_output
-static int write_ahi_output(int8_t *output_data, int output_size);
-static void close_ahi_output(void);
-
-static int open_ahi_output(void) {
-    AHImp = CreateMsgPort();
-    if (AHImp) {
-        AHIReq[0] = (struct AHIRequest *) CreateIORequest(AHImp, sizeof(struct AHIRequest));
-        if (AHIReq[0]) {
-            AHIReq[0]->ahir_Version = 4;
-            AHIReq[1] = (struct AHIRequest *) AllocVec(sizeof(struct AHIRequest), SHAREDMEMFLAG);
-            if (AHIReq[1]) {
-                if (!OpenDevice(AHINAME, AHI_DEFAULT_UNIT, (struct IORequest *)AHIReq[0], 0)) {
-                    /*AHIReq[0]->ahir_Std.io_Message.mn_Node.ln_Pri = 0;*/
-                    AHIReq[0]->ahir_Std.io_Command = CMD_WRITE;
-                    AHIReq[0]->ahir_Std.io_Data = NULL;
-                    AHIReq[0]->ahir_Std.io_Offset = 0;
-                    AHIReq[0]->ahir_Frequency = rate;
-                    AHIReq[0]->ahir_Type = AHIST_S16S;/* 16 bit stereo */
-                    AHIReq[0]->ahir_Volume = 0x10000;
-                    AHIReq[0]->ahir_Position = 0x8000;
-                    CopyMem(AHIReq[0], AHIReq[1], sizeof(struct AHIRequest));
-
-                    AHIBuf[0] = (int8_t *) AllocVec(BUFFERSIZE, SHAREDMEMFLAG | MEMF_CLEAR);
-                    if (AHIBuf[0]) {
-                        AHIBuf[1] = (int8_t *) AllocVec(BUFFERSIZE, SHAREDMEMFLAG | MEMF_CLEAR);
-                        if (AHIBuf[1]) {
-                            send_output = write_ahi_output;
-                            close_output = close_ahi_output;
-                            pause_output = pause_output_nop;
-                            resume_output = resume_output_nop;
-                            return (0);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    close_ahi_output();
-    fprintf(stderr, "ERROR: Unable to open AHI output\r\n");
-    return (-1);
-}
-
-static int write_ahi_output(int8_t *output_data, int output_size) {
-    int chunk;
-    while (output_size > 0) {
-        if (AHIReq[active]->ahir_Std.io_Data) {
-            WaitIO((struct IORequest *) AHIReq[active]);
-        }
-        chunk = (output_size < BUFFERSIZE)? output_size : BUFFERSIZE;
-        memcpy(AHIBuf[active], output_data, chunk);
-        output_size -= chunk;
-        output_data += chunk;
-
-        AHIReq[active]->ahir_Std.io_Data = AHIBuf[active];
-        AHIReq[active]->ahir_Std.io_Length = chunk;
-        AHIReq[active]->ahir_Link = !CheckIO((struct IORequest *) AHIReq[active ^ 1]) ? AHIReq[active ^ 1] : NULL;
-        SendIO((struct IORequest *)AHIReq[active]);
-        active ^= 1;
-    }
-    return (0);
-}
-
-static void close_ahi_output(void) {
-    if (AHIReq[1]) {
-        AHIReq[0]->ahir_Link = NULL; /* in case we are linked to req[0] */
-        if (!CheckIO((struct IORequest *) AHIReq[1])) {
-            AbortIO((struct IORequest *) AHIReq[1]);
-            WaitIO((struct IORequest *) AHIReq[1]);
-        }
-        FreeVec(AHIReq[1]);
-        AHIReq[1] = NULL;
-    }
-    if (AHIReq[0]) {
-        if (!CheckIO((struct IORequest *) AHIReq[0])) {
-            AbortIO((struct IORequest *) AHIReq[0]);
-            WaitIO((struct IORequest *) AHIReq[0]);
-        }
-        if (AHIReq[0]->ahir_Std.io_Device) {
-            CloseDevice((struct IORequest *) AHIReq[0]);
-            AHIReq[0]->ahir_Std.io_Device = NULL;
-        }
-        DeleteIORequest((struct IORequest *) AHIReq[0]);
-        AHIReq[0] = NULL;
-    }
-    if (AHImp) {
-        DeleteMsgPort(AHImp);
-        AHImp = NULL;
-    }
-    if (AHIBuf[0]) {
-        FreeVec(AHIBuf[0]);
-        AHIBuf[0] = NULL;
-    }
-    if (AHIBuf[1]) {
-        FreeVec(AHIBuf[1]);
-        AHIBuf[1] = NULL;
-    }
-}
 
 #else
 #if (AUDIODRV_ALSA == 1)
