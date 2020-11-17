@@ -7,7 +7,7 @@ AR=ar
 RANLIB=ranlib
 LD=$(CC)
 
-INCLUDES=-I. -I../include/stdint -I../include
+INCLUDES=-I. -I../include/stdint -I../include -I../include/player
 CFLAGS = $(INCLUDES) -Wall -W -Zmt
 LDFLAGS = -Zmt
 ARFLAGS = cr
@@ -29,7 +29,7 @@ CFLAGS_LIB= $(CFLAGS) -DWILDMIDI_BUILD
 CFLAGS_EXE= $(CFLAGS)
 
 OBJ=wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ=wildmidi.o getopt_long.o wm_tty.o
+PLAYER_OBJ=getopt_long.o wm_tty.o wildmidi.o out_wave.o out_dart.o fileops.o
 
 all: $(LIBSTATIC) $(PLAYER_STATIC)
 
@@ -46,9 +46,15 @@ $(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
 # rules for player objs:
 getopt_long.o: ../src/getopt_long.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
-wm_tty.o: ../src/wm_tty.c
+fileops.o: ../src/player/fileops.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
-wildmidi.o: ../src/wildmidi.c
+out_wave.o: ../src/player/out_wave.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+out_dart.o: ../src/player/out_dart.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+wm_tty.o: ../src/player/wm_tty.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+wildmidi.o: ../src/player/wildmidi.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
 
 clean:

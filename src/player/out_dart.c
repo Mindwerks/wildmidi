@@ -27,6 +27,8 @@
 
 /* based on Dart code originally written by Kevin Langman for XMP */
 
+extern unsigned int rate;
+
 #define BUFFERCOUNT 4
 
 static MCI_MIX_BUFFER MixBuffers[BUFFERCOUNT];
@@ -142,11 +144,6 @@ int open_dart_output(void) {
     memset(MixBuffers[0].pBuffer, /*32767 */ 0, bsize);
     memset(MixBuffers[1].pBuffer, /*32767 */ 0, bsize);
     MixSetupParms.pmixWrite(MixSetupParms.ulMixHandle, MixBuffers, 2);
-
-    send_output = write_dart_output;
-    close_output = close_dart_output;
-    pause_output = pause_output_nop;
-    resume_output = resume_output_nop;
 
     return (0);
 }

@@ -38,6 +38,8 @@
 #include <os2.h>
 #include <os2me.h>
 #include <conio.h>
+#include <stdio.h>
+#include <string.h>
 #define msleep(s) DosSleep((s))
 #include <fcntl.h>
 #include <io.h>
