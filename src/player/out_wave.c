@@ -22,24 +22,14 @@
  */
 
 #include "out_wave.h"
+#include "fileops.h"
 
 #if (AUDIODRV_WAVE == 1)
 
 extern char wav_file[1024];
 extern unsigned int rate;
-extern int audio_fd;
 
 uint32_t wav_size;
-
-// FIXME move this to platform depended files
-#define wmidi_geterrno() errno
-#define WM_IS_BADF(_fd) ((_fd) < 0)
-#define WM_BADF (-1)
-extern int wmidi_fileexists(const char *path);
-extern int wmidi_open_write(const char *path);
-extern ssize_t wmidi_write(int fd, const void *buf, size_t size);
-extern int wmidi_close(int fd);
-extern off_t wmidi_seekset(int fd, off_t ofs);
 
 int open_wav_output(void) {
     uint8_t wav_hdr[] = {

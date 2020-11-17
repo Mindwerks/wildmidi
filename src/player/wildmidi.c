@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "fileops.h"
 #include "out_noout.h"
 #include "out_ahi.h"
 #include "out_alsa.h"
@@ -133,95 +134,6 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         resume_output_noout
     },
 };
-
-#if defined(__DJGPP__)
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include "getopt_long.h"
-#include <conio.h>
-#define getopt dj_getopt /* hack */
-#include <unistd.h>
-#undef getopt
-#define msleep(s) usleep((s)*1000)
-#include <io.h>
-#include <dir.h>
-#ifdef AUDIODRV_DOSSB
-#include "dossb.h"
-#endif
-
-#elif (defined _WIN32) || (defined __CYGWIN__)
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <conio.h>
-#include <windows.h>
-#include <mmsystem.h>
-#define msleep(s) Sleep((s))
-#include <io.h>
-#include "getopt_long.h"
-#ifdef __WATCOMC__
-#define _putch putch
-#endif
-
-#elif defined(__OS2__) || defined(__EMX__)
-#define INCL_DOS
-#define INCL_DOSERRORS
-#define INCL_OS2MM
-#ifdef __EMX__
-#define INCL_KBD
-#define INCL_VIO
-#endif
-#include <os2.h>
-#include <os2me.h>
-#include <conio.h>
-#define msleep(s) DosSleep((s))
-#include <fcntl.h>
-#include <io.h>
-#include "getopt_long.h"
-#ifdef __EMX__
-#include <sys/types.h> /* for off_t typedef */
-int putch (int c) {
-    char ch = c;
-    VioWrtTTY(&ch, 1, 0);
-    return c;
-}
-int kbhit (void) {
-    KBDKEYINFO k;
-    if (KbdPeek(&k, 0))
-        return 0;
-    return (k.fbStatus & KBDTRF_FINAL_CHAR_IN);
-}
-#endif
-
-#elif defined(WILDMIDI_AMIGA)
-extern void amiga_sysinit (void);
-extern int amiga_usleep(unsigned long millisec);
-#define msleep(s) amiga_usleep((s)*1000)
-extern int amiga_getch (unsigned char *ch);
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include "getopt_long.h"
-#ifdef AUDIODRV_AHI
-#include <devices/ahi.h>
-#ifdef __amigaos4__
-#include <dos/obsolete.h>
-#define SHAREDMEMFLAG MEMF_SHARED
-#else
-#define SHAREDMEMFLAG MEMF_PUBLIC
-#endif
-#endif
-
-#else /* unix build */
-static int msleep(unsigned long millisec);
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <time.h>
-#endif /* !_WIN32, !__DJGPP__ (unix build) */
 
 #include "filenames.h"
 #include "wm_tty.h"
@@ -340,128 +252,6 @@ static int midi_test_max = 1;
  */
 
 unsigned int rate = 32072;
-
-#define wmidi_geterrno() errno /* generic case */
-#if defined(_WIN32)
-int audio_fd = -1;
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF (-1)
-int wmidi_fileexists (const char *path) {
-    return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES);
-}
-int wmidi_open_write (const char *path) {
-    return _open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
-}
-void wmidi_close (int fd) {
-    _close(fd);
-}
-long wmidi_seekset (int fd, long ofs) {
-    return _lseek(fd, ofs, SEEK_SET);
-}
-int wmidi_write (int fd, const void *buf, size_t size) {
-    return _write(fd, buf, size);
-}
-
-#elif defined(__DJGPP__)
-int audio_fd = -1;
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF -1
-static inline int wmidi_fileexists (const char *path) {
-    struct ffblk f;
-    return (findfirst(path, &f, FA_ARCH | FA_RDONLY) == 0);
-}
-static inline int wmidi_open_write (const char *path) {
-    return open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
-}
-static inline void wmidi_close (int fd) {
-    close(fd);
-}
-static inline off_t wmidi_seekset (int fd, off_t ofs) {
-    return lseek(fd, ofs, SEEK_SET);
-}
-static inline int wmidi_write (int fd, const void *buf, size_t size) {
-    return write(fd, buf, size);
-}
-
-#elif defined(__OS2__) || defined(__EMX__)
-int audio_fd = -1;
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF -1
-static inline int wmidi_fileexists (const char *path) {
-    int f = open(path, (O_RDONLY | O_BINARY));
-    if (f != -1) { close(f); return 1; } else return 0;
-}
-static inline int wmidi_open_write (const char *path) {
-    return open(path, (O_RDWR | O_CREAT | O_TRUNC | O_BINARY), 0664);
-}
-static inline void wmidi_close (int fd) {
-    close(fd);
-}
-static inline off_t wmidi_seekset (int fd, off_t ofs) {
-    return lseek(fd, ofs, SEEK_SET);
-}
-static inline int wmidi_write (int fd, const void *buf, size_t size) {
-    return write(fd, buf, size);
-}
-
-#elif defined(WILDMIDI_AMIGA)
-BPTR audio_fd = 0;
-#define WM_IS_BADF(_fd) ((_fd)==0)
-#define WM_BADF 0
-#undef wmidi_geterrno
-static int wmidi_geterrno (void) {
-    switch (IoErr()) {
-    case ERROR_OBJECT_NOT_FOUND: return ENOENT;
-    case ERROR_DISK_FULL: return ENOSPC;
-    }
-    return EIO; /* better ?? */
-}
-static inline int wmidi_fileexists (const char *path) {
-    BPTR fd = Open((const STRPTR)path, MODE_OLDFILE);
-    if (!fd) return 0;
-    Close(fd); return 1;
-}
-static inline BPTR wmidi_open_write (const char *path) {
-    return Open((const STRPTR) path, MODE_NEWFILE);
-}
-static inline LONG wmidi_close (BPTR fd) {
-    return Close(fd);
-}
-static inline LONG wmidi_seekset (BPTR fd, LONG ofs) {
-    return Seek(fd, ofs, OFFSET_BEGINNING);
-}
-static LONG wmidi_write (BPTR fd, /*const*/ void *buf, LONG size) {
-    LONG written = 0, result;
-    unsigned char *p = (unsigned char *)buf;
-    while (written < size) {
-        result = Write(fd, p + written, size - written);
-        if (result < 0) return result;
-        written += result;
-    }
-    return written;
-}
-
-#else /* common posix case */
-int audio_fd = -1;
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF (-1)
-int wmidi_fileexists (const char *path) {
-    struct stat st;
-    return (stat(path, &st) == 0);
-}
-int wmidi_open_write (const char *path) {
-    return open(path, (O_RDWR | O_CREAT | O_TRUNC), (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
-}
-int wmidi_close (int fd) {
-    return close(fd);
-}
-off_t wmidi_seekset (int fd, off_t ofs) {
-    return lseek(fd, ofs, SEEK_SET);
-}
-ssize_t wmidi_write (int fd, const void *buf, size_t size) {
-    return write(fd, buf, size);
-}
-#endif
 
 /*
  MIDI Output Functions
@@ -605,8 +395,10 @@ static void do_help(void) {
 }
 
 static void do_available_outputs(void) {
-    printf("Available playback outputs (option -P):\n");
-    for (int i = 0 ; i < TOTAL_OUT; i++) {
+    int i;
+
+    printf("Available playback outputs for option -P:\n");
+    for (i = 0 ; i < TOTAL_OUT ; i++) {
         if (available_outputs[i].enabled == 1) {
             printf("  %-20s%s\n",
                  available_outputs[i].name, available_outputs[i].description);
@@ -1171,17 +963,3 @@ end2:
     return (0);
 }
 
-/* helper / replacement functions: */
-
-#if !(defined(_WIN32) || defined(__DJGPP__) || defined(WILDMIDI_AMIGA) || defined(__OS2__) || defined(__EMX__))
-static int msleep(unsigned long milisec) {
-    struct timespec req = { 0, 0 };
-    time_t sec = (int) (milisec / 1000);
-    milisec = milisec - (sec * 1000);
-    req.tv_sec = sec;
-    req.tv_nsec = milisec * 1000000L;
-    while (nanosleep(&req, &req) == -1)
-        continue;
-    return (1);
-}
-#endif

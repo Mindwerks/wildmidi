@@ -40,6 +40,7 @@ SET(wildmidi_library_HDRS
         )
 
 SET(wildmidi_executable_SRCS
+    player/fileops.c
     player/out_ahi.c
     player/out_alsa.c
     player/out_dart.c
@@ -61,6 +62,7 @@ IF (AMIGA OR AROS)
 ENDIF ()
 
 SET(wildmidi_executable_HDRS
+    ../include/player/fileops.h
     ../include/player/out_ahi.h
     ../include/player/out_alsa.h
     ../include/player/out_dart.h
