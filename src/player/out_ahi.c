@@ -21,6 +21,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "out_ahi.h"
+#include "wildplay.h"
+
 #if (AUDIODRV_AHI == 1)
 
 /* Driver for output to native Amiga AHI device:
@@ -35,7 +38,9 @@ static struct AHIRequest *AHIReq[2] = { NULL, NULL };
 static int active = 0;
 static int8_t *AHIBuf[2] = { NULL, NULL };
 
-int open_ahi_output(void) {
+int open_ahi_output(const char * output) {
+    UNUSED(output);
+
     AHImp = CreateMsgPort();
     if (AHImp) {
         AHIReq[0] = (struct AHIRequest *) CreateIORequest(AHImp, sizeof(struct AHIRequest));

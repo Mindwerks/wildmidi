@@ -49,7 +49,7 @@ typedef struct {
     char * name;
     char * description;
     int enabled;
-    int (* open_out)();
+    int (* open_out)(const char *);
     int (* send_out)(int8_t *, int);
     void (* close_out)();
     void (* pause_out)();

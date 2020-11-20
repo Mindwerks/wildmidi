@@ -22,6 +22,7 @@
  */
 
 #include "out_dossb.h"
+#include "wildplay.h"
 
 #if (AUDIODRV_DOSSB == 1)
 
@@ -131,7 +132,9 @@ void close_sb_output(void) {
     sb_close();
 }
 
-int open_sb_output(void) {
+int open_sb_output(const char * output) {
+    UNUSED(output);
+
     if (!sb_open()) {
         fprintf(stderr, "Sound Blaster initialization failed.\n");
         return -1;

@@ -39,7 +39,7 @@
 #include <dir.h>
 #include "dossb.h"
 
-int open_sb_output(void);
+int open_sb_output(const char * output);
 int write_sb_output(int8_t *data, int siz);
 void close_sb_output(void);
 void pause_sb_output(void);

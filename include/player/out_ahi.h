@@ -39,7 +39,7 @@
 #define SHAREDMEMFLAG MEMF_PUBLIC
 #endif
 
-int open_ahi_output(void);
+int open_ahi_output(const char * output);
 int write_ahi_output(int8_t *output_data, int output_size);
 void close_ahi_output(void);
 

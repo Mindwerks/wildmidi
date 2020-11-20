@@ -22,6 +22,7 @@
  */
 
 #include "out_openal.h"
+#include "wildplay.h"
 
 #if (AUDIODRV_OPENAL == 1)
 
@@ -115,7 +116,9 @@ void close_openal_output(void) {
     frames = 0;
 }
 
-int open_openal_output(void) {
+int open_openal_output(const char * output) {
+    UNUSED(output);
+
     /* setup our audio devices and contexts */
     device = alcOpenDevice(NULL);
     if (!device) {

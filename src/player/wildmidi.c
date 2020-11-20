@@ -238,18 +238,6 @@ static struct _midi_test midi_test[] = {
 };
 
 static int midi_test_max = 1;
-
-/*
- ==============================
- Audio Output Functions
-
- We have two 'drivers': first is the wav file writer which is
- always available. the second, if it is really compiled in,
- is the system audio output driver. only _one of the two_ can
- be active, not both.
- ==============================
- */
-
 unsigned int rate = 32072;
 
 /*
@@ -309,18 +297,6 @@ static int write_midi_output(void *output_data, int output_size) {
     return (0);
 }
 
-/*
- Wav Output Functions
- */
-
-// FIXME get rid of this
-char wav_file[1024];
-
-#if AUDIODRV_ALSA == 1 || AUDIODRV_OSS == 1
-// FIXME get rid of this
-char pcmname[64];
-#endif /* AUDIODRV_ALSA AUDIODRV_OSS */
-
 static struct option const long_options[] = {
     { "version", 0, 0, 'v' },
     { "help", 0, 0, 'h' },
@@ -338,9 +314,6 @@ static struct option const long_options[] = {
     { "test_bank", 1, 0, 'k' },
     { "test_patch", 1, 0, 'p' },
     { "enhanced", 0, 0, 'e' },
-#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
-    { "device", 1, 0, 'd' },
-#endif
     { "roundtempo", 0, 0, 'n' },
     { "skipsilentstart", 0, 0, 's' },
     { "textaslyric", 0, 0, 'a' },
@@ -352,9 +325,6 @@ static struct option const long_options[] = {
 static void do_help(void) {
     printf("  -v    --version     Display version info and exit\n");
     printf("  -h    --help        Display this help and exit\n");
-#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
-    printf("  -d D  --device=D    Use device D for audio output instead of default\n");
-#endif
     printf("MIDI Options:\n");
     printf("  -n    --roundtempo  Round tempo to nearest whole number\n");
     printf("  -s    --skipsilentstart Skips any silence at the start of playback\n");
@@ -367,7 +337,11 @@ static void do_help(void) {
     printf("                                   2 - MT32 to GS\n");
     printf("  -f F  --frequency=F Use frequency F Hz for playback (MUS)\n");
     printf("Software Wavetable Options:\n");
-    printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
+    printf("  -o O  --wavout=O    Save output to O in 16bit stereo format wav file.\n");
+#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
+    printf("                      For alsa or oss output - use device O for audio\n");
+    printf("                      output instead of default\n");
+#endif
     printf("  -l    --log_vol     Use log volume adjustments\n");
     printf("  -r N  --rate=N      Set sample rate to N samples per second (Hz)\n");
     printf("  -c P  --config=P    Point to your wildmidi.cfg config file name/path\n");
@@ -406,6 +380,7 @@ static void do_syntax(void) {
 static char config_file[1024];
 
 int main(int argc, char **argv) {
+    char output[1024];
     struct _WM_Info *wm_info;
     int i, res;
     int playback_id = NO_OUT;
@@ -448,16 +423,13 @@ int main(int argc, char **argv) {
     memset(lyrics,' ',MAX_LYRIC_CHAR);
     memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
 
-#if (AUDIODRV_OSS == 1) || (AUDIODRV_ALSA == 1)
-    pcmname[0] = 0;
-#endif
     config_file[0] = 0;
-    wav_file[0] = 0;
+    output[0] = 0;
     midi_file[0] = 0;
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ensi:j:", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -500,13 +472,13 @@ int main(int argc, char **argv) {
         case 'm': /* Master Volume */
             master_volume = (uint8_t) atoi(optarg);
             break;
-        case 'o': /* Wav Output */
+        case 'o': /* Wav or Device Output */
             if (!*optarg) {
-                fprintf(stderr, "Error: empty wavfile name.\n");
+                fprintf(stderr, "Error: empty file/device name.\n");
                 return (1);
             }
-            strncpy(wav_file, optarg, sizeof(wav_file));
-            wav_file[sizeof(wav_file) - 1] = 0;
+            strncpy(output, optarg, sizeof(output));
+            output[sizeof(output) - 1] = 0;
             break;
         case 'g': /* XMIDI Conversion */
             WildMidi_SetCvtOption(WM_CO_XMI_TYPE, (uint16_t) atoi(optarg));
@@ -530,16 +502,6 @@ int main(int argc, char **argv) {
             strncpy(config_file, optarg, sizeof(config_file));
             config_file[sizeof(config_file) - 1] = 0;
             break;
-#if (AUDIODRV_OSS == 1) || (AUDIODRV_ALSA == 1)
-        case 'd': /* Output device */
-            if (!*optarg) {
-                fprintf(stderr, "Error: empty device name.\n");
-                return (1);
-            }
-            strncpy(pcmname, optarg, sizeof(pcmname));
-            pcmname[sizeof(pcmname) - 1] = 0;
-            break;
-#endif
         case 'e': /* Enhanced Resampling */
             mixer_options |= WM_MO_ENHANCED_RESAMPLING;
             break;
@@ -622,15 +584,9 @@ int main(int argc, char **argv) {
     }
 
     printf("Initializing Sound System (%s)\n", available_outputs[playback_id].name);
-    if (wav_file[0] != '\0') {
-        // FIXME merge with common case
-        if (available_outputs[WAVE_OUT].open_out() == -1) {
-            return (1);
-        }
-    } else {
-        if (available_outputs[playback_id].open_out() == -1) {
-            return (1);
-        }
+
+    if (available_outputs[playback_id].open_out(output) == -1) {
+        return (1);
     }
 
     libraryver = WildMidi_GetVersion();

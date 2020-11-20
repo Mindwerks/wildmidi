@@ -22,6 +22,7 @@
  */
 
 #include "out_win32mm.h"
+#include "wildplay.h"
 
 #if AUDIODRV_WIN32_MM == 1
 
@@ -57,10 +58,12 @@ static void CALLBACK mmOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstanc
     LeaveCriticalSection(&waveCriticalSection);
 }
 
-int open_mm_output(void) {
+int open_mm_output(const char * output) {
     WAVEFORMATEX wfx;
     char *mm_buffer;
     int i;
+
+    UNUSED(output);
 
     InitializeCriticalSection(&waveCriticalSection);
 

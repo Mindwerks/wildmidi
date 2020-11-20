@@ -41,7 +41,7 @@
 #include <OpenAL/alc.h>
 #endif
 
-int open_openal_output(void);
+int open_openal_output(const char * output);
 void pause_output_openal(void);
 int write_openal_output(int8_t *output_data, int output_size);
 void close_openal_output(void);

@@ -26,12 +26,11 @@
 
 #if (AUDIODRV_WAVE == 1)
 
-extern char wav_file[1024];
 extern unsigned int rate;
 
 uint32_t wav_size;
 
-int open_wav_output(void) {
+int open_wav_output(const char * output) {
     uint8_t wav_hdr[] = {
         0x52, 0x49,
         0x46, 0x46, /* "RIFF"  */
@@ -57,11 +56,12 @@ int open_wav_output(void) {
         0x00, 0x00 /* datasize: the pcm size (filled when closing.)  */
     };
 
-    if (wav_file[0] == '\0') {
+    if (output[0] == '\0') {
+        fprintf(stderr, "Output file is not defined\r\n");
         return (-1);
     }
 
-    audio_fd = wmidi_open_write(wav_file);
+    audio_fd = wmidi_open_write(output);
     if (WM_IS_BADF(audio_fd)) {
         fprintf(stderr, "Error: unable to open file for writing (%s)\r\n",
                 strerror(wmidi_geterrno()));

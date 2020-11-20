@@ -33,7 +33,7 @@
 
 #if (AUDIODRV_WAVE == 1)
 
-int open_wav_output(void);
+int open_wav_output(const char * output);
 int write_wav_output(int8_t *output_data, int output_size);
 void close_wav_output(void);
 

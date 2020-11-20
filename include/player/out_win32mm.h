@@ -44,7 +44,7 @@
 #define _putch putch
 #endif
 
-int open_mm_output(void);
+int open_mm_output(const char * output);
 int write_mm_output(int8_t *output_data, int output_size);
 void close_mm_output(void);
 

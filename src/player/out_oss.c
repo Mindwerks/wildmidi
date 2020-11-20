@@ -37,19 +37,21 @@
 #define DEFAULT_NUMFRAGS 16
 
 extern unsigned int rate;
-extern char pcmname[64];
 extern int audio_fd;
 
 void pause_oss_output(void) {
     ioctl(audio_fd, SNDCTL_DSP_POST, 0);
 }
 
-int open_oss_output(void) {
+int open_oss_output(const char * output) {
     int tmp;
     unsigned int r;
+    char pcmname[1024];
 
-    if (!pcmname[0]) {
+    if (!output[0]) {
         strcpy(pcmname, "/dev/dsp");
+    } else {
+        strcpy(pcmname, output);
     }
 
     if ((audio_fd = open(pcmname, O_WRONLY)) < 0) {

@@ -28,8 +28,9 @@
 
 #include "wildplay.h"
 
-static inline int open_output_noout(void) {
-    fprintf(stderr, "No audio output driver was selected at compile time.\r\n");
+static inline int open_output_noout(const char * output) {
+    UNUSED(output);
+    fprintf(stderr, "Selected audio output driver was not enabled at compile time.\r\n");
     return (-1);
 }
 static inline int send_output_noout(int8_t *output_data, int output_size) {

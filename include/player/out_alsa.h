@@ -30,7 +30,7 @@
 
 #include <alsa/asoundlib.h>
 
-int open_alsa_output(void);
+int open_alsa_output(const char * output);
 int write_alsa_output(int8_t *output_data, int output_size);
 void close_alsa_output(void);
 

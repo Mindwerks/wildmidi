@@ -21,11 +21,12 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* based on Dart code originally written by Kevin Langman for XMP */
+
 #include "out_dart.h"
+#include "wildplay.h"
 
 #if (AUDIODRV_OS2DART == 1)
-
-/* based on Dart code originally written by Kevin Langman for XMP */
 
 extern unsigned int rate;
 
@@ -59,9 +60,11 @@ static LONG APIENTRY OS2_Dart_UpdateBuffers
     return (TRUE);
 }
 
-int open_dart_output(void) {
+int open_dart_output(const char * output) {
     int i;
     MCI_AMP_OPEN_PARMS AmpOpenParms;
+
+    UNUSED(output);
 
     if (DosCreateMutexSem(NULL, &dart_mutex, 0, 0) != NO_ERROR) {
         fprintf(stderr, "Failed creating a MutexSem.\r\n");

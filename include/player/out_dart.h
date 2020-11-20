@@ -46,7 +46,7 @@
 #include "getopt_long.h"
 
 
-int open_dart_output(void);
+int open_dart_output(const char * output);
 int write_dart_output(int8_t *output_data, int output_size);
 void close_dart_output(void);
 

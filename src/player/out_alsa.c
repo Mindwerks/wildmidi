@@ -29,18 +29,20 @@ extern unsigned int rate;
 
 static int alsa_first_time = 1;
 static snd_pcm_t *pcm = NULL;
-extern char pcmname[64];
 
-int open_alsa_output(void) {
+int open_alsa_output(const char * output) {
     snd_pcm_hw_params_t *hw;
     snd_pcm_sw_params_t *sw;
     int err;
     unsigned int alsa_buffer_time;
     unsigned int alsa_period_time;
     unsigned int r;
+    char pcmname[1024];
 
-    if (!pcmname[0]) {
+    if (!output[0]) {
         strcpy(pcmname, "default");
+    } else {
+        strcpy(pcmname, output);
     }
 
     if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
