@@ -23,6 +23,9 @@
 
 #include "config.h"
 #include "wildplay.h"
+#include "filenames.h"
+#include "wm_tty.h"
+#include "wildmidi_lib.h"
 
 #include <stdint.h>
 #include <errno.h>
@@ -134,10 +137,6 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         resume_output_noout
     },
 };
-
-#include "filenames.h"
-#include "wm_tty.h"
-#include "wildmidi_lib.h"
 
 struct _midi_test {
     uint8_t *data;
@@ -317,27 +316,10 @@ static int write_midi_output(void *output_data, int output_size) {
 // FIXME get rid of this
 char wav_file[1024];
 
-#if ((defined _WIN32) || (defined __CYGWIN__)) && (AUDIODRV_WIN32_MM == 1)
-
-#elif (defined(__OS2__) || defined(__EMX__)) && (AUDIODRV_OS2DART == 1)
-
-#elif defined(__DJGPP__) && (AUDIODRV_DOSSB == 1)
-
-#elif defined(WILDMIDI_AMIGA) && (AUDIODRV_AHI == 1)
-
-#else
-#if (AUDIODRV_ALSA == 1)
+#if AUDIODRV_ALSA == 1 || AUDIODRV_OSS == 1
 // FIXME get rid of this
 char pcmname[64];
-#elif AUDIODRV_OSS == 1
-// FIXME get rid of this
-char pcmname[64];
-#elif AUDIODRV_OPENAL == 1
-
-#else /* no audio output driver compiled in: */
-
-#endif /* AUDIODRV_ALSA */
-#endif /* _WIN32 || __CYGWIN__ */
+#endif /* AUDIODRV_ALSA AUDIODRV_OSS */
 
 static struct option const long_options[] = {
     { "version", 0, 0, 'v' },
