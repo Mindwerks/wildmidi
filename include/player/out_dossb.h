@@ -28,6 +28,9 @@
 
 #if (AUDIODRV_DOSSB == 1)
 
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -37,17 +40,17 @@
 #include "dossb.h"
 
 int open_sb_output(void);
-int write_sb_s16stereo(int8_t *data, unsigned int siz);
+int write_sb_output(int8_t *data, int siz);
 void close_sb_output(void);
-void sb_silence_s16(void);
+void pause_sb_output(void);
 
 
 #else // AUDIODRV_DOSSB == 1
 
 #define open_sb_output open_output_noout
-#define write_sb_s16stereo send_output_noout
+#define write_sb_output send_output_noout
 #define close_sb_output close_output_noout
-#define sb_silence_s16 pause_output_noout
+#define pause_sb_output pause_output_noout
 
 #endif // AUDIODRV_DOSSB == 1
 

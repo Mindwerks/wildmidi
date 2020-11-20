@@ -128,9 +128,9 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         "DOS SoundBlaster output",
         AUDIODRV_DOSSB,
         open_sb_output,
-        write_sb_s16stereo,   // FIXME
+        write_sb_output,
         close_sb_output,
-        sb_silence_s16,       // FIXME
+        pause_sb_output,
         resume_output_noout
     },
 };

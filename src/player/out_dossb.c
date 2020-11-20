@@ -25,6 +25,8 @@
 
 #if (AUDIODRV_DOSSB == 1)
 
+extern unsigned int rate;
+
 /* SoundBlaster/Pro/16/AWE32 driver for DOS -- adapted from
  * libMikMod,  written by Andrew Zabolotny <bit@eltech.ru>,
  * further fixes by O.Sezer <sezero@users.sourceforge.net>.
@@ -35,7 +37,7 @@
 /* The last buffer byte filled with sound */
 static unsigned int buff_tail = 0;
 
-int write_sb_output(int8_t *data, unsigned int siz) {
+int write_sb_common(int8_t *data, int siz) {
     unsigned int dma_size, dma_pos;
     unsigned int cnt;
 
@@ -49,7 +51,7 @@ int write_sb_output(int8_t *data, unsigned int siz) {
 
     /* If DMA pointer still didn't wrapped around ... */
     if (dma_pos > buff_tail) {
-        if ((cnt = dma_pos - buff_tail) > siz)
+        if ((cnt = dma_pos - buff_tail) > (unsigned int)siz)
             cnt = siz;
         memcpy(sb.dma_buff->linear + buff_tail, data, cnt);
         buff_tail += cnt;
@@ -58,15 +60,17 @@ int write_sb_output(int8_t *data, unsigned int siz) {
             buff_tail = 0;
     } else {
         /* If wrapped around, fill first to the end of buffer */
-        if ((cnt = dma_size - buff_tail) > siz)
+        if ((cnt = dma_size - buff_tail) > (unsigned int)siz)
             cnt = siz;
         memcpy(sb.dma_buff->linear + buff_tail, data, cnt);
         buff_tail += cnt;
         siz -= cnt;
-        if (!siz) return cnt;
+        if (!siz)
+            return cnt;
 
         /* Now fill from buffer beginning to current DMA pointer */
-        if (dma_pos > siz) dma_pos = siz;
+        if (dma_pos > (unsigned int)siz)
+            dma_pos = siz;
         data += cnt;
         cnt += dma_pos;
 
@@ -76,58 +80,48 @@ int write_sb_output(int8_t *data, unsigned int siz) {
     return cnt;
 }
 
-int write_sb_s16stereo(int8_t *data, int siz) {
-/* libWildMidi sint16 stereo -> SB16 sint16 stereo */
+int write_sb_output(int8_t *data, int siz) {
     int i;
+    if (sb.caps & SBMODE_16BITS) {
+        /* libWildMidi sint16 stereo -> SB16 sint16 stereo */
+        /* do nothing, we can do 16 bit stereo by default */
+    } else if (sb.caps & SBMODE_STEREO) {
+        /* libWildMidi sint16 stereo -> SB uint8 stereo */
+        int16_t *src = (int16_t *) data;
+        uint8_t *dst = (uint8_t *) data;
+        i = (siz /= 2);
+        for (; i >= 0; --i) {
+            *dst++ = (*src++ >> 8) + 128;
+        }
+    } else {
+        /* libWildMidi sint16 stereo -> SB uint8 mono */
+        int16_t *src = (int16_t *) data;
+        uint8_t *dst = (uint8_t *) data;
+        i = (siz /= 4); int val;
+        for (; i >= 0; --i) {
+            /* do a cheap (left+right)/2 */
+            val  = *src++;
+            val += *src++;
+            *dst++ = (val >> 9) + 128;
+        }
+    }
     while (1) {
-        i = write_sb_output(data, siz);
-        if ((siz -= i) <= 0) return 0;
+        i = write_sb_common(data, siz);
+        if ((siz -= i) <= 0)
+            return 0;
         data += i;
         /*usleep(100);*/
     }
 }
 
-static int write_sb_u8stereo(int8_t *data, int siz) {
-/* libWildMidi sint16 stereo -> SB uint8 stereo */
-    int16_t *src = (int16_t *) data;
-    uint8_t *dst = (uint8_t *) data;
-    int i = (siz /= 2);
-    for (; i >= 0; --i) {
-        *dst++ = (*src++ >> 8) + 128;
+void pause_sb_output(void) {
+    if (sb.caps & SBMODE_16BITS) {
+        // 16 bit
+        memset(sb.dma_buff->linear, 0, sb.dma_buff->size);
+    } else {
+        // 8 bit
+        memset(sb.dma_buff->linear, 0x80, sb.dma_buff->size);
     }
-    while (1) {
-        i = write_sb_output(data, siz);
-        if ((siz -= i) <= 0) return 0;
-        data += i;
-        /*usleep(100);*/
-    }
-}
-
-int write_sb_u8mono(int8_t *data, int siz) {
-/* libWildMidi sint16 stereo -> SB uint8 mono */
-    int16_t *src = (int16_t *) data;
-    uint8_t *dst = (uint8_t *) data;
-    int i = (siz /= 4); int val;
-    for (; i >= 0; --i) {
-    /* do a cheap (left+right)/2 */
-        val  = *src++;
-        val += *src++;
-        *dst++ = (val >> 9) + 128;
-    }
-    while (1) {
-        i = write_sb_output(data, siz);
-        if ((siz -= i) <= 0) return 0;
-        data += i;
-        /*usleep(100);*/
-    }
-}
-
-void sb_silence_s16(void) {
-    memset(sb.dma_buff->linear, 0, sb.dma_buff->size);
-}
-
-void sb_silence_u8(void) {
-    memset(sb.dma_buff->linear, 0x80, sb.dma_buff->size);
 }
 
 void close_sb_output(void) {
@@ -167,25 +161,6 @@ int open_sb_output(void) {
         fprintf(stderr, "Sound Blaster: DMA start failed.\n");
         return -1;
     }
-
-    if (sb.caps & SBMODE_16BITS) { /* can do stereo, too */
-        send_output = write_sb_s16stereo;
-        pause_output = sb_silence_s16;
-        resume_output = resume_output_nop;
-        printf("Sound Blaster 16 or compatible (16 bit, stereo, %u Hz)\n", rate);
-    } else if (sb.caps & SBMODE_STEREO) {
-        send_output = write_sb_u8stereo;
-        pause_output = sb_silence_u8;
-        resume_output = resume_output_nop;
-        printf("Sound Blaster Pro or compatible (8 bit, stereo, %u Hz)\n", rate);
-    } else {
-        send_output = write_sb_u8mono;
-        pause_output = sb_silence_u8;
-        resume_output = resume_output_nop;
-        printf("Sound Blaster %c or compatible (8 bit, mono, %u Hz)\n",
-               (sb.dspver < SBVER_20)? '1' : '2', rate);
-    }
-    close_output = close_sb_output;
 
     return 0;
 }
