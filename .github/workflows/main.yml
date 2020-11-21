@@ -44,8 +44,8 @@ jobs:
         env:
           CC: ${{ matrix.config.c }}
         run: |
-          cmake -B build ${{ matrix.config.cmake_opts }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=out
-          cmake --build build -j2
+          cmake -B build ${{ matrix.config.cmake_opts }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build/out
+          cmake --build build -j2 --config Release
           cmake --install build
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
