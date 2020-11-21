@@ -1,4 +1,4 @@
-.TH wildmidi 1 "10 March 2016" "" "WildMidi Player"
+.TH wildmidi 1 "21 November 2020" "" "WildMidi Player"
 .SH NAME
 wildmidi \- example player for libWildMidi
 .PP
@@ -9,7 +9,7 @@ wildmidi \- example player for libWildMidi
 .B /etc/wildmidi/wildmidi.cfg
 .PP
 .SH SYNOPSIS
-.B wildmidi [\-bhlvwnst] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-o \fIwav\-file\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] \fImidifile ...
+.B wildmidi [\-bhlvwnst] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-P \fIplayback\-output\fB] [\-o \fIfile\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] \fImidifile ...
 .PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
@@ -45,8 +45,11 @@ Some MIDI files have been recorded on hardware that uses a volume curve, making 
 .IP "\fB\-m\fP \fIvolume\-level\fP | \fB\-\-mastervol=\fIvolume\-level\fP"
 Set the overall volume level to \fIvolume\-level\fP. The minimum is 0 and the maximum is 127, with the default being 100.
 .PP
-.IP "\fB\-o\fP \fIwav\-file\fP | \fB\-\-wavout=\fIwav\-file\fP"
-Records the audio in wav format to \fIwav-file\fP.
+.IP "\fB\-P\fP \fIplayback\-output\fP | \fB\-\-playback=\fIplayback\-output\fP"
+Set \fIplayback\-output\fP as playback output. See \fB\--help\fP output for available playbacks.
+.PP
+.IP "\fB\-o\fP \fIfile\fP | \fB\-\-wavout=\fIfile\fP"
+Records the audio in wav format to \fIwav-file\fP. For ALSA or OSS playbacks this option can be used for defining custom output device.
 .PP
 .IP "\fB\-r\fP \fIsndrate\fP | \fB\-\-rate=\fIsndrate\fP"
 Set the audio output rate to \fIsndrate\fP. The default rate is 32072.
@@ -121,7 +124,7 @@ Chris Ison <chrisisonwildcode@gmail.com>
 Bret Curtis <psi29a@gmail.com>
 .PP
 .SH COPYRIGHT
-Copyright (C) WildMidi Developers 2001\-2016
+Copyright (C) WildMidi Developers 2001\-2020
 .PP
 This file is part of WildMIDI.
 .PP
