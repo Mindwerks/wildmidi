@@ -17,6 +17,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#ifdef WILDMIDI_AMIGA
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
@@ -100,3 +102,5 @@ void amiga_usleep(unsigned long timeout) {
     SendIO((struct IORequest *) timerio);
     WaitIO((struct IORequest *) timerio);
 }
+
+#endif // WILDMIDI_AMIGA

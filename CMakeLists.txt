@@ -24,6 +24,8 @@ OPTION(BUILD_SHARED_LIBS "Build a dynamic wildmidi library" ON)
 OPTION(WANT_PLAYER "Build WildMIDI player in addition to the libraries" ON)
 OPTION(WANT_STATIC "Build static library in addition to dynamic library" OFF)
 CMAKE_DEPENDENT_OPTION(WANT_PLAYERSTATIC "Build a statically linked WildMIDI player" ON "WANT_STATIC;WANT_PLAYER" OFF)
+
+# Player options
 OPTION(WANT_AMIGA_AHI "Include Amiga AHI support" OFF)
 OPTION(WANT_ALSA "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_DOSSB "Include DOS SoundBlaster support" OFF)
@@ -31,8 +33,10 @@ OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 OPTION(WANT_OS2DART "Include OS/2 DART support" OFF)
 OPTION(WANT_OSS "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_WIN32_MM "Include Windows Multimedia support" OFF)
+
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
 OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF)
+
 IF (WIN32 AND MSVC)
     OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF)
 ENDIF ()
@@ -46,21 +50,42 @@ IF ((NOT BUILD_SHARED_LIBS) AND (NOT WANT_STATIC))
     MESSAGE(FATAL_ERROR "Neither dynamic nor static library build is selected.")
 ENDIF ()
 
-IF (WANT_AMIGA_AHI)
-    SET(AUDIODRV_AHI 1)
-ENDIF()
+IF(WANT_PLAYER)
+    IF (WANT_AMIGA_AHI)
+        SET(AUDIODRV_AHI 1)
+    ENDIF()
 
-IF (WANT_DOSSB)
-    SET(AUDIODRV_DOSSB 1)
-ENDIF()
+    IF (WANT_ALSA)
+        FIND_PACKAGE(ALSA REQUIRED)
+        SET(AUDIODRV_ALSA 1)
+        LIST(APPEND AUDIO_LIBRARY ${ALSA_LIBRARY})
+    ENDIF()
 
-IF (WANT_OS2DART)
-    SET(AUDIODRV_OS2DART 1)
-ENDIF()
+    IF (WANT_DOSSB)
+        SET(AUDIODRV_DOSSB 1)
+    ENDIF()
 
-IF (WANT_WIN32_MM)
-    SET(AUDIODRV_WIN32_MM 1)
-ENDIF()
+    IF (WANT_OPENAL)
+        FIND_PACKAGE(OpenAL REQUIRED)
+        SET(AUDIODRV_OPENAL 1)
+        LIST(APPEND AUDIO_LIBRARY ${OPENAL_LIBRARY})
+    ENDIF()
+
+    IF (WANT_OS2DART)
+        SET(AUDIODRV_OS2DART 1)
+    ENDIF()
+
+    IF (WANT_OSS)
+        FIND_PACKAGE(OSS REQUIRED)
+        SET(AUDIODRV_OSS 1)
+        LIST(APPEND AUDIO_LIBRARY ${OSS_LIBRARY})
+    ENDIF()
+
+    IF (WANT_WIN32_MM)
+        SET(AUDIODRV_WIN32_MM 1)
+    ENDIF()
+
+ENDIF(WANT_PLAYER)
 
 # Platform specific defines
 IF (UNIX)
@@ -170,65 +195,8 @@ CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
 
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
-SET(AUDIODRV_ALSA)
-SET(AUDIODRV_OSS)
-SET(AUDIODRV_OPENAL)
-
 # UNIX-like environments
 IF (UNIX AND NOT APPLE)
-
-    # Go looking for available sound packages for WildMIDI player
-    IF (WANT_PLAYER)
-        FIND_PACKAGE(ALSA)
-        FIND_PACKAGE(OpenAL)
-        FIND_PACKAGE(OSS)
-
-        # Set preferred output
-        IF (WANT_ALSA)
-            IF (NOT ALSA_FOUND)
-                MESSAGE(FATAL_ERROR "ALSA required but not found.")
-            ENDIF ()
-            SET(AUDIODRV_ALSA 1)
-            SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-
-        ELSEIF (WANT_OSS)
-            IF (NOT OSS_FOUND)
-                MESSAGE(FATAL_ERROR "OSS required but not found.")
-            ENDIF ()
-            # no special header paths
-            SET(AUDIODRV_OSS 1)
-            SET(AUDIO_LIBRARY ${OSS_LIBRARY})
-
-        ELSEIF (WANT_OPENAL)
-            IF (NOT OPENAL_FOUND)
-                MESSAGE(FATAL_ERROR "OpenAL required but not found.")
-            ENDIF ()
-            SET(AUDIODRV_OPENAL 1)
-            SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-
-        ELSE () # Try to auto-detect
-
-            IF (ALSA_FOUND)
-                SET(AUDIO_LIBRARY ${ALSA_LIBRARY})
-                SET(AUDIODRV_ALSA 1)
-
-            ELSEIF (OSS_FOUND)
-                # no special header paths
-                SET(AUDIO_LIBRARY ${OSS_LIBRARY})
-                SET(AUDIODRV_OSS 1)
-
-            ELSEIF (OPENAL_FOUND)
-                SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-                SET(AUDIODRV_OPENAL 1)
-
-            ELSE ()
-                MESSAGE(WARNING "Could not find an audio sub-system!")
-                SET(AUDIO_LIBRARY "")
-            ENDIF ()
-
-        ENDIF ()
-    ENDIF ()
-
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m)
     MESSAGE(STATUS "M_LIBRARY: ${M_LIBRARY}")

@@ -39,48 +39,6 @@ SET(wildmidi_library_HDRS
         ../include/xmi2mid.h
         )
 
-SET(wildmidi_executable_SRCS
-    player/fileops.c
-    player/out_ahi.c
-    player/out_alsa.c
-    player/out_dart.c
-    player/out_dossb.c
-    player/out_openal.c
-    player/out_oss.c
-    player/out_wave.c
-    player/out_win32mm.c
-    player/wm_tty.c
-    player/wildmidi.c
-        )
-
-IF (MSVC)
-    LIST(APPEND wildmidi_executable_SRCS getopt_long.c)
-ENDIF ()
-
-IF (AMIGA OR AROS)
-    LIST(APPEND wildmidi_executable_SRCS player/amiga.c)
-ENDIF ()
-
-SET(wildmidi_executable_HDRS
-    ../include/player/fileops.h
-    ../include/player/out_ahi.h
-    ../include/player/out_alsa.h
-    ../include/player/out_dart.h
-    ../include/player/out_dossb.h
-    ../include/player/out_noout.h
-    ../include/player/out_openal.h
-    ../include/player/out_oss.h
-    ../include/player/out_wave.h
-    ../include/player/out_win32mm.h
-    ../include/player/wildplay.h
-    ../include/player/wm_tty.h
-    ../include/getopt_long.h
-)
-
-# set our target paths
-SET(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}")
-SET(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}")
-
 # set our library names
 IF (MSVC) # windows uses *.lib for both static and dynamic, workaround
     SET(LIBRARY_DYN_NAME "libWildMidi")
@@ -164,71 +122,6 @@ IF (BUILD_SHARED_LIBS)
     LIST(APPEND wildmidi_lib_install libwildmidi)
 ENDIF (BUILD_SHARED_LIBS)
 
-# do we want the wildmidi player?
-IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
-    ADD_EXECUTABLE(wildmidi
-            ${wildmidi_executable_SRCS}
-            ${wildmidi_executable_HDRS}
-            )
-    TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
-    IF (AUDIODRV_OPENAL)
-        TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
-                ${OPENAL_INCLUDE_DIR}
-                )
-    ELSEIF (AUDIODRV_ALSA)
-        TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
-                ${ALSA_INCLUDE_DIR}
-                )
-    ELSEIF (AUDIODRV_OSS)
-        # no special header paths
-    ENDIF ()
-
-    TARGET_LINK_LIBRARIES(wildmidi
-            ${EXTRA_LDFLAGS}
-            libwildmidi
-            ${AUDIO_LIBRARY}
-            ${M_LIBRARY}
-            )
-    IF (WIN32)
-        TARGET_LINK_LIBRARIES(wildmidi winmm)
-    ENDIF ()
-    LIST(APPEND wildmidi_install wildmidi)
-ENDIF ()
-
-IF (WANT_PLAYERSTATIC)
-    ADD_EXECUTABLE(wildmidi-static
-            ${wildmidi_executable_SRCS}
-            ${wildmidi_executable_HDRS}
-            )
-    TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
-    SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES
-            COMPILE_DEFINITIONS WILDMIDI_STATIC
-            )
-
-    IF (AUDIODRV_OPENAL)
-        TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE
-                ${OPENAL_INCLUDE_DIR}
-                )
-    ELSEIF (AUDIODRV_ALSA)
-        TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE
-                ${ALSA_INCLUDE_DIR}
-                )
-    ELSEIF (AUDIODRV_OSS)
-        # no special header paths
-    ENDIF ()
-
-    TARGET_LINK_LIBRARIES(wildmidi-static
-            ${EXTRA_LDFLAGS}
-            libwildmidi-static
-            ${AUDIO_LIBRARY}
-            ${M_LIBRARY}
-            )
-    IF (WIN32)
-        TARGET_LINK_LIBRARIES(wildmidi-static winmm)
-    ENDIF ()
-    LIST(APPEND wildmidi_install wildmidi-static)
-ENDIF (WANT_PLAYERSTATIC)
-
 IF (WANT_DEVTEST)
     SET(wildmidi-devtest_executable_SRCS
             DevTest.c
@@ -287,83 +180,8 @@ IF (WIN32 AND MSVC)
     IF (WANT_MP_BUILD)
         SET(MT_BUILD "/MP")
     ENDIF ()
-
-    IF (WANT_PLAYER)
-        # Release builds use the debug console
-        SET_TARGET_PROPERTIES(wildmidi PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
-        SET_TARGET_PROPERTIES(wildmidi PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
-        TARGET_COMPILE_DEFINITIONS(wildmidi PRIVATE $<$<CONFIG:Release>:_CONSOLE>)
-        TARGET_COMPILE_DEFINITIONS(wildmidi PRIVATE $<$<CONFIG:MinSizeRel>:_CONSOLE>)
-    ENDIF ()
-
-    IF (WANT_PLAYERSTATIC)
-        # Release builds use the debug console
-        SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
-        SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
-        TARGET_COMPILE_DEFINITIONS(wildmidi-static PRIVATE $<$<CONFIG:Release>:_CONSOLE>)
-        TARGET_COMPILE_DEFINITIONS(wildmidi-static PRIVATE $<$<CONFIG:MinSizeRel>:_CONSOLE>)
-    ENDIF ()
-
-    # Play a bit with the warning levels
-
-    SET(WARNINGS "/Wall") # Since windows can only disable specific warnings, not enable them
-
-    SET(WARNINGS_DISABLE
-            # Warnings that aren't enabled normally and don't need to be enabled
-            # They're unneeded and sometimes completely retarded warnings that /Wall enables
-            # Not going to bother commenting them as they tend to warn on every standard library file
-            4061 4263 4264 4266 4350 4371 4435 4514 4548 4571 4610 4619 4623 4625 4626 4628 4640 4668 4710 4711 4820 4826 4917 4946
-
-            # Warnings that are thrown on standard libraries
-            4347 # Non-template function with same name and parameter count as template function
-            4365 # Variable signed/unsigned mismatch
-            4510 4512 # Unable to generate copy constructor/assignment operator as it's not public in the base
-            4706 # Assignment in conditional expression
-            4738 # Storing 32-bit float result in memory, possible loss of performance
-            4986 # Undocumented warning that occurs in the crtdbg.h file
-            4987 # nonstandard extension used (triggered by setjmp.h)
-            4996 # Function was declared deprecated
-
-            # caused by boost
-            4191 # 'type cast' : unsafe conversion (1.56, thread_primitives.hpp, normally off)
-
-            # project specific warnings
-            4099 # Type mismatch, declared class or struct is defined with other type
-            4100 # Unreferenced formal parameter (-Wunused-parameter)
-            4101 # Unreferenced local variable (-Wunused-variable)
-            4127 # Conditional expression is constant
-            4242 # Storing value in a variable of a smaller type, possible loss of data
-            4244 # Storing value of one type in variable of another (size_t in int, for example)
-            4245 # Signed/unsigned mismatch
-            4267 # Conversion from 'size_t' to 'int', possible loss of data
-            4305 # Truncating value (double to float, for example)
-            4309 # Variable overflow, trying to store 128 in a signed char for example
-            4351 # New behavior: elements of array 'array' will be default initialized (desired behavior)
-            4355 # Using 'this' in member initialization list
-            4505 # Unreferenced local function has been removed
-            4701 # Potentially uninitialized local variable used
-            4702 # Unreachable code
-            4800 # Boolean optimization warning, e.g. myBool = (myInt != 0) instead of myBool = myInt
-            )
-
-    foreach (d ${WARNINGS_DISABLE})
-        SET(WARNINGS "${WARNINGS} /wd${d}")
-    endforeach (d)
-
-    IF (WANT_PLAYER)
-        SET_TARGET_PROPERTIES(wildmidi PROPERTIES COMPILE_FLAGS "${WARNINGS} ${MT_BUILD}")
-    ENDIF ()
-
-    IF (WANT_PLAYERSTATIC)
-        SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES COMPILE_FLAGS "${WARNINGS} ${MT_BUILD}")
-    ENDIF ()
-
 ENDIF ()
 
-IF (RISCOS AND WANT_PLAYERSTATIC)
-    SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES LINK_FLAGS "-static")
-    ADD_CUSTOM_COMMAND(OUTPUT ${EXECUTABLE_OUTPUT_PATH}/wildmidi,ff8
-                       COMMAND elf2aif ${EXECUTABLE_OUTPUT_PATH}/wildmidi-static ${EXECUTABLE_OUTPUT_PATH}/wildmidi,ff8
-                       DEPENDS wildmidi-static)
-    ADD_CUSTOM_TARGET(wildmidi-aif ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/wildmidi,ff8)
-ENDIF ()
+IF (WANT_PLAYER OR WANT_PLAYERSTATIC)
+    ADD_SUBDIRECTORY(player)
+ENDIF()
