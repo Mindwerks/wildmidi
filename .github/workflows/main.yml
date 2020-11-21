@@ -7,10 +7,26 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: macos-latest, c: "clang", player: "ON", static: "ON", alsa: "OFF", openal: "ON", oss: "OFF" }
-          - { os: ubuntu-latest, c: "clang", player: "ON", static: "ON", alsa: "ON", openal: "ON", oss: "ON" }
-          - { os: ubuntu-latest, c: "gcc", player: "ON", static: "ON", alsa: "ON", openal: "ON", oss: "ON" }
-          - { os: windows-latest, c: "cl", player: "OFF", static: "ON", alsa: "OFF", openal: "OFF", oss: "OFF" }
+          - {
+            os: macos-latest,
+            c: "clang",
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_OPENAL=ON"
+          }
+          - {
+            os: ubuntu-latest,
+            c: "clang",
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_OPENAL=ON -DWANT_ALSA=ON -DWANT_OSS=ON"
+          }
+          - {
+            os: ubuntu-latest,
+            c: "gcc",
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_OPENAL=ON -DWANT_ALSA=ON -DWANT_OSS=ON"
+          }
+          - {
+            os: windows-latest,
+            c: "cl",
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_WIN32_MM=ON"
+          }
     runs-on: ${{ matrix.config.os }}
     steps:
       - name: Checkout
@@ -28,6 +44,12 @@ jobs:
         env:
           CC: ${{ matrix.config.c }}
         run: |
-          cmake -B build -DWANT_PLAYER=${{ matrix.config.player }} -DWANT_STATIC=${{ matrix.config.static }} -DWANT_ALSA=${{ matrix.config.alsa }} -DWANT_OPENAL=${{ matrix.config.openal }} -DWANT_OSS=${{ matrix.config.oss }}
+          cmake -B build ${{ matrix.config.cmake_opts }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=out
           cmake --build build -j2
-
+          cmake --install build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: wildmidi-${{ matrix.config.os }}-${{ matrix.config.c }}
+          path: build/out/
+          retention-days: 14
