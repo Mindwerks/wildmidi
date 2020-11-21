@@ -67,6 +67,16 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         resume_output_noout
     },
     {
+        "openal",
+        "OpenAL output",
+        AUDIODRV_OPENAL,
+        open_openal_output,
+        write_openal_output,
+        close_openal_output,
+        pause_output_openal,
+        resume_output_noout
+    },
+    {
         "alsa",
         "Advanced Linux Sound Architecture (ALSA) output",
         AUDIODRV_ALSA,
@@ -84,16 +94,6 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         write_oss_output,
         close_oss_output,
         pause_oss_output,
-        resume_output_noout
-    },
-    {
-        "openal",
-        "OpenAL output",
-        AUDIODRV_OPENAL,
-        open_openal_output,
-        write_openal_output,
-        close_openal_output,
-        pause_output_openal,
         resume_output_noout
     },
     {
@@ -322,6 +322,18 @@ static struct option const long_options[] = {
     { NULL, 0, NULL, 0 }
 };
 
+static int get_default_output(void) {
+    int i;
+    for (i = OPENAL_OUT ; i < TOTAL_OUT ; i++) {
+        // Return first available output
+        if (available_outputs[i].enabled == 1) {
+            return i;
+        }
+    }
+    // No enabled outputs for you here
+    return NO_OUT;
+}
+
 static void do_help(void) {
     printf("  -v    --version     Display version info and exit\n");
     printf("  -h    --help        Display this help and exit\n");
@@ -330,7 +342,8 @@ static void do_help(void) {
     printf("  -s    --skipsilentstart Skips any silence at the start of playback\n");
     printf("  -t    --test_midi   Listen to test MIDI\n");
     printf("Non-MIDI Options:\n");
-    printf("  -P P  --playback=P  Set P as playback output.\n");
+    printf("  -P P  --playback=P  Set P as playback output (default: %s).\n",
+           available_outputs[get_default_output()].name);
     printf("  -x    --tomidi      Convert file to midi and save to file\n");
     printf("  -g    --convert     Convert XMI: 0 - No Conversion (default)\n");
     printf("                                   1 - MT32 to GM\n");
@@ -383,7 +396,7 @@ int main(int argc, char **argv) {
     char output[1024];
     struct _WM_Info *wm_info;
     int i, res;
-    int playback_id = NO_OUT;
+    int playback_id;
     int option_index = 0;
     uint16_t mixer_options = 0;
     void *midi_ptr;
@@ -423,6 +436,7 @@ int main(int argc, char **argv) {
     memset(lyrics,' ',MAX_LYRIC_CHAR);
     memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
 
+    playback_id = get_default_output();
     config_file[0] = 0;
     output[0] = 0;
     midi_file[0] = 0;

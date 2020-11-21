@@ -33,9 +33,9 @@
 enum {
     NO_OUT,       // No out
     WAVE_OUT,     // WAVe raw output
+    OPENAL_OUT,   // OpenAL
     ALSA_OUT,     // ALSA
     OSS_OUT,      // OSS
-    OPENAL_OUT,   // OpenAL
     AHI_OUT,      // Amiga AHI output
     WIN32_MM_OUT, // Windows native output
     OS2DART_OUT,  // DART OS/2 output
