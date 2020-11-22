@@ -70,18 +70,32 @@ ELSE () # everyone else uses .a and .so
     SET(LIBRARY_STATIC_NAME "WildMidi")
 ENDIF ()
 
-# do we want a static library?
-IF (WANT_STATIC)
-    ADD_LIBRARY(libwildmidi_static STATIC
-            ${wildmidi_library_SRCS}
-            ${wildmidi_library_HDRS}
-            )
+ADD_LIBRARY(libwildmidi_static STATIC
+        ${wildmidi_library_SRCS}
+        ${wildmidi_library_HDRS}
+        )
 
-    SET_TARGET_PROPERTIES(libwildmidi_static PROPERTIES
-            OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
-            COMPILE_DEFINITIONS WILDMIDI_BUILD
-            )
+SET_TARGET_PROPERTIES(libwildmidi_static PROPERTIES
+        OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
+        COMPILE_DEFINITIONS WILDMIDI_BUILD
+        )
+
+TARGET_COMPILE_DEFINITIONS(libwildmidi_static INTERFACE
+        WILDMIDI_STATIC
+        )
+
+TARGET_INCLUDE_DIRECTORIES(libwildmidi_static INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        )
+
+# If the static library was not requested, we do not add it to the "all" & "install" targets
+IF (WANT_STATIC)
     LIST(APPEND wildmidi_lib_install libwildmidi_static)
+ELSE ()
+    SET_TARGET_PROPERTIES(libwildmidi_static PROPERTIES
+            EXCLUDE_FROM_ALL ON
+            )
 ENDIF (WANT_STATIC)
 
 IF (BUILD_SHARED_LIBS)
