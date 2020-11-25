@@ -63,8 +63,8 @@ SET(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}")
 
 # set our library names
 IF (MSVC) # windows uses *.lib for both static and dynamic, workaround
-    SET(LIBRARY_DYN_NAME "libWildMidi")
-    SET(LIBRARY_STATIC_NAME "libWildMidi-static")
+    SET(LIBRARY_DYN_NAME "wildmidi_dynamic")
+    SET(LIBRARY_STATIC_NAME "wildmidi_static")
 ELSE () # everyone else uses .a and .so
     SET(LIBRARY_DYN_NAME "WildMidi")
     SET(LIBRARY_STATIC_NAME "WildMidi")
