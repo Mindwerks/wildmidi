@@ -163,6 +163,9 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                     mus_event[0] = 0x90 | (mus_data[mus_data_ofs] & 0x0f);
                     mus_event[1] = mus_data[mus_data_ofs + 1] & 0x7f;
                     mus_event[2] = mus_data[mus_data_ofs + 2];
+                    // The maximum volume is 127, but it is encoded as a byte. Some songs
+                    // erroneously use values higher than 127, so we have to clamp them down.
+                    // https://github.com/Mindwerks/wildmidi/pull/226
                     if (mus_event[2] > 0x7f) mus_event[2] = 0x7f;
                     mus_event[3] = 0;
                     mus_prev_vol[mus_data[mus_data_ofs] & 0x0f] = mus_event[2];
@@ -260,6 +263,9 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 7;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
+                        // The maximum volume is 127, but it is encoded as a byte. Some songs
+                        // erroneously use values higher than 127, so we have to clamp them down.
+                        // https://github.com/Mindwerks/wildmidi/pull/226
                         if (mus_event[2] > 0x7f) mus_event[2] = 0x7f;
                         mus_event[3] = 0;
                         break;
