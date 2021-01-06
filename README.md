@@ -44,6 +44,7 @@ CHANGELOG
 * Reset block status of tty after playback (bug #211).
 * Fixed broken file name handling for 'save as midi' command during
   playback.
+* Clamp MUS volume commands (PR #226).
 * CMake project improvements (bugs: #214, #216, #217, #218) - cmake
   version 3.1 or newer is now required.
 
