@@ -353,6 +353,9 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                 bit1 = *cur & 127;
                 if (*cur++ & 128) {   /* volume bit? */
                     channel_volume[channelMap[channel]] = *cur++;
+                    /* The maximum volume is 127, but it is encoded as a byte. Some songs
+                       erroneously use values higher than 127, so we have to clamp them down.
+                       https://github.com/Mindwerks/wildmidi/pull/226 */
                     if (channel_volume[channelMap[channel]] > 127) channel_volume[channelMap[channel]] = 127;
                 }
                 bit2 = channel_volume[channelMap[channel]];
@@ -388,6 +391,9 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                     }
                     bit1 = midimap[*cur++];
                     bit2 = *cur++;
+                    /* The maximum volume is 127, but it is encoded as a byte. Some songs
+                       erroneously use values higher than 127, so we have to clamp them down.
+                       https://github.com/Mindwerks/wildmidi/pull/226 */
                     if (bit1 == 0x07 && bit2 > 127) bit2 = 127;
                 }
                 break;
