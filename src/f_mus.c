@@ -163,6 +163,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                     mus_event[0] = 0x90 | (mus_data[mus_data_ofs] & 0x0f);
                     mus_event[1] = mus_data[mus_data_ofs + 1] & 0x7f;
                     mus_event[2] = mus_data[mus_data_ofs + 2];
+                    if (mus_event[2] > 0x7f) mus_event[2] = 0x7f;
                     mus_event[3] = 0;
                     mus_prev_vol[mus_data[mus_data_ofs] & 0x0f] = mus_event[2];
                 } else {
@@ -259,6 +260,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 7;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
+                        if (mus_event[2] > 0x7f) mus_event[2] = 0x7f;
                         mus_event[3] = 0;
                         break;
                     case 4: // Pan

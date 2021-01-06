@@ -351,8 +351,10 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
             case MUSEVENT_KEYON:
                 status |= 0x90;
                 bit1 = *cur & 127;
-                if (*cur++ & 128)   /* volume bit? */
+                if (*cur++ & 128) {   /* volume bit? */
                     channel_volume[channelMap[channel]] = *cur++;
+                    if (channel_volume[channelMap[channel]] > 127) channel_volume[channelMap[channel]] = 127;
+                }
                 bit2 = channel_volume[channelMap[channel]];
                 break;
             case MUSEVENT_PITCHWHEEL:
@@ -386,6 +388,7 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                     }
                     bit1 = midimap[*cur++];
                     bit2 = *cur++;
+                    if (bit1 == 0x07 && bit2 > 127) bit2 = 127;
                 }
                 break;
             case MUSEVENT_END:  /* End */
