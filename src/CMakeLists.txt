@@ -49,8 +49,8 @@ SET(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 # set our library names
 IF (MSVC) # windows uses *.lib for both static and dynamic, workaround
-    SET(LIBRARY_DYN_NAME "wildmidi_dynamic")
-    SET(LIBRARY_STATIC_NAME "wildmidi_static")
+    SET(LIBRARY_DYN_NAME "libWildMidi")
+    SET(LIBRARY_STATIC_NAME "libWildMidi-static")
 ELSE () # everyone else uses .a and .so
     SET(LIBRARY_DYN_NAME "WildMidi")
     SET(LIBRARY_STATIC_NAME "WildMidi")
@@ -58,12 +58,12 @@ ENDIF ()
 
 # do we want a static library?
 IF (WANT_STATIC)
-    ADD_LIBRARY(libwildmidi_static STATIC
+    ADD_LIBRARY(libwildmidi-static STATIC
             ${wildmidi_library_SRCS}
             ${wildmidi_library_HDRS}
             )
 
-    SET_TARGET_PROPERTIES(libwildmidi_static PROPERTIES
+    SET_TARGET_PROPERTIES(libwildmidi-static PROPERTIES
             OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
             COMPILE_DEFINITIONS WILDMIDI_BUILD
             )
@@ -71,44 +71,44 @@ ENDIF (WANT_STATIC)
 
 IF (BUILD_SHARED_LIBS)
     # dynamic library
-    ADD_LIBRARY(libwildmidi_dynamic SHARED
+    ADD_LIBRARY(libwildmidi SHARED
             ${wildmidi_library_SRCS}
             ${wildmidi_library_HDRS}
             )
 
-    TARGET_LINK_LIBRARIES(libwildmidi_dynamic
+    TARGET_LINK_LIBRARIES(libwildmidi
             ${EXTRA_LDFLAGS}
             ${M_LIBRARY}
             )
 
-    SET_TARGET_PROPERTIES(libwildmidi_dynamic PROPERTIES
+    SET_TARGET_PROPERTIES(libwildmidi PROPERTIES
             SOVERSION ${SOVERSION}
             VERSION ${VERSION}
             OUTPUT_NAME ${LIBRARY_DYN_NAME} CLEAN_DIRECT_OUTPUT 1
             )
 
     IF (WIN32)
-        SET_TARGET_PROPERTIES(libwildmidi_dynamic PROPERTIES
+        SET_TARGET_PROPERTIES(libwildmidi PROPERTIES
                 DEFINE_SYMBOL DLL_EXPORT
                 COMPILE_DEFINITIONS WILDMIDI_BUILD
                 )
     ELSEIF (HAVE_VISIBILITY_HIDDEN AND HAVE_VISIBILITY_DEFAULT) # GCC, Clang
-        SET_TARGET_PROPERTIES(libwildmidi_dynamic PROPERTIES
+        SET_TARGET_PROPERTIES(libwildmidi PROPERTIES
                 COMPILE_DEFINITIONS "WILDMIDI_BUILD;SYM_VISIBILITY"
                 COMPILE_FLAGS "-fvisibility=hidden"
                 )
     #ELSEIF (HAVE_LDSCOPE_HIDDEN AND HAVE_VISIBILITY_DEFAULT) # SunPro (__SUNPRO_C >= 0x590)
-    #   SET_TARGET_PROPERTIES(libwildmidi_dynamic PROPERTIES
+    #   SET_TARGET_PROPERTIES(libwildmidi PROPERTIES
     #           COMPILE_DEFINITIONS "WILDMIDI_BUILD;SYM_VISIBILITY"
     #           COMPILE_FLAGS "-xldscope=hidden"
     #           )
     ELSEIF (HAVE_LDSCOPE_HIDDEN AND HAVE_LDSCOPE_GLOBAL) # SunPro (__SUNPRO_C >= 0x550)
-        SET_TARGET_PROPERTIES(libwildmidi_dynamic PROPERTIES
+        SET_TARGET_PROPERTIES(libwildmidi PROPERTIES
                 COMPILE_DEFINITIONS "WILDMIDI_BUILD;SYM_LDSCOPE"
                 COMPILE_FLAGS "-xldscope=hidden"
                 )
     ELSE ()
-        SET_TARGET_PROPERTIES(libwildmidi_dynamic PROPERTIES
+        SET_TARGET_PROPERTIES(libwildmidi PROPERTIES
                 COMPILE_DEFINITIONS WILDMIDI_BUILD
                 )
     ENDIF ()
@@ -147,7 +147,7 @@ IF (WANT_PLAYER AND BUILD_SHARED_LIBS)
             ${wildmidi_executable_HDRS}
             )
 
-    ADD_DEPENDENCIES(wildmidi libwildmidi_dynamic)
+    ADD_DEPENDENCIES(wildmidi libwildmidi)
 
     IF (AUDIODRV_OPENAL)
         TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE
@@ -175,7 +175,7 @@ IF (WANT_PLAYERSTATIC)
             ${wildmidi_executable_HDRS}
             )
 
-    ADD_DEPENDENCIES(wildmidi-static libwildmidi_static)
+    ADD_DEPENDENCIES(wildmidi-static libwildmidi-static)
 
     SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES
             COMPILE_DEFINITIONS WILDMIDI_STATIC
@@ -215,14 +215,14 @@ ENDIF ()
 IF (UNIX AND NOT APPLE)
     # install our libraries
     IF (WANT_STATIC)
-        INSTALL(TARGETS libwildmidi_static DESTINATION ${WILDMIDILIB_INSTALLDIR})
+        INSTALL(TARGETS libwildmidi-static DESTINATION ${WILDMIDILIB_INSTALLDIR})
         IF (WANT_PLAYERSTATIC)
             INSTALL(TARGETS wildmidi-static DESTINATION bin)
         ENDIF ()
     ENDIF (WANT_STATIC)
 
     IF (BUILD_SHARED_LIBS)
-        INSTALL(TARGETS libwildmidi_dynamic DESTINATION ${WILDMIDILIB_INSTALLDIR})
+        INSTALL(TARGETS libwildmidi DESTINATION ${WILDMIDILIB_INSTALLDIR})
         IF (WANT_PLAYER)
             INSTALL(TARGETS wildmidi DESTINATION bin)
         ENDIF ()
@@ -242,7 +242,7 @@ IF (WIN32 AND CMAKE_COMPILER_IS_MINGW)
     ENDIF ("${CMAKE_INSTALL_PREFIX}" STREQUAL "")
     # install our libraries
     IF (WANT_STATIC)
-        INSTALL(TARGETS libwildmidi_static DESTINATION ${WILDMIDILIB_INSTALLDIR})
+        INSTALL(TARGETS libwildmidi-static DESTINATION ${WILDMIDILIB_INSTALLDIR})
         IF (WANT_PLAYERSTATIC)
             INSTALL(TARGETS wildmidi-static DESTINATION bin)
         ENDIF ()
