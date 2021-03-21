@@ -261,7 +261,7 @@ if [ -z $SKIP_DOWNLOAD ]; then
 
 	# OpenAL
 	download "OpenAL-Soft 1.16.0" \
-		http://kcat.strangesoft.net/openal-binaries/openal-soft-1.16.0-bin.zip \
+		https://openal-soft.org/openal-binaries/openal-soft-1.16.0-bin.zip \
 		OpenAL-Soft-1.16.0.zip
 
 fi
