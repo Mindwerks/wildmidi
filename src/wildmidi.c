@@ -100,6 +100,7 @@ extern int amiga_getch (unsigned char *ch);
 #ifdef AUDIODRV_AHI
 #include <devices/ahi.h>
 #ifdef __amigaos4__
+#include <dos/obsolete.h>
 #define SHAREDMEMFLAG MEMF_SHARED
 #else
 #define SHAREDMEMFLAG MEMF_PUBLIC
