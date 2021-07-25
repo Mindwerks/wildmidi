@@ -58,8 +58,9 @@
 int	opterr = 1;		/* if error message should be printed */
 int	optind = 1;		/* index into parent argv vector */
 int	optopt = '?';		/* character checked for validity */
-int	optreset;		/* reset getopt */
-char    *optarg;		/* argument associated with option */
+/* initialize these two too to avoid symbol clashes from system libc: */
+int	optreset = 0;		/* reset getopt */
+char   *optarg = NULL;		/* argument associated with option */
 
 #define PRINT_ERROR	((opterr) && (*options != ':'))
 
