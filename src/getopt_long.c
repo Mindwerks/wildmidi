@@ -73,7 +73,7 @@ char   *optarg = NULL;		/* argument associated with option */
 #define	BADARG		((*options == ':') ? (int)':' : (int)'?')
 #define	INORDER 	(int)1
 
-#define	EMSG		""
+static char EMSG[] = {0,0,0,0}; /* #define EMSG "" */
 
 static int getopt_internal(int, char * const *, const char *,
 			   const struct option *, int *, int);
