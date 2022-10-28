@@ -237,7 +237,7 @@ static const char mt32asgm[128] = {
     97, /* 36  Soundtrack */
     99, /* 37  Atmosphere */
     14, /* 38  Warmbell, sounds kind of like crystal(98) perhaps Tubular Bells(14) would be better. It is! */
-    54, /* 39  FunnyVox, sounds alot like Bagpipe(109) and Shania(111) */
+    54, /* 39  FunnyVox, sounds a lot like Bagpipe(109) and Shania(111) */
     98, /* 40  EchoBell, no real equiv, sounds like Crystal(98) */
     96, /* 41  IceRain */
     68, /* 42  Oboe 2001, no equiv, just patching it to normal oboe(68) */
@@ -370,7 +370,7 @@ static const char mt32asgs[256] = {
     97, 0,  /* 36  Soundtrack */
     99, 0,  /* 37  Atmosphere */
     14, 0,  /* 38  Warmbell, sounds kind of like crystal(98) perhaps Tubular Bells(14) would be better. It is! */
-    54, 0,  /* 39  FunnyVox, sounds alot like Bagpipe(109) and Shania(111) */
+    54, 0,  /* 39  FunnyVox, sounds a lot like Bagpipe(109) and Shania(111) */
     98, 0,  /* 40  EchoBell, no real equiv, sounds like Crystal(98) */
     96, 0,  /* 41  IceRain */
     68, 0,  /* 42  Oboe 2001, no equiv, just patching it to normal oboe(68) */
