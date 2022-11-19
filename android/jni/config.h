@@ -62,10 +62,7 @@
 #define HAVE_INTTYPES_H
 
 /* Define our audio drivers */
-/* #undef HAVE_LINUX_SOUNDCARD_H */
 /* #undef HAVE_SYS_SOUNDCARD_H */
-/* #undef HAVE_MACHINE_SOUNDCARD_H */
-/* #undef HAVE_SOUNDCARD_H */
 
 /* #undef AUDIODRV_ALSA */
 /* #undef AUDIODRV_OSS */

@@ -119,13 +119,7 @@ static int msleep(unsigned long millisec);
 #ifdef AUDIODRV_ALSA
 #  include <alsa/asoundlib.h>
 #elif defined AUDIODRV_OSS
-#   if defined HAVE_SYS_SOUNDCARD_H
-#   include <sys/soundcard.h>
-#   elif defined HAVE_MACHINE_SOUNDCARD_H
-#   include <machine/soundcard.h>
-#   elif defined HAVE_SOUNDCARD_H
-#   include <soundcard.h> /* less common, but exists. */
-#   endif
+#  include <sys/soundcard.h>
 #elif defined AUDIODRV_OPENAL
 #   ifndef __APPLE__
 #   include <al.h>
