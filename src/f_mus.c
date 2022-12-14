@@ -45,7 +45,7 @@
  Turns mus file data into an event stream.
  */
 struct _mdi *
-_WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
+_WM_ParseNewMus(const uint8_t *mus_data, uint32_t mus_size) {
     uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
     uint32_t mus_song_ofs = 0;
     uint32_t mus_song_len = 0;
@@ -134,25 +134,30 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 
     /* lets do this */
     do {
-     /* Build the event */
-    _mus_build_event:
-#if 1
+        unsigned int channel;
+
+         /* Build the event */
+        _mus_build_event:
+
+        channel = mus_data[mus_data_ofs] & 0x0f;
+
         /* Mus drums happen on channel 15, swap channel 9 & 15 */
         /* DEBUG */
-        MUS_EVENT_DEBUG("Before", mus_data[mus_data_ofs], 0);
+        MUS_EVENT_DEBUG("Before", mus_data[mus_data_ofs] & 0xf0 | channel, 0);
 
-        if ((mus_data[mus_data_ofs] & 0x0f) == 0x0f) {
-            mus_data[mus_data_ofs] = (mus_data[mus_data_ofs] & 0xf0) | 0x09;
-        } else if ((mus_data[mus_data_ofs] & 0x0f) == 0x09) {
-            mus_data[mus_data_ofs] = (mus_data[mus_data_ofs] & 0xf0) | 0x0f;
+        if (channel == 0x0f) {
+            channel = 0x09;
+        } else if (channel == 0x09) {
+            channel = 0x0f;
         }
+
         /* DEBUG */
-        MUS_EVENT_DEBUG("After", mus_data[mus_data_ofs], 0);
-#endif
+        MUS_EVENT_DEBUG("After", mus_data[mus_data_ofs] & 0xf0 | channel, 0);
+
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
             case 0: /* Note Off */
                 mus_event_size = 2;
-                mus_event[0] = 0x80 | (mus_data[mus_data_ofs] & 0x0f);
+                mus_event[0] = 0x80 | channel;
                 mus_event[1] = mus_data[mus_data_ofs + 1];
                 mus_event[2] = 0;
                 mus_event[3] = 0;
@@ -160,7 +165,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
             case 1: /* Note On */
                 if (mus_data[mus_data_ofs + 1] & 0x80) {
                     mus_event_size = 3;
-                    mus_event[0] = 0x90 | (mus_data[mus_data_ofs] & 0x0f);
+                    mus_event[0] = 0x90 | channel;
                     mus_event[1] = mus_data[mus_data_ofs + 1] & 0x7f;
                     mus_event[2] = mus_data[mus_data_ofs + 2];
                     /* The maximum volume is 127, but it is encoded as
@@ -169,18 +174,18 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                        https://github.com/Mindwerks/wildmidi/pull/226 */
                     if (mus_event[2] > 0x7f) mus_event[2] = 0x7f;
                     mus_event[3] = 0;
-                    mus_prev_vol[mus_data[mus_data_ofs] & 0x0f] = mus_event[2];
+                    mus_prev_vol[channel] = mus_event[2];
                 } else {
                     mus_event_size = 2;
-                    mus_event[0] = 0x90 | (mus_data[mus_data_ofs] & 0x0f);
+                    mus_event[0] = 0x90 | channel;
                     mus_event[1] = mus_data[mus_data_ofs + 1];
-                    mus_event[2] = mus_prev_vol[mus_data[mus_data_ofs] & 0x0f];
+                    mus_event[2] = mus_prev_vol[channel];
                     mus_event[3] = 0;
                 }
                 break;
             case 2: /* Pitch Bend */
                 mus_event_size = 2;
-                mus_event[0] = 0xe0 | (mus_data[mus_data_ofs] & 0x0f);
+                mus_event[0] = 0xe0 | channel;
 
                 pitchbend_tmp = mus_data[mus_data_ofs + 1] << 6;
                 mus_event[1] = pitchbend_tmp & 0x7f;
@@ -191,13 +196,13 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                 mus_event_size = 2;
                 switch (mus_data[mus_data_ofs + 1]) {
                     case 10: /* All Sounds Off */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 120;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
                     case 11: /* All Notes Off */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 123;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
@@ -208,7 +213,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                          FIXME: Add dummy mdi event
                          **************************
                          */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 126;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
@@ -219,13 +224,13 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                          FIXME: Add dummy mdi event
                          **************************
                          */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 127;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
                     case 14: /* Reset All Controllers */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 121;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
@@ -243,25 +248,25 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                          FIXME: Check if setting is MIDI or MUS instrument
                          *************************************************
                          */
-                        mus_event[0] = 0xc0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xc0 | channel;
                         mus_event[1] = mus_data[mus_data_ofs + 2];
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
                     case 1: /* Bank Select */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 0;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 2: /* Modulation (Not supported by WildMidi) */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 1;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 3: /* Volume */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 7;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         /* The maximum volume is 127, but it is encoded as
@@ -272,37 +277,37 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[3] = 0;
                         break;
                     case 4: /* Pan */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 10;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 5: /* Expression */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 11;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 6: /* Reverb (Not supported by WildMidi) */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 91;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 7: /* Chorus (Not supported by WildMidi) */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 93;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 8: /* Sustain */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 64;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
                     case 9: /* Soft Peddle (Not supported by WildMidi) */
-                        mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
+                        mus_event[0] = 0xb0 | channel;
                         mus_event[1] = 67;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
