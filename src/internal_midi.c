@@ -2003,7 +2003,7 @@ void _WM_freeMDI(struct _mdi *mdi) {
     free(mdi);
 }
 
-uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t input_length, uint8_t running_event) {
+uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, const uint8_t * event_data, uint32_t input_length, uint8_t running_event) {
     /*
      Only add standard MIDI and Sysex events in here.
      Non-standard events need to be handled by calling function

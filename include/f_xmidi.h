@@ -24,6 +24,6 @@
 #ifndef __XMI_H
 #define __XMI_H
 
-extern struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size);
+extern struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size);
 
 #endif /* __XMI_H */

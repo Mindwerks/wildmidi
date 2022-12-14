@@ -36,7 +36,7 @@
 #include "f_xmidi.h"
 
 
-struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
+struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
     struct _mdi *xmi_mdi = NULL;
     uint32_t xmi_tmpdata = 0;
     uint8_t xmi_formcnt = 0;

@@ -1703,7 +1703,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
     return (ret);
 }
 
-WM_SYMBOL midi *WildMidi_OpenBuffer(uint8_t *midibuffer, uint32_t size) {
+WM_SYMBOL midi *WildMidi_OpenBuffer(const uint8_t *midibuffer, uint32_t size) {
     uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
     uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
     midi * ret = NULL;
