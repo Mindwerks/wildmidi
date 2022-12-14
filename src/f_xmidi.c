@@ -71,7 +71,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_data += 4;
     xmi_size -= 4;
 
-    // bytes until next entry
+    /* bytes until next entry */
     xmi_tmpdata = *xmi_data++ << 24;
     xmi_tmpdata |= *xmi_data++ << 16;
     xmi_tmpdata |= *xmi_data++ << 8;
@@ -92,7 +92,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_data += 4;
     xmi_size -= 4;
 
-    // number of forms contained after this point
+    /* number of forms contained after this point */
     xmi_formcnt = *xmi_data++;
     if (xmi_formcnt == 0) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_XMI, NULL, 0);
@@ -162,12 +162,12 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
         xmi_size -= 4;
         xmi_subformlen -= 4;
 
-        // Process Subform
+        /* Process Subform */
         do {
             if (!memcmp(xmi_data,"TIMB",4)) {
-                // Holds patch information
-                // FIXME: May not be needed for playback as EVNT seems to
-                //        hold patch events
+                /* Holds patch information */
+                /* FIXME: May not be needed for playback as EVNT seems to */
+                /*        hold patch events */
                 xmi_data += 4;
 
                 xmi_tmpdata = *xmi_data++ << 24;
@@ -179,8 +179,8 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_subformlen -= (8 + xmi_tmpdata);
 
             } else if (!memcmp(xmi_data,"RBRN",4)) {
-                // Unknown what this is
-                // FIXME: May not be needed for playback
+                /* Unknown what this is */
+                /* FIXME: May not be needed for playback */
                 xmi_data += 4;
 
                 xmi_tmpdata = *xmi_data++ << 24;
@@ -192,7 +192,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_subformlen -= (8 + xmi_tmpdata);
 
             } else if (!memcmp(xmi_data,"EVNT",4)) {
-                // EVNT is where all the MIDI music information is stored
+                /* EVNT is where all the MIDI music information is stored */
                 xmi_data += 4;
 
                 xmi_evnt_cnt++;
@@ -221,7 +221,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                         xmi_subformlen--;
 
                         do {
-                            // determine delta till next event
+                            /* determine delta till next event */
                             if ((xmi_lowestdelta != 0) && (xmi_lowestdelta <= xmi_delta)) {
                                 xmi_tmpdata = xmi_lowestdelta;
                             } else {
@@ -229,9 +229,9 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             }
 
                             if ((float)xmi_tmpdata >= 0x7fffffff / xmi_samples_per_delta_f) {
-                                //DEBUG
-                                //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
-                                //        xmi_samples_per_delta_f, xmi_tmpdata);
+                                /* DEBUG */
+                                /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
+                                /*        xmi_samples_per_delta_f, xmi_tmpdata); */
                                 _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
                                 goto _xmi_end;
                             }
@@ -246,21 +246,21 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
 
                             xmi_lowestdelta = 0;
 
-                            // scan through on notes
+                            /* scan through on notes */
                             for (j = 0; j < (16*128); j++) {
-                                // only want notes that are on
+                                /* only want notes that are on */
                                 if (xmi_notelen[j] == 0) continue;
 
-                                // remove delta to next event from on notes
+                                /* remove delta to next event from on notes */
                                 xmi_notelen[j] -= xmi_tmpdata;
 
-                                // Check if we need to turn note off
+                                /* Check if we need to turn note off */
                                 if (xmi_notelen[j] == 0) {
                                     xmi_ch = j / 128;
                                     xmi_note = j - (xmi_ch * 128);
                                     _WM_midi_setup_noteoff(xmi_mdi, xmi_ch, xmi_note, 0);
                                 } else {
-                                    // otherwise work out new lowest delta
+                                    /* otherwise work out new lowest delta */
                                     if ((xmi_lowestdelta == 0) || (xmi_lowestdelta > xmi_notelen[j])) {
                                         xmi_lowestdelta = xmi_notelen[j];
                                     }
@@ -271,7 +271,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
 
                     } else {
                         if ((xmi_data[0] == 0xff) && (xmi_data[1] == 0x51) && (xmi_data[2] == 0x03)) {
-                            // Ignore tempo events
+                            /* Ignore tempo events */
                             setup_ret = 6;
                             goto _XMI_Next_Event;
                         }
@@ -280,7 +280,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                         }
 
                         if ((*xmi_data & 0xf0) == 0x90) {
-                            // Note on has extra data stating note length
+                            /* Note on has extra data stating note length */
                             xmi_ch = *xmi_data & 0x0f;
                             xmi_note = xmi_data[1];
                             xmi_data += setup_ret;
@@ -303,7 +303,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
                             xmi_evntlen--;
                             xmi_subformlen--;
 
-                            // store length
+                            /* store length */
                             xmi_notelen[128 * xmi_ch + xmi_note] = xmi_tmpdata;
                             if ((xmi_tmpdata > 0) && ((xmi_lowestdelta == 0) || (xmi_tmpdata < xmi_lowestdelta))) {
                                 xmi_lowestdelta = xmi_tmpdata;
@@ -328,7 +328,7 @@ struct _mdi *_WM_ParseNewXmi(uint8_t *xmi_data, uint32_t xmi_size) {
         } while (xmi_subformlen);
     }
 
-    // Finalise mdi structure
+    /* Finalise mdi structure */
     if ((xmi_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
         _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
         goto _xmi_end;

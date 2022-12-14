@@ -806,7 +806,7 @@ static int add_handle(void * handle) {
     return (0);
 }
 
-//#define DEBUG_RESAMPLE
+/* #define DEBUG_RESAMPLE */
 
 #ifdef DEBUG_RESAMPLE
 #define RESAMPLE_DEBUGI(dx,dy) fprintf(stderr,"\r%s, %i\n",dx,dy)
@@ -826,7 +826,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
     uint32_t real_samples_to_mix = 0;
     uint32_t data_pos;
     int32_t premix, left_mix, right_mix;
-//  int32_t vol_mul;
+/*  int32_t vol_mul; */
     struct _note *note_data = NULL;
     uint32_t count;
     struct _event *event = mdi->current_event;
@@ -973,8 +973,8 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                         }
                     }
 
-                    // Yes could have a condition here but
-                    // it would crete another bottleneck
+                    /* Yes could have a condition here but
+                       it would create another bottleneck */
                     note_data->env_level =
                             note_data->sample->env_target[note_data->env];
                     switch (note_data->env) {
@@ -1106,7 +1106,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         _WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
     }
 
-    //_WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
+    /* _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2)); */
 
     for (i = 0; i < buffer_used; i += 4) {
         left_mix = *tmp_buffer++;
@@ -1320,8 +1320,8 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                         }
                     }
 
-                    // Yes could have a condition here but
-                    // it would crete another bottleneck
+                    /* Yes could have a condition here but
+                       it would create another bottleneck */
 
                     note_data->env_level =
                     note_data->sample->env_target[note_data->env];
@@ -1443,7 +1443,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
         _WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
     }
 
-    // _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2));
+    /* _WM_DynamicVolumeAdjust(mdi, tmp_buffer, (buffer_used/2)); */
 
     for (i = 0; i < buffer_used; i += 4) {
         left_mix = *tmp_buffer++;
@@ -2022,8 +2022,8 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options, uint16_t setti
                                     | (options & setting));
 
     if (options & WM_MO_LOG_VOLUME) {
-            _WM_AdjustChannelVolumes(mdi, 16);  // Settings greater than 15
-                                                // adjusts all channels
+            _WM_AdjustChannelVolumes(mdi, 16);  /* Settings greater than 15
+                                                   adjusts all channels */
     } else if (options & WM_MO_REVERB) {
         _WM_reset_reverb(mdi->reverb);
     }

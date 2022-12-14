@@ -35,7 +35,7 @@
 #include "file_io.h"
 #include "sample.h"
 
-//#define DEBUG_GUSPAT
+/* #define DEBUG_GUSPAT */
 #ifdef DEBUG_GUSPAT
 #define GUSPAT_FILENAME_DEBUG(dx) fprintf(stderr,"\r%s\n",dx)
 
@@ -823,15 +823,15 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                             | ((gus_sample->loop_fraction & 0xf0) >> 4);
         }
 
-        // All sorts of annoying things happen with pat files.
-        // One of them is that the sustained release time and
-        // normal release time gets mixed up because software got muddled
+        /* All sorts of annoying things happen with pat files.
+           One of them is that the sustained release time and
+           normal release time gets mixed up because software got muddled */
         envsusreltime = env_time_table[gus_patch[gus_ptr + 40]];
         envreltime = env_time_table[gus_patch[gus_ptr + 41]];
         if (envsusreltime < envreltime) {
-            // EXPERIMENTAL
+            /* EXPERIMENTAL */
             gus_patch[gus_ptr + 40] = gus_patch[gus_ptr + 41];
-            // timidity does this:
+            /* timidity does this: */
             gus_patch[gus_ptr + 41] = 0x3f;
             gus_patch[gus_ptr + 42] = 0x3f;
 
@@ -840,7 +840,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             gus_patch[gus_ptr + 48] = 0;
         }
 
-        // lets set up the envelope data
+        /* lets set up the envelope data */
         for (i = 0; i < 6; i++) {
             GUSPAT_INT_DEBUG("Envelope #",i);
             if (gus_sample->modes & SAMPLE_ENVELOPE) {

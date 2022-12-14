@@ -267,7 +267,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
             printf("Expected MIDI event\n");
             return -1;
         }
-//      printf("Unsing running event 0x%2x\n", running_event);
+/*      printf("Unsing running event 0x%2x\n", running_event); */
     } else {
         event = *midi_data++;
         midi_size--;
@@ -523,7 +523,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
                 sysex_store = NULL;
                 rtn_cnt += sysex_size;
             } else if ((event <= 0xFE) && (event >= 0xF1)) {
-                // Added just in case
+                /* Added just in case */
                 printf("Realtime Event: 0x%.2x ** NOTE: Not expected in midi file type data\n",event);
             } else if (event == 0xFF) {
                 /*
@@ -701,7 +701,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
             }
             break;
     }
-//  printf("Return Count: %i\n", rtn_cnt);
+/*  printf("Return Count: %i\n", rtn_cnt); */
     return rtn_cnt;
 }
 
@@ -752,8 +752,8 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
     uint32_t mus_data_ofs = 0;
     uint32_t mus_song_ofs = 0;
     uint32_t mus_song_len = 0;
-//  uint16_t mus_ch_cnt1 = 0;
-//  uint16_t mus_ch_cnt2 = 0;
+/*  uint16_t mus_ch_cnt1 = 0; */
+/*  uint16_t mus_ch_cnt2 = 0; */
     uint16_t mus_no_instr = 0;
     uint16_t mus_instr_cnt = 0;
     uint8_t mus_event_size = 0;
@@ -761,37 +761,37 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
     uint8_t mus_prev_vol[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     uint32_t mus_ticks = 0;
 
-    // Check that we have enough data to check the header
+    /* Check that we have enough data to check the header */
     if (mus_size < 17) {
         printf("Not a valid MUS file: File too short\n");
         return -1;
     }
 
-    // Check Header
+    /* Check Header */
     if (strncmp((char *) mus_data, (char *) mus_hdr, 4) != 0) {
         printf("Not a valid MUS file: expected MUS followed by 0x1A\n");
         return -1;
     }
 
-    // Get Song Length
+    /* Get Song Length */
     mus_song_len = (mus_data[5] << 8) | mus_data[4];
-    // Get Song Offset
+    /* Get Song Offset */
     mus_song_ofs = (mus_data[7] << 8) | mus_data[6];
 
     if (verbose) printf("Song Offset: %i, Length: %i\n", mus_song_ofs, mus_song_len);
 
-    // Have yet to determine what this actually is.
-    // mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8];
-    // mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10];
+    /* Have yet to determine what this actually is. */
+    /* mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8]; */
+    /* mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10]; */
 
-    // Number of instruments defined
+    /* Number of instruments defined */
     mus_no_instr = (mus_data[13] << 8) | mus_data[12];
     if (verbose) printf("Number of Instruments: %i\n", mus_no_instr);
 
-    // Skip next 2 data bytes
+    /* Skip next 2 data bytes */
     mus_data_ofs = 16;
 
-    // Check that we have enough data to check the rest
+    /* Check that we have enough data to check the rest */
     if (mus_size < (mus_data_ofs + (mus_no_instr << 1) + mus_song_len)) {
         printf("Not a valid MUS file: File too short\n");
         return -1;
@@ -805,28 +805,28 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
         } while (mus_instr_cnt != mus_no_instr);
     }
 
-    // make sure we are at song offset
+    /* make sure we are at song offset */
     mus_data_ofs = mus_song_ofs;
 
     if (verbose) {
-        // Setup secs_per_tick
+        /* Setup secs_per_tick */
         if (frequency == 0.0) frequency = 140.0;
         set_secs_per_tick (60, (uint32_t)(60000000.0f / frequency));
         add_and_display_time(0);
     }
 
     do {
-        // Read Event
+        /* Read Event */
     _WM_READ_MUS_EVENT:
         if (verbose) {
             display_time();
         }
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
-            case 0: // note off
+            case 0: /* note off */
                 mus_event_size = 2;
                 if (verbose) printf("Note Off 0x%.2x\n", mus_data[mus_data_ofs + 1]);
                 break;
-            case 1: // note on
+            case 1: /* note on */
                 if (mus_data[mus_data_ofs + 1] & 0x80) {
                     mus_event_size = 3;
                     if (verbose) printf("Note On (0x%.2x): 0x%.2x\n", (mus_data[mus_data_ofs + 1] & 0x7f), mus_data[mus_data_ofs + 2]);
@@ -836,11 +836,11 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
                     if (verbose) printf("Note On (0x%.2x): [0x%.2x]\n", mus_data[mus_data_ofs + 1], mus_prev_vol[mus_data[mus_data_ofs] & 0x0f]);
                 }
                 break;
-            case 2: // pitch bend
+            case 2: /* pitch bend */
                 mus_event_size = 2;
                 if (verbose) printf("Pitch Bend 0x%.2x\n", mus_data[mus_data_ofs + 1]);
                 break;
-            case 3: // system controller
+            case 3: /* system controller */
                 mus_event_size = 2;
                 if (verbose) {
                     printf("System Controller: ");
@@ -851,10 +851,10 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
                         case 11:
                             printf("All Notes Off\n");
                             break;
-                        case 12: // Not supported by WildMidi. Parsed for compatability
+                        case 12: /* Not supported by WildMidi. Parsed for compatability */
                             printf("Mono\n");
                             break;
-                        case 13:  // Not supported by WildMidi. Parsed for compatability
+                        case 13:  /* Not supported by WildMidi. Parsed for compatability */
                             printf("Poly\n");
                             break;
                         case 14:
@@ -865,7 +865,7 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
                     }
                 }
                 break;
-            case 4: // controller
+            case 4: /* controller */
                 mus_event_size = 3;
                 if (verbose) {
                     printf("Controller: ");
@@ -905,22 +905,22 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
                     }
                 }
                 break;
-            case 5: // ??
+            case 5: /* ?? */
                 mus_event_size = 1;
                 if (verbose) printf("0x%.2x\n", mus_data[mus_data_ofs]);
                 break;
-            case 6: // End Of Song
-                //mus_event_size = 1;
+            case 6: /* End Of Song */
+                /* mus_event_size = 1; */
                 if (verbose) printf("End Of Song\n");
                 goto _WM_MUS_EOS;
                 break;
-            case 7: // ??
+            case 7: /* ?? */
                 mus_event_size = 1;
                 if (verbose) printf("0x%.2x\n", mus_data[mus_data_ofs]);
                 break;
         }
 #if 0
-        // DEBUG
+        /* DEBUG */
         if (verbose)
         {
             uint8_t i = 0;
@@ -936,7 +936,7 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
         }
         mus_data_ofs += mus_event_size;
 
-        // Read Time (140 ticks per minute)
+        /* Read Time (140 ticks per minute) */
         mus_ticks = 0;
         do {
             mus_ticks = (mus_ticks << 7) | (mus_data[mus_data_ofs] & 0x7f);
@@ -947,14 +947,14 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
         }
     } while (mus_data_ofs < mus_size);
 
-    // Song End
+    /* Song End */
 _WM_MUS_EOS:
     return 0;
 }
 
 static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int verbose) {
     uint16_t hmi_division = 0;
-    //uint32_t hmi_duration_secs = 0;
+    /* uint32_t hmi_duration_secs = 0; */
     uint32_t hmi_track_cnt = 0;
     uint32_t i = 0;
     uint32_t *hmi_track_offset = NULL;
@@ -966,7 +966,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     uint32_t hmi_track_header_length = 0;
     uint32_t hmi_file_end = (uint32_t)hmi_size;
 
-    // Check header
+    /* Check header */
     if (strncmp((char *) hmi_data,"HMI-MIDISONG061595", 18) != 0) {
         printf("Not a valid HMI file: expected HMI-MIDISONG061595\n");
         return -1;
@@ -997,16 +997,16 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
     hmi_size -= 141;
     hmi_dbg += 141;
 
-    hmi_track_offset[0] = *hmi_data; // To keep Xcode happy
+    hmi_track_offset[0] = *hmi_data; /* To keep Xcode happy */
 
     for (i = 0; i < hmi_track_cnt; i++) {
-//      printf("DEBUG @ %.8x\n",hmi_dbg);
+/*      printf("DEBUG @ %.8x\n",hmi_dbg); */
         hmi_track_offset[i] = *hmi_data++;
         hmi_track_offset[i] += (*hmi_data++ << 8);
         hmi_track_offset[i] += (*hmi_data++ << 16);
         hmi_track_offset[i] += (*hmi_data++ << 24);
         hmi_size -= 4;
-        //FIXME: These are absolute data offsets?
+        /* FIXME: These are absolute data offsets? */
         if (verbose) printf("Track %i offset: %.8x\n",i,hmi_track_offset[i]);
         hmi_dbg += 4;
     }
@@ -1044,7 +1044,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
         } else {
             hmi_track_end = hmi_file_end;
         }
-//      printf("DEBUG: 0x%.8x\n",hmi_track_end);
+/*      printf("DEBUG: 0x%.8x\n",hmi_track_end); */
         if (verbose) {
             reset_time();
         }
@@ -1094,18 +1094,18 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
                     return -1;
                 }
 
-                // Running event
-                // 0xff does not alter running event
+                /* Running event */
+                /* 0xff does not alter running event */
                 if ((*hmi_data == 0xF0) || (*hmi_data == 0xF7)) {
-                    // Sysex resets running event data
+                    /* Sysex resets running event data */
                     hmi_running_event = 0;
                 } else if (*hmi_data < 0xF0) {
-                    // MIDI events 0x80 to 0xEF set running event
+                    /* MIDI events 0x80 to 0xEF set running event */
                     if (*hmi_data >= 0x80) {
                         hmi_running_event = *hmi_data;
                     }
                 }
-            //  if (verbose) printf("Running Event: 0x%.2x\n",hmi_running_event);
+            /*  if (verbose) printf("Running Event: 0x%.2x\n",hmi_running_event); */
 
                 if ((hmi_data[0] == 0xff) && (hmi_data[1] == 0x2f) && (hmi_data[2] == 0x00)) {
                     hmi_data += check_ret;
@@ -1115,7 +1115,7 @@ static int test_hmi(unsigned char * hmi_data, unsigned long int hmi_size, int ve
                 }
 
                 if ((hmi_running_event & 0xf0) == 0x90) {
-                    // note on has extra data to specify how long the note is.
+                    /* note on has extra data to specify how long the note is. */
                     hmi_data += check_ret;
                     hmi_size -= check_ret;
                     hmi_dbg += check_ret;
@@ -1162,7 +1162,7 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
     uint32_t hmp_var_len_val = 0;
     int32_t check_ret = 0;
 
-    // check the header
+    /* check the header */
     if (strncmp((char *) hmp_data,"HMIMIDIP", 8) != 0) {
         printf("Not a valid HMP file: expected HMIMIDIP\n");
         return -1;
@@ -1177,14 +1177,14 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
         if (verbose) printf("HMPv2 format detected\n");
     }
 
-    // should be a bunch of \0's
+    /* should be a bunch of \0's */
     if (is_hmq) {
         zero_cnt = 18;
     } else {
         zero_cnt = 24;
     }
     for (i = 0; i < zero_cnt; i++) {
-//      printf("DEBUG (%.2x): %.2x\n",i, hmp_data[i]);
+/*      printf("DEBUG (%.2x): %.2x\n",i, hmp_data[i]); */
         if (hmp_data[i] != 0) {
             printf("Not a valid HMP file\n");
             return -1;
@@ -1198,7 +1198,7 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
     hmp_file_length += (*hmp_data++ << 16);
     hmp_file_length += (*hmp_data++ << 24);
     if (verbose) printf("File length: %u\n", hmp_file_length);
-    // Next 12 bytes are normally \0 so skipping over them
+    /* Next 12 bytes are normally \0 so skipping over them */
     hmp_data += 12;
     hmp_size -= 16;
 
@@ -1207,7 +1207,7 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
     hmp_chunks += (*hmp_data++ << 16);
     hmp_chunks += (*hmp_data++ << 24);
     if (verbose) printf("Number of chunks: %u\n", hmp_chunks);
-    // Unsure of what next 4 bytes are so skip over them
+    /* Unsure of what next 4 bytes are so skip over them */
     hmp_data += 4;
     hmp_size -= 8;
 
@@ -1261,13 +1261,13 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
         hmp_size -= 4;
         if (verbose) printf("Track Number: %u\n", hmp_track);
 
-        // Start of Midi Data
+        /* Start of Midi Data */
 
-        // because chunk length includes chunk header
-        // remove header length from chunk length
+        /* because chunk length includes chunk header */
+        /* remove header length from chunk length */
         hmp_chunk_length -= 12;
 
-        // Start of Midi Data
+        /* Start of Midi Data */
         for (j = 0; j < hmp_chunk_length; j++) {
             uint32_t var_len_shift = 0;
             hmp_var_len_val = 0;
@@ -1289,7 +1289,7 @@ static int test_hmp(unsigned char * hmp_data, unsigned long int hmp_size, int ve
                 printf("Missing or Corrupt MIDI Data\n");
                 return -1;
             }
-            // Display loop start/end
+            /* Display loop start/end */
             if ((hmp_chunk_num == 1) && ((hmp_data[0] & 0xf0) == 0xb0)) {
                 if ((hmp_data[1] == 110) && (hmp_data[2] == 255) && (verbose)) printf("HMP Loop Start\n");
                 if ((hmp_data[1] == 111) && (hmp_data[2] == 128) && (verbose)) printf("HMP Loop End\n");
@@ -1327,7 +1327,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     xmidi_data += 4;
     xmidi_size -= 4;
 
-    // bytes until next entry
+    /* bytes until next entry */
     tmp_val = *xmidi_data++ << 24;
     tmp_val |= *xmidi_data++ << 16;
     tmp_val |= *xmidi_data++ << 8;
@@ -1348,7 +1348,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     xmidi_data += 4;
     xmidi_size -= 4;
 
-    // number of forms contained after this point
+    /* number of forms contained after this point */
     form_cnt = *xmidi_data++;
 
     if (verbose)
@@ -1369,7 +1369,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     xmidi_data += 4;
     xmidi_size -= 4;
 
-    // stored just in case it means something
+    /* stored just in case it means something */
     cat_len = *xmidi_data++ << 24;
     cat_len |= *xmidi_data++ << 16;
     cat_len |= *xmidi_data++ << 8;
@@ -1385,7 +1385,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
     xmidi_data += 4;
     xmidi_size -= 4;
 
-    // Start of FORM data which contains the songs
+    /* Start of FORM data which contains the songs */
     for (i = 0; i < form_cnt; i++) {
         if (strncmp((char *) xmidi_data,"FORM", 4) != 0) {
             printf("Not a valid xmidi file: expected FORM\n");
@@ -1396,7 +1396,7 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
         xmidi_data += 4;
         xmidi_size -= 4;
 
-        // stored just in case it means something
+        /* stored just in case it means something */
         subform_len = *xmidi_data++ << 24;
         subform_len |= *xmidi_data++ << 16;
         subform_len |= *xmidi_data++ << 8;
@@ -1465,8 +1465,8 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
                 if (verbose)
                     printf("RBRN length: %u\n",event_len);
 
-                // TODO: still have to work out what this is.
-                // Does not seem to be needed for midi playback.
+                /* TODO: still have to work out what this is. */
+                /* Does not seem to be needed for midi playback. */
                 xmidi_data += event_len;
                 subform_len -= event_len;
 
@@ -1488,14 +1488,14 @@ static int test_xmidi(unsigned char * xmidi_data, unsigned long int xmidi_size,
 
                 do {
                     if (*xmidi_data < 0x80) {
-                        // Delta until next event?
+                        /* Delta until next event? */
                         tmp_val = 0;
                         tmp_val = (tmp_val << 7) | (*xmidi_data++ & 0x7F);
                         xmidi_size--;
                         event_len--;
                         subform_len--;
                         if (verbose) {
-                            // printf ("Intervals: %u\n", tmp_val);
+                            /* printf ("Intervals: %u\n", tmp_val); */
                             add_time(tmp_val);
                         }
 
@@ -1712,7 +1712,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
             return -1;
         }
         
-        // Ignore EOT check for type 0
+        /* Ignore EOT check for type 0 */
         if (midi_type != 0) {
             if ((midi_data[track_size - 3] != 0xFF)
                     || (midi_data[track_size - 2] != 0x2F)
@@ -1725,10 +1725,10 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 
         while (midi_data < next_track) {
             delta = 0;
-//          printf("Get Delta: ");
+/*          printf("Get Delta: "); */
             while (*midi_data > 0x7F) {
                 delta = (delta << 7) | (*midi_data & 0x7F);
-//              printf("0x%.2x ",*midi_data);
+/*              printf("0x%.2x ",*midi_data); */
                 midi_data++;
                 midi_size--;
                 total_count++;
@@ -1780,7 +1780,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 }
             }
 
-//          printf("Event Offset: 0x%.8x\n", total_count);
+/*          printf("Event Offset: 0x%.8x\n", total_count); */
             if ((check_ret = check_midi_event(midi_data, midi_size, running_event, verbose, 0)) == -1) {
                 printf("Missing or Corrupt MIDI Data 0x%.8x\n",total_count);
                 return -1;
@@ -1793,7 +1793,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 /* MIDI events 0x80 to 0xEF set running event */
                 if (*midi_data >= 0x80) {
                     running_event = *midi_data;
-//                  printf("Set running_event 0x%2x\n", running_event);
+/*                  printf("Set running_event 0x%2x\n", running_event); */
                 }
             }
 
@@ -1817,9 +1817,9 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
             midi_size -= check_ret;
             total_count += check_ret;
 
-//          printf("Midi data remaining: %lu\n", midi_size);
+/*          printf("Midi data remaining: %lu\n", midi_size); */
 
-            // Check if we're at the end of the track/file
+            /* Check if we're at the end of the track/file */
             if (midi_type == 0) {
                 /*
                  * For this MIDI type we are going to assume that

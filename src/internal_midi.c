@@ -40,7 +40,7 @@
 
 #define HOLD_OFF 0x02
 
-//#define DEBUG_MIDI
+/* #define DEBUG_MIDI */
 
 #ifdef DEBUG_MIDI
 #define MIDI_EVENT_DEBUG(dy,dz) fprintf(stderr,"\r%s, 0x%.2x, 0x%.8x\n",__func__,dy,dz)
@@ -342,42 +342,42 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
 
     for (i = 0; i < buffer_used; i++) {
         if ((i == 0) || (i > peak_ofs)) {
-            // Find Next Peak/Troff
+            /* Find Next Peak/Troff */
             peak_set = 0;
             prev_val = peak;
             peak_ofs = 0;
             for (j = i; j < buffer_used; j++) {
                 if (peak_set == 0) {
-                    // find what direction the data is going
+                    /* find what direction the data is going */
                     if (prev_val > tmp_buffer[j]) {
-                        // Going Down
+                        /* Going Down */
                         peak_set = -1;
                     } else if (prev_val < tmp_buffer[j]) {
-                        // Doing Up
+                        /* Doing Up */
                         peak_set = 1;
                     } else {
-                        // No direction, keep looking
+                        /* No direction, keep looking */
                         prev_val = tmp_buffer[j];
                         continue;
                     }
                 }
 
                 if (peak_set == 1) {
-                    // Data is going up
+                    /* Data is going up */
                     if (peak < tmp_buffer[j]) {
                         peak = tmp_buffer[j];
                         peak_ofs = j;
                     } else if (peak > tmp_buffer[j]) {
-                        // Data is starting to go down, we found the peak
+                        /* Data is starting to go down, we found the peak */
                         break;
                     }
-                } else { // assume peak_set == -1
-                    // Data is going down
+                } else { /* assume peak_set == -1 */
+                    /* Data is going down */
                     if (peak > tmp_buffer[j]) {
                         peak = tmp_buffer[j];
                         peak_ofs = j;
                     } else if (peak < tmp_buffer[j]) {
-                        // Data is starting to go up, we found the troff
+                        /* Data is starting to go up, we found the troff */
                         break;
                     }
                 }
@@ -392,7 +392,7 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                     } else {
                         volume_to_reach = MAX_DYN_VOL;
                     }
-                } else { // assume peak_set == -1
+                } else { /* assume peak_set == -1 */
                     if (peak < -32768) {
                         volume_to_reach = -32768.0 / (double)peak;
                     } else {
@@ -400,51 +400,51 @@ void _WM_DynamicVolumeAdjust(struct _mdi *mdi, int32_t *tmp_buffer, uint32_t buf
                     }
                 }
             } else {
-                // No peak found, set volume we want to normal
+                /* No peak found, set volume we want to normal */
                 volume_to_reach = MAX_DYN_VOL;
             }
 
             if (volume != volume_to_reach) {
                 if (volume_to_reach == MAX_DYN_VOL) {
-                    // if we want normal volume then adjust to it slower
+                    /* if we want normal volume then adjust to it slower */
                     volume_adjust = (volume_to_reach - volume) / ((double)_WM_SampleRate * 0.1);
                 } else {
-                    // if we want to clamp the volume then adjust quickly
+                    /* if we want to clamp the volume then adjust quickly */
                     volume_adjust = (volume_to_reach - volume) / ((double)_WM_SampleRate * 0.0001);
                 }
             }
         }
 
-        // First do we need to do volume adjustments
+        /* First do we need to do volume adjustments */
         if ((volume_adjust != 0.0) && (volume != volume_to_reach)) {
                 volume += volume_adjust;
                 if (volume_adjust > 0.0) {
-                    // if increasing the volume
+                    /* if increasing the volume */
                     if (volume >= MAX_DYN_VOL) {
-                        // we dont boost volume
+                        /* we dont boost volume */
                         volume = MAX_DYN_VOL;
                         volume_adjust = 0.0;
                     } else if (volume > volume_to_reach) {
-                        // we dont want to go above the level we wanted
+                        /* we dont want to go above the level we wanted */
                         volume = volume_to_reach;
                         volume_adjust = 0.0;
                     }
                 } else {
-                    // decreasing the volume
+                    /* decreasing the volume */
                     if (volume < volume_to_reach) {
-                        // we dont want to go below the level we wanted
+                        /* we dont want to go below the level we wanted */
                         volume = volume_to_reach;
                         volume_adjust = 0.0;
                     }
                 }
             }
 
-        // adjust buffer volume
+        /* adjust buffer volume */
         tmp_output = (double)tmp_buffer[i] * volume;
         tmp_buffer[i] = (int32_t)tmp_output;
     }
 
-    // store required values
+    /* store required values */
     mdi->dyn_vol_adjust = volume_adjust;
     mdi->dyn_vol_peak = peak;
     mdi->dyn_vol = volume;
@@ -598,8 +598,8 @@ void _WM_do_note_off_extra(struct _note *nte) {
 
 
 void _WM_do_midi_divisions(struct _mdi *mdi, struct _event_data *data) {
-    // placeholder function so we can record divisions in the event stream
-    // for conversion function _WM_Event2Midi()
+    /* placeholder function so we can record divisions in the event stream
+       for conversion function _WM_Event2Midi() */
     WMIDI_UNUSED(mdi);
     WMIDI_UNUSED(data);
     return;
@@ -624,9 +624,9 @@ void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data) {
     }
 
     if ((nte->modes & SAMPLE_ENVELOPE) && (nte->env == 0)) {
-        // This is a fix for notes that end before the
-        // initial step of the envelope has completed
-        // making it impossible to hear them at times.
+        /* This is a fix for notes that end before the
+           initial step of the envelope has completed
+           making it impossible to hear them at times. */
         nte->is_off = 1;
     } else {
         _WM_do_note_off_extra(nte);
@@ -1146,7 +1146,7 @@ void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
     }
     /* I would not expect notes to be active when this event
      triggers but we'll adjust active notes as well just in case */
-    _WM_AdjustChannelVolumes(mdi,16); // A setting > 15 adjusts all channels
+    _WM_AdjustChannelVolumes(mdi,16); /* A setting > 15 adjusts all channels */
 
     mdi->channel[9].isdrum = 1;
 }
@@ -1180,17 +1180,17 @@ void _WM_Release_Allowance(struct _mdi *mdi) {
     while (note != NULL) {
 
         if (note->modes & SAMPLE_ENVELOPE) {
-            //ensure envelope isin a release state
+            /* ensure envelope isin a release state */
             if (note->env < 4) {
                 note->env = 4;
             }
 
-            // make sure this is set
+            /* make sure this is set */
             note->env_inc = -note->sample->env_rate[note->env];
 
             release = note->env_level / -note->env_inc;
         } else {
-            // Sample release
+            /* Sample release */
             if (note->modes & SAMPLE_LOOP) {
                 note->modes ^= SAMPLE_LOOP;
             }
