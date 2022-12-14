@@ -24,6 +24,6 @@
 #ifndef __MUS_WM_H
 #define __MUS_WM_H
 
-extern struct _mdi *_WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size);
+extern struct _mdi *_WM_ParseNewMus(const uint8_t *mus_data, uint32_t mus_size);
 
 #endif /* __MUS_WM_H */
