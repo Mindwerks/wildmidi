@@ -70,12 +70,12 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     float sample_remainder = 0;
 
     if (hmp_size < 776) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "file too short", 0);
         return NULL;
     }
 
     if (memcmp(hmp_data, "HMIMIDIP", 8)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, NULL, 0);
         return NULL;
     }
     hmp_data += 8;
@@ -83,7 +83,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
 
     if (!memcmp(hmp_data, "013195", 6)) {
         if (hmp_size < 896) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "file too short", 0);
             return NULL;
         }
         hmp_data += 6;
@@ -99,7 +99,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     }
     for (i = 0; i < zero_cnt; i++) {
         if (hmp_data[i] != 0) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, NULL, 0);
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, NULL, 0);
             return NULL;
         }
     }
@@ -125,7 +125,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_size -= 4;
 
     if (!hmp_chunks) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(no tracks)", 0);
         return NULL;
     }
 
@@ -149,7 +149,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_size -= 4;
 
     if (!hmp_bpm) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(bad bpm)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_INVALID, "(bad bpm)", 0);
         return NULL;
     }
 
@@ -218,7 +218,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_ofs[i] += 4;
 
         if (chunk_length[i] > hmp_size) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, "file too short", 0);
             goto _hmp_end;
         }
         hmp_size -= chunk_length[i];
@@ -258,7 +258,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     if (smallest_delta >= 0x7fffffff) {
         //DEBUG
         //fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
         goto _hmp_end;
     }
 
@@ -266,7 +266,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         //DEBUG
         //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
         //        samples_per_delta_f, smallest_delta);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
         goto _hmp_end;
     }
 
@@ -343,7 +343,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                     } while (*hmp_chunk[i] < 0x80);
                 }
                 if (! chunk_length[i]) {
-                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMP, "file too short", 0);
+                    _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, "file too short", 0);
                     goto _hmp_end;
                 }
                 chunk_delta[i] = chunk_delta[i] + ((*hmp_chunk[i] & 0x7F) << var_len_shift);
@@ -361,7 +361,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
             //DEBUG
             //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
             //        samples_per_delta_f, smallest_delta);
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
             goto _hmp_end;
         }
 
@@ -379,7 +379,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     }
 
     if ((hmp_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
         goto _hmp_end;
     }
 

@@ -2471,7 +2471,7 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
                 */
                 ret_cnt += sysex_len;
             } else {
-                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(unrecognized meta type event)", 0);
+                _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(unrecognized meta type event)", 0);
                 return 0;
             }
             break;
@@ -2481,11 +2481,11 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, uint8_t * event_data, uint32_t inp
             break;
     }
     if (ret_cnt == 0)
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing event)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(missing event)", 0);
     return ret_cnt;
 
 shortbuf:
-    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(input too short)", 0);
+    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(input too short)", 0);
     return 0;
 }
 

@@ -77,12 +77,12 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 
 
     if (hmi_size <= 370) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "file too short", 0);
         return NULL;
     }
 
     if (memcmp(hmi_data, "HMI-MIDISONG061595", 18)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, NULL, 0);
         return NULL;
     }
 
@@ -94,16 +94,16 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     hmi_track_cnt = hmi_data[228];
 
     if (!hmi_track_cnt) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(no tracks)", 0);
         return NULL;
     }
     if (!hmi_bpm) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(bad bpm)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_INVALID, "(bad bpm)", 0);
         return NULL;
     }
 
     if (hmi_size < (370 + (hmi_track_cnt * 17))) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "file too short", 0);
         return NULL;
     }
 
@@ -136,7 +136,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     for (i = 0; i < hmi_track_cnt; i++) {
         /* FIXME: better and/or more size checks??? */
         if (data_end - hmi_data < 4) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "file too short", 0);
             goto _hmi_end;
         }
 
@@ -146,14 +146,14 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_track_offset[i] += (*hmi_data++ << 24);
 
         if (hmi_size < (hmi_track_offset[i] + 0x5a + 4)) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
             goto _hmi_end;
         }
 
         hmi_addr = hmi_base + hmi_track_offset[i];
 
         if (memcmp(hmi_addr, "HMI-MIDITRACK", 13)) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, NULL, 0);
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, NULL, 0);
             goto _hmi_end;
         }
 
@@ -196,7 +196,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     if (smallest_delta >= 0x7fffffff) {
         //DEBUG
         //fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
         goto _hmi_end;
     }
 
@@ -204,7 +204,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         //DEBUG
         //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
         //        samples_per_delta_f, smallest_delta);
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
         goto _hmi_end;
     }
 
@@ -251,7 +251,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                 hmi_data = hmi_base + hmi_track_offset[i];
                 hmi_delta[i] = 0;
                 if (hmi_track_offset[i] >= hmi_size) {
-                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+                    _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
                     goto _hmi_end;
                 }
                 data_size = hmi_size - hmi_track_offset[i];
@@ -273,7 +273,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     hmi_data += 4;
                     hmi_track_offset[i] += 4;
                     if (hmi_tmp > data_size) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+                        _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
                         goto _hmi_end;
                     }
                     data_size -= hmi_tmp;
@@ -330,7 +330,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                             } while (*hmi_data > 0x7F);
                         }
                         if (!data_size) {
-                            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+                            _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
                             goto _hmi_end;
                         }
                         note[hmi_tmp].length = (note[hmi_tmp].length << 7) | (*hmi_data & 0x7F);
@@ -365,7 +365,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     } while (*hmi_data > 0x7F);
                 }
                 if (!data_size) {
-                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_HMI, "file too short", 0);
+                    _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
                     goto _hmi_end;
                 }
                 hmi_delta[i] = (hmi_delta[i] << 7) | (*hmi_data & 0x7F);
@@ -387,7 +387,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
             //DEBUG
             //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
             //        samples_per_delta_f, smallest_delta);
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
             goto _hmi_end;
         }
         subtract_delta = smallest_delta;
@@ -401,7 +401,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     }
 
     if ((hmi_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
         goto _hmi_end;
     }
 

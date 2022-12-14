@@ -479,12 +479,12 @@ int _WM_xmi2midi(const uint8_t *in, uint32_t insize,
     ctx.convert_type = convert_type;
 
     if (ParseXMI(&ctx) < 0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_XMI, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_XMI, NULL, 0);
         goto _end;
     }
 
     if (ExtractTracks(&ctx) < 0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_MIDI, NULL, 0);
         goto _end;
     }
 
@@ -957,7 +957,7 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
 
         /* Convert it */
         if (!(ppqn = ConvertFiletoList(ctx))) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
             break;
         }
         ctx->timing[num] = ppqn;
@@ -984,7 +984,7 @@ static int ParseXMI(struct xmi_ctx *ctx) {
 
     file_size = getsrcsize(ctx);
     if (getsrcpos(ctx) + 8 > file_size) {
-badfile:    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+badfile:    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
         return (-1);
     }
 
