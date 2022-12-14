@@ -28,45 +28,53 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef WILDMIDI_AMIGA
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#endif
-#ifdef _WIN32
-#include <windows.h>
-#include <io.h>
-#undef close
-#define close _close
-#undef open
-#define open _open
-#undef read
-#define read _read
-#elif defined(__DJGPP__)
-#include <io.h>
-#include <dir.h>
-#include <unistd.h>
-#elif defined(__OS2__) || defined(__EMX__)
-#define INCL_DOS
-#define INCL_DOSERRORS
-#include <os2.h>
-#include <fcntl.h>
-#include <io.h>
-#elif defined(WILDMIDI_AMIGA)
-#include <proto/exec.h>
-#include <proto/dos.h>
-#else
-#include <pwd.h>
-#include <strings.h>
-#include <unistd.h>
-#endif
+#if defined(__DJGPP__) || defined(_WIN32) || defined(__OS2__) || defined(__EMX__) || defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+/* POSIX-style IO */
 
-#if !defined(O_BINARY)
-# if defined(_O_BINARY)
-#  define O_BINARY _O_BINARY
-# else
-#  define O_BINARY  0
+# include <fcntl.h>
+# include <sys/types.h>
+# include <sys/stat.h>
+
+# ifdef __DJGPP__
+#  include <io.h>
+#  include <dir.h>
+#  include <unistd.h>
+# elif defined(_WIN32)
+#  include <windows.h>
+#  include <io.h>
+#  undef close
+#  define close _close
+#  undef open
+#  define open _open
+#  undef read
+#  define read _read
+# elif defined(__OS2__) || defined(__EMX__)
+#  define INCL_DOS
+#  define INCL_DOSERRORS
+#  include <os2.h>
+#  include <fcntl.h>
+#  include <io.h>
+# elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#  include <pwd.h>
+#  include <strings.h>
+#  include <unistd.h>
 # endif
+
+# if !defined(O_BINARY)
+#  if defined(_O_BINARY)
+#   define O_BINARY _O_BINARY
+#  else
+#   define O_BINARY  0
+#  endif
+# endif
+
+#elif defined(WILDMIDI_AMIGA)
+/* Amiga does its own thing */
+# include <proto/exec.h>
+# include <proto/dos.h>
+#else
+/* Standard C fallback */
+# include <stdio.h>
 #endif
 
 #include "wm_error.h"
@@ -126,14 +134,11 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     HDIR h = HDIR_CREATE;
     FILEFINDBUF3 fb = {0};
     ULONG cnt = 1;
-#elif defined(WILDMIDI_AMIGA)
-    BPTR buffer_fd;
-    long filsize;
-#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     int buffer_fd;
     struct stat buffer_stat;
 
-#if defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+# if defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 /* for basedir of filename: */
     const char *home = NULL;
     struct passwd *pwd_ent;
@@ -168,8 +173,11 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
             strcat(buffer_file, "/");
         strcat(buffer_file, filename);
     }
-#endif
+# endif
 
+#elif defined(WILDMIDI_AMIGA)
+    BPTR buffer_fd;
+    long filsize;
 #else
     /* Standard C fallback */
     FILE *file;
@@ -210,14 +218,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     }
     DosFindClose(h);
     *size = fb.cbFile;
-#elif defined(WILDMIDI_AMIGA)
-    if ((filsize = AMIGA_filesize(buffer_file)) < 0) {
-        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, ENOENT /* do better!! */);
-        free(buffer_file);
-        return NULL;
-    }
-    *size = filsize;
-#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     if (stat(buffer_file, &buffer_stat)) {
         _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, errno);
         free(buffer_file);
@@ -227,6 +228,13 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     if (buffer_stat.st_size > WM_MAXFILESIZE) /* too big */
         *size = 0xffffffff;
     else *size = buffer_stat.st_size;
+#elif defined(WILDMIDI_AMIGA)
+    if ((filsize = AMIGA_filesize(buffer_file)) < 0) {
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, ENOENT /* do better!! */);
+        free(buffer_file);
+        return NULL;
+    }
+    *size = filsize;
 #else
     /* Standard C fallback */
     file = fopen(buffer_file, "rb");
@@ -257,7 +265,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     rewind(file);
 
     /* 'long' can be a lot bigger than a 'uint32_t', so cap it. */
-    *size = ftell_result > WM_MAXFILESIZE ? 0xffffffff : ftell_result;
+    *size = ftell_result > WM_MAXFILESIZE ? 0xffffffff : (uint32_t)ftell_result;
 #endif
 
     if (__builtin_expect((*size > WM_MAXFILESIZE), 0)) {
@@ -275,22 +283,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         return NULL;
     }
 
-#if defined(WILDMIDI_AMIGA)
-    if (!(buffer_fd = AMIGA_open(buffer_file))) {
-        _WM_GLOBAL_ERROR(WM_ERR_OPEN, filename, ENOENT /* do better!! */);
-        free(buffer_file);
-        free(data);
-        return NULL;
-    }
-    if (AMIGA_read(buffer_fd, data, filsize) != filsize) {
-        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO /* do better!! */);
-        free(buffer_file);
-        free(data);
-        AMIGA_close(buffer_fd);
-        return NULL;
-    }
-    AMIGA_close(buffer_fd);
-#elif defined(__DJGPP__) || defined(_WIN32) || defined(__OS2__) || defined(__EMX__) || defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#if defined(__DJGPP__) || defined(_WIN32) || defined(__OS2__) || defined(__EMX__) || defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
         _WM_GLOBAL_ERROR(WM_ERR_OPEN, filename, errno);
         free(buffer_file);
@@ -305,6 +298,21 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         return NULL;
     }
     close(buffer_fd);
+#elif defined(WILDMIDI_AMIGA)
+    if (!(buffer_fd = AMIGA_open(buffer_file))) {
+        _WM_GLOBAL_ERROR(WM_ERR_OPEN, filename, ENOENT /* do better!! */);
+        free(buffer_file);
+        free(data);
+        return NULL;
+    }
+    if (AMIGA_read(buffer_fd, data, filsize) != filsize) {
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO /* do better!! */);
+        free(buffer_file);
+        free(data);
+        AMIGA_close(buffer_fd);
+        return NULL;
+    }
+    AMIGA_close(buffer_fd);
 #else
     if (fread(data, 1, (size_t)*size, file) != (size_t)*size) {
         _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO);
