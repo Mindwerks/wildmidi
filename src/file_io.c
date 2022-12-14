@@ -129,13 +129,11 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
 #elif defined(WILDMIDI_AMIGA)
     BPTR buffer_fd;
     long filsize;
-#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__)
-    int buffer_fd;
-    struct stat buffer_stat;
-#else /* unix builds */
+#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     int buffer_fd;
     struct stat buffer_stat;
 
+#if defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 /* for basedir of filename: */
     const char *home = NULL;
     struct passwd *pwd_ent;
@@ -170,7 +168,13 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
             strcat(buffer_file, "/");
         strcat(buffer_file, filename);
     }
-#endif /* unix builds */
+#endif
+
+#else
+    /* Standard C fallback */
+    FILE *file;
+    long ftell_result;
+#endif
 
     if (buffer_file == NULL) {
         buffer_file = (char *) malloc(strlen(filename) + 1);
@@ -213,7 +217,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         return NULL;
     }
     *size = filsize;
-#else
+#elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     if (stat(buffer_file, &buffer_stat)) {
         _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, errno);
         free(buffer_file);
@@ -223,6 +227,37 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     if (buffer_stat.st_size > WM_MAXFILESIZE) /* too big */
         *size = 0xffffffff;
     else *size = buffer_stat.st_size;
+#else
+    /* Standard C fallback */
+    file = fopen(buffer_file, "rb");
+
+    if (file == NULL) {
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, errno);
+        free(buffer_file);
+        return NULL;
+    }
+
+    /* Technically undefined behaviour, but any sane implementation will allow this without issue. Besides, what choice do we have? */
+    if (fseek(file, 0, SEEK_END) != 0) {
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO);
+        free(buffer_file);
+        fclose(file);
+        return NULL;
+    }
+
+    ftell_result = ftell(file);
+
+    if (ftell_result == -1L) {
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO);
+        free(buffer_file);
+        fclose(file);
+        return NULL;
+    }
+
+    rewind(file);
+
+    /* 'long' can be a lot bigger than a 'uint32_t', so cap it. */
+    *size = ftell_result > WM_MAXFILESIZE ? 0xffffffff : ftell_result;
 #endif
 
     if (__builtin_expect((*size > WM_MAXFILESIZE), 0)) {
@@ -255,8 +290,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         return NULL;
     }
     AMIGA_close(buffer_fd);
-    free(buffer_file);
-#else
+#elif defined(__DJGPP__) || defined(_WIN32) || defined(__OS2__) || defined(__EMX__) || defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(unix) || defined(__unix) || defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
         _WM_GLOBAL_ERROR(WM_ERR_OPEN, filename, errno);
         free(buffer_file);
@@ -271,8 +305,19 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         return NULL;
     }
     close(buffer_fd);
-    free(buffer_file);
+#else
+    if (fread(data, 1, (size_t)*size, file) != (size_t)*size) {
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO);
+        free(buffer_file);
+        fclose(file);
+        free(data);
+        return NULL;
+    }
+
+    fclose(file);
 #endif
+
+    free(buffer_file);
 
     data[*size] = '\0';
     return data;
