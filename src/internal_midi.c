@@ -43,11 +43,11 @@
 /* #define DEBUG_MIDI */
 
 #ifdef DEBUG_MIDI
-#define MIDI_EVENT_DEBUG(dy,dz) fprintf(stderr,"\r%s, 0x%.2x, 0x%.8x\n",__func__,dy,dz)
-#define MIDI_EVENT_SDEBUG(dy,dz) fprintf(stderr,"\r%s, 0x%.2x, %s\n",__func__,dy,dz)
+#define MIDI_EVENT_DEBUG(dx,dy,dz) fprintf(stderr,"\r%s, 0x%.2x, 0x%.8x\n",dx,dy,dz)
+#define MIDI_EVENT_SDEBUG(dx,dy,dz) fprintf(stderr,"\r%s, 0x%.2x, %s\n",dx,dy,dz)
 #else
-#define MIDI_EVENT_DEBUG(dy,dz)
-#define MIDI_EVENT_SDEBUG(dy,dz)
+#define MIDI_EVENT_DEBUG(dx,dy,dz)
+#define MIDI_EVENT_SDEBUG(dx,dy,dz)
 #endif
 
 /* f: ( VOLUME / 127.0 ) * 1024.0 */
@@ -486,7 +486,7 @@ void _WM_AdjustNoteVolumes(struct _mdi *mdi, uint8_t ch, struct _note *nte) {
 #define VOL_DIVISOR 4.0
     volume_adj = ((double)_WM_MasterVolume / 1024.0) / VOL_DIVISOR;
 
-    MIDI_EVENT_DEBUG(ch, 0);
+    MIDI_EVENT_DEBUG("_WM_AdjustNoteVolumes", ch, 0);
 
     if (pan_ofs > 127) pan_ofs = 127;
     premix_dBm_left = dBm_pan_volume[(127-pan_ofs)];
@@ -555,7 +555,7 @@ static void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
 
 void _WM_do_note_off_extra(struct _note *nte) {
 
-    MIDI_EVENT_DEBUG(0, 0);
+    MIDI_EVENT_DEBUG("_WM_do_note_off_extra", 0, 0);
     nte->is_off = 0;
 
     if (!(nte->modes & SAMPLE_ENVELOPE)) {
@@ -609,7 +609,7 @@ void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data) {
     struct _note *nte;
     uint8_t ch = data->channel;
 
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_note_off", ch, data->data.value);
 
     nte = &mdi->note_table[0][ch][(data->data.value >> 8)];
     if (!nte->active) {
@@ -670,7 +670,7 @@ void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
         return;
     }
 
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_note_on", ch, data->data.value);
 
     if (!mdi->channel[ch].isdrum) {
         patch = mdi->channel[ch].patch;
@@ -752,7 +752,7 @@ void _WM_do_aftertouch(struct _mdi *mdi, struct _event_data *data) {
     struct _note *nte;
     uint8_t ch = data->channel;
 
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_aftertouch", ch, data->data.value);
 
     nte = &mdi->note_table[0][ch][(data->data.value >> 8)];
     if (!nte->active) {
@@ -772,7 +772,7 @@ void _WM_do_aftertouch(struct _mdi *mdi, struct _event_data *data) {
 
 void _WM_do_control_bank_select(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_bank_select", ch, data->data.value);
     mdi->channel[ch].bank = data->data.value;
 }
 
@@ -780,7 +780,7 @@ void _WM_do_control_data_entry_course(struct _mdi *mdi,
                                          struct _event_data *data) {
     uint8_t ch = data->channel;
     int data_tmp;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_data_entry_course", ch, data->data.value);
 
     if ((mdi->channel[ch].reg_non == 0)
         && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
@@ -794,7 +794,7 @@ void _WM_do_control_data_entry_course(struct _mdi *mdi,
 void _WM_do_control_channel_volume(struct _mdi *mdi,
                                       struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_volume", ch, data->data.value);
 
     mdi->channel[ch].volume = data->data.value;
     _WM_AdjustChannelVolumes(mdi, ch);
@@ -803,7 +803,7 @@ void _WM_do_control_channel_volume(struct _mdi *mdi,
 void _WM_do_control_channel_balance(struct _mdi *mdi,
                                        struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_balance", ch, data->data.value);
 
     mdi->channel[ch].balance = data->data.value;
     _WM_AdjustChannelVolumes(mdi, ch);
@@ -811,7 +811,7 @@ void _WM_do_control_channel_balance(struct _mdi *mdi,
 
 void _WM_do_control_channel_pan(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_pan", ch, data->data.value);
 
     mdi->channel[ch].pan = data->data.value;
     _WM_AdjustChannelVolumes(mdi, ch);
@@ -820,7 +820,7 @@ void _WM_do_control_channel_pan(struct _mdi *mdi, struct _event_data *data) {
 void _WM_do_control_channel_expression(struct _mdi *mdi,
                                           struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_expression", ch, data->data.value);
 
     mdi->channel[ch].expression = data->data.value;
     _WM_AdjustChannelVolumes(mdi, ch);
@@ -830,7 +830,7 @@ void _WM_do_control_data_entry_fine(struct _mdi *mdi,
                                        struct _event_data *data) {
     uint8_t ch = data->channel;
     int data_tmp;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_data_entry_fine", ch, data->data.value);
 
     if ((mdi->channel[ch].reg_non == 0)
       && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
@@ -844,7 +844,7 @@ void _WM_do_control_data_entry_fine(struct _mdi *mdi,
 void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) {
     struct _note *note_data = mdi->note;
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_hold", ch, data->data.value);
 
     if (data->data.value > 63) {
         mdi->channel[ch].hold = 1;
@@ -910,7 +910,7 @@ void _WM_do_control_channel_hold(struct _mdi *mdi, struct _event_data *data) {
 void _WM_do_control_data_increment(struct _mdi *mdi,
                                       struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_data_increment", ch, data->data.value);
 
     if ((mdi->channel[ch].reg_non == 0)
         && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
@@ -922,7 +922,7 @@ void _WM_do_control_data_increment(struct _mdi *mdi,
 void _WM_do_control_data_decrement(struct _mdi *mdi,
                                       struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_data_decrement", ch, data->data.value);
 
     if ((mdi->channel[ch].reg_non == 0)
         && (mdi->channel[ch].reg_data == 0x0000)) { /* Pitch Bend Range */
@@ -933,7 +933,7 @@ void _WM_do_control_data_decrement(struct _mdi *mdi,
 void _WM_do_control_non_registered_param_fine(struct _mdi *mdi,
                                             struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_non_registered_param_fine", ch, data->data.value);
     mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x3F80)
                                 | data->data.value;
     mdi->channel[ch].reg_non = 1;
@@ -942,7 +942,7 @@ void _WM_do_control_non_registered_param_fine(struct _mdi *mdi,
 void _WM_do_control_non_registered_param_course(struct _mdi *mdi,
                                      struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_non_registered_param_course", ch, data->data.value);
     mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x7F)
                                 | (data->data.value << 7);
     mdi->channel[ch].reg_non = 1;
@@ -951,7 +951,7 @@ void _WM_do_control_non_registered_param_course(struct _mdi *mdi,
 void _WM_do_control_registered_param_fine(struct _mdi *mdi,
                                           struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_registered_param_fine", ch, data->data.value);
     mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x3F80)
                                 | data->data.value;
     mdi->channel[ch].reg_non = 0;
@@ -960,7 +960,7 @@ void _WM_do_control_registered_param_fine(struct _mdi *mdi,
 void _WM_do_control_registered_param_course(struct _mdi *mdi,
                                             struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_registered_param_course", ch, data->data.value);
     mdi->channel[ch].reg_data = (mdi->channel[ch].reg_data & 0x7F)
                                 | (data->data.value << 7);
     mdi->channel[ch].reg_non = 0;
@@ -970,7 +970,7 @@ void _WM_do_control_channel_sound_off(struct _mdi *mdi,
                                       struct _event_data *data) {
     struct _note *note_data = mdi->note;
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_sound_off", ch, data->data.value);
 
     if (note_data) {
         do {
@@ -988,7 +988,7 @@ void _WM_do_control_channel_sound_off(struct _mdi *mdi,
 void _WM_do_control_channel_controllers_off(struct _mdi *mdi,
                                             struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_controllers_off", ch, data->data.value);
 
     mdi->channel[ch].expression = 127;
     mdi->channel[ch].pressure = 127;
@@ -1005,7 +1005,7 @@ void _WM_do_control_channel_notes_off(struct _mdi *mdi,
                                       struct _event_data *data) {
     struct _note *note_data = mdi->note;
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_channel_notes_off", ch, data->data.value);
 
     if (mdi->channel[ch].isdrum)
         return;
@@ -1038,7 +1038,7 @@ void _WM_do_control_channel_notes_off(struct _mdi *mdi,
 void _WM_do_control_dummy(struct _mdi *mdi, struct _event_data *data) {
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_control_dummy", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1047,7 +1047,7 @@ void _WM_do_control_dummy(struct _mdi *mdi, struct _event_data *data) {
 
 void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_patch", ch, data->data.value);
     if (!mdi->channel[ch].isdrum) {
         mdi->channel[ch].patch = _WM_get_patch_data(mdi,
                                                 ((mdi->channel[ch].bank << 8) | data->data.value));
@@ -1059,7 +1059,7 @@ void _WM_do_patch(struct _mdi *mdi, struct _event_data *data) {
 void _WM_do_channel_pressure(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
     struct _note *note_data = mdi->note;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_channel_pressure", ch, data->data.value);
 
     mdi->channel[ch].pressure = data->data.value;
 
@@ -1082,7 +1082,7 @@ void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data) {
     struct _note *note_data = mdi->note;
     uint8_t ch = data->channel;
 
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_pitch", ch, data->data.value);
     mdi->channel[ch].pitch = data->data.value - 0x2000;
 
     if (mdi->channel[ch].pitch < 0) {
@@ -1106,7 +1106,7 @@ void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data) {
 void _WM_do_sysex_roland_drum_track(struct _mdi *mdi, struct _event_data *data) {
     uint8_t ch = data->channel;
 
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_sysex_roland_drum_track", ch, data->data.value);
 
     if (data->data.value > 0) {
         mdi->channel[ch].isdrum = 1;
@@ -1121,9 +1121,9 @@ void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
     int i;
 
     if (data != NULL) {
-        MIDI_EVENT_DEBUG(data->channel, data->data.value);
+        MIDI_EVENT_DEBUG("_WM_do_sysex_gm_reset", data->channel, data->data.value);
     } else {
-        MIDI_EVENT_DEBUG(0, 0);
+        MIDI_EVENT_DEBUG("_WM_do_sysex_gm_reset", 0, 0);
     }
 
     for (i = 0; i < 16; i++) {
@@ -1154,7 +1154,7 @@ void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
 void _WM_do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_sysex_roland_reset", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1164,7 +1164,7 @@ void _WM_do_sysex_roland_reset(struct _mdi *mdi, struct _event_data *data) {
 void _WM_do_sysex_yamaha_reset(struct _mdi *mdi, struct _event_data *data) {
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_sysex_yamaha_reset", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1212,7 +1212,7 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_endoftrack", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1226,7 +1226,7 @@ void _WM_do_meta_tempo(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_tempo", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1239,7 +1239,7 @@ void _WM_do_meta_timesignature(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_timesignature", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1252,7 +1252,7 @@ void _WM_do_meta_keysignature(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_keysignature", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1265,7 +1265,7 @@ void _WM_do_meta_sequenceno(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_sequenceno", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1278,7 +1278,7 @@ void _WM_do_meta_channelprefix(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_channelprefix", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1291,7 +1291,7 @@ void _WM_do_meta_portprefix(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_portprefix", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1304,7 +1304,7 @@ void _WM_do_meta_smpteoffset(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_DEBUG(ch, data->data.value);
+    MIDI_EVENT_DEBUG("_WM_do_meta_smpteoffset", ch, data->data.value);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1317,7 +1317,7 @@ void _WM_do_meta_text(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_SDEBUG(ch, data->data.string);
+    MIDI_EVENT_SDEBUG("_WM_do_meta_text", ch, data->data.string);
 #endif
     if (mdi->extra_info.mixer_options & WM_MO_TEXTASLYRIC) {
         mdi->lyric = data->data.string;
@@ -1331,7 +1331,7 @@ void _WM_do_meta_copyright(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_SDEBUG(ch, data->data.string);
+    MIDI_EVENT_SDEBUG("_WM_do_meta_copyright", ch, data->data.string);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1344,7 +1344,7 @@ void _WM_do_meta_trackname(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_SDEBUG(ch, data->data.string);
+    MIDI_EVENT_SDEBUG("_WM_do_meta_trackname", ch, data->data.string);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1357,7 +1357,7 @@ void _WM_do_meta_instrumentname(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_SDEBUG(ch, data->data.string);
+    MIDI_EVENT_SDEBUG("_WM_do_meta_instrumentname", ch, data->data.string);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1370,7 +1370,7 @@ void _WM_do_meta_lyric(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_SDEBUG(ch, data->data.string);
+    MIDI_EVENT_SDEBUG("_WM_do_meta_lyric", ch, data->data.string);
 #endif
     if (!(mdi->extra_info.mixer_options & WM_MO_TEXTASLYRIC)) {
         mdi->lyric = data->data.string;
@@ -1383,7 +1383,7 @@ void _WM_do_meta_marker(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_SDEBUG(ch, data->data.string);
+    MIDI_EVENT_SDEBUG("_WM_do_meta_marker", ch, data->data.string);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1396,7 +1396,7 @@ void _WM_do_meta_cuepoint(struct _mdi *mdi, struct _event_data *data) {
  * for conversion function _WM_Event2Midi */
 #ifdef DEBUG_MIDI
     uint8_t ch = data->channel;
-    MIDI_EVENT_SDEBUG(ch, data->data.string);
+    MIDI_EVENT_SDEBUG("_WM_do_meta_cuepoint", ch, data->data.string);
 #else
     WMIDI_UNUSED(data);
 #endif
@@ -1451,7 +1451,7 @@ void _WM_ResetToStart(struct _mdi *mdi) {
 }
 
 int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions) {
-    MIDI_EVENT_DEBUG(0,0);
+    MIDI_EVENT_DEBUG("_WM_midi_setup_divisions", 0,0);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_midi_divisions;
     mdi->events[mdi->event_count].do_event = _WM_do_midi_divisions;
@@ -1464,7 +1464,7 @@ int _WM_midi_setup_divisions(struct _mdi *mdi, uint32_t divisions) {
 
 int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel,
                            uint8_t note, uint8_t velocity) {
-    MIDI_EVENT_DEBUG(channel, note);
+    MIDI_EVENT_DEBUG("_WM_midi_setup_noteoff", channel, note);
     _WM_CheckEventMemoryPool(mdi);
     note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
     mdi->events[mdi->event_count].evtype = ev_note_off;
@@ -1478,7 +1478,7 @@ int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel,
 
 static int midi_setup_noteon(struct _mdi *mdi, uint8_t channel,
                              uint8_t note, uint8_t velocity) {
-    MIDI_EVENT_DEBUG(channel, note);
+    MIDI_EVENT_DEBUG("midi_setup_noteon", channel, note);
     _WM_CheckEventMemoryPool(mdi);
     note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
     mdi->events[mdi->event_count].evtype = ev_note_on;
@@ -1495,7 +1495,7 @@ static int midi_setup_noteon(struct _mdi *mdi, uint8_t channel,
 
 static int midi_setup_aftertouch(struct _mdi *mdi, uint8_t channel,
                                  uint8_t note, uint8_t pressure) {
-    MIDI_EVENT_DEBUG(channel, note);
+    MIDI_EVENT_DEBUG("midi_setup_aftertouch", channel, note);
     _WM_CheckEventMemoryPool(mdi);
     note &= 0x7f; /* silently bound note to 0..127 (github bug #180) */
     mdi->events[mdi->event_count].evtype = ev_aftertouch;
@@ -1512,7 +1512,7 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
     void (*tmp_event)(struct _mdi *mdi, struct _event_data *data);
     enum _event_type ev;
 
-    MIDI_EVENT_DEBUG(channel, controller);
+    MIDI_EVENT_DEBUG("midi_setup_control", channel, controller);
 
     switch (controller) {
         /*
@@ -1613,7 +1613,7 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
 }
 
 static int midi_setup_patch(struct _mdi *mdi, uint8_t channel, uint8_t patch) {
-    MIDI_EVENT_DEBUG(channel, patch);
+    MIDI_EVENT_DEBUG("midi_setup_patch", channel, patch);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_patch;
     mdi->events[mdi->event_count].do_event = _WM_do_patch;
@@ -1634,7 +1634,7 @@ static int midi_setup_patch(struct _mdi *mdi, uint8_t channel, uint8_t patch) {
 
 static int midi_setup_channel_pressure(struct _mdi *mdi, uint8_t channel,
                                        uint8_t pressure) {
-    MIDI_EVENT_DEBUG(channel, pressure);
+    MIDI_EVENT_DEBUG("midi_setup_channel_pressure", channel, pressure);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_channel_pressure;
     mdi->events[mdi->event_count].do_event = _WM_do_channel_pressure;
@@ -1646,7 +1646,7 @@ static int midi_setup_channel_pressure(struct _mdi *mdi, uint8_t channel,
 }
 
 static int midi_setup_pitch(struct _mdi *mdi, uint8_t channel, uint16_t pitch) {
-    MIDI_EVENT_DEBUG(channel, pitch);
+    MIDI_EVENT_DEBUG("midi_setup_pitch", channel, pitch);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_pitch;
     mdi->events[mdi->event_count].do_event = _WM_do_pitch;
@@ -1659,7 +1659,7 @@ static int midi_setup_pitch(struct _mdi *mdi, uint8_t channel, uint16_t pitch) {
 
 static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
                                               uint8_t channel, uint16_t setting) {
-    MIDI_EVENT_DEBUG(channel, setting);
+    MIDI_EVENT_DEBUG("midi_setup_sysex_roland_drum_track", channel, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_sysex_roland_drum_track;
     mdi->events[mdi->event_count].do_event = _WM_do_sysex_roland_drum_track;
@@ -1677,7 +1677,7 @@ static int midi_setup_sysex_roland_drum_track(struct _mdi *mdi,
 }
 
 static int midi_setup_sysex_gm_reset(struct _mdi *mdi) {
-    MIDI_EVENT_DEBUG(0,0);
+    MIDI_EVENT_DEBUG("midi_setup_sysex_gm_reset", 0, 0);
 
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_sysex_roland_reset;
@@ -1690,7 +1690,7 @@ static int midi_setup_sysex_gm_reset(struct _mdi *mdi) {
 }
 
 static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
-    MIDI_EVENT_DEBUG(0,0);
+    MIDI_EVENT_DEBUG("midi_setup_sysex_roland_reset", 0, 0);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_sysex_roland_reset;
     mdi->events[mdi->event_count].do_event = _WM_do_sysex_roland_reset;
@@ -1702,7 +1702,7 @@ static int midi_setup_sysex_roland_reset(struct _mdi *mdi) {
 }
 
 static int midi_setup_sysex_yamaha_reset(struct _mdi *mdi) {
-    MIDI_EVENT_DEBUG(0,0);
+    MIDI_EVENT_DEBUG("midi_setup_sysex_yamaha_reset", 0, 0);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_sysex_roland_reset;
     mdi->events[mdi->event_count].do_event = _WM_do_sysex_roland_reset;
@@ -1714,7 +1714,7 @@ static int midi_setup_sysex_yamaha_reset(struct _mdi *mdi) {
 }
 
 int _WM_midi_setup_endoftrack(struct _mdi *mdi) {
-    MIDI_EVENT_DEBUG(0,0);
+    MIDI_EVENT_DEBUG("_WM_midi_setup_endoftrack", 0, 0);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_endoftrack;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_endoftrack;
@@ -1726,7 +1726,7 @@ int _WM_midi_setup_endoftrack(struct _mdi *mdi) {
 }
 
 int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting) {
-    MIDI_EVENT_DEBUG(0,setting);
+    MIDI_EVENT_DEBUG("_WM_midi_setup_tempo", 0, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_tempo;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_tempo;
@@ -1738,7 +1738,7 @@ int _WM_midi_setup_tempo(struct _mdi *mdi, uint32_t setting) {
 }
 
 static int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
-    MIDI_EVENT_DEBUG(0, setting);
+    MIDI_EVENT_DEBUG("midi_setup_timesignature", 0, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_timesignature;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_timesignature;
@@ -1750,7 +1750,7 @@ static int midi_setup_timesignature(struct _mdi *mdi, uint32_t setting) {
 }
 
 static int midi_setup_keysignature(struct _mdi *mdi, uint32_t setting) {
-    MIDI_EVENT_DEBUG(0, setting);
+    MIDI_EVENT_DEBUG("midi_setup_keysignature", 0, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_keysignature;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_keysignature;
@@ -1762,7 +1762,7 @@ static int midi_setup_keysignature(struct _mdi *mdi, uint32_t setting) {
 }
 
 static int midi_setup_sequenceno(struct _mdi *mdi, uint32_t setting) {
-    MIDI_EVENT_DEBUG(0, setting);
+    MIDI_EVENT_DEBUG("midi_setup_sequenceno", 0, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_sequenceno;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_sequenceno;
@@ -1774,7 +1774,7 @@ static int midi_setup_sequenceno(struct _mdi *mdi, uint32_t setting) {
 }
 
 static int midi_setup_channelprefix(struct _mdi *mdi, uint32_t setting) {
-    MIDI_EVENT_DEBUG(0, setting);
+    MIDI_EVENT_DEBUG("midi_setup_channelprefix", 0, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_channelprefix;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_channelprefix;
@@ -1786,7 +1786,7 @@ static int midi_setup_channelprefix(struct _mdi *mdi, uint32_t setting) {
 }
 
 static int midi_setup_portprefix(struct _mdi *mdi, uint32_t setting) {
-    MIDI_EVENT_DEBUG(0, setting);
+    MIDI_EVENT_DEBUG("midi_setup_portprefix", 0, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_portprefix;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_portprefix;
@@ -1798,7 +1798,7 @@ static int midi_setup_portprefix(struct _mdi *mdi, uint32_t setting) {
 }
 
 static int midi_setup_smpteoffset(struct _mdi *mdi, uint32_t setting) {
-    MIDI_EVENT_DEBUG(0, setting);
+    MIDI_EVENT_DEBUG("midi_setup_smpteoffset", 0, setting);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_smpteoffset;
     mdi->events[mdi->event_count].do_event = _WM_do_meta_smpteoffset;
@@ -1825,7 +1825,7 @@ static void strip_text(char * text) {
 }
 
 static int midi_setup_text(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_SDEBUG(0, text);
+    MIDI_EVENT_SDEBUG("midi_setup_text", 0, text);
     strip_text(text);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_text;
@@ -1838,7 +1838,7 @@ static int midi_setup_text(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_copyright(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_SDEBUG(0, text);
+    MIDI_EVENT_SDEBUG("midi_setup_copyright", 0, text);
     strip_text(text);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_copyright;
@@ -1851,7 +1851,7 @@ static int midi_setup_copyright(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_trackname(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_SDEBUG(0, text);
+    MIDI_EVENT_SDEBUG("midi_setup_trackname", 0, text);
     strip_text(text);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_trackname;
@@ -1864,7 +1864,7 @@ static int midi_setup_trackname(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_instrumentname(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_SDEBUG(0, text);
+    MIDI_EVENT_SDEBUG("midi_setup_instrumentname", 0, text);
     strip_text(text);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_instrumentname;
@@ -1877,7 +1877,7 @@ static int midi_setup_instrumentname(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_lyric(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_SDEBUG(0, text);
+    MIDI_EVENT_SDEBUG("midi_setup_lyric", 0, text);
     strip_text(text);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_lyric;
@@ -1890,7 +1890,7 @@ static int midi_setup_lyric(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_marker(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_SDEBUG(0, text);
+    MIDI_EVENT_SDEBUG("midi_setup_marker", 0, text);
     strip_text(text);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_marker;
@@ -1903,7 +1903,7 @@ static int midi_setup_marker(struct _mdi *mdi, char * text) {
 }
 
 static int midi_setup_cuepoint(struct _mdi *mdi, char * text) {
-    MIDI_EVENT_SDEBUG(0, text);
+    MIDI_EVENT_SDEBUG("midi_setup_cuepoint", 0, text);
     strip_text(text);
     _WM_CheckEventMemoryPool(mdi);
     mdi->events[mdi->event_count].evtype = ev_meta_cuepoint;
