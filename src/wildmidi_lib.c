@@ -1493,7 +1493,7 @@ WM_SYMBOL int WildMidi_ConvertToMidi (const char *file, uint8_t **out, uint32_t 
     return ret;
 }
 
-WM_SYMBOL int WildMidi_ConvertBufferToMidi (uint8_t *in, uint32_t insize,
+WM_SYMBOL int WildMidi_ConvertBufferToMidi (const uint8_t *in, uint32_t insize,
                                             uint8_t **out, uint32_t *outsize) {
     if (!in || !out || !outsize) {
         _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(NULL params)", 0);
