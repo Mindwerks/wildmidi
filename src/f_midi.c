@@ -38,12 +38,12 @@
 
 
 struct _mdi *
-_WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
+_WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     struct _mdi *mdi;
 
     uint32_t tmp_val;
     uint32_t midi_type;
-    uint8_t **tracks;
+    const uint8_t **tracks;
     uint32_t *track_size;
     uint32_t end_of_tracks = 0;
     uint32_t no_tracks;
@@ -146,7 +146,7 @@ _WM_ParseNewMidi(uint8_t *midi_data, uint32_t midi_size) {
     mdi = _WM_initMDI();
     _WM_midi_setup_divisions(mdi,divisions);
 
-    tracks = (uint8_t **) malloc(sizeof(uint8_t *) * no_tracks);
+    tracks = (const uint8_t **) malloc(sizeof(uint8_t *) * no_tracks);
     track_size = (uint32_t *) malloc(sizeof(uint32_t) * no_tracks);
     track_delta = (uint32_t *) malloc(sizeof(uint32_t) * no_tracks);
     track_end = (uint8_t *) malloc(sizeof(uint8_t) * no_tracks);
@@ -437,7 +437,7 @@ _end:   free(sysex_store);
     free(track_end);
     free(track_delta);
     free(running_event);
-    free(tracks);
+    free((void*)tracks);
     free(track_size);
     if (mdi->reverb) return (mdi);
     _WM_freeMDI(mdi);

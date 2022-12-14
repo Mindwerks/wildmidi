@@ -39,10 +39,10 @@
  Turns hmp file data into an event stream
  */
 struct _mdi *
-_WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
+_WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
     uint32_t hmi_tmp = 0;
-    uint8_t *hmi_base = hmi_data;
-    uint8_t *data_end = hmi_data + hmi_size;
+    const uint8_t *hmi_base = hmi_data;
+    const uint8_t *data_end = hmi_data + hmi_size;
     uint32_t data_size;
     uint16_t hmi_bpm = 0;
     uint16_t hmi_division = 0;
@@ -51,7 +51,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     uint32_t *hmi_track_offset = NULL;
     uint32_t i = 0;
     uint32_t j = 0;
-    uint8_t *hmi_addr = NULL;
+    const uint8_t *hmi_addr = NULL;
     uint32_t *hmi_track_header_length = NULL;
     struct _mdi *hmi_mdi = NULL;
     float tempo_f =  5000000.0f;

@@ -39,7 +39,7 @@
  Turns hmp file data into an event stream
  */
 struct _mdi *
-_WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
+_WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     uint8_t is_hmp2 = 0;
     uint32_t zero_cnt = 0;
     uint32_t i = 0;
@@ -50,7 +50,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     uint32_t hmp_bpm = 0;
     uint32_t hmp_song_time = 0;
     struct _mdi *hmp_mdi;
-    uint8_t **hmp_chunk;
+    const uint8_t **hmp_chunk;
     uint32_t *chunk_length;
     uint32_t *chunk_ofs;
     uint32_t *chunk_delta;
@@ -190,7 +190,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     _WM_midi_setup_divisions(hmp_mdi, hmp_divisions);
     _WM_midi_setup_tempo(hmp_mdi, (uint32_t)tempo_f);
 
-    hmp_chunk = (uint8_t **) malloc(sizeof(uint8_t *) * hmp_chunks);
+    hmp_chunk = (const uint8_t **) malloc(sizeof(uint8_t *) * hmp_chunks);
     chunk_length = (uint32_t *) malloc(sizeof(uint32_t) * hmp_chunks);
     chunk_delta = (uint32_t *) malloc(sizeof(uint32_t) * hmp_chunks);
     chunk_ofs = (uint32_t *) malloc(sizeof(uint32_t) * hmp_chunks);
@@ -391,7 +391,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     _WM_ResetToStart(hmp_mdi);
 
 _hmp_end:
-    free(hmp_chunk);
+    free((void*)hmp_chunk);
     free(chunk_length);
     free(chunk_delta);
     free(chunk_ofs);
