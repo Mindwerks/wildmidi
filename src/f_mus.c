@@ -81,41 +81,41 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
         return NULL;
     }
 
-    // Get Song Length
+    /* Get Song Length */
     mus_song_len = (mus_data[5] << 8) | mus_data[4];
-    // Get Song Offset
+    /* Get Song Offset */
     mus_song_ofs = (mus_data[7] << 8) | mus_data[6];
 
-    // Have yet to determine what this actually is.
+    /* Have yet to determine what this actually is. */
     mus_ch_cnt1 = (mus_data[9] << 8) | mus_data[8];
     mus_ch_cnt2 = (mus_data[11] << 8) | mus_data[10];
 
     WMIDI_UNUSED(mus_ch_cnt1);
     WMIDI_UNUSED(mus_ch_cnt2);
 
-    // Number of instruments defined
+    /* Number of instruments defined */
     mus_no_instr = (mus_data[13] << 8) | mus_data[12];
 
-    // Skip next 2 data bytes
+    /* Skip next 2 data bytes */
     mus_data_ofs = 16;
 
-    // Check that we have enough data to check the rest
+    /* Check that we have enough data to check the rest */
     if (mus_size < (mus_data_ofs + (mus_no_instr << 1) + mus_song_len)) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "file too short", 0);
         return NULL;
     }
 
-    // Instrument definition
+    /* Instrument definition */
     mus_mid_instr = (uint16_t *) malloc(mus_no_instr * sizeof(uint16_t));
     for (mus_instr_cnt = 0; mus_instr_cnt < mus_no_instr; mus_instr_cnt++) {
         mus_mid_instr[mus_instr_cnt] = (mus_data[mus_data_ofs + 1] << 8) | mus_data[mus_data_ofs];
         mus_data_ofs += 2;
     }
 
-    // make sure we are at song offset
+    /* make sure we are at song offset */
     mus_data_ofs = mus_song_ofs;
 
-    // do some calculations so we know how many samples per mus tick
+    /* do some calculations so we know how many samples per mus tick */
     mus_freq = _cvt_get_option(WM_CO_FREQUENCY);
     if (mus_freq == 0) mus_freq = 140;
 
@@ -127,18 +127,18 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
 
     samples_per_tick_f = _WM_GetSamplesPerTick(mus_divisions, (uint32_t)tempo_f);
 
-    // initialise the mdi structure
+    /* initialise the mdi structure */
     mus_mdi = _WM_initMDI();
     _WM_midi_setup_divisions(mus_mdi, mus_divisions);
     _WM_midi_setup_tempo(mus_mdi, (uint32_t)tempo_f);
 
-    // lets do this
+    /* lets do this */
     do {
-     // Build the event
+     /* Build the event */
     _mus_build_event:
 #if 1
-        // Mus drums happen on channel 15, swap channel 9 & 15
-        // DEBUG
+        /* Mus drums happen on channel 15, swap channel 9 & 15 */
+        /* DEBUG */
         MUS_EVENT_DEBUG("Before", mus_data[mus_data_ofs], 0);
 
         if ((mus_data[mus_data_ofs] & 0x0f) == 0x0f) {
@@ -146,27 +146,27 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
         } else if ((mus_data[mus_data_ofs] & 0x0f) == 0x09) {
             mus_data[mus_data_ofs] = (mus_data[mus_data_ofs] & 0xf0) | 0x0f;
         }
-        // DEBUG
+        /* DEBUG */
         MUS_EVENT_DEBUG("After", mus_data[mus_data_ofs], 0);
 #endif
         switch ((mus_data[mus_data_ofs] >> 4) & 0x07) {
-            case 0: // Note Off
+            case 0: /* Note Off */
                 mus_event_size = 2;
                 mus_event[0] = 0x80 | (mus_data[mus_data_ofs] & 0x0f);
                 mus_event[1] = mus_data[mus_data_ofs + 1];
                 mus_event[2] = 0;
                 mus_event[3] = 0;
                 break;
-            case 1: // Note On
+            case 1: /* Note On */
                 if (mus_data[mus_data_ofs + 1] & 0x80) {
                     mus_event_size = 3;
                     mus_event[0] = 0x90 | (mus_data[mus_data_ofs] & 0x0f);
                     mus_event[1] = mus_data[mus_data_ofs + 1] & 0x7f;
                     mus_event[2] = mus_data[mus_data_ofs + 2];
-                    // The maximum volume is 127, but it is encoded as
-                    // a byte. Some songs erroneously use values higher
-                    // than 127, so we have to clamp them down.
-                    // https://github.com/Mindwerks/wildmidi/pull/226
+                    /* The maximum volume is 127, but it is encoded as
+                       a byte. Some songs erroneously use values higher
+                       than 127, so we have to clamp them down.
+                       https://github.com/Mindwerks/wildmidi/pull/226 */
                     if (mus_event[2] > 0x7f) mus_event[2] = 0x7f;
                     mus_event[3] = 0;
                     mus_prev_vol[mus_data[mus_data_ofs] & 0x0f] = mus_event[2];
@@ -178,7 +178,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                     mus_event[3] = 0;
                 }
                 break;
-            case 2: // Pitch Bend
+            case 2: /* Pitch Bend */
                 mus_event_size = 2;
                 mus_event[0] = 0xe0 | (mus_data[mus_data_ofs] & 0x0f);
 
@@ -190,19 +190,19 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
             case 3:
                 mus_event_size = 2;
                 switch (mus_data[mus_data_ofs + 1]) {
-                    case 10: // All Sounds Off
+                    case 10: /* All Sounds Off */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 120;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
-                    case 11: // All Notes Off
+                    case 11: /* All Notes Off */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 123;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
-                    case 12: // Mono (Not supported by WildMIDI)
+                    case 12: /* Mono (Not supported by WildMIDI) */
                         /*
                          **************************
                          FIXME: Add dummy mdi event
@@ -213,7 +213,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
-                    case 13: // Poly (Not supported by WildMIDI)
+                    case 13: /* Poly (Not supported by WildMIDI) */
                         /*
                          **************************
                          FIXME: Add dummy mdi event
@@ -224,20 +224,20 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
-                    case 14: // Reset All Controllers
+                    case 14: /* Reset All Controllers */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 121;
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
-                    default: // Unsupported
+                    default: /* Unsupported */
                         goto _mus_next_data;
                 }
                 break;
             case 4:
                 mus_event_size = 3;
                 switch (mus_data[mus_data_ofs + 1]) {
-                    case 0: // Patch
+                    case 0: /* Patch */
                         /*
                          *************************************************
                          FIXME: Check if setting is MIDI or MUS instrument
@@ -248,66 +248,66 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
                         mus_event[2] = 0;
                         mus_event[3] = 0;
                         break;
-                    case 1: // Bank Select
+                    case 1: /* Bank Select */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 0;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    case 2: // Modulation (Not supported by WildMidi)
+                    case 2: /* Modulation (Not supported by WildMidi) */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 1;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    case 3: // Volume
+                    case 3: /* Volume */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 7;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
-                        // The maximum volume is 127, but it is encoded as
-                        // a byte. Some songs erroneously use values higher
-                        // than 127, so we have to clamp them down.
-                        // https://github.com/Mindwerks/wildmidi/pull/226
+                        /* The maximum volume is 127, but it is encoded as
+                           a byte. Some songs erroneously use values higher
+                           than 127, so we have to clamp them down.
+                           https://github.com/Mindwerks/wildmidi/pull/226 */
                         if (mus_event[2] > 0x7f) mus_event[2] = 0x7f;
                         mus_event[3] = 0;
                         break;
-                    case 4: // Pan
+                    case 4: /* Pan */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 10;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    case 5: // Expression
+                    case 5: /* Expression */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 11;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    case 6: // Reverb (Not supported by WildMidi)
+                    case 6: /* Reverb (Not supported by WildMidi) */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 91;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    case 7: // Chorus (Not supported by WildMidi)
+                    case 7: /* Chorus (Not supported by WildMidi) */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 93;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    case 8: // Sustain
+                    case 8: /* Sustain */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 64;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    case 9: // Soft Peddle (Not supported by WildMidi)
+                    case 9: /* Soft Peddle (Not supported by WildMidi) */
                         mus_event[0] = 0xb0 | (mus_data[mus_data_ofs] & 0x0f);
                         mus_event[1] = 67;
                         mus_event[2] = mus_data[mus_data_ofs + 2];
                         mus_event[3] = 0;
                         break;
-                    default: // Unsupported
+                    default: /* Unsupported */
                         goto _mus_next_data;
                 }
                 break;
@@ -349,7 +349,7 @@ _WM_ParseNewMus(uint8_t *mus_data, uint32_t mus_size) {
     } while (mus_data_ofs < mus_size);
 
 _mus_end_of_song:
-    // Finalise mdi structure
+    /* Finalise mdi structure */
     if ((mus_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
         goto _mus_end;

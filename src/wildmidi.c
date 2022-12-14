@@ -1875,7 +1875,7 @@ int main(int argc, char **argv) {
         if (play_from != 0) {
             WildMidi_FastSeek(midi_ptr, &play_from);
             if (play_to < play_from) {
-                // Ignore --playto if set less than --playfrom
+                /* Ignore --playto if set less than --playfrom */
                 play_to = 0;
             }
         }
@@ -2029,7 +2029,7 @@ int main(int argc, char **argv) {
                 } else {
                     samples = (play_to - wm_info->current_sample) << 2;
                     if (!samples) {
-                        // We are at or past where we wanted to play to
+                        /* We are at or past where we wanted to play to */
                         break;
                     }
                 }

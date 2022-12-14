@@ -86,7 +86,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         return NULL;
     }
 
-    //FIXME: Unsure if this is correct but it seems to be the only offset that plays the files at what appears to be the right speed.
+    /* FIXME: Unsure if this is correct but it seems to be the only offset that plays the files at what appears to be the right speed. */
     hmi_bpm = hmi_data[212];
 
     hmi_division = 60;
@@ -131,7 +131,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
 
     smallest_delta = 0x7fffffff;
 
-    hmi_track_offset[0] = *hmi_data; // To keep Xcode happy
+    hmi_track_offset[0] = *hmi_data; /* To keep Xcode happy */
 
     for (i = 0; i < hmi_track_cnt; i++) {
         /* FIXME: better and/or more size checks??? */
@@ -165,7 +165,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_addr += hmi_track_header_length[i];
         hmi_track_offset[i] += hmi_track_header_length[i];
 
-        // Get tracks initial delta and set its samples_till_next;
+        /* Get tracks initial delta and set its samples_till_next; */
         hmi_delta[i] = 0;
         if (*hmi_addr > 0x7f) {
             do {
@@ -178,7 +178,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_track_offset[i]++;
         hmi_addr++;
 
-        // Find smallest delta to work with
+        /* Find smallest delta to work with */
         if (hmi_delta[i] < smallest_delta) {
             smallest_delta = hmi_delta[i];
         }
@@ -194,16 +194,16 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
     }
 
     if (smallest_delta >= 0x7fffffff) {
-        //DEBUG
-        //fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta);
+        /* DEBUG */
+        /* fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta); */
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
         goto _hmi_end;
     }
 
     if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
-        //DEBUG
-        //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
-        //        samples_per_delta_f, smallest_delta);
+        /* DEBUG */
+        /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
+        /*        samples_per_delta_f, smallest_delta); */
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
         goto _hmi_end;
     }
@@ -222,7 +222,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
         for (i = 0; i < hmi_track_cnt; i++) {
             if (hmi_track_end[i]) continue;
 
-            // first check to see if any active notes need turning off.
+            /* first check to see if any active notes need turning off. */
             for (j = 0; j < 128; j++) {
                 hmi_tmp = (128 * i) + j;
                 if (note[hmi_tmp].length) {
@@ -257,7 +257,7 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                 data_size = hmi_size - hmi_track_offset[i];
 
                 if (hmi_data[0] == 0xfe) {
-                    // HMI only event of some sort.
+                    /* HMI only event of some sort. */
                     if (hmi_data[1] == 0x10) {
                         hmi_tmp = (hmi_data[4] + 5);
                         hmi_data += hmi_tmp;
@@ -293,19 +293,19 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                         }
                         goto _hmi_next_track;
                     }
-                    // Running event
-                    // 0xff does not alter running event
+                    /* Running event */
+                    /* 0xff does not alter running event */
                     if ((*hmi_data == 0xF0) || (*hmi_data == 0xF7)) {
-                        // Sysex resets running event data
+                        /* Sysex resets running event data */
                         hmi_running_event[i] = 0;
                     } else if (*hmi_data < 0xF0) {
-                        // MIDI events 0x80 to 0xEF set running event
+                        /* MIDI events 0x80 to 0xEF set running event */
                         if (*hmi_data >= 0x80) {
                             hmi_running_event[i] = *hmi_data;
                         }
                     }
                     if ((hmi_running_event[i] & 0xf0) == 0x90) {
-                        // note on has extra data to specify how long the note is.
+                        /* note on has extra data to specify how long the note is. */
                         if (*hmi_data > 127) {
                             hmi_tmp = hmi_data[1];
                         } else {
@@ -353,8 +353,8 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
                     }
                 }
 
-                // get track delta
-                // hmi_delta[i] = 0; // set at start of loop
+                /* get track delta */
+                /* hmi_delta[i] = 0; */ /* set at start of loop */
                 if (data_size && *hmi_data > 0x7f) {
                     do {
                         if (!data_size) break;
@@ -382,11 +382,11 @@ _WM_ParseNewHmi(uint8_t *hmi_data, uint32_t hmi_size) {
             WMIDI_UNUSED(hmi_tmp);
         }
 
-        // convert smallest delta to samples till next
+        /* convert smallest delta to samples till next */
         if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
-            //DEBUG
-            //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
-            //        samples_per_delta_f, smallest_delta);
+            /* DEBUG */
+            /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
+            /*        samples_per_delta_f, smallest_delta); */
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
             goto _hmi_end;
         }

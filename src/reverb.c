@@ -95,14 +95,14 @@ _WM_init_reverb(int rate, float room_x, float room_y, float listen_x,
         {-0.131, -6.205, -12.059, -20.933, -20.933, -15.944},
         {-1.839, -6.205, -8.891, -12.059, -15.935, -20.942}
     };
-    /*
+#if 0
     double dbAttn[6] = {
-    // concrete covered in carpet
-    //  -0.175, -0.537, -1.412, -4.437, -7.959, -7.959
-    // pleated drapes
+    /* concrete covered in carpet */
+    /*  -0.175, -0.537, -1.412, -4.437, -7.959, -7.959 */
+    /* pleated drapes */
         -0.630, -3.223, -5.849, -12.041, -10.458, -7.959
     };
-    */
+#endif
 
     /* distance */
     double SPL_DST[8] = {0.0};

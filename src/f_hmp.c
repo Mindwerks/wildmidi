@@ -91,7 +91,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         is_hmp2 = 1;
     }
 
-    // should be a bunch of \0's
+    /* should be a bunch of \0's */
     if (is_hmp2) {
         zero_cnt = 18;
     } else {
@@ -114,7 +114,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
 
     WMIDI_UNUSED(hmp_file_length);
 
-    // Next 12 bytes are normally \0 so skipping over them
+    /* Next 12 bytes are normally \0 so skipping over them */
     hmp_data += 12;
     hmp_size -= 12;
 
@@ -129,7 +129,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         return NULL;
     }
 
-    // Still decyphering what this is
+    /* Still decyphering what this is */
     hmp_unknown = *hmp_data++;
     hmp_unknown += (*hmp_data++ << 8);
     hmp_unknown += (*hmp_data++ << 16);
@@ -138,10 +138,10 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
 
     WMIDI_UNUSED(hmp_unknown);
 
-    // Defaulting: experimenting has found this to be the ideal value
+    /* Defaulting: experimenting has found this to be the ideal value */
     hmp_divisions = 60;
 
-    // Beats per minute
+    /* Beats per minute */
     hmp_bpm = *hmp_data++;
     hmp_bpm += (*hmp_data++ << 8);
     hmp_bpm += (*hmp_data++ << 16);
@@ -162,18 +162,18 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
 
     samples_per_delta_f = _WM_GetSamplesPerTick(hmp_divisions, (uint32_t) tempo_f);
 
-    //DEBUG
-    //fprintf(stderr, "DEBUG: Samples Per Delta Tick: %f\r\n",samples_per_delta_f);
+    /* DEBUG */
+    /* fprintf(stderr, "DEBUG: Samples Per Delta Tick: %f\r\n",samples_per_delta_f); */
 
-    // FIXME: This value is incorrect
+    /* FIXME: This value is incorrect */
     hmp_song_time = *hmp_data++;
     hmp_song_time += (*hmp_data++ << 8);
     hmp_song_time += (*hmp_data++ << 16);
     hmp_song_time += (*hmp_data++ << 24);
     hmp_size -= 4;
 
-    // DEBUG
-    //fprintf(stderr,"DEBUG: ??DIVISIONS??: %u, BPM: %u, ??SONG TIME??: %u:%.2u\r\n",hmp_divisions, hmp_bpm, (hmp_song_time / 60), (hmp_song_time % 60));
+    /* DEBUG */
+    /* fprintf(stderr,"DEBUG: ??DIVISIONS??: %u, BPM: %u, ??SONG TIME??: %u:%.2u\r\n",hmp_divisions, hmp_bpm, (hmp_song_time / 60), (hmp_song_time % 60)); */
 
     WMIDI_UNUSED(hmp_song_time);
 
@@ -197,7 +197,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     chunk_end = (uint8_t *) malloc(sizeof(uint8_t) * hmp_chunks);
 
     smallest_delta = 0x7fffffff;
-    // store chunk info for use, and check chunk lengths
+    /* store chunk info for use, and check chunk lengths */
     for (i = 0; i < hmp_chunks; i++) {
         /* FIXME: add proper size checks!!! */
         hmp_chunk[i] = hmp_data;
@@ -231,7 +231,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
 
         WMIDI_UNUSED(hmp_track);
 
-        // Start of Midi Data
+        /* Start of Midi Data */
         chunk_delta[i] = 0;
         var_len_shift = 0;
         if (*hmp_data < 0x80) {
@@ -248,7 +248,7 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
             smallest_delta = chunk_delta[i];
         }
 
-        // goto start of next chunk
+        /* goto start of next chunk */
         hmp_data = hmp_chunk[i] + chunk_length[i];
         chunk_length[i] -= chunk_ofs[i];
         hmp_chunk[i] += chunk_ofs[i]++;
@@ -256,16 +256,16 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     }
 
     if (smallest_delta >= 0x7fffffff) {
-        //DEBUG
-        //fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta);
+        /* DEBUG */
+        /* fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta); */
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
         goto _hmp_end;
     }
 
     if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
-        //DEBUG
-        //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
-        //        samples_per_delta_f, smallest_delta);
+        /* DEBUG */
+        /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
+        /*        samples_per_delta_f, smallest_delta); */
         _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
         goto _hmp_end;
     }
@@ -282,8 +282,8 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
     while (end_of_chunks < hmp_chunks) {
         smallest_delta = 0;
 
-        // DEBUG
-        // fprintf(stderr,"DEBUG: Delta Ticks: %u\r\n",subtract_delta);
+        /* DEBUG */
+        /* fprintf(stderr,"DEBUG: Delta Ticks: %u\r\n",subtract_delta); */
 
         for (i = 0; i < hmp_chunks; i++) {
             if (chunk_end[i])
@@ -301,8 +301,8 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
             }
             do {
                 if (((hmp_chunk[i][0] & 0xf0) == 0xb0 ) && ((hmp_chunk[i][1] == 110) || (hmp_chunk[i][1] == 111)) && (hmp_chunk[i][2] > 0x7f)) {
-                    // Reserved for loop markers
-                    // TODO: still deciding what to do about these
+                    /* Reserved for loop markers */
+                    /* TODO: still deciding what to do about these */
                     hmp_chunk[i] += 3;
                     chunk_length[i] -= 3;
                 } else {
@@ -325,8 +325,8 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
                         if (tempo_f == 0.0f)
                             tempo_f = 500000.0f;
 
-                        // DEBUG
-                        // fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f);
+                        /* DEBUG */
+                        /* fprintf(stderr,"DEBUG: Tempo change %f\r\n", tempo_f); */
                     }
                     hmp_chunk[i] += setup_ret;
                     chunk_length[i] -= setup_ret;
@@ -358,9 +358,9 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         }
 
         if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
-            //DEBUG
-            //fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n",
-            //        samples_per_delta_f, smallest_delta);
+            /* DEBUG */
+            /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
+            /*        samples_per_delta_f, smallest_delta); */
             _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
             goto _hmp_end;
         }
@@ -374,8 +374,8 @@ _WM_ParseNewHmp(uint8_t *hmp_data, uint32_t hmp_size) {
         hmp_mdi->events[hmp_mdi->event_count - 1].samples_to_next += sample_count;
         hmp_mdi->extra_info.approx_total_samples += sample_count;
 
-        // DEBUG
-        // fprintf(stderr,"DEBUG: Sample Count %u\r\n",sample_count);
+        /* DEBUG */
+        /* fprintf(stderr,"DEBUG: Sample Count %u\r\n",sample_count); */
     }
 
     if ((hmp_mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width, _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy)) == NULL) {
