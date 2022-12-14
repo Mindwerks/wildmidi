@@ -371,7 +371,7 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                 status |= 0xB0;
                 if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
                     _WM_ERROR_NEW("%s:%i: can't map %u to midi",
-                                  __FUNCTION__, __LINE__, *cur);
+                                  __func__, __LINE__, *cur);
                     goto _end;
                 }
                 bit1 = midimap[*cur++];
@@ -388,7 +388,7 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                     status |= 0xB0;
                     if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
                         _WM_ERROR_NEW("%s:%i: can't map %u to midi",
-                                      __FUNCTION__, __LINE__, *cur);
+                                      __func__, __LINE__, *cur);
                         goto _end;
                     }
                     bit1 = midimap[*cur++];
@@ -406,14 +406,14 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                 bit2 = 0x00;
                 if (cur != end) { /* should we error here or report-only? */
                     _WM_DEBUG_MSG("%s:%i: MUS buffer off by %ld bytes",
-                                  __FUNCTION__, __LINE__, (long)(cur - end));
+                                  __func__, __LINE__, (long)(cur - end));
                 }
                 break;
             case 5:/* Unknown */
             case 7:/* Unknown */
             default:/* shouldn't happen */
                 _WM_ERROR_NEW("%s:%i: unrecognized event (%u)",
-                              __FUNCTION__, __LINE__, event);
+                              __func__, __LINE__, event);
                 goto _end;
         }
 

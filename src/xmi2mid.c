@@ -469,7 +469,7 @@ int _WM_xmi2midi(const uint8_t *in, uint32_t insize,
     int ret = -1;
 
     if (convert_type > XMIDI_CONVERT_MT32_TO_GS) {
-        _WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __FUNCTION__, __LINE__, convert_type);
+        _WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", __func__, __LINE__, convert_type);
         return (ret);
     }
 
@@ -914,7 +914,7 @@ static uint32_t ConvertListToMTrk(struct xmi_ctx *ctx, midi_event *mlist) {
 
         /* Never occur */
         default:
-            _WM_DEBUG_MSG("%s: unrecognized event", __FUNCTION__);
+            _WM_DEBUG_MSG("%s: unrecognized event", __func__);
             break;
         }
     }

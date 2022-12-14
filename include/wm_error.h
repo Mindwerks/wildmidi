@@ -50,7 +50,7 @@ enum {
 extern char * _WM_Global_ErrorS;
 extern int _WM_Global_ErrorI;
 
-#define _WM_GLOBAL_ERROR(wmerno, wmfor, error) _WM_GLOBAL_ERROR_INTERNAL(__FUNCTION__, __LINE__, wmerno, wmfor, error)
+#define _WM_GLOBAL_ERROR(wmerno, wmfor, error) _WM_GLOBAL_ERROR_INTERNAL(__func__, __LINE__, wmerno, wmfor, error)
 extern void _WM_GLOBAL_ERROR_INTERNAL(const char *func, int lne, int wmerno, const char * wmfor, int error);
 
 /* sets the global error string to a custom msg */
