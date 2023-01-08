@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.4.4
+Version: 0.4.5
 Licenses: GPLv3+ and LGPLv3
 Website: http://www.mindwerks.net/projects/wildmidi
 
@@ -35,6 +35,13 @@ Requirements:
 * PSVita port: Vitasdk
 
 CHANGELOG
+
+0.4.5
+* Fixed broken MUS drum channels 9 and 15 being swapped if the same
+  file is played twice from the same memory buffer (bug #234).
+* Player: Fixed save midi reading wrong argv if there are no path
+  seperators (bug #227).
+* Other code and build system clean-ups.
 
 0.4.4
 * Fixed integer overflow in midi parser sample count calculation
