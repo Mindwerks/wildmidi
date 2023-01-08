@@ -1,4 +1,4 @@
-# Makefile for OS/2 using Watcom compiler.
+# Makefile for OS/2 using Open Watcom compiler.
 #
 # wmake
 # - builds wildmidi.dll and its import lib (wildmidi.lib)
@@ -35,6 +35,7 @@ BLD_TARGET=$(LIBSTATIC) $(PLAYER_STATIC)
 CFLAGS_LIB+= $(DLLFLAGS)
 BLD_TARGET=$(DLLNAME) $(PLAYER)
 !endif
+INCLUDES=-I. -I"../include"
 
 OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj internal_midi.obj patches.obj sample.obj
 PLAYER_OBJ=getopt_long.obj wm_tty.obj wildmidi.obj
@@ -56,6 +57,7 @@ $(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
 	wlink N $@ SYS OS2V2 OP q LIBR {$(LIBSTATIC) $(PLAYER_LIBS)} F {$(PLAYER_OBJ)}
 
 # rules for library objs:
+.c: ../src
 .c.obj:
 	wcc386 $(CFLAGS_LIB) $(INCLUDES) -fo=$^@ $<
 # rules for player objs:
@@ -66,23 +68,7 @@ wm_tty.obj: wm_tty.c
 wildmidi.obj: wildmidi.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 
-!ifndef __UNIX__
-INCLUDES=-I. -I..\include
-.c: ..\src
-distclean: clean .symbolic
-	@if exist $(LIBSTATIC) del $(LIBSTATIC)
-	@if exist $(DLLNAME) del $(DLLNAME)
-	@if exist $(EXPNAME) del $(EXPNAME)
-	@if exist $(LIBNAME) del $(LIBNAME)
-	@if exist $(PLAYER) del $(PLAYER)
-	@if exist $(PLAYER_STATIC) del $(PLAYER_STATIC)
-clean: .symbolic
-	@if exist *.obj del *.obj
-!else
-INCLUDES=-I. -I../include
-.c: ../src
 distclean: clean .symbolic
 	rm -f $(DLLNAME) $(EXPNAME) $(LIBNAME) $(LIBSTATIC) $(PLAYER) $(PLAYER_STATIC)
 clean: .symbolic
 	rm -f *.obj
-!endif
