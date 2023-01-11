@@ -37,8 +37,8 @@ Requirements:
 CHANGELOG
 
 0.4.5
-* Fixed broken MUS drum channels 9 and 15 being swapped if the same
-  file is played twice from the same memory buffer (bug #234).
+* Fixed MUS drum channels 9 and 15 being swapped if the same file
+  is played twice from the same memory buffer (bug #234).
 * Player: Fixed save midi reading wrong argv if there are no path
   seperators (bug #227).
 * Other code and build system clean-ups.
