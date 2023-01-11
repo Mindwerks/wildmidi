@@ -278,8 +278,8 @@ void irq_detect_start(unsigned int irqs, int (*irq_confirm) (int irqno))
 
 	__irq_mask = 0;
 	__irq_confirm = irq_confirm;
-	memset(&__irqs, 0, sizeof(__irqs));
-	memset((void *) &__irq_count, 0, sizeof(__irq_count));
+	memset(__irqs, 0, sizeof(__irqs));
+	memset((void *) __irq_count, 0, sizeof(__irq_count));
 
 	/* Hook all specified IRQs */
 	for (i = 1; i <= 15; i++)
@@ -315,7 +315,7 @@ int irq_detect_get(int irqno, unsigned int *irqmask)
 void irq_detect_clear()
 {
 	int oldirq = disable();
-	memset((void *) &__irq_count, 0, sizeof(__irq_count));
+	memset((void *) __irq_count, 0, sizeof(__irq_count));
 	__irq_mask = 0;
 	if (oldirq)
 		enable();
