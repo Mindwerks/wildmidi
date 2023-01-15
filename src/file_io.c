@@ -56,6 +56,9 @@
 #elif defined(WILDMIDI_AMIGA)
 #include <proto/exec.h>
 #include <proto/dos.h>
+#ifdef __amigaos4__
+#include <dos/obsolete.h>
+#endif
 #else
 #if defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <pwd.h>
