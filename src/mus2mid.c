@@ -227,7 +227,7 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
     int currentChannel;
 
     if (insize < MUS_HEADERSIZE) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
         return (-1);
     }
 
@@ -243,16 +243,16 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
     header.instrCnt = READ_INT16(&in[12]);
 
     if (memcmp(header.ID, MUS_ID, 4)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MUS, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_MUS, NULL, 0);
         return (-1);
     }
     if (insize < (uint32_t)header.scoreLen + (uint32_t)header.scoreStart) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
         return (-1);
     }
     /* channel #15 should be excluded in the numchannels field: */
     if (header.channels > MIDI_MAXCHANNELS - 1) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_INVALID, NULL, 0);
         return (-1);
     }
 
@@ -371,7 +371,7 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                 status |= 0xB0;
                 if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
                     _WM_ERROR_NEW("%s:%i: can't map %u to midi",
-                                  __FUNCTION__, __LINE__, *cur);
+                                  _WM_FUNCTION, __LINE__, *cur);
                     goto _end;
                 }
                 bit1 = midimap[*cur++];
@@ -388,7 +388,7 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                     status |= 0xB0;
                     if (*cur >= sizeof(midimap) / sizeof(midimap[0])) {
                         _WM_ERROR_NEW("%s:%i: can't map %u to midi",
-                                      __FUNCTION__, __LINE__, *cur);
+                                      _WM_FUNCTION, __LINE__, *cur);
                         goto _end;
                     }
                     bit1 = midimap[*cur++];
@@ -406,14 +406,14 @@ int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                 bit2 = 0x00;
                 if (cur != end) { /* should we error here or report-only? */
                     _WM_DEBUG_MSG("%s:%i: MUS buffer off by %ld bytes",
-                                  __FUNCTION__, __LINE__, (long)(cur - end));
+                                  _WM_FUNCTION, __LINE__, (long)(cur - end));
                 }
                 break;
             case 5:/* Unknown */
             case 7:/* Unknown */
             default:/* shouldn't happen */
                 _WM_ERROR_NEW("%s:%i: unrecognized event (%u)",
-                              __FUNCTION__, __LINE__, event);
+                              _WM_FUNCTION, __LINE__, event);
                 goto _end;
         }
 
