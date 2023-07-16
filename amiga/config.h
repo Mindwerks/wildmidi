@@ -3,7 +3,7 @@
 
 #define WILDMIDI_CFG "wildmidi.cfg"
 
-#define PACKAGE_URL "http://www.mindwerks.net/projects/wildmidi/"
+#define PACKAGE_URL "https://github.com/Mindwerks/wildmidi"
 #define PACKAGE_BUGREPORT "https://github.com/Mindwerks/wildmidi/issues"
 
 #define PACKAGE_VERSION "0.4.5"

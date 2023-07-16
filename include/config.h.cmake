@@ -4,7 +4,7 @@
 #define PACKAGE "wildmidi"
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL "http://www.mindwerks.net/projects/wildmidi/"
+#define PACKAGE_URL "https://github.com/Mindwerks/wildmidi"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "https://github.com/Mindwerks/wildmidi/issues"

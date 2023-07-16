@@ -8,7 +8,7 @@ includedir=${exec_prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 Name: WildMIDI
 Description: software synthesizer library
 Version: @WILDMIDI_VERSION@
-URL: https://www.mindwerks.net/projects/wildmidi/
+URL: https://github.com/Mindwerks/wildmidi
 
 Libs: -L${libdir} -lWildMidi
 Libs.private: -lm 

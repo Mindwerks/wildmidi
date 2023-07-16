@@ -109,7 +109,7 @@ static float env_time_table[] = {
 };
 
 /* the following hardcoded to avoid the need for a config.h : */
-static const char *PACKAGE_URL = "http://www.mindwerks.net/projects/wildmidi/";
+static const char *PACKAGE_URL = "https://github.com/Mindwerks/wildmidi";
 static const char *PACKAGE_BUGREPORT = "https://github.com/Mindwerks/wildmidi/issues";
 static const char *PACKAGE_VERSION = "0.4";
 
@@ -1576,10 +1576,10 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
     unsigned long int tempo = 500000;
     int check_ret = 0;
     unsigned int total_count = 0;
-    
+
     unsigned long int changeTempoAtTick[256][2] = {{0}};
     unsigned long int changeTempoOfs = 0;
-    
+
     if (strncmp((char *) midi_data, "RIFF", 4) == 0) {
         midi_data += 20;
         midi_size -= 20;
@@ -1672,7 +1672,6 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
     }
 
     for (i = 0; i < no_tracks; i++) {
-        
         if (midi_size < 8) {
             printf("Midi File Too Short\n");
             return -1;
@@ -1689,10 +1688,9 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 reset_time();
             delta_accum = 0;
             changeTempoOfs = 0;
-            
+
             tempo = 500000;
             set_secs_per_tick (divisions, tempo);
-            
         }
         midi_data += 4;
         midi_size -= 4;
@@ -1711,7 +1709,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
             printf("Midi File Too Short: Missing Track Data\n");
             return -1;
         }
-        
+
         /* Ignore EOT check for type 0 */
         if (midi_type != 0) {
             if ((midi_data[track_size - 3] != 0xFF)
@@ -1739,10 +1737,10 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 }
             }
             delta = (delta << 7) | (*midi_data & 0x7F);
-            
+
             if (verbose) {
                 delta_accum += delta;
-                
+
                 if ((midi_type == 1) && (i != 0)) {
                     /*
                      * since type 1 midi's store tempo info on first track
@@ -1750,20 +1748,18 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                      */
                     if ((changeTempoOfs == 0) || changeTempoAtTick[changeTempoOfs][0] > 0) {
                         if (changeTempoAtTick[changeTempoOfs][0] <= delta_accum) {
-                            
                             new_delta = delta_accum - changeTempoAtTick[changeTempoOfs][0];
                             delta -= new_delta;
                             add_time(delta);
                             set_secs_per_tick (divisions, changeTempoAtTick[changeTempoOfs][1]);
                             changeTempoOfs++;
                             delta = new_delta;
-                            
                         }
                     }
                 }
                 add_and_display_time(delta);
             }
-           
+
             midi_data++;
             if (midi_size == 0) {
                 printf("Corrupt Midi, Missing or Corrupt Track Data\n");
@@ -1771,7 +1767,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
             }
             midi_size--;
             total_count++;
-            
+
             if (*midi_data < 0x80) {
                 if (running_event == 0) {
                     printf("Currupt Midi: expected event, got data\n");
@@ -1832,19 +1828,18 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                     return 0;
                 }
                 midi_data += check_ret;
-                
+
             } else {
                 unsigned char *tmp_ptr = midi_data + check_ret;
-                
+
                 if (tmp_ptr > next_track) {
                     printf("Corrupt Midi, Track Data went beyond track boundries.\n");
                     return -1;
                 }
-                    
+
                 /*
                  * For type 1 & 2 we do check for EOT
                  */
-                
                 if ((midi_data[0] == 0xff) && (midi_data[1] == 0x2f) && (midi_data[2] == 0x0)) {
                     /*
                      * Because some Midi files have data after EOT we just ignore the

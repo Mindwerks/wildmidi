@@ -8,7 +8,7 @@ applications that wish to include MIDI file playback.
 
 Version: 0.4.5
 Licenses: GPLv3+ and LGPLv3
-Website: http://www.mindwerks.net/projects/wildmidi
+Website: https://github.com/Mindwerks/wildmidi
 
 PLATFORMS:
 
