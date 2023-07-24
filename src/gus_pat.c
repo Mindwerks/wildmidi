@@ -801,7 +801,7 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                                 |  gus_patch[gus_ptr + 30];
 
         /* This is done this way instead of ((freq * 1024) / rate) to avoid 32bit overflow. */
-        /* Result is 0.001% inacurate */
+        /* Result is 0.001% inaccurate */
         gus_sample->inc_div = ((gus_sample->freq_root * 512) / gus_sample->rate) * 2;
 
 #if 0

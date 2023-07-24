@@ -218,7 +218,7 @@ extern void _WM_do_meta_marker(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_meta_cuepoint(struct _mdi *mdi, struct _event_data *data);
 
 /*
- * We need to expose these fuctions for use on some or the parsers due to some
+ * We need to expose these functions for use on some or the parsers due to some
  * formats not being able to trigger these events via _WM_Setup_Midi_Event.
  */
 extern int _WM_midi_setup_noteoff(struct _mdi *mdi, uint8_t channel, uint8_t note, uint8_t velocity);

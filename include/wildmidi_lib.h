@@ -50,7 +50,7 @@
 /* for WildMidi_GetString */
 #define WM_GS_VERSION           0x0001
 
-/* set our symbol export visiblity */
+/* set our symbol export visibility */
 #if defined _WIN32 || defined __CYGWIN__
   /* ========== NOTE TO WINDOWS DEVELOPERS:
    * If you are compiling for Windows and will link to the static library
@@ -146,7 +146,7 @@ WM_SYMBOL void WildMidi_ClearError (void);
 
 /* NOTE: Not Yet Implemented Or Tested Properly */
 /* Due to delay in audio output in the player, this is not being developed
-   futher at the moment. Further Development will occur when output latency
+   further at the moment. Further Development will occur when output latency
    has been reduced enough to "appear" instant.
 WM_SYMBOL int WildMidi_Live (midi * handle, uint32_t midi_event);
  */

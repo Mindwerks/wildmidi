@@ -267,7 +267,7 @@ static int check_midi_event (unsigned char *midi_data, unsigned long int midi_si
             printf("Expected MIDI event\n");
             return -1;
         }
-/*      printf("Unsing running event 0x%2x\n", running_event); */
+/*      printf("Using running event 0x%2x\n", running_event); */
     } else {
         event = *midi_data++;
         midi_size--;
@@ -851,10 +851,10 @@ static int8_t test_mus(unsigned char * mus_data, unsigned long mus_size, uint32_
                         case 11:
                             printf("All Notes Off\n");
                             break;
-                        case 12: /* Not supported by WildMidi. Parsed for compatability */
+                        case 12: /* Not supported by WildMidi. Parsed for compatibility */
                             printf("Mono\n");
                             break;
-                        case 13:  /* Not supported by WildMidi. Parsed for compatability */
+                        case 13:  /* Not supported by WildMidi. Parsed for compatibility */
                             printf("Poly\n");
                             break;
                         case 14:
@@ -1744,7 +1744,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 if ((midi_type == 1) && (i != 0)) {
                     /*
                      * since type 1 midi's store tempo info on first track
-                     * we only need to do this check for subsiquent tracks.
+                     * we only need to do this check for subsequent tracks.
                      */
                     if ((changeTempoOfs == 0) || changeTempoAtTick[changeTempoOfs][0] > 0) {
                         if (changeTempoAtTick[changeTempoOfs][0] <= delta_accum) {
@@ -1770,7 +1770,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
 
             if (*midi_data < 0x80) {
                 if (running_event == 0) {
-                    printf("Currupt Midi: expected event, got data\n");
+                    printf("Corrupt Midi: expected event, got data\n");
                     printf("%.4x %.2x %.2x %.2x %.2x\n", total_count, midi_data[0], midi_data[1], midi_data[2], midi_data[3]);
                     return -1;
                 }
@@ -1833,7 +1833,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                 unsigned char *tmp_ptr = midi_data + check_ret;
 
                 if (tmp_ptr > next_track) {
-                    printf("Corrupt Midi, Track Data went beyond track boundries.\n");
+                    printf("Corrupt Midi, Track Data went beyond track boundaries.\n");
                     return -1;
                 }
 
@@ -1847,7 +1847,7 @@ static int test_midi(unsigned char * midi_data, unsigned long int midi_size,
                      */
                     midi_data = next_track;
                 } else if (midi_size == 0) {
-                    printf("Corrupt Midi, Track Data went beyond track boundries.\n");
+                    printf("Corrupt Midi, Track Data went beyond track boundaries.\n");
                     return -1;
                 } else {
                     midi_data += check_ret;

@@ -457,7 +457,7 @@ _end:   free(sysex_store);
  NOTE: This will only write out events that we do support.
 
  *** CAUTION ***
- This will output type 0 midi file reguardless of the original file type.
+ This will output type 0 midi file regardless of the original file type.
  Type 2 midi files will have each original track play on the same track one
  after the other in the type 0 file.
  */
