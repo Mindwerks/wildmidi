@@ -268,12 +268,6 @@ IF (WIN32 AND MSVC)
         SET(MT_BUILD "/MP")
     ENDIF ()
 
-    foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
-        STRING(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-        SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "$(SolutionDir)$(Configuration)")
-        SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "$(ProjectDir)$(Configuration)")
-    endforeach (OUTPUTCONFIG)
-
     IF (WANT_PLAYER)
         # Release builds use the debug console
         SET_TARGET_PROPERTIES(wildmidi PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")

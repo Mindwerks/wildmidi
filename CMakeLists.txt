@@ -19,16 +19,6 @@ INCLUDE(CheckIncludeFile)
 INCLUDE(GNUInstallDirs)
 INCLUDE(TestBigEndian)
 
-# Set a default build type if none was specified
-IF (NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-    MESSAGE(STATUS "Setting build type to 'Debug' as none was specified.")
-    SET(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
-    # Set the possible values of build type for cmake-gui
-    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-ENDIF ()
-SET(CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}")
-MESSAGE(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-
 # Set our options
 OPTION(BUILD_SHARED_LIBS "Build a dynamic wildmidi library" ON)
 OPTION(WANT_PLAYER "Build WildMIDI player in addition to the libraries" ON)
@@ -270,8 +260,6 @@ ENDIF (APPLE)
 
 IF (APPLE)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APP_BUNDLE_DIR}/Contents/MacOS")
-ELSE (APPLE)
-    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${wildmidi_BINARY_DIR}")
 ENDIF (APPLE)
 
 # Setup up our config file
