@@ -956,7 +956,8 @@ static uint32_t ExtractTracksFromXmi(struct xmi_ctx *ctx) {
         begin = getsrcpos(ctx);
 
         /* Convert it */
-        if (!(ppqn = ConvertFiletoList(ctx))) {
+        ppqn = ConvertFiletoList(ctx);
+        if (!ppqn) {
             _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
             break;
         }

@@ -373,7 +373,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
     }
 
     if (conf_dir) {
-        if (!(config_dir = wm_strdup(conf_dir))) {
+        if ((config_dir = wm_strdup(conf_dir)) == NULL) {
             _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
             WM_FreePatches();
             _WM_FreeBufferFile(config_buffer);
@@ -419,7 +419,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             free(line_tokens);
                             _WM_FreeBufferFile(config_buffer);
                             return (-1);
-                        } else if (!(config_dir = wm_strdup(line_tokens[1]))) {
+                        } else if ((config_dir = wm_strdup(line_tokens[1])) == NULL) {
                             _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                             WM_FreePatches();
                             free(line_tokens);
@@ -451,7 +451,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             strcpy(new_config, config_dir);
                             strcpy(&new_config[strlen(config_dir)], line_tokens[1]);
                         } else {
-                            if (!(new_config = wm_strdup(line_tokens[1]))) {
+                            if ((new_config = wm_strdup(line_tokens[1])) == NULL) {
                                 _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                                 WM_FreePatches();
                                 free(line_tokens);
@@ -662,7 +662,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             strcpy(tmp_patch->filename, config_dir);
                             strcat(tmp_patch->filename, line_tokens[1]);
                         } else {
-                            if (!(tmp_patch->filename = wm_strdup(line_tokens[1]))) {
+                            if ((tmp_patch->filename = wm_strdup(line_tokens[1])) == NULL) {
                                 _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
                                 WM_FreePatches();
                                 free(config_dir);
@@ -815,7 +815,6 @@ static int add_handle(void * handle) {
 #else
 #define RESAMPLE_DEBUGI(dx,dy)
 #define RESAMPLE_DEBUGS(dx)
-
 #endif
 
 
@@ -991,7 +990,6 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                             note_data->env_inc = 0;
                             note_data = note_data->next;
                             RESAMPLE_DEBUGS("Next Note: SAMPLE_SUSTAIN");
-                            continue;
                         } else {
                             env_ptr = (note_data->modes & SAMPLE_CLAMPED)? 5 : 4;
                             note_data->env = env_ptr;
@@ -1003,9 +1001,8 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                                 note_data->env_inc =
                                         note_data->sample->env_rate[env_ptr];
                             }
-                            continue;
                         }
-                        break;
+                        continue;
                     case 5:
                         if (__builtin_expect((note_data->env_level == 0), 1)) {
                             goto _END_THIS_NOTE;
@@ -1337,7 +1334,6 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                             if (note_data->modes & SAMPLE_SUSTAIN /*|| note_data->hold*/) {
                                 note_data->env_inc = 0;
                                 note_data = note_data->next;
-                                continue;
                             } else {
                                 env_ptr = (note_data->modes & SAMPLE_CLAMPED)? 5 : 4;
                                 note_data->env = env_ptr;
@@ -1349,9 +1345,8 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                                     note_data->env_inc =
                                         note_data->sample->env_rate[env_ptr];
                                 }
-                                continue;
                             }
-                            break;
+                            continue;
                         case 5:
                             if (__builtin_expect((note_data->env_level == 0), 1)) {
                                 goto _END_THIS_NOTE;
