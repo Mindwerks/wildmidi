@@ -55,9 +55,9 @@ typedef struct {
     int enabled;
     int (* open_out)(const char *);
     int (* send_out)(int8_t *, int);
-    void (* close_out)();
-    void (* pause_out)();
-    void (* resume_out)();
+    void (* close_out)(void);
+    void (* pause_out)(void);
+    void (* resume_out)(void);
 } wildmidi_info;
 
 #endif // __WILDPLAY_H
