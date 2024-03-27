@@ -38,9 +38,6 @@
 #define msleep(s) usleep((s)*1000)
 #include <io.h>
 #include <dir.h>
-#ifdef AUDIODRV_DOSSB
-#include "dossb.h"
-#endif
 
 #define WM_IS_BADF(_fd) ((_fd)<0)
 #define WM_BADF -1
@@ -128,15 +125,6 @@ extern int amiga_getch (unsigned char *ch);
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "getopt_long.h"
-#ifdef AUDIODRV_AHI
-#include <devices/ahi.h>
-#ifdef __amigaos4__
-#include <dos/obsolete.h>
-#define SHAREDMEMFLAG MEMF_SHARED
-#else
-#define SHAREDMEMFLAG MEMF_PUBLIC
-#endif
-#endif
 
 #define WM_IS_BADF(_fd) ((_fd)==0)
 #define WM_BADF 0
@@ -174,8 +162,6 @@ int wmidi_close (int fd);
 off_t wmidi_seekset (int fd, off_t ofs);
 ssize_t wmidi_write (int fd, const void *buf, size_t size);
 
-
 #endif /* !_WIN32, !__DJGPP__ (unix build) */
-
 
 #endif // FILEOPS_H
