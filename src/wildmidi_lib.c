@@ -1769,7 +1769,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
     _WM_Lock(&mdi->lock);
     event = mdi->current_event;
 
-    /* make sure we havent asked for a positions beyond the end of the song. */
+    /* make sure we haven't asked for a positions beyond the end of the song. */
     if (*sample_pos > mdi->extra_info.approx_total_samples) {
         /* if so set the position to the end of the song */
         *sample_pos = mdi->extra_info.approx_total_samples;
@@ -2142,7 +2142,7 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
     Cleanup is done by the lib.
 
     Once WildMidi_GetLyric is called it will return NULL
-    on subsiquent calls until the next lyric event is processed
+    on subsequent calls until the next lyric event is processed
     during a WildMidi_GetOutput call.
  */
 WM_SYMBOL char * WildMidi_GetLyric (midi * handle) {

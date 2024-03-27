@@ -1,5 +1,5 @@
 # toolchain file I use to cross compile on Linux
-# targetting OSX/Darwin (x86). running:
+# targeting OSX/Darwin (x86). running:
 # cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/Toolchain-OSX-x86.cmake ....
 
 SET(CMAKE_SYSTEM_NAME Darwin)

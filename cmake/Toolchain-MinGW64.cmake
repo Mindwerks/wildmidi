@@ -1,5 +1,5 @@
 # toolchain file I use to cross compile on Linux
-# targetting Windows (x64/mingw-w64). running:
+# targeting Windows (x64/mingw-w64). running:
 # cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/Toolchain-MinGW64.cmake ....
 
 SET(CMAKE_SYSTEM_NAME Windows)
