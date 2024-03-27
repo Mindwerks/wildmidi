@@ -67,7 +67,7 @@ static const char *errors[WM_ERR_MAX+1] = {
 char * _WM_Global_ErrorS = NULL;
 int _WM_Global_ErrorI = 0;
 
-void _WM_GLOBAL_ERROR(const char *func, int lne, int wmerno, const char *wmfor, int error) {
+void _WM_GLOBAL_ERROR_INTERNAL(const char *func, int lne, int wmerno, const char *wmfor, int error) {
 
     char *errorstring;
 

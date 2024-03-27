@@ -65,13 +65,13 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     uint32_t setup_ret = 0;
 
     if (midi_size < 14) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
         return (NULL);
     }
 
     if (!memcmp(midi_data, "RIFF", 4)) {
         if (midi_size < 34) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
             return (NULL);
         }
         midi_data += 20;
@@ -79,7 +79,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     }
 
     if (memcmp(midi_data, "MThd", 4)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_NOT_MIDI, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_MIDI, NULL, 0);
         return (NULL);
     }
     midi_data += 4;
@@ -94,7 +94,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     tmp_val |= *midi_data++;
     midi_size -= 4;
     if (tmp_val != 6) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
         return (NULL);
     }
 
@@ -105,7 +105,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     tmp_val |= *midi_data++;
     midi_size -= 2;
     if (tmp_val > 2) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_INVALID, NULL, 0);
         return (NULL);
     }
     midi_type = tmp_val;
@@ -117,7 +117,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     tmp_val |= *midi_data++;
     midi_size -= 2;
     if (tmp_val < 1) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(no tracks)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(no tracks)", 0);
         return (NULL);
     }
     no_tracks = tmp_val;
@@ -126,7 +126,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
      * Check that type 0 midi file has only 1 track
      */
     if ((midi_type == 0) && (no_tracks > 1)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, "(expected 1 track for type 0 midi file, found more)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_INVALID, "(expected 1 track for type 0 midi file, found more)", 0);
         return (NULL);
     }
 
@@ -137,7 +137,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     divisions |= *midi_data++;
     midi_size -= 2;
     if (divisions & 0x00008000) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_INVALID, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_INVALID, NULL, 0);
         return (NULL);
     }
 
@@ -155,11 +155,11 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     smallest_delta = 0x7fffffff;
     for (i = 0; i < no_tracks; i++) {
         if (midi_size < 8) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
             goto _end;
         }
         if (memcmp(midi_data, "MTrk", 4) != 0) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing track header)", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(missing track header)", 0);
             goto _end;
         }
         midi_data += 4;
@@ -172,11 +172,11 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
         tmp_val |= *midi_data++;
         midi_size -= 4;
         if (midi_size < tmp_val) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
             goto _end;
         }
         if (tmp_val < 3) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(bad track size)", 0);
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(bad track size)", 0);
             goto _end;
         }
         if ((midi_data[tmp_val - 3] != 0xFF) ||
@@ -195,7 +195,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                     (midi_data[tmp_val - 4] != 0xFF) ||
                     (midi_data[tmp_val - 3] != 0x2F) ||
                     (midi_data[tmp_val - 2] != 0x00)) {
-                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(missing EOT)", 0);
+                    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(missing EOT)", 0);
                     goto _end;
                 }
             }
@@ -233,7 +233,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     if (smallest_delta >= 0x7fffffff) {
         /* DEBUG */
         /* fprintf(stderr,"CRAZY SMALLEST DELTA %u\n", smallest_delta); */
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
         goto _end;
     }
 
@@ -241,7 +241,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
         /* DEBUG */
         /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
         /*        samples_per_delta_f, smallest_delta); */
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
         goto _end;
     }
 
@@ -312,7 +312,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                         } while (*tracks[i] > 0x7f);
                     }
                     if (!track_size[i]) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+                        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
                         goto _end;
                     }
                     track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
@@ -329,7 +329,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                 /* DEBUG */
                 /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
                 /*        samples_per_delta_f, smallest_delta); */
-                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+                _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
                 goto _end;
             }
             subtract_delta = smallest_delta;
@@ -388,7 +388,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                 }
                 if (!track_size[i]) {
                     if (midi_type != 0) {
-                        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, "(too short)", 0);
+                        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
                         goto _end;
                     } else {
                         track_end[i] = 1;
@@ -403,7 +403,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                     /* DEBUG */
                     /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
                     /*        samples_per_delta_f, smallest_delta); */
-                    _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CORUPT, NULL, 0);
+                    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
                     goto _end;
                 }
                 sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
@@ -422,7 +422,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     if ((mdi->reverb = _WM_init_reverb(_WM_SampleRate, _WM_reverb_room_width,
             _WM_reverb_room_length, _WM_reverb_listen_posx, _WM_reverb_listen_posy))
           == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
         goto _end;
     }
 
@@ -476,7 +476,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint32_t track_count = 0;
 
     if (!mdi->event_count) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_CONVERT, "(No events to convert)", 0);
+        _WM_GLOBAL_ERROR(WM_ERR_CONVERT, "(No events to convert)", 0);
         return -1;
     }
 

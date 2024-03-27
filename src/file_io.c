@@ -154,7 +154,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         if (home) {
             buffer_file = (char *) malloc(strlen(filename) + strlen(home) + 1);
             if (buffer_file == NULL) {
-                _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
+                _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                 return NULL;
             }
             strcpy(buffer_file, home);
@@ -165,7 +165,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         if (cwdresult != NULL)
             buffer_file = (char *) malloc(strlen(filename) + strlen(buffer_dir) + 2);
         if (buffer_file == NULL || cwdresult == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
             return NULL;
         }
         strcpy(buffer_file, buffer_dir);
@@ -184,7 +184,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     if (buffer_file == NULL) {
         buffer_file = (char *) malloc(strlen(filename) + 1);
         if (buffer_file == NULL) {
-            _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
             return NULL;
         }
         strcpy(buffer_file, filename);
@@ -192,14 +192,14 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
 
 #ifdef __DJGPP__
     if (findfirst(buffer_file, &f, FA_ARCH | FA_RDONLY) != 0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, errno);
         free(buffer_file);
         return NULL;
     }
     *size = f.ff_fsize;
 #elif defined(_WIN32)
     if ((h = FindFirstFileA(buffer_file, &wfd)) == INVALID_HANDLE_VALUE) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, ENOENT);
         free(buffer_file);
         return NULL;
     }
@@ -209,7 +209,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     else *size = wfd.nFileSizeLow;
 #elif defined(__OS2__) || defined(__EMX__)
     if (DosFindFirst(buffer_file, &h, FILE_NORMAL, &fb, sizeof(fb), &cnt, FIL_STANDARD) != NO_ERROR) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT);
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, ENOENT);
         free(buffer_file);
         return NULL;
     }
@@ -217,14 +217,14 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     *size = fb.cbFile;
 #elif defined(WILDMIDI_AMIGA)
     if ((filsize = AMIGA_filesize(buffer_file)) < 0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, ENOENT /* do better!! */);
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, ENOENT /* do better!! */);
         free(buffer_file);
         return NULL;
     }
     *size = filsize;
 #elif defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
     if (stat(buffer_file, &buffer_stat)) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, errno);
         free(buffer_file);
         return NULL;
     }
@@ -236,20 +236,20 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     /* Standard C fallback */
     file = fopen(buffer_file, "rb");
     if (file == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_STAT, filename, errno);
+        _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, errno);
         free(buffer_file);
         return NULL;
     }
     /* Technically undefined behaviour, but any sane implementation will allow this without issue. */
     if (fseek(file, 0, SEEK_END) != 0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, EIO);
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO);
         free(buffer_file);
         fclose(file);
         return NULL;
     }
     pos = ftell(file);
     if (pos < 0) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, EIO);
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO);
         free(buffer_file);
         fclose(file);
         return NULL;
@@ -260,7 +260,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
 
     if (__builtin_expect((*size > WM_MAXFILESIZE), 0)) {
         /* don't bother loading suspiciously long files */
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_LONGFIL, filename, 0);
+        _WM_GLOBAL_ERROR(WM_ERR_LONGFIL, filename, 0);
         free(buffer_file);
         return NULL;
     }
@@ -268,20 +268,20 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     /* +1 needed for parsing text files without a newline at the end */
     data = (uint8_t *) malloc(*size + 1);
     if (data == NULL) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_MEM, NULL, errno);
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
         free(buffer_file);
         return NULL;
     }
 
 #if defined(WILDMIDI_AMIGA)
     if (!(buffer_fd = AMIGA_open(buffer_file))) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, ENOENT /* do better!! */);
+        _WM_GLOBAL_ERROR(WM_ERR_OPEN, filename, ENOENT /* do better!! */);
         free(buffer_file);
         free(data);
         return NULL;
     }
     if (AMIGA_read(buffer_fd, data, filsize) != filsize) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, EIO /* do better!! */);
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO /* do better!! */);
         free(buffer_file);
         free(data);
         AMIGA_close(buffer_fd);
@@ -290,13 +290,13 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     AMIGA_close(buffer_fd);
 #elif defined(__DJGPP__) || defined(_WIN32) || defined(__OS2__) || defined(__EMX__) || defined(_3DS) || defined(GEKKO) || defined(__vita__) || defined(__SWITCH__) || defined(__riscos__) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
     if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_OPEN, filename, errno);
+        _WM_GLOBAL_ERROR(WM_ERR_OPEN, filename, errno);
         free(buffer_file);
         free(data);
         return NULL;
     }
     if (read(buffer_fd, data, *size) != (long) *size) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, errno);
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, errno);
         free(buffer_file);
         free(data);
         close(buffer_fd);
@@ -305,7 +305,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     close(buffer_fd);
 #else
     if (fread(data, 1, (size_t)*size, file) != (size_t)*size) {
-        _WM_GLOBAL_ERROR(__FUNCTION__, __LINE__, WM_ERR_READ, filename, EIO);
+        _WM_GLOBAL_ERROR(WM_ERR_READ, filename, EIO);
         free(buffer_file);
         fclose(file);
         free(data);
