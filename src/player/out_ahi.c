@@ -26,6 +26,8 @@
 
 #if (AUDIODRV_AHI == 1)
 
+#include <string.h>
+
 /* Driver for output to native Amiga AHI device:
  * Written by Szilárd Biró <col.lawrence@gmail.com>, loosely based
  * on an old AOS4 version by Fredrik Wikstrom <fredrik@a500.org>
@@ -37,6 +39,8 @@ static struct MsgPort *AHImp = NULL;
 static struct AHIRequest *AHIReq[2] = { NULL, NULL };
 static int active = 0;
 static int8_t *AHIBuf[2] = { NULL, NULL };
+
+extern unsigned int rate;
 
 int open_ahi_output(const char * output) {
     UNUSED(output);

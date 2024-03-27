@@ -27,7 +27,11 @@
 #include <stdint.h>
 
 // Macros to suppress unused variables warnings
+#ifndef __VBCC__
 #define UNUSED(x) (void)(x)
+#else
+#define UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
+#endif
 
 // Supported sound backends
 enum {

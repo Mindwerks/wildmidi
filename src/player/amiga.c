@@ -17,6 +17,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #ifdef WILDMIDI_AMIGA
 
 #include <proto/exec.h>

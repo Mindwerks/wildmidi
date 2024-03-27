@@ -144,6 +144,7 @@ extern int amiga_getch (unsigned char *ch);
 extern BPTR audio_fd;
 
 #undef wmidi_geterrno
+#include <errno.h>
 int wmidi_geterrno (void);
 int wmidi_fileexists (const char *path);
 BPTR wmidi_open_write (const char *path);

@@ -21,6 +21,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "fileops.h"
 
 #if defined(_WIN32)
