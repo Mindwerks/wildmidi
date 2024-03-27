@@ -20,7 +20,7 @@
 #define AUDIODRV_OSS 0
 #define AUDIODRV_OPENAL 0
 #define AUDIODRV_AHI 0
-#define AUDIODRV_WIN32_MM 0
+#define AUDIODRV_WINMM 0
 #define AUDIODRV_OS2DART 1 /* OS/2 DART output */
 #define AUDIODRV_DOSSB 0
 

@@ -26,7 +26,7 @@
 
 #include "config.h"
 
-#if (AUDIODRV_WIN32_MM == 1)
+#if (AUDIODRV_WINMM == 1)
 
 #include <conio.h>
 #include <fcntl.h>

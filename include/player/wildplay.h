@@ -41,7 +41,7 @@ enum {
     ALSA_OUT,     // ALSA
     OSS_OUT,      // OSS
     AHI_OUT,      // Amiga AHI output
-    WIN32_MM_OUT, // Windows native output
+    WINMM_OUT,    // Windows native output
     OS2DART_OUT,  // DART OS/2 output
     DOSSB_OUT,    // SoundBlaster output (DOS)
     // Add here new output backends

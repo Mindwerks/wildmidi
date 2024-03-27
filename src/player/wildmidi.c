@@ -109,7 +109,7 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
     {
         "win32mm",
         "Windows MM output",
-        AUDIODRV_WIN32_MM,
+        AUDIODRV_WINMM,
         open_mm_output,
         write_mm_output,
         close_mm_output,

@@ -24,7 +24,7 @@
 #include "out_win32mm.h"
 #include "wildplay.h"
 
-#if AUDIODRV_WIN32_MM == 1
+#if AUDIODRV_WINMM == 1
 
 #include "wildplay.h"
 

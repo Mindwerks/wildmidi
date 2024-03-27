@@ -25,7 +25,7 @@ jobs:
           - {
             os: windows-latest,
             c: "cl",
-            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_WIN32_MM=ON"
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_WINMM=ON"
           }
     runs-on: ${{ matrix.config.os }}
     steps:

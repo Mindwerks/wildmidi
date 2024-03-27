@@ -70,6 +70,6 @@
 #cmakedefine01 AUDIODRV_OSS
 #cmakedefine01 AUDIODRV_OPENAL
 #cmakedefine01 AUDIODRV_AHI
-#cmakedefine01 AUDIODRV_WIN32_MM
+#cmakedefine01 AUDIODRV_WINMM
 #cmakedefine01 AUDIODRV_OS2DART
 #cmakedefine01 AUDIODRV_DOSSB
