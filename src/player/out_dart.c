@@ -64,7 +64,7 @@ int open_dart_output(const char * output) {
     int i;
     MCI_AMP_OPEN_PARMS AmpOpenParms;
 
-    UNUSED(output);
+    WMPLAY_UNUSED(output);
 
     if (DosCreateMutexSem(NULL, &dart_mutex, 0, 0) != NO_ERROR) {
         fprintf(stderr, "Failed creating a MutexSem.\r\n");

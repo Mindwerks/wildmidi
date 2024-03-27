@@ -45,10 +45,9 @@ typedef DWORD DWORD_PTR;
 #endif
 
 static void CALLBACK mmOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
-    /* unused params */
-    UNUSED(hWaveOut);
-    UNUSED(dwParam1);
-    UNUSED(dwParam2);
+    WMPLAY_UNUSED(hWaveOut);
+    WMPLAY_UNUSED(dwParam1);
+    WMPLAY_UNUSED(dwParam2);
 
     if(uMsg != WOM_DONE)
         return;
@@ -63,7 +62,7 @@ int open_mm_output(const char * output) {
     char *mm_buffer;
     int i;
 
-    UNUSED(output);
+    WMPLAY_UNUSED(output);
 
     InitializeCriticalSection(&waveCriticalSection);
 

@@ -133,7 +133,7 @@ void close_sb_output(void) {
 }
 
 int open_sb_output(const char * output) {
-    UNUSED(output);
+    WMPLAY_UNUSED(output);
 
     if (!sb_open()) {
         fprintf(stderr, "Sound Blaster initialization failed.\n");

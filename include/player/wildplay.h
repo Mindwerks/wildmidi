@@ -28,9 +28,9 @@
 
 // Macros to suppress unused variables warnings
 #ifndef __VBCC__
-#define UNUSED(x) (void)(x)
+#define WMPLAY_UNUSED(x) (void)(x)
 #else
-#define UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
+#define WMPLAY_UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
 #endif
 
 // Supported sound backends
@@ -61,3 +61,4 @@ typedef struct {
 } wildmidi_info;
 
 #endif // __WILDPLAY_H
+

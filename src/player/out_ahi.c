@@ -43,7 +43,7 @@ static int8_t *AHIBuf[2] = { NULL, NULL };
 extern unsigned int rate;
 
 int open_ahi_output(const char * output) {
-    UNUSED(output);
+    WMPLAY_UNUSED(output);
 
     AHImp = CreateMsgPort();
     if (AHImp) {

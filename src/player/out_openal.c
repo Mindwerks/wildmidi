@@ -117,7 +117,7 @@ void close_openal_output(void) {
 }
 
 int open_openal_output(const char * output) {
-    UNUSED(output);
+    WMPLAY_UNUSED(output);
 
     /* setup our audio devices and contexts */
     device = alcOpenDevice(NULL);
