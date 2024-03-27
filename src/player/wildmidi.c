@@ -304,6 +304,9 @@ static struct option const long_options[] = {
     { "rate", 1, 0, 'r' },
     { "mastervol", 1, 0, 'm' },
     { "config", 1, 0, 'c' },
+#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
+    { "device", 1, 0, 'd' }, /* treated the same as --wavout, keeping here for compat. */
+#endif
     { "wavout", 1, 0, 'o' },
     { "tomidi", 1, 0, 'x' },
     { "convert", 1, 0, 'g' },
@@ -350,9 +353,9 @@ static void do_help(void) {
     printf("                                   2 - MT32 to GS\n");
     printf("  -f F  --frequency=F Use frequency F Hz for playback (MUS)\n");
     printf("Software Wavetable Options:\n");
-    printf("  -o O  --wavout=O    Save output to O in 16bit stereo format wav file.\n");
+    printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
 #if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
-    printf("                      For alsa or oss output - use device O for audio\n");
+    printf("  -d D  --device=D    For Alsa or OSS output - use device D for audio\n");
     printf("                      output instead of default\n");
 #endif
     printf("  -l    --log_vol     Use log volume adjustments\n");
@@ -486,12 +489,13 @@ int main(int argc, char **argv) {
         case 'm': /* Master Volume */
             master_volume = (uint8_t) atoi(optarg);
             break;
+        case 'd':
         case 'o': /* Wav or Device Output */
             if (!*optarg) {
                 fprintf(stderr, "Error: empty file/device name.\n");
                 return (1);
             }
-            strncpy(output, optarg, sizeof(output));
+            strncpy(output, optarg, sizeof(output) - 1);
             output[sizeof(output) - 1] = 0;
             break;
         case 'g': /* XMIDI Conversion */
