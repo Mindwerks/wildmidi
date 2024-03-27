@@ -44,6 +44,20 @@
 #include "out_wave.h"
 #include "out_win32mm.h"
 
+#ifdef __EMX__
+int putch (int c) {
+    char ch = c;
+    VioWrtTTY(&ch, 1, 0);
+    return c;
+}
+int kbhit (void) {
+    KBDKEYINFO k;
+    if (KbdPeek(&k, 0))
+        return 0;
+    return (k.fbStatus & KBDTRF_FINAL_CHAR_IN);
+}
+#endif
+
 // available outputs
 wildmidi_info available_outputs[TOTAL_OUT] = {
     {
@@ -918,4 +932,3 @@ end2:
     printf("\r\n");
     return (0);
 }
-

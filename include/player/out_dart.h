@@ -31,19 +31,11 @@
 #define INCL_DOS
 #define INCL_DOSERRORS
 #define INCL_OS2MM
-#ifdef __EMX__
-#define INCL_KBD
-#define INCL_VIO
-#endif
 #include <os2.h>
 #include <os2me.h>
-#include <conio.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#define msleep(s) DosSleep((s))
-#include <fcntl.h>
-#include <io.h>
-#include "getopt_long.h"
 
 
 int open_dart_output(const char * output);

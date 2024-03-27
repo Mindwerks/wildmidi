@@ -86,7 +86,6 @@ int wmidi_write (int fd, const void *buf, size_t size);
 #define INCL_VIO
 #endif
 #include <os2.h>
-#include <os2me.h>
 #include <conio.h>
 #define msleep(s) DosSleep((s))
 #include <fcntl.h>
@@ -94,17 +93,6 @@ int wmidi_write (int fd, const void *buf, size_t size);
 #include "getopt_long.h"
 #ifdef __EMX__
 #include <sys/types.h> /* for off_t typedef */
-int putch (int c) {
-    char ch = c;
-    VioWrtTTY(&ch, 1, 0);
-    return c;
-}
-int kbhit (void) {
-    KBDKEYINFO k;
-    if (KbdPeek(&k, 0))
-        return 0;
-    return (k.fbStatus & KBDTRF_FINAL_CHAR_IN);
-}
 #endif
 
 #define WM_IS_BADF(_fd) ((_fd)<0)
