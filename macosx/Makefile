@@ -32,7 +32,7 @@ LIB_INSTALLNAME=$(LIBSHARED_MAJ)
 PLAYER=wildmidi
 PLAYER_STATIC=wildmidi-static
 
-INCLUDE=-I. -I../include
+INCLUDE=-I. -I../include -I../include/player
 ARFLAGS=cr
 CFLAGS=$(INCLUDE) -Wall -W -fno-common
 LDFLAGS=
@@ -68,7 +68,7 @@ LDLIBS_EXE+=-L. -l$(LIBNAME)
 # Objects
 LIB_OBJ = wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
 LIB_OBJ+= f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ = wm_tty.o wildmidi.o
+PLAYER_OBJ = wm_tty.o wildmidi.o out_wave.o out_openal.o fileops.o
 
 .PHONY: clean distclean
 
@@ -108,9 +108,15 @@ $(PLAYER_STATIC): $(PLAYER_OBJ) $(LIBSTATIC)
 %.o: ../src/%.c
 	$(CC) -c $(CFLAGS_LIB) -o $@ $<
 # for player objects:
-wildmidi.o: ../src/wildmidi.c
+wildmidi.o: ../src/player/wildmidi.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
-wm_tty.o: ../src/wm_tty.c
+out_wave.o: ../src/player/out_wave.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+out_openal.o: ../src/player/out_openal.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+fileops.o: ../src/player/fileops.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+wm_tty.o: ../src/player/wm_tty.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
 
 clean:
