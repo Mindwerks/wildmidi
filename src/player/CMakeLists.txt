@@ -7,7 +7,7 @@ SET(wildmidi_executable_SRCS
 		out_alsa.c
 		out_dart.c
 		out_dossb.c
-		out_openal.c
+		out_coreaudio.c
 		out_oss.c
 		out_wave.c
 		out_win32mm.c
@@ -23,9 +23,6 @@ ENDIF ()
 IF (WANT_PLAYER)
 		ADD_EXECUTABLE(wildmidi	${wildmidi_executable_SRCS})
 		TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
-		IF (AUDIODRV_OPENAL)
-				TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE	${OPENAL_INCLUDE_DIR})
-		ENDIF()
 		IF (AUDIODRV_ALSA)
 				TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE	${ALSA_INCLUDE_DIR})
 		ENDIF ()
@@ -36,9 +33,6 @@ IF (WANT_PLAYER)
 				${AUDIO_LIBRARY}
 				${M_LIBRARY}
 		)
-		IF (WIN32)
-				TARGET_LINK_LIBRARIES(wildmidi winmm)
-		ENDIF ()
 		LIST(APPEND wildmidi_install wildmidi)
 ENDIF ()
 
@@ -47,9 +41,6 @@ IF (WANT_PLAYERSTATIC)
 		TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
 		SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES COMPILE_DEFINITIONS WILDMIDI_STATIC)
 
-		IF (AUDIODRV_OPENAL)
-				TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${OPENAL_INCLUDE_DIR})
-		ENDIF ()
 		IF (AUDIODRV_ALSA)
 				TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${ALSA_INCLUDE_DIR})
 		ENDIF ()
@@ -60,9 +51,6 @@ IF (WANT_PLAYERSTATIC)
 				${AUDIO_LIBRARY}
 				${M_LIBRARY}
 		)
-		IF (WIN32)
-				TARGET_LINK_LIBRARIES(wildmidi-static winmm)
-		ENDIF ()
 		LIST(APPEND wildmidi_install wildmidi-static)
 
 		IF (RISCOS)

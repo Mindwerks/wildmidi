@@ -10,17 +10,17 @@ jobs:
           - {
             os: macos-latest,
             c: "clang",
-            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_OPENAL=ON"
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_COREAUDIO=ON"
           }
           - {
             os: ubuntu-latest,
             c: "clang",
-            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_OPENAL=ON -DWANT_ALSA=ON -DWANT_OSS=ON"
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_ALSA=ON -DWANT_OSS=ON"
           }
           - {
             os: ubuntu-latest,
             c: "gcc",
-            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_OPENAL=ON -DWANT_ALSA=ON -DWANT_OSS=ON"
+            cmake_opts: "-DWANT_PLAYER=ON -DWANT_STATIC=ON -DWANT_ALSA=ON -DWANT_OSS=ON"
           }
           - {
             os: windows-latest,
@@ -35,11 +35,7 @@ jobs:
         if: matrix.config.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install libasound2-dev libopenal-dev
-      - name: Install dependencies (macOS)
-        if: matrix.config.os == 'macos-latest'
-        run: |
-          brew install openal-soft
+          sudo apt-get install libasound2-dev
       - name: Build with ${{ matrix.config.os }} / ${{ matrix.config.c }}
         env:
           CC: ${{ matrix.config.c }}

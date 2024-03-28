@@ -37,7 +37,7 @@
 enum {
     NO_OUT,       // No out
     WAVE_OUT,     // WAVe raw output
-    OPENAL_OUT,   // OpenAL
+    COREAUDIO_OUT,// macOS CoreAudio
     ALSA_OUT,     // ALSA
     OSS_OUT,      // OSS
     AHI_OUT,      // Amiga AHI output

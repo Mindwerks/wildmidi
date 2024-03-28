@@ -29,7 +29,7 @@ CMAKE_DEPENDENT_OPTION(WANT_PLAYERSTATIC "Build a statically linked WildMIDI pla
 OPTION(WANT_AMIGA_AHI "Include Amiga AHI support" OFF)
 OPTION(WANT_ALSA "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
 OPTION(WANT_DOSSB "Include DOS SoundBlaster support" OFF)
-OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
+OPTION(WANT_COREAUDIO "Include macOS CoreAudio support" OFF)
 OPTION(WANT_OS2DART "Include OS/2 DART support" OFF)
 OPTION(WANT_OSS "Include OSS (Open Sound System) support" OFF)
 OPTION(WANT_WINMM "Include Windows WinMM audio support" OFF)
@@ -65,14 +65,16 @@ IF(WANT_PLAYER)
         SET(AUDIODRV_DOSSB 1)
     ENDIF()
 
-    IF (WANT_OPENAL)
-        FIND_PACKAGE(OpenAL REQUIRED)
-        SET(AUDIODRV_OPENAL 1)
-        LIST(APPEND AUDIO_LIBRARY ${OPENAL_LIBRARY})
+    IF (WANT_COREAUDIO)
+        SET(AUDIODRV_COREAUDIO 1)
+        LIST(APPEND AUDIO_LIBRARY -Wl,-framework,AudioToolbox)
+        LIST(APPEND AUDIO_LIBRARY -Wl,-framework,AudioUnit)
+        LIST(APPEND AUDIO_LIBRARY -Wl,-framework,CoreServices)
     ENDIF()
 
     IF (WANT_OS2DART)
         SET(AUDIODRV_OS2DART 1)
+        LIST(APPEND AUDIO_LIBRARY mmpm2)
     ENDIF()
 
     IF (WANT_OSS)
@@ -83,6 +85,7 @@ IF(WANT_PLAYER)
 
     IF (WANT_WINMM)
         SET(AUDIODRV_WINMM 1)
+        LIST(APPEND AUDIO_LIBRARY winmm)
     ENDIF()
 
 ENDIF(WANT_PLAYER)
@@ -204,28 +207,6 @@ IF (UNIX AND NOT APPLE)
         SET(M_LIBRARY "")
     ENDIF ()
 ENDIF (UNIX AND NOT APPLE)
-
-IF (APPLE AND WANT_PLAYER)
-    FIND_PACKAGE(OpenAL)
-
-    IF (WANT_OPENAL)
-        IF (NOT OPENAL_FOUND)
-            MESSAGE(FATAL_ERROR "OpenAL required but not found.")
-        ENDIF ()
-        SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-
-    ELSE ()
-        IF (OPENAL_FOUND)
-            SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-            SET(AUDIODRV_OPENAL 1)
-
-        ELSE ()
-            MESSAGE(WARNING "Could not find an audio sub-system!")
-            SET(AUDIO_LIBRARY "")
-        ENDIF ()
-
-    ENDIF ()
-ENDIF ()
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")

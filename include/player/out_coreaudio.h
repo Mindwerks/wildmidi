@@ -1,7 +1,7 @@
 /*
- * out_openal.h -- OpenAL output
+ * out_coreaudio.h -- CoreAudio output for Mac OS X
  *
- * Copyright (C) WildMidi Developers 2020
+ * Copyright (C) WildMidi Developers 2024
  *
  * This file is part of WildMIDI.
  *
@@ -21,8 +21,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef OUT_OPENAL_H
-#define OUT_OPENAL_H
+#ifndef OUT_COREAUDIO_H
+#define OUT_COREAUDIO_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -31,28 +31,22 @@
 
 #include "config.h"
 
-#if (AUDIODRV_OPENAL == 1)
+#if (AUDIODRV_COREAUDIO == 1)
 
-#ifndef __APPLE__
-#include <al.h>
-#include <alc.h>
-#else
-#include <OpenAL/al.h>
-#include <OpenAL/alc.h>
+int open_coreaudio_output(const char * output);
+void pause_coreaudio_output(void);
+void resume_coreaudio_output(void);
+int write_coreaudio_output(int8_t *output_data, int output_size);
+void close_coreaudio_output(void);
+
+#else /* AUDIODRV_COREAUDIO */
+
+#define open_coreaudio_output open_output_noout
+#define pause_coreaudio_output pause_output_noout
+#define resume_coreaudio_output resume_output_noout
+#define write_coreaudio_output send_output_noout
+#define close_coreaudio_output close_output_noout
+
 #endif
 
-int open_openal_output(const char * output);
-void pause_output_openal(void);
-int write_openal_output(int8_t *output_data, int output_size);
-void close_openal_output(void);
-
-#else // AUDIODRV_OPENAL == 1
-
-#define open_openal_output open_output_noout
-#define pause_output_openal pause_output_noout
-#define write_openal_output send_output_noout
-#define close_openal_output close_output_noout
-
-#endif // AUDIODRV_OPENAL == 1
-
-#endif // OUT_OPENAL_H
+#endif /* OUT_COREAUDIO_H */
