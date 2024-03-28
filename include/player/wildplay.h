@@ -38,13 +38,13 @@ enum {
     NO_OUT,       // No out
     WAVE_OUT,     // WAVe raw output
     COREAUDIO_OUT,// Mac OS X CoreAudio
-    OPENAL_OUT,   // OpenAL
     ALSA_OUT,     // ALSA
     OSS_OUT,      // OSS
     AHI_OUT,      // Amiga AHI output
     WINMM_OUT,    // Windows native output
     OS2DART_OUT,  // DART OS/2 output
     DOSSB_OUT,    // SoundBlaster output (DOS)
+    OPENAL_OUT,   // OpenAL
     // Add here new output backends
 
     TOTAL_OUT     // Total supported outputs

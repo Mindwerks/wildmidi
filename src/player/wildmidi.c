@@ -92,16 +92,6 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         resume_coreaudio_output
     },
     {
-        "openal",
-        "OpenAL output",
-        AUDIODRV_OPENAL,
-        open_openal_output,
-        write_openal_output,
-        close_openal_output,
-        pause_output_openal,
-        resume_output_noout
-    },
-    {
         "alsa",
         "Advanced Linux Sound Architecture (ALSA) output",
         AUDIODRV_ALSA,
@@ -159,6 +149,16 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         write_sb_output,
         close_sb_output,
         pause_sb_output,
+        resume_output_noout
+    },
+    {
+        "openal",
+        "OpenAL output",
+        AUDIODRV_OPENAL,
+        open_openal_output,
+        write_openal_output,
+        close_openal_output,
+        pause_output_openal,
         resume_output_noout
     },
 };
