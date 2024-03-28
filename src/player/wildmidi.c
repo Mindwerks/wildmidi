@@ -37,6 +37,7 @@
 #include "out_noout.h"
 #include "out_ahi.h"
 #include "out_alsa.h"
+#include "out_coreaudio.h"
 #include "out_dart.h"
 #include "out_dossb.h"
 #include "out_openal.h"
@@ -79,6 +80,16 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         close_wav_output,
         pause_output_noout,
         resume_output_noout
+    },
+    {
+        "coreaudio",
+        "CoreAudio output",
+        AUDIODRV_COREAUDIO,
+        open_coreaudio_output,
+        write_coreaudio_output,
+        close_coreaudio_output,
+        pause_coreaudio_output,
+        resume_coreaudio_output
     },
     {
         "openal",
@@ -341,7 +352,7 @@ static struct option const long_options[] = {
 
 static int get_default_output(void) {
     int i;
-    for (i = OPENAL_OUT ; i < TOTAL_OUT ; i++) {
+    for (i = COREAUDIO_OUT ; i < TOTAL_OUT ; i++) {
         // Return first available output
         if (available_outputs[i].enabled == 1) {
             return i;

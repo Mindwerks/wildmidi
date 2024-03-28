@@ -14,7 +14,7 @@ PLATFORMS:
 
 * Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS, OpenAL output)
 * Windows: x86 and x64
-* OSX: x86, x64 and powerpc (player: OpenAL output)
+* OSX: x86, x64 and powerpc (player: CoreAudio output)
 * BSD: Debian, FreeBSD, NetBSD, OpenBSD. (player: OSS output)
 * kFreeBSD: Debian (player: OSS output)
 * Hurd: Debian

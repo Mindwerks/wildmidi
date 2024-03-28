@@ -5,6 +5,7 @@ SET(wildmidi_executable_SRCS
 		fileops.c
 		out_ahi.c
 		out_alsa.c
+		out_coreaudio.c
 		out_dart.c
 		out_dossb.c
 		out_openal.c

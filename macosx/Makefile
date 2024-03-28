@@ -60,15 +60,15 @@ LDFLAGS_LIB+=-Wl,-compatibility_version,$(DYLIB_MAJ).0.0 -Wl,-current_version,$(
 CFLAGS_EXE=$(CFLAGS)
 LDFLAGS_EXE=$(LDFLAGS)
 LDLIBS_EXE=$(LDLIBS)
-# OpenAL output support (comment out if not wanted)
-CFLAGS_EXE+=-DAUDIODRV_OPENAL
-LDFLAGS_EXE+=-Wl,-framework,OpenAL
+# for CoreAudio
+LDFLAGS_EXE+=-Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,CoreServices
 LDLIBS_EXE+=-L. -l$(LIBNAME)
 
 # Objects
 LIB_OBJ = wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
 LIB_OBJ+= f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ = wm_tty.o wildmidi.o out_wave.o out_openal.o fileops.o
+PLAYER_OBJ = wm_tty.o wildmidi.o out_wave.o out_coreaudio.o fileops.o
+# out_openal.o
 
 .PHONY: clean distclean
 
@@ -111,6 +111,8 @@ $(PLAYER_STATIC): $(PLAYER_OBJ) $(LIBSTATIC)
 wildmidi.o: ../src/player/wildmidi.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
 out_wave.o: ../src/player/out_wave.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+out_coreaudio.o: ../src/player/out_coreaudio.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
 out_openal.o: ../src/player/out_openal.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<

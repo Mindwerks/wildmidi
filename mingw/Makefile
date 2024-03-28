@@ -46,16 +46,15 @@ LDFLAGS_LIB+=-Wl,--enable-auto-image-base -Wl,--no-undefined \
 CFLAGS_EXE=$(CFLAGS)
 LDFLAGS_EXE=$(LDFLAGS) -mconsole
 LDLIBS_EXE=$(LDLIBS)
-# Standard WinMM output support:
+# for WinMM output
 LDLIBS_EXE+=-lwinmm
-# OpenAL output support (edit config.h and uncomment the following, if really wanted)
-#LDFLAGS_EXE+=-lOpenAL32
 LDLIBS_EXE+=-L. -l$(LIBNAME)
 
 # Objects
 LIB_OBJ = wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
 LIB_OBJ+= f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ = wm_tty.o getopt_long.o wildmidi.o out_wave.o out_win32mm.o out_openal.o fileops.o
+PLAYER_OBJ = wm_tty.o getopt_long.o wildmidi.o out_wave.o out_win32mm.o fileops.o
+# out_openal.o
 
 .PHONY: clean distclean
 

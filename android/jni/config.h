@@ -65,5 +65,7 @@
 /* #undef HAVE_SYS_SOUNDCARD_H */
 /* #undef AUDIODRV_ALSA */
 /* #undef AUDIODRV_OSS */
+/* #undef AUDIODRV_COREAUDIO */
+/* #undef AUDIODRV_WINMM */
 /* #undef AUDIODRV_OPENAL */
 /* #undef AUDIODRV_AHI */

@@ -37,6 +37,7 @@
 enum {
     NO_OUT,       // No out
     WAVE_OUT,     // WAVe raw output
+    COREAUDIO_OUT,// Mac OS X CoreAudio
     OPENAL_OUT,   // OpenAL
     ALSA_OUT,     // ALSA
     OSS_OUT,      // OSS
@@ -61,4 +62,3 @@ typedef struct {
 } wildmidi_info;
 
 #endif // __WILDPLAY_H
-

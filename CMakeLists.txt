@@ -28,6 +28,7 @@ CMAKE_DEPENDENT_OPTION(WANT_PLAYERSTATIC "Build a statically linked WildMIDI pla
 # Player options
 OPTION(WANT_AMIGA_AHI "Include Amiga AHI support" OFF)
 OPTION(WANT_ALSA "Include ALSA (Advanced Linux Sound Architecture) support" OFF)
+OPTION(WANT_COREAUDIO "Include macOS CoreAudio support" OFF)
 OPTION(WANT_DOSSB "Include DOS SoundBlaster support" OFF)
 OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 OPTION(WANT_OS2DART "Include OS/2 DART support" OFF)
@@ -59,6 +60,13 @@ IF(WANT_PLAYER)
         FIND_PACKAGE(ALSA REQUIRED)
         SET(AUDIODRV_ALSA 1)
         LIST(APPEND AUDIO_LIBRARY ${ALSA_LIBRARY})
+    ENDIF()
+
+    IF (WANT_COREAUDIO)
+        SET(AUDIODRV_COREAUDIO 1)
+        LIST(APPEND AUDIO_LIBRARY -Wl,-framework,AudioToolbox)
+        LIST(APPEND AUDIO_LIBRARY -Wl,-framework,AudioUnit)
+        LIST(APPEND AUDIO_LIBRARY -Wl,-framework,CoreServices)
     ENDIF()
 
     IF (WANT_DOSSB)
