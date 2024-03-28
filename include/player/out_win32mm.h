@@ -1,5 +1,5 @@
 /*
- * out_win32mm.h -- Windows MM output
+ * out_win32mm.h -- Windows WinMM output
  *
  * Copyright (C) WildMidi Developers 2020
  *

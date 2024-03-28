@@ -1,5 +1,5 @@
 /*
- * out_openal.h -- WAVE output
+ * out_wave.h -- WAVE output
  *
  * Copyright (C) WildMidi Developers 2020
  *

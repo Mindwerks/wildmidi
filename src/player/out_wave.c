@@ -1,5 +1,5 @@
 /*
- * out_wave.h -- WAVE output
+ * out_wave.c -- WAVE output
  *
  * Copyright (C) WildMidi Developers 2020
  *
