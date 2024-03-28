@@ -25,7 +25,7 @@ RANLIB=$(CROSS)-ranlib
 endif
 DXE3GEN=dxe3gen
 
-INCLUDE = -I. -I../include/stdint -I../include
+INCLUDE = -I. -I../include/stdint -I../include -I../include/player
 CFLAGS = $(INCLUDE) -Wall -W -fno-common
 ARFLAGS = cr
 
@@ -54,10 +54,13 @@ endif
 	$(CC) -c $(CFLAGS) -o $@ $<
 %.o: ../src/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
+%.o: ../src/player/%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
 
 # Objects
 LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ= $(SB_OBJ) getopt_long.o wm_tty.o wildmidi.o
+PLAYER_OBJ= $(SB_OBJ) fileops.o getopt_long.o out_dossb.o out_wave.o wm_tty.o wildmidi.o
 
 # Build targets
 TARGETS = libWildMidi.a wildmidi.exe libWildMidi_dxe.a wildmidi.dxe

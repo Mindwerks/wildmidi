@@ -35,10 +35,10 @@ BLD_TARGET=$(LIBSTATIC) $(PLAYER_STATIC)
 CFLAGS_LIB+= $(DLLFLAGS)
 BLD_TARGET=$(DLLNAME) $(PLAYER)
 !endif
-INCLUDES=-I. -I"../include"
+INCLUDES=-I. -I"../include"  -I"../include/player"
 
 OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj internal_midi.obj patches.obj sample.obj
-PLAYER_OBJ=getopt_long.obj wm_tty.obj wildmidi.obj
+PLAYER_OBJ=getopt_long.obj wm_tty.obj wildmidi.obj out_wave.obj out_dart.obj fileops.obj
 
 all: $(BLD_TARGET)
 
@@ -57,7 +57,7 @@ $(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
 	wlink N $@ SYS OS2V2 OP q LIBR {$(LIBSTATIC) $(PLAYER_LIBS)} F {$(PLAYER_OBJ)}
 
 # rules for library objs:
-.c: ../src
+.c: ../src;../src/player
 .c.obj:
 	wcc386 $(CFLAGS_LIB) $(INCLUDES) -fo=$^@ $<
 # rules for player objs:
@@ -66,6 +66,12 @@ getopt_long.obj: getopt_long.c
 wm_tty.obj: wm_tty.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 wildmidi.obj: wildmidi.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+out_wave.obj: out_wave.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+out_dart.obj: out_dart.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+fileops.obj: fileops.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 
 distclean: clean .symbolic
