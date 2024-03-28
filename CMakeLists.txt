@@ -1,5 +1,5 @@
 # ########## Project setup ##########
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1...3.5)
 PROJECT(wildmidi LANGUAGES C VERSION 0.4.5)
 
 # WildMIDI Version
@@ -73,6 +73,7 @@ IF(WANT_PLAYER)
 
     IF (WANT_OS2DART)
         SET(AUDIODRV_OS2DART 1)
+        LIST(APPEND AUDIO_LIBRARY mmpm2)
     ENDIF()
 
     IF (WANT_OSS)
@@ -83,6 +84,7 @@ IF(WANT_PLAYER)
 
     IF (WANT_WINMM)
         SET(AUDIODRV_WINMM 1)
+        LIST(APPEND AUDIO_LIBRARY winmm)
     ENDIF()
 
 ENDIF(WANT_PLAYER)
@@ -204,28 +206,6 @@ IF (UNIX AND NOT APPLE)
         SET(M_LIBRARY "")
     ENDIF ()
 ENDIF (UNIX AND NOT APPLE)
-
-IF (APPLE AND WANT_PLAYER)
-    FIND_PACKAGE(OpenAL)
-
-    IF (WANT_OPENAL)
-        IF (NOT OPENAL_FOUND)
-            MESSAGE(FATAL_ERROR "OpenAL required but not found.")
-        ENDIF ()
-        SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-
-    ELSE ()
-        IF (OPENAL_FOUND)
-            SET(AUDIO_LIBRARY ${OPENAL_LIBRARY})
-            SET(AUDIODRV_OPENAL 1)
-
-        ELSE ()
-            MESSAGE(WARNING "Could not find an audio sub-system!")
-            SET(AUDIO_LIBRARY "")
-        ENDIF ()
-
-    ENDIF ()
-ENDIF ()
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")
