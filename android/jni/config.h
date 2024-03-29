@@ -66,6 +66,7 @@
 /* #undef AUDIODRV_ALSA */
 /* #undef AUDIODRV_OSS */
 /* #undef AUDIODRV_COREAUDIO */
+/* #undef AUDIODRV_SNDIO */
 /* #undef AUDIODRV_WINMM */
 /* #undef AUDIODRV_OPENAL */
 /* #undef AUDIODRV_AHI */

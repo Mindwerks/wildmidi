@@ -42,6 +42,7 @@
 #include "out_dossb.h"
 #include "out_openal.h"
 #include "out_oss.h"
+#include "out_sndio.h"
 #include "out_wave.h"
 #include "out_win32mm.h"
 
@@ -98,6 +99,16 @@ wildmidi_info available_outputs[TOTAL_OUT] = {
         open_alsa_output,
         write_alsa_output,
         close_alsa_output,
+        pause_output_noout,
+        resume_output_noout
+    },
+    {
+        "sndio",
+        "OpenBSD sndio output",
+        AUDIODRV_SNDIO,
+        open_sndio_output,
+        write_sndio_output,
+        close_sndio_output,
         pause_output_noout,
         resume_output_noout
     },

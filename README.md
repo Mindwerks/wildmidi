@@ -12,12 +12,13 @@ Website: https://github.com/Mindwerks/wildmidi
 
 PLATFORMS:
 
-* Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS and optionally
-  OpenAL output)
+* Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS,
+  or optionally OpenAL output.)
 * Windows: x86 and x64
 * OSX: x86, x64 and powerpc (player: CoreAudio output)
-* BSD: Debian, FreeBSD, NetBSD, OpenBSD. (player: OSS output)
-* kFreeBSD: Debian (player: OSS output)
+* FreeBSD, Debian kFreeBSD (player: OSS output)
+* NetBSD (player: OSS output.)
+* OpenBSD (player: sndio output.)
 * Hurd: Debian
 * DOS (player: sound blaster or compatibles output.)
 * OS/2 (player: Dart output.)

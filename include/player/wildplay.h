@@ -39,6 +39,7 @@ enum {
     WAVE_OUT,     // WAVe raw output
     COREAUDIO_OUT,// Mac OS X CoreAudio
     ALSA_OUT,     // ALSA
+    SNDIO_OUT,    // OpenBSD sndio
     OSS_OUT,      // OSS
     AHI_OUT,      // Amiga AHI output
     WINMM_OUT,    // Windows native output

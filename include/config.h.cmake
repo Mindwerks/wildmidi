@@ -68,6 +68,7 @@
 #define AUDIODRV_WAVE 1
 #cmakedefine01 AUDIODRV_ALSA
 #cmakedefine01 AUDIODRV_OSS
+#cmakedefine01 AUDIODRV_SNDIO
 #cmakedefine01 AUDIODRV_COREAUDIO
 #cmakedefine01 AUDIODRV_OPENAL
 #cmakedefine01 AUDIODRV_AHI

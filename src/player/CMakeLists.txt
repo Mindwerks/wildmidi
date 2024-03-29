@@ -10,6 +10,7 @@ SET(wildmidi_executable_SRCS
 		out_dossb.c
 		out_openal.c
 		out_oss.c
+		out_sndio.c
 		out_wave.c
 		out_win32mm.c
 		wm_tty.c
@@ -29,6 +30,9 @@ IF (WANT_PLAYER)
 		ENDIF()
 		IF (AUDIODRV_ALSA)
 				TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE ${ALSA_INCLUDE_DIR})
+		ENDIF()
+		IF (AUDIODRV_SNDIO)
+				TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE ${SNDIO_INCLUDE_DIR})
 		ENDIF()
 
 		TARGET_LINK_LIBRARIES(wildmidi
@@ -50,6 +54,9 @@ IF (WANT_PLAYERSTATIC)
 		ENDIF()
 		IF (AUDIODRV_ALSA)
 			TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${ALSA_INCLUDE_DIR})
+		ENDIF()
+		IF (AUDIODRV_SNDIO)
+			TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${SNDIO_INCLUDE_DIR})
 		ENDIF()
 
 		TARGET_LINK_LIBRARIES(wildmidi-static

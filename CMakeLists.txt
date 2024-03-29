@@ -33,6 +33,7 @@ OPTION(WANT_DOSSB "Include DOS SoundBlaster support" OFF)
 OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 OPTION(WANT_OS2DART "Include OS/2 DART support" OFF)
 OPTION(WANT_OSS "Include OSS (Open Sound System) support" OFF)
+OPTION(WANT_SNDIO "Include OpenBSD sndio support" OFF)
 OPTION(WANT_WINMM "Include Windows WinMM audio support" OFF)
 
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
@@ -92,11 +93,16 @@ IF(WANT_PLAYER)
         ENDIF()
     ENDIF()
 
+    IF (WANT_SNDIO)
+        FIND_PACKAGE(SNDIO REQUIRED)
+        SET(AUDIODRV_SNDIO 1)
+        LIST(APPEND AUDIO_LIBRARY ${SNDIO_LIBRARIES})
+    ENDIF()
+
     IF (WANT_WINMM)
         SET(AUDIODRV_WINMM 1)
         LIST(APPEND AUDIO_LIBRARY winmm)
     ENDIF()
-
 ENDIF(WANT_PLAYER)
 
 # Platform specific defines
