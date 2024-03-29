@@ -1,5 +1,6 @@
 # compiled objects #
 *.o
+*.obj
 *.so
 *.dll
 
