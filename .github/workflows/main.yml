@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.config.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install dependencies (Linux)
         if: matrix.config.os == 'ubuntu-latest'
         run: |
@@ -44,7 +44,7 @@ jobs:
           cmake --build build -j2 --config Release
           cmake --install build
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: wildmidi-${{ matrix.config.os }}-${{ matrix.config.c }}
           path: build/out/
