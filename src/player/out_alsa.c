@@ -21,9 +21,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_alsa.h"
+#include "config.h"
 
-#if AUDIODRV_ALSA == 1
+#ifdef AUDIODRV_ALSA
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -36,7 +36,9 @@ extern unsigned int rate;
 static int alsa_first_time = 1;
 static snd_pcm_t *pcm = NULL;
 
-int open_alsa_output(const char * output) {
+static void close_alsa_output(void);
+
+static int open_alsa_output(const char * output) {
     snd_pcm_hw_params_t *hw;
     snd_pcm_sw_params_t *sw;
     int err;
@@ -120,7 +122,7 @@ fail:
     return -1;
 }
 
-int write_alsa_output(int8_t *output_data, int output_size) {
+static int write_alsa_output(int8_t *output_data, int output_size) {
     int err;
     snd_pcm_uframes_t frames;
 
@@ -146,12 +148,25 @@ int write_alsa_output(int8_t *output_data, int output_size) {
     return (0);
 }
 
-void close_alsa_output(void) {
+static void close_alsa_output(void) {
     if (!pcm)
         return;
     printf("Shutting down sound output\r\n");
     snd_pcm_close(pcm);
     pcm = NULL;
 }
+
+static void pause_alsa_output(void) {}
+static void resume_alsa_output(void) {}
+
+audiodrv_info audiodrv_alsa = {
+    "alsa",
+    "Advanced Linux Sound Architecture (ALSA) output",
+    open_alsa_output,
+    write_alsa_output,
+    close_alsa_output,
+    pause_alsa_output,
+    resume_alsa_output
+};
 
 #endif

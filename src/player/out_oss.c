@@ -21,9 +21,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_oss.h"
+#include "config.h"
 
-#if AUDIODRV_OSS == 1
+#ifdef AUDIODRV_OSS
 
 #include <errno.h>
 #include <fcntl.h>
@@ -51,11 +51,14 @@
 extern unsigned int rate;
 static int audio_fd;
 
-void pause_oss_output(void) {
+static void close_oss_output(void);
+
+static void pause_oss_output(void) {
     ioctl(audio_fd, SNDCTL_DSP_POST, 0);
 }
+static void resume_oss_output(void) {}
 
-int open_oss_output(const char * output) {
+static int open_oss_output(const char * output) {
     int tmp;
     unsigned int r;
     char pcmname[1024];
@@ -109,7 +112,7 @@ fail:
     return (-1);
 }
 
-int write_oss_output(int8_t *output_data, int output_size) {
+static int write_oss_output(int8_t *output_data, int output_size) {
     int res = 0;
     while (output_size > 0) {
         res = write(audio_fd, output_data, output_size);
@@ -125,7 +128,7 @@ int write_oss_output(int8_t *output_data, int output_size) {
     return (0);
 }
 
-void close_oss_output(void) {
+static void close_oss_output(void) {
     if (audio_fd < 0)
         return;
     printf("Shutting down sound output\r\n");
@@ -134,4 +137,14 @@ void close_oss_output(void) {
     audio_fd = -1;
 }
 
-#endif // AUDIODRV_OSS == 1
+audiodrv_info audiodrv_oss = {
+    "oss",
+    "Open Sound System (OSS) output",
+    open_oss_output,
+    write_oss_output,
+    close_oss_output,
+    pause_oss_output,
+    resume_oss_output
+};
+
+#endif /* AUDIODRV_OSS */

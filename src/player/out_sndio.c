@@ -36,9 +36,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "out_sndio.h"
+#include "config.h"
 
-#if AUDIODRV_SNDIO == 1
+#ifdef AUDIODRV_SNDIO
 
 #include <stdio.h>
 #include <string.h>
@@ -52,7 +52,7 @@ static struct sio_hdl * hdl;
 #define DEFAULT_FRAGSIZE 12
 static int fragsize = 1 << DEFAULT_FRAGSIZE;
 
-int open_sndio_output(const char *output)
+static int open_sndio_output(const char *output)
 {
     struct sio_par par;
 
@@ -96,16 +96,29 @@ int open_sndio_output(const char *output)
     return -1;
 }
 
-int write_sndio_output(int8_t *buf, int len)
+static int write_sndio_output(int8_t *buf, int len)
 {
     sio_write(hdl, buf, len);
     return 0;
 }
 
-void close_sndio_output(void)
+static void close_sndio_output(void)
 {
     sio_close(hdl);
     hdl = NULL;
 }
+
+static void pause_sndio_output(void) {}
+static void resume_sndio_output(void) {}
+
+audiodrv_info audiodrv_sndio = {
+    "sndio",
+    "OpenBSD sndio output",
+    open_sndio_output,
+    write_sndio_output,
+    close_sndio_output,
+    pause_sndio_output,
+    resume_sndio_output
+};
 
 #endif /* AUDIODRV_SNDIO */

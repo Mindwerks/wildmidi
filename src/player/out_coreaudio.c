@@ -23,9 +23,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_coreaudio.h"
+#include "config.h"
 
-#if (AUDIODRV_COREAUDIO == 1)
+#ifdef AUDIODRV_COREAUDIO
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,7 +166,7 @@ static OSStatus render_proc(void *inRefCon,
  */
 
 
-int open_coreaudio_output(const char * output)
+static int open_coreaudio_output(const char * output)
 {
     AudioStreamBasicDescription ad;
     AudioComponent comp;
@@ -257,7 +257,7 @@ int open_coreaudio_output(const char * output)
 }
 
 
-int write_coreaudio_output(int8_t *buf, int len)
+static int write_coreaudio_output(int8_t *buf, int len)
 {
     int j = 0;
 
@@ -283,8 +283,7 @@ int write_coreaudio_output(int8_t *buf, int len)
     return 0;
 }
 
-
-void close_coreaudio_output(void)
+static void close_coreaudio_output(void)
 {
     AudioOutputUnitStop(au);
     AudioUnitUninitialize(au);
@@ -292,14 +291,24 @@ void close_coreaudio_output(void)
     free(buffer);
 }
 
-void pause_coreaudio_output(void)
+static void pause_coreaudio_output(void)
 {
     AudioOutputUnitStop(au);
 }
 
-void resume_coreaudio_output(void)
+static void resume_coreaudio_output(void)
 {
     AudioOutputUnitStart(au);
 }
 
-#endif /* AUDIODRV_COREAUDIO == 1 */
+audiodrv_info audiodrv_coreaudio = {
+    "coreaudio",
+    "CoreAudio output",
+    open_coreaudio_output,
+    write_coreaudio_output,
+    close_coreaudio_output,
+    pause_coreaudio_output,
+    resume_coreaudio_output
+};
+
+#endif /* AUDIODRV_COREAUDIO */

@@ -21,9 +21,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_wave.h"
-
-#if (AUDIODRV_WAVE == 1)
+#include "config.h"
 
 #include <errno.h>
 #include <string.h>
@@ -35,7 +33,7 @@ extern unsigned int rate;
 static uint32_t wav_size;
 static FILE *out_wav;
 
-int open_wav_output(const char * output) {
+static int open_wav_output(const char * output) {
     uint8_t wav_hdr[] = {
         0x52, 0x49,
         0x46, 0x46, /* "RIFF"  */
@@ -97,7 +95,7 @@ int open_wav_output(const char * output) {
     return (0);
 }
 
-int write_wav_output(int8_t *output_data, int output_size) {
+static int write_wav_output(int8_t *output_data, int output_size) {
 #ifdef WORDS_BIGENDIAN
     /* libWildMidi outputs host-endian, *.wav must have little-endian. */
     uint16_t *swp = (uint16_t *)output_data;
@@ -119,7 +117,7 @@ int write_wav_output(int8_t *output_data, int output_size) {
     return (0);
 }
 
-void close_wav_output(void) {
+static void close_wav_output(void) {
     uint8_t wav_count[4];
     if (!out_wav)
         return;
@@ -156,4 +154,15 @@ end:
     out_wav = NULL;
 }
 
-#endif /* AUDIODRV_WAVE */
+static void pause_wav_output(void) {}
+static void resume_wav_output(void) {}
+
+audiodrv_info audiodrv_wave = {
+    "wave",
+    "Save stream to WAVE file",
+    open_wav_output,
+    write_wav_output,
+    close_wav_output,
+    pause_wav_output,
+    resume_wav_output
+};

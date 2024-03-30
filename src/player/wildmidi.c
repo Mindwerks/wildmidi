@@ -41,130 +41,35 @@
 #include "wm_tty.h"
 #include "wildmidi_lib.h"
 
-#include "out_noout.h"
-#include "out_ahi.h"
-#include "out_alsa.h"
-#include "out_coreaudio.h"
-#include "out_dart.h"
-#include "out_dossb.h"
-#include "out_openal.h"
-#include "out_oss.h"
-#include "out_sndio.h"
-#include "out_wave.h"
-#include "out_win32mm.h"
-
-// available outputs
-wildmidi_info available_outputs[TOTAL_OUT] = {
-    {
-        "noout",
-        "No output",
-        AUDIODRV_NONE,
-        open_output_noout,
-        send_output_noout,
-        close_output_noout,
-        pause_output_noout,
-        resume_output_noout
-    },
-    {
-        "wave",
-        "Save stream to WAVE file",
-        AUDIODRV_WAVE,
-        open_wav_output,
-        write_wav_output,
-        close_wav_output,
-        pause_output_noout,
-        resume_output_noout
-    },
-    {
-        "coreaudio",
-        "CoreAudio output",
-        AUDIODRV_COREAUDIO,
-        open_coreaudio_output,
-        write_coreaudio_output,
-        close_coreaudio_output,
-        pause_coreaudio_output,
-        resume_coreaudio_output
-    },
-    {
-        "alsa",
-        "Advanced Linux Sound Architecture (ALSA) output",
-        AUDIODRV_ALSA,
-        open_alsa_output,
-        write_alsa_output,
-        close_alsa_output,
-        pause_output_noout,
-        resume_output_noout
-    },
-    {
-        "sndio",
-        "OpenBSD sndio output",
-        AUDIODRV_SNDIO,
-        open_sndio_output,
-        write_sndio_output,
-        close_sndio_output,
-        pause_output_noout,
-        resume_output_noout
-    },
-    {
-        "oss",
-        "Open Sound System (OSS) output",
-        AUDIODRV_OSS,
-        open_oss_output,
-        write_oss_output,
-        close_oss_output,
-        pause_oss_output,
-        resume_output_noout
-    },
-    {
-        "ahi",
-        "Amiga AHI output",
-        AUDIODRV_AHI,
-        open_ahi_output,
-        write_ahi_output,
-        close_ahi_output,
-        pause_output_noout,
-        resume_output_noout
-    },
-    {
-        "win32mm",
-        "Windows MM output",
-        AUDIODRV_WINMM,
-        open_mm_output,
-        write_mm_output,
-        close_mm_output,
-        pause_output_noout,
-        resume_output_noout
-    },
-    {
-        "os2dart",
-        "OS/2 DART output",
-        AUDIODRV_OS2DART,
-        open_dart_output,
-        write_dart_output,
-        close_dart_output,
-        pause_output_noout,
-        resume_output_noout
-    },
-    {
-        "dossb",
-        "DOS SoundBlaster output",
-        AUDIODRV_DOSSB,
-        open_sb_output,
-        write_sb_output,
-        close_sb_output,
-        pause_sb_output,
-        resume_output_noout
-    },
-    {
-        "openal",
-        "OpenAL output",
-        AUDIODRV_OPENAL,
-        open_openal_output,
-        write_openal_output,
-        close_openal_output,
-        pause_output_openal,
-        resume_output_noout
-    },
+/* available outputs */
+static const audiodrv_info *available_outputs[] = {
+    &audiodrv_none, /* always available */
+    &audiodrv_wave, /* always available */
+#ifdef AUDIODRV_COREAUDIO
+    &audiodrv_coreaudio,
+#endif
+#ifdef AUDIODRV_ALSA
+    &audiodrv_alsa,
+#endif
+#ifdef AUDIODRV_SNDIO
+    &audiodrv_sndio,
+#endif
+#ifdef AUDIODRV_OSS
+    &audiodrv_oss,
+#endif
+#ifdef AUDIODRV_AHI
+    &audiodrv_ahi,
+#endif
+#ifdef AUDIODRV_WINMM
+    &audiodrv_winmm,
+#endif
+#ifdef AUDIODRV_OS2DART
+    &audiodrv_dart,
+#endif
+#ifdef AUDIODRV_OPENAL
+    &audiodrv_openal,
+#endif
+    NULL /* nul terminate */
 };
 
 struct _midi_test {
@@ -334,7 +239,7 @@ static struct option const long_options[] = {
     { "rate", 1, 0, 'r' },
     { "mastervol", 1, 0, 'm' },
     { "config", 1, 0, 'c' },
-#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
+#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
     { "device", 1, 0, 'd' }, /* treated the same as --wavout, keeping here for compat. */
 #endif
     { "wavout", 1, 0, 'o' },
@@ -356,15 +261,10 @@ static struct option const long_options[] = {
 };
 
 static int get_default_output(void) {
-    int i;
-    for (i = COREAUDIO_OUT ; i < TOTAL_OUT ; i++) {
-        // Return first available output
-        if (available_outputs[i].enabled == 1) {
-            return i;
-        }
-    }
-    // No enabled outputs for you here
-    return NO_OUT;
+    /* Return first available output */
+    if (available_outputs[2])
+        return 2;
+    return 0;  /* No enabled outputs */
 }
 
 static void do_help(void) {
@@ -375,19 +275,20 @@ static void do_help(void) {
     printf("  -s    --skipsilentstart Skips any silence at the start of playback\n");
     printf("  -t    --test_midi   Listen to test MIDI\n");
     printf("Non-MIDI Options:\n");
-    printf("  -P P  --playback=P  Set P as playback output (default: %s).\n",
-           available_outputs[get_default_output()].name);
     printf("  -x    --tomidi      Convert file to midi and save to file\n");
+    printf("  -f F  --frequency=F Use frequency F Hz for playback (MUS)\n");
     printf("  -g    --convert     Convert XMI: 0 - No Conversion (default)\n");
     printf("                                   1 - MT32 to GM\n");
     printf("                                   2 - MT32 to GS\n");
-    printf("  -f F  --frequency=F Use frequency F Hz for playback (MUS)\n");
-    printf("Software Wavetable Options:\n");
+    printf("  -P P  --playback=P  Set 'P' as playback output (default: %s).\n",
+           available_outputs[get_default_output()]->name);
     printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
-#if AUDIODRV_OSS == 1 || AUDIODRV_ALSA == 1
-    printf("  -d D  --device=D    For Alsa or OSS output - use device D for audio\n");
-    printf("                      output instead of default\n");
+    printf("                     (implies '-P wave' )\n");
+#if defined(AUDIODRV_OSS)|| defined(AUDIODRV_ALSA)
+    printf("  -d D  --device=D    For ALSA or OSS output: use device 'D' for audio\n");
+    printf("                      output instead of the default\n");
 #endif
+    printf("Software Wavetable Options:\n");
     printf("  -l    --log_vol     Use log volume adjustments\n");
     printf("  -r N  --rate=N      Set sample rate to N samples per second (Hz)\n");
     printf("  -c P  --config=P    Point to your wildmidi.cfg config file name/path\n");
@@ -400,11 +301,9 @@ static void do_available_outputs(void) {
     int i;
 
     printf("Available playback outputs for option -P:\n");
-    for (i = 0 ; i < TOTAL_OUT ; i++) {
-        if (available_outputs[i].enabled == 1) {
-            printf("  %-20s%s\n",
-                 available_outputs[i].name, available_outputs[i].description);
-        }
+    for (i = 0 ; available_outputs[i] ; ++i) {
+         printf("  %-20s%s\n",
+                 available_outputs[i]->name, available_outputs[i]->description);
     }
 }
 
@@ -493,14 +392,14 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Error: empty playback name.\n");
                 return (1);
             } else {
-                for (i = 0; i < TOTAL_OUT; i++) {
-                    if (strcmp(available_outputs[i].name, optarg) == 0) {
+                for (i = 0; available_outputs[i]; ++i) {
+                    if (strcmp(available_outputs[i]->name, optarg) == 0) {
                         playback_id = i;
                         break;
                     }
                 }
             }
-            if (playback_id == NO_OUT) {
+            if (!available_outputs[i]) {
                 fprintf(stderr, "Error: chosen playback %s is not available.\n", optarg);
                 return (1);
             }
@@ -519,8 +418,12 @@ int main(int argc, char **argv) {
         case 'm': /* Master Volume */
             master_volume = (uint8_t) atoi(optarg);
             break;
-        case 'd':
-        case 'o': /* Wav or Device Output */
+        case 'o': /* Wav Output    */
+            playback_id = 1;
+            /* FALL THROUGH */
+        #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+        case 'd': /* Device Output */
+        #endif
             if (!*optarg) {
                 fprintf(stderr, "Error: empty file/device name.\n");
                 return (1);
@@ -631,9 +534,9 @@ int main(int argc, char **argv) {
         config_file[sizeof(config_file) - 1] = 0;
     }
 
-    printf("Initializing Sound System (%s)\n", available_outputs[playback_id].name);
+    printf("Initializing Sound System (%s)\n", available_outputs[playback_id]->name);
 
-    if (available_outputs[playback_id].open_out(output) == -1) {
+    if (available_outputs[playback_id]->open_out(output) == -1) {
         return (1);
     }
 
@@ -759,11 +662,11 @@ int main(int argc, char **argv) {
                     if (inpause) {
                         inpause = 0;
                         fprintf(stderr, "       \r");
-                        available_outputs[playback_id].resume_out();
+                        available_outputs[playback_id]->resume_out();
                     } else {
                         inpause = 1;
                         fprintf(stderr, "Paused \r");
-                        available_outputs[playback_id].pause_out();
+                        available_outputs[playback_id]->pause_out();
                         continue;
                     }
                     break;
@@ -901,7 +804,7 @@ int main(int argc, char **argv) {
                 display_lyrics, modes, (int)master_volume, pro_mins,
                 pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
-            if (available_outputs[playback_id].send_out(output_buffer, res) < 0) {
+            if (available_outputs[playback_id]->send_out(output_buffer, res) < 0) {
             /* driver prints an error message already. */
                 printf("\r");
                 goto end2;
@@ -913,14 +816,14 @@ int main(int argc, char **argv) {
             fprintf(stderr, "OOPS: failed closing midi handle!\r\n%s\r\n",ret_err);
         }
         memset(output_buffer, 0, 16384);
-        available_outputs[playback_id].send_out(output_buffer, 16384);
+        available_outputs[playback_id]->send_out(output_buffer, 16384);
     }
 end1:
     memset(output_buffer, 0, 16384);
-    available_outputs[playback_id].send_out(output_buffer, 16384);
+    available_outputs[playback_id]->send_out(output_buffer, 16384);
     msleep(5);
 end2:
-    available_outputs[playback_id].close_out();
+    available_outputs[playback_id]->close_out();
     free(output_buffer);
     if (WildMidi_Shutdown() == -1) {
         ret_err = WildMidi_GetError();

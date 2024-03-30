@@ -3,6 +3,7 @@
 SET(wildmidi_executable_SRCS
 		amiga.c
 		msleep.c
+		out_none.c
 		out_ahi.c
 		out_alsa.c
 		out_coreaudio.c
@@ -24,7 +25,6 @@ ENDIF ()
 # do we want the wildmidi player?
 IF (WANT_PLAYER)
 		ADD_EXECUTABLE(wildmidi	${wildmidi_executable_SRCS})
-		TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
 		IF (AUDIODRV_OPENAL)
 				TARGET_INCLUDE_DIRECTORIES(wildmidi PRIVATE ${OPENAL_INCLUDE_DIR})
 		ENDIF()
@@ -46,7 +46,6 @@ ENDIF ()
 
 IF (WANT_PLAYERSTATIC)
 		ADD_EXECUTABLE(wildmidi-static ${wildmidi_executable_SRCS})
-		TARGET_INCLUDE_DIRECTORIES(wildmidi-static PRIVATE ${PROJECT_SOURCE_DIR}/include/player)
 		SET_TARGET_PROPERTIES(wildmidi-static PROPERTIES COMPILE_DEFINITIONS WILDMIDI_STATIC)
 
 		IF (AUDIODRV_OPENAL)
@@ -100,5 +99,4 @@ IF (WIN32 AND MSVC)
 				TARGET_COMPILE_DEFINITIONS(wildmidi-static PRIVATE $<$<CONFIG:Release>:_CONSOLE>)
 				TARGET_COMPILE_DEFINITIONS(wildmidi-static PRIVATE $<$<CONFIG:MinSizeRel>:_CONSOLE>)
 		ENDIF ()
-
 ENDIF()

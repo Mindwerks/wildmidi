@@ -23,9 +23,9 @@
 
 /* based on Dart code originally written by Kevin Langman for XMP */
 
-#include "out_dart.h"
+#include "config.h"
 
-#if (AUDIODRV_OS2DART == 1)
+#ifdef AUDIODRV_OS2DART
 
 #define INCL_DOS
 #define INCL_DOSERRORS
@@ -69,7 +69,7 @@ static LONG APIENTRY OS2_Dart_UpdateBuffers
     return (TRUE);
 }
 
-int open_dart_output(const char * output) {
+static int open_dart_output(const char * output) {
     int i;
     MCI_AMP_OPEN_PARMS AmpOpenParms;
 
@@ -160,7 +160,7 @@ int open_dart_output(const char * output) {
     return (0);
 }
 
-int write_dart_output(int8_t *output_data, int output_size) {
+static int write_dart_output(int8_t *output_data, int output_size) {
     static int idx = 0;
 
     if (idx + output_size > bsize) {
@@ -188,7 +188,7 @@ int write_dart_output(int8_t *output_data, int output_size) {
     return (0);
 }
 
-void close_dart_output(void) {
+static void close_dart_output(void) {
     printf("Shutting down sound output\r\n");
     if (MixBuffers[0].pBuffer) {
         mciSendCommand(DeviceID, MCI_BUFFER,
@@ -202,4 +202,17 @@ void close_dart_output(void) {
     }
 }
 
-#endif // AUDIODRV_OS2DART == 1
+static void pause_dart_output(void) {}
+static void resume_dart_output(void) {}
+
+audiodrv_info audiodrv_dart = {
+    "os2dart",
+    "OS/2 DART output",
+    open_dart_output,
+    write_dart_output,
+    close_dart_output,
+    pause_dart_output,
+    resume_dart_output
+};
+
+#endif /* AUDIODRV_OS2DART */

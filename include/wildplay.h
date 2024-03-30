@@ -33,34 +33,26 @@
 #define WMPLAY_UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
 #endif
 
-// Supported sound backends
-enum {
-    NO_OUT,       // No out
-    WAVE_OUT,     // WAVe raw output
-    COREAUDIO_OUT,// Mac OS X CoreAudio
-    ALSA_OUT,     // ALSA
-    SNDIO_OUT,    // OpenBSD sndio
-    OSS_OUT,      // OSS
-    AHI_OUT,      // Amiga AHI output
-    WINMM_OUT,    // Windows native output
-    OS2DART_OUT,  // DART OS/2 output
-    DOSSB_OUT,    // SoundBlaster output (DOS)
-    OPENAL_OUT,   // OpenAL
-    // Add here new output backends
-
-    TOTAL_OUT     // Total supported outputs
-};
-
 typedef struct {
-    char * name;
-    char * description;
-    int enabled;
+    const char *name;
+    const char *description;
     int (* open_out)(const char *);
     int (* send_out)(int8_t *, int);
     void (* close_out)(void);
     void (* pause_out)(void);
     void (* resume_out)(void);
-} wildmidi_info;
+} audiodrv_info;
+
+extern audiodrv_info audiodrv_none;
+extern audiodrv_info audiodrv_wave;
+extern audiodrv_info audiodrv_coreaudio;
+extern audiodrv_info audiodrv_alsa;
+extern audiodrv_info audiodrv_sndio;
+extern audiodrv_info audiodrv_oss;
+extern audiodrv_info audiodrv_ahi;
+extern audiodrv_info audiodrv_winmm;
+extern audiodrv_info audiodrv_dart;
+extern audiodrv_info audiodrv_openal;
 
 extern void msleep(uint32_t msec);
 

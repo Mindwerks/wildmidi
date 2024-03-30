@@ -21,9 +21,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_win32mm.h"
+#include "config.h"
 
-#if AUDIODRV_WINMM == 1
+#ifdef AUDIODRV_WINMM
 
 #include <windows.h>
 #include <mmsystem.h>
@@ -60,7 +60,7 @@ static void CALLBACK mmOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstanc
     LeaveCriticalSection(&waveCriticalSection);
 }
 
-int open_mm_output(const char * output) {
+static int open_mm_output(const char * output) {
     WAVEFORMATEX wfx;
     char *mm_buffer;
     int i;
@@ -102,7 +102,7 @@ int open_mm_output(const char * output) {
     return (0);
 }
 
-int write_mm_output(int8_t *output_data, int output_size) {
+static int write_mm_output(int8_t *output_data, int output_size) {
     WAVEHDR* current;
     int free_size = 0;
     int data_read = 0;
@@ -140,7 +140,7 @@ int write_mm_output(int8_t *output_data, int output_size) {
     return (0);
 }
 
-void close_mm_output(void) {
+static void close_mm_output(void) {
     int i;
 
     if (!hWaveOut) return;
@@ -160,5 +160,18 @@ void close_mm_output(void) {
     hWaveOut = NULL;
     mm_blocks = NULL;
 }
+
+static void pause_mm_output(void) {}
+static void resume_mm_output(void) {}
+
+audiodrv_info audiodrv_winmm = {
+    "win32mm",
+    "Windows WinMM output",
+    open_mm_output,
+    write_mm_output,
+    close_mm_output,
+    pause_mm_output,
+    resume_mm_output
+};
 
 #endif

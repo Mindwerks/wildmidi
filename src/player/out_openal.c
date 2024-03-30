@@ -21,9 +21,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_openal.h"
+#include "config.h"
 
-#if (AUDIODRV_OPENAL == 1)
+#ifdef AUDIODRV_OPENAL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,11 +48,13 @@ static ALuint sourceId = 0;
 static ALuint buffers[NUM_BUFFERS];
 static ALuint frames = 0;
 
-void pause_output_openal(void) {
+static void pause_openal_output(void) {
     alSourcePause(sourceId);
 }
 
-int write_openal_output(int8_t *output_data, int output_size) {
+static void resume_openal_output(void) {}
+
+static int write_openal_output(int8_t *output_data, int output_size) {
     ALint processed, state;
     ALuint bufid;
 
@@ -113,7 +115,7 @@ int write_openal_output(int8_t *output_data, int output_size) {
     return (0);
 }
 
-void close_openal_output(void) {
+static void close_openal_output(void) {
     if (!context)
         return;
     printf("Shutting down sound output\r\n");
@@ -128,7 +130,7 @@ void close_openal_output(void) {
     frames = 0;
 }
 
-int open_openal_output(const char * output) {
+static int open_openal_output(const char * output) {
     WMPLAY_UNUSED(output);
 
     /* setup our audio devices and contexts */
@@ -156,4 +158,14 @@ int open_openal_output(const char * output) {
     return (0);
 }
 
-#endif // AUDIODRV_OPENAL == 1
+audiodrv_info audiodrv_openal = {
+    "openal",
+    "OpenAL output",
+    open_openal_output,
+    write_openal_output,
+    close_openal_output,
+    pause_openal_output,
+    resume_openal_output
+};
+
+#endif /* AUDIODRV_OPENAL */

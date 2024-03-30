@@ -25,7 +25,7 @@ IMPLIB=lib$(LIBNAME).dll.a
 PLAYER=wildmidi.exe
 PLAYER_STATIC=wildmidi-static.exe
 
-INCLUDE=-I. -I../include -I../include/player
+INCLUDE=-I. -I../include
 ARFLAGS=cr
 CFLAGS=$(INCLUDE) -Wall -W -fno-common
 LDFLAGS=
@@ -53,7 +53,7 @@ LDLIBS_EXE+=-L. -l$(LIBNAME)
 # Objects
 LIB_OBJ = wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o
 LIB_OBJ+= f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ = wm_tty.o msleep.o getopt_long.o out_wave.o out_win32mm.o wildmidi.o
+PLAYER_OBJ = wm_tty.o msleep.o getopt_long.o out_none.o out_wave.o out_win32mm.o wildmidi.o
 # out_openal.o
 
 .PHONY: clean distclean
@@ -91,6 +91,8 @@ $(PLAYER_STATIC): $(PLAYER_OBJ) $(LIBSTATIC)
 	$(CC) -c $(CFLAGS_LIB) -o $@ $<
 # for player objects:
 wildmidi.o: ../src/player/wildmidi.c
+	$(CC) -c $(CFLAGS_EXE) -o $@ $<
+out_none.o: ../src/player/out_none.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
 out_wave.o: ../src/player/out_wave.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<

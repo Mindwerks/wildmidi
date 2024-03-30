@@ -21,9 +21,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_dossb.h"
+#include "config.h"
 
-#if (AUDIODRV_DOSSB == 1)
+#ifdef AUDIODRV_DOSSB
 
 #include <stdio.h>
 #include <string.h>
@@ -43,7 +43,7 @@ extern unsigned int rate;
 /* The last buffer byte filled with sound */
 static unsigned int buff_tail = 0;
 
-int write_sb_common(int8_t *data, int siz) {
+static int write_sb_common(int8_t *data, int siz) {
     unsigned int dma_size, dma_pos;
     unsigned int cnt;
 
@@ -86,7 +86,7 @@ int write_sb_common(int8_t *data, int siz) {
     return cnt;
 }
 
-int write_sb_output(int8_t *data, int siz) {
+static int write_sb_output(int8_t *data, int siz) {
     int i;
     if (sb.caps & SBMODE_16BITS) {
         /* libWildMidi sint16 stereo -> SB16 sint16 stereo */
@@ -120,7 +120,7 @@ int write_sb_output(int8_t *data, int siz) {
     }
 }
 
-void pause_sb_output(void) {
+static void pause_sb_output(void) {
     if (sb.caps & SBMODE_16BITS) {
         // 16 bit
         memset(sb.dma_buff->linear, 0, sb.dma_buff->size);
@@ -130,14 +130,16 @@ void pause_sb_output(void) {
     }
 }
 
-void close_sb_output(void) {
+static void resume_sb_output(void) {}
+
+static void close_sb_output(void) {
     sb.timer_callback = NULL;
     sb_output(FALSE);
     sb_stop_dma();
     sb_close();
 }
 
-int open_sb_output(const char * output) {
+static int open_sb_output(const char * output) {
     WMPLAY_UNUSED(output);
 
     if (!sb_open()) {
@@ -172,4 +174,15 @@ int open_sb_output(const char * output) {
 
     return 0;
 }
-#endif /* AUDIODRV_DOSSB == 1 */
+
+audiodrv_info audiodrv_dossb = {
+    "dossb",
+    "DOS SoundBlaster output",
+    open_sb_output,
+    write_sb_output,
+    close_sb_output,
+    pause_sb_output,
+    resume_sb_output
+};
+
+#endif /* AUDIODRV_DOSSB */

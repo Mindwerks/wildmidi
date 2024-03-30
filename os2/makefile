@@ -36,10 +36,10 @@ CFLAGS_LIB+= $(DLLFLAGS)
 BLD_TARGET=$(DLLNAME) $(PLAYER)
 !endif
 INCPATH=-I"$(%WATCOM)/h/os2" -I"$(%WATCOM)/h"
-INCLUDES=$(INCPATH) -I. -I"../include"  -I"../include/player"
+INCLUDES=$(INCPATH) -I. -I"../include"
 
 OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj internal_midi.obj patches.obj sample.obj
-PLAYER_OBJ=wm_tty.obj msleep.obj getopt_long.obj out_wave.obj out_dart.obj wildmidi.obj
+PLAYER_OBJ=wm_tty.obj msleep.obj getopt_long.obj out_none.obj out_wave.obj out_dart.obj wildmidi.obj
 
 all: $(BLD_TARGET)
 
@@ -67,6 +67,8 @@ getopt_long.obj: getopt_long.c
 wm_tty.obj: wm_tty.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 wildmidi.obj: wildmidi.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+out_none.obj: out_none.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 out_wave.obj: out_wave.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<

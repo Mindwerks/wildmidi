@@ -21,9 +21,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "out_ahi.h"
+#include "config.h"
 
-#if (AUDIODRV_AHI == 1)
+#ifdef AUDIODRV_AHI
 
 #include <string.h>
 #include <stdio.h>
@@ -52,9 +52,11 @@ static struct AHIRequest *AHIReq[2] = { NULL, NULL };
 static int active = 0;
 static int8_t *AHIBuf[2] = { NULL, NULL };
 
+static void close_ahi_output(void);
+
 extern unsigned int rate;
 
-int open_ahi_output(const char * output) {
+static int open_ahi_output(const char * output) {
     WMPLAY_UNUSED(output);
 
     AHImp = CreateMsgPort();
@@ -92,7 +94,7 @@ int open_ahi_output(const char * output) {
     return (-1);
 }
 
-int write_ahi_output(int8_t *output_data, int output_size) {
+static int write_ahi_output(int8_t *output_data, int output_size) {
     int chunk;
     while (output_size > 0) {
         if (AHIReq[active]->ahir_Std.io_Data) {
@@ -112,7 +114,7 @@ int write_ahi_output(int8_t *output_data, int output_size) {
     return (0);
 }
 
-void close_ahi_output(void) {
+static void close_ahi_output(void) {
     if (AHIReq[1]) {
         AHIReq[0]->ahir_Link = NULL; /* in case we are linked to req[0] */
         if (!CheckIO((struct IORequest *) AHIReq[1])) {
@@ -148,5 +150,17 @@ void close_ahi_output(void) {
     }
 }
 
+static void pause_ahi_output(void) {}
+static void resume_ahi_output(void) {}
 
-#endif // AUDIODRV_AHI == 1
+audiodrv_info audiodrv_ahi = {
+    "ahi",
+    "Amiga AHI output",
+    open_ahi_output,
+    write_ahi_output,
+    close_ahi_output,
+    pause_ahi_output,
+    resume_ahi_output
+};
+
+#endif /* AUDIODRV_AHI */

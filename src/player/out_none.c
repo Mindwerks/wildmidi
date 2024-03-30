@@ -1,5 +1,5 @@
 /*
- * out_dossb.h -- DOS SoundBlaster output
+ * out_noout.h -- NULL output
  *
  * Copyright (C) WildMidi Developers 2020
  *
@@ -21,28 +21,33 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef OUT_DOSSB_H
-#define OUT_DOSSB_H
-
 #include "config.h"
 
-#if (AUDIODRV_DOSSB == 1)
-
 #include <stdint.h>
+#include <stdio.h>
 
-int open_sb_output(const char * output);
-int write_sb_output(int8_t *data, int siz);
-void close_sb_output(void);
-void pause_sb_output(void);
+#include "wildplay.h"
 
+static int open_output_noout(const char * output) {
+    WMPLAY_UNUSED(output);
+    fprintf(stderr, "Selected audio output driver was not enabled at compile time.\r\n");
+    return (-1);
+}
+static int send_output_noout(int8_t *output_data, int output_size) {
+    WMPLAY_UNUSED(output_data);
+    WMPLAY_UNUSED(output_size);
+    return (-1);
+}
+static void close_output_noout(void) {}
+static void pause_output_noout(void) {}
+static void resume_output_noout(void) {}
 
-#else // AUDIODRV_DOSSB == 1
-
-#define open_sb_output open_output_noout
-#define write_sb_output send_output_noout
-#define close_sb_output close_output_noout
-#define pause_sb_output pause_output_noout
-
-#endif // AUDIODRV_DOSSB == 1
-
-#endif // OUT_DOSSB_H
+audiodrv_info audiodrv_none = {
+    "none",
+    "No output",
+    open_output_noout,
+    send_output_noout,
+    close_output_noout,
+    pause_output_noout,
+    resume_output_noout
+};

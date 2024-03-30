@@ -16,15 +16,4 @@
 
 #define WM_NO_LOCK 1 /* don't need locking in MS-DOS */
 
-#define AUDIODRV_NONE 1
-#define AUDIODRV_WAVE 1
-#define AUDIODRV_ALSA 0
-#define AUDIODRV_OSS 0
-#define AUDIODRV_COREAUDIO 0
-#define AUDIODRV_SNDIO 0
-#define AUDIODRV_OPENAL 0
-#define AUDIODRV_AHI 0
-#define AUDIODRV_WINMM 0
-#define AUDIODRV_OS2DART 0
 #define AUDIODRV_DOSSB 1
-
