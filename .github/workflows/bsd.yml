@@ -1,0 +1,56 @@
+name: bsd
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  freebsd:
+    runs-on: ubuntu-latest
+    name: '${{ matrix.platform.name }} ${{ matrix.platform.os-version }}'
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { name: FreeBSD,  os: freebsd,  os-version: 13.2, os-arch: x86-64,
+              cmake_opts: '-DWANT_OSS=ON',
+              setup_cmd: 'sudo pkg update',
+              install_cmd: 'sudo pkg install -y cmake',
+            }
+          - { name: OpenBSD,  os: openbsd,  os-version: 7.4,  os-arch: x86-64,
+              cmake_opts: '-DWANT_SNDIO=ON',
+              setup_cmd: 'sudo pkg_add -u',
+              install_cmd: 'sudo pkg_add cmake',
+            }
+          - { name: NetBSD,   os: netbsd,   os-version: 9.3,  os-arch: x86-64,
+              cmake_opts: '-DWANT_OSS=ON',
+              setup_cmd: 'export PATH="/usr/pkg/sbin:/usr/pkg/bin:/sbin:$PATH";export PKG_PATH="https://cdn.netBSD.org/pub/pkgsrc/packages/NetBSD/$(uname -p)/$(uname -r|cut -f "1 2" -d.)/All/";echo "PKG_PATH=$PKG_PATH";echo "uname -a -> \"$(uname -a)\"";sudo -E sysctl -w security.pax.aslr.enabled=0;sudo -E sysctl -w security.pax.aslr.global=0;sudo -E pkgin clean;sudo -E pkgin update',
+              install_cmd: 'sudo -E pkgin -y install cmake',
+            }
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      uses: cross-platform-actions/action@v0.23.0
+      with:
+        operating_system: ${{ matrix.platform.os }}
+        architecture: ${{ matrix.platform.os-arch }}
+        version: ${{ matrix.platform.os-version }}
+        run: |
+          ${{ matrix.platform.setup_cmd }}
+          ${{ matrix.platform.install_cmd }}
+          cmake -B build -DCMAKE_INSTALL_PREFIX=build/out \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DWANT_PLAYER=ON -DWANT_STATIC=ON \
+            ${{ matrix.platform.cmake_opts }}
+          cmake --build build --config Release
+          cmake --install build
+
+    - uses: actions/upload-artifact@v4
+      with:
+        if-no-files-found: error
+        name: wildmidi-${{ matrix.platform.os }}
+        path: build/out/
+        retention-days: 14
