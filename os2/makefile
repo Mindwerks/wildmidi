@@ -35,7 +35,8 @@ BLD_TARGET=$(LIBSTATIC) $(PLAYER_STATIC)
 CFLAGS_LIB+= $(DLLFLAGS)
 BLD_TARGET=$(DLLNAME) $(PLAYER)
 !endif
-INCLUDES=-I. -I"../include"  -I"../include/player"
+INCPATH=-I"$(%WATCOM)/h/os2" -I"$(%WATCOM)/h"
+INCLUDES=$(INCPATH) -I. -I"../include"  -I"../include/player"
 
 OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj internal_midi.obj patches.obj sample.obj
 PLAYER_OBJ=wm_tty.obj msleep.obj getopt_long.obj out_wave.obj out_dart.obj wildmidi.obj
