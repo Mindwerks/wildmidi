@@ -196,6 +196,8 @@ CHECK_C_SOURCE_COMPILES("static __inline int static_foo() {return 0;}
 # we must not have any unresolved symbols:
 if (APPLE)
     SET(EXTRA_LDFLAGS "-Wl,-undefined,error")
+ELSEIF(CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
+    SET(EXTRA_LDFLAGS "")
 ELSE()
     SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Wl,--no-undefined")
