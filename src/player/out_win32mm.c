@@ -22,9 +22,12 @@
  */
 
 #include "out_win32mm.h"
-#include "wildplay.h"
 
 #if AUDIODRV_WINMM == 1
+
+#include <windows.h>
+#include <mmsystem.h>
+#include <stdio.h>
 
 #include "wildplay.h"
 

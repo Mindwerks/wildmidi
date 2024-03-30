@@ -1,6 +1,5 @@
 /*
  * out_sndio.c -- OpenBSD sndio output
- *
  * Copyright (C) WildMidi Developers 2024
  *
  * This file is part of WildMIDI.
@@ -38,11 +37,14 @@
  */
 
 #include "out_sndio.h"
-#include "wildplay.h"
 
 #if AUDIODRV_SNDIO == 1
 
+#include <stdio.h>
+#include <string.h>
 #include <sndio.h>
+
+#include "wildplay.h"
 
 extern unsigned int rate;
 

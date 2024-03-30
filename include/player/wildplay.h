@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-// Macros to suppress unused variables warnings
+/* Macros to suppress unused variable warnings */
 #ifndef __VBCC__
 #define WMPLAY_UNUSED(x) (void)(x)
 #else
@@ -62,4 +62,12 @@ typedef struct {
     void (* resume_out)(void);
 } wildmidi_info;
 
-#endif // __WILDPLAY_H
+extern void msleep(uint32_t msec);
+
+#if defined(WILDMIDI_AMIGA)
+extern void amiga_sysinit (void);
+extern int amiga_getch (unsigned char *ch);
+extern void amiga_usleep (uint32_t usec);
+#endif
+
+#endif /* WILDPLAY_H */

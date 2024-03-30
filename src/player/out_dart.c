@@ -24,9 +24,18 @@
 /* based on Dart code originally written by Kevin Langman for XMP */
 
 #include "out_dart.h"
-#include "wildplay.h"
 
 #if (AUDIODRV_OS2DART == 1)
+
+#define INCL_DOS
+#define INCL_DOSERRORS
+#define INCL_OS2MM
+#include <os2.h>
+#include <os2me.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "wildplay.h"
 
 extern unsigned int rate;
 

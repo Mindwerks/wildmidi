@@ -24,22 +24,11 @@
 #ifndef OUT_OPENAL_H
 #define OUT_OPENAL_H
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "config.h"
 
 #if (AUDIODRV_OPENAL == 1)
 
-#ifndef __APPLE__
-#include <al.h>
-#include <alc.h>
-#else
-#include <OpenAL/al.h>
-#include <OpenAL/alc.h>
-#endif
+#include <stdint.h>
 
 int open_openal_output(const char * output);
 void pause_output_openal(void);

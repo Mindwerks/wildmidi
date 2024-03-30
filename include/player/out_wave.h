@@ -26,12 +26,9 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-
 #if (AUDIODRV_WAVE == 1)
+
+#include <stdint.h>
 
 int open_wav_output(const char * output);
 int write_wav_output(int8_t *output_data, int output_size);

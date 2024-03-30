@@ -28,7 +28,7 @@
 
 #if (AUDIODRV_ALSA == 1)
 
-#include <alsa/asoundlib.h>
+#include <stdint.h>
 
 int open_alsa_output(const char * output);
 int write_alsa_output(int8_t *output_data, int output_size);
@@ -42,7 +42,5 @@ void close_alsa_output(void);
 #define close_alsa_output close_output_noout
 
 #endif
-
-
 
 #endif // OUT_ALSA_H

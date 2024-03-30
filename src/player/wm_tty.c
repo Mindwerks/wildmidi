@@ -23,8 +23,59 @@
  */
 
 #include "config.h"
+#include "wm_tty.h"
 
-#if !(defined(_WIN32) || defined(__DJGPP__) || defined(WILDMIDI_AMIGA) || defined(__OS2__) || defined(__EMX__))
+#if defined(_WIN32)
+#include <conio.h>
+#ifdef __WATCOMC__
+#define _putch putch
+#endif
+void wm_getch(unsigned char *c) {
+    if (_kbhit()) {
+        *c = _getch();
+        _putch(*c);
+    } else  *c = 0;
+}
+void wm_inittty(void) {}
+void wm_resetty(void) {}
+
+#elif defined(__DJGPP__) || defined(__OS2__) || defined(__EMX__)
+#ifdef __EMX__
+#define INCL_DOS
+#define INCL_KBD
+#define INCL_VIO
+#include <os2.h>
+int putch (int c) {
+    char ch = c;
+    VioWrtTTY(&ch, 1, 0);
+    return c;
+}
+int kbhit (void) {
+    KBDKEYINFO k;
+    if (KbdPeek(&k, 0))
+        return 0;
+    return (k.fbStatus & KBDTRF_FINAL_CHAR_IN);
+}
+#endif /* EMX */
+#include <conio.h>
+void wm_getch(unsigned char *c) {
+    if (kbhit()) {
+        *c = getch();
+        putch(*c);
+    } else  *c = 0;
+}
+void wm_inittty(void) {}
+void wm_resetty(void) {}
+
+#elif defined(WILDMIDI_AMIGA)
+#include "wildplay.h"			/* for the amiga_xxx prototypes. */
+void wm_getch(unsigned char *c) {
+    amiga_getch (c);
+}
+void wm_inittty(void) {}
+void wm_resetty(void) {}
+
+#else /* unix case: */
 
 #define _XOPEN_SOURCE 600 /* for ONLCR */
 #define __BSD_VISIBLE 1 /* for ONLCR in *BSD */
@@ -71,4 +122,9 @@ void wm_resetty(void) {
 
     fcntl(STDIN_FILENO, F_SETFL, _res_block);
 }
-#endif /* !(_WIN32,__DJGPP__,__OS2__) */
+
+void wm_getch(unsigned char *c) {
+    if (read(STDIN_FILENO, c, 1) != 1)
+        *c = 0;
+}
+#endif

@@ -28,15 +28,7 @@
 
 #if (AUDIODRV_OS2DART == 1)
 
-#define INCL_DOS
-#define INCL_DOSERRORS
-#define INCL_OS2MM
-#include <os2.h>
-#include <os2me.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-
 
 int open_dart_output(const char * output);
 int write_dart_output(int8_t *output_data, int output_size);
@@ -47,7 +39,6 @@ void close_dart_output(void);
 #define open_dart_output open_output_noout
 #define write_dart_output send_output_noout
 #define close_dart_output close_output_noout
-
 
 #endif // AUDIODRV_OS2DART == 1
 

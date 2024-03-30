@@ -29,15 +29,6 @@
 #if (AUDIODRV_DOSSB == 1)
 
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <conio.h>
-#include <io.h>
-#include <dir.h>
-#include "dossb.h"
 
 int open_sb_output(const char * output);
 int write_sb_output(int8_t *data, int siz);

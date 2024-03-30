@@ -25,6 +25,12 @@
 
 #if AUDIODRV_ALSA == 1
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <alsa/asoundlib.h>
+
+#include "wildplay.h"
+
 extern unsigned int rate;
 
 static int alsa_first_time = 1;

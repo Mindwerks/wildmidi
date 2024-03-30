@@ -24,9 +24,10 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "wildplay.h"			/* for the amiga_xxx prototypes. */
 
 struct timerequest	*timerio;
 struct MsgPort		*timerport;
@@ -97,12 +98,11 @@ int amiga_getch (unsigned char *c) {
     return 0;
 }
 
-void amiga_usleep(unsigned long timeout) {
+void amiga_usleep(uint32_t timeout) {
     timerio->tr_node.io_Command = TR_ADDREQUEST;
     timerio->tr_time.tv_secs = timeout / 1000000;
     timerio->tr_time.tv_micro = timeout % 1000000;
     SendIO((struct IORequest *) timerio);
     WaitIO((struct IORequest *) timerio);
 }
-
-#endif // WILDMIDI_AMIGA
+#endif /* WILDMIDI_AMIGA */

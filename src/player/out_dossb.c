@@ -22,9 +22,14 @@
  */
 
 #include "out_dossb.h"
-#include "wildplay.h"
 
 #if (AUDIODRV_DOSSB == 1)
+
+#include <stdio.h>
+#include <string.h>
+
+#include "wildplay.h"
+#include "dossb.h"
 
 extern unsigned int rate;
 
@@ -167,8 +172,4 @@ int open_sb_output(const char * output) {
 
     return 0;
 }
-
-
-
-
-#endif // AUDIODRV_DOSSB == 1
+#endif /* AUDIODRV_DOSSB == 1 */

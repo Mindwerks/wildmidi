@@ -28,17 +28,7 @@
 
 #if (AUDIODRV_OSS == 1)
 
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <sys/soundcard.h>
-
 
 int open_oss_output(const char * output);
 int write_oss_output(int8_t *output_data, int output_size);
@@ -53,6 +43,5 @@ void pause_oss_output(void);
 #define close_oss_output close_output_noout
 
 #endif
-
 
 #endif // OUT_OSS_H

@@ -29,9 +29,6 @@
 #if (AUDIODRV_SNDIO == 1)
 
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <sndio.h>
 
 int open_sndio_output(const char * output);
 int write_sndio_output(int8_t *output_data, int output_size);

@@ -22,11 +22,23 @@
  */
 
 #include "out_ahi.h"
-#include "wildplay.h"
 
 #if (AUDIODRV_AHI == 1)
 
 #include <string.h>
+#include <stdio.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include "getopt_long.h"
+#include <devices/ahi.h>
+#ifdef __amigaos4__
+#include <dos/obsolete.h>
+#define SHAREDMEMFLAG MEMF_SHARED
+#else
+#define SHAREDMEMFLAG MEMF_PUBLIC
+#endif
+
+#include "wildplay.h"
 
 /* Driver for output to native Amiga AHI device:
  * Written by Szilárd Biró <col.lawrence@gmail.com>, loosely based

@@ -29,19 +29,6 @@
 #if (AUDIODRV_AHI == 1)
 
 #include <stdint.h>
-#include <stdio.h>
-
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include "getopt_long.h"
-#include <devices/ahi.h>
-
-#ifdef __amigaos4__
-#include <dos/obsolete.h>
-#define SHAREDMEMFLAG MEMF_SHARED
-#else
-#define SHAREDMEMFLAG MEMF_PUBLIC
-#endif
 
 int open_ahi_output(const char * output);
 int write_ahi_output(int8_t *output_data, int output_size);

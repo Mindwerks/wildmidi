@@ -22,9 +22,21 @@
  */
 
 #include "out_openal.h"
-#include "wildplay.h"
 
 #if (AUDIODRV_OPENAL == 1)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifndef __APPLE__
+#include <al.h>
+#include <alc.h>
+#else
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#endif
+
+#include "wildplay.h"
 
 #define NUM_BUFFERS 4
 

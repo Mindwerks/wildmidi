@@ -22,18 +22,25 @@
  */
 
 #include "config.h"
-#include "wildplay.h"
-#include "filenames.h"
-#include "wm_tty.h"
-#include "wildmidi_lib.h"
 
 #include <stdint.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(__DJGPP__) || \
+    defined(__OS2__) || defined(__EMX__) || defined(WILDMIDI_AMIGA)
+#include "getopt_long.h"
+#else
+#include <unistd.h>
+#include <getopt.h>
+#endif
 
-#include "fileops.h"
+#include "wildplay.h"
+#include "filenames.h"
+#include "wm_tty.h"
+#include "wildmidi_lib.h"
+
 #include "out_noout.h"
 #include "out_ahi.h"
 #include "out_alsa.h"
@@ -45,20 +52,6 @@
 #include "out_sndio.h"
 #include "out_wave.h"
 #include "out_win32mm.h"
-
-#ifdef __EMX__
-int putch (int c) {
-    char ch = c;
-    VioWrtTTY(&ch, 1, 0);
-    return c;
-}
-int kbhit (void) {
-    KBDKEYINFO k;
-    if (KbdPeek(&k, 0))
-        return 0;
-    return (k.fbStatus & KBDTRF_FINAL_CHAR_IN);
-}
-#endif
 
 // available outputs
 wildmidi_info available_outputs[TOTAL_OUT] = {
@@ -734,23 +727,7 @@ int main(int argc, char **argv) {
         }
 
         while (1) {
-            ch = 0;
-#ifdef _WIN32
-            if (_kbhit()) {
-                ch = _getch();
-                _putch(ch);
-            }
-#elif defined(__DJGPP__) || defined(__OS2__) || defined(__EMX__)
-            if (kbhit()) {
-                ch = getch();
-                putch(ch);
-            }
-#elif defined(WILDMIDI_AMIGA)
-            amiga_getch (&ch);
-#else
-            if (read(STDIN_FILENO, &ch, 1) != 1)
-                ch = 0;
-#endif
+            wm_getch (&ch);
             if (ch) {
                 switch (ch) {
                 case 'l':

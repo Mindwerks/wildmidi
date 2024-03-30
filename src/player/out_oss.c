@@ -25,6 +25,18 @@
 
 #if AUDIODRV_OSS == 1
 
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <sys/soundcard.h>
+
+#include "wildplay.h"
+
 #if !defined(AFMT_S16_NE)
 #ifdef WORDS_BIGENDIAN
 #define AFMT_S16_NE AFMT_S16_BE

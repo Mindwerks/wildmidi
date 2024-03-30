@@ -24,12 +24,16 @@
  */
 
 #include "out_coreaudio.h"
-#include "wildplay.h"
 
 #if (AUDIODRV_COREAUDIO == 1)
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "wildplay.h"
+
 extern unsigned int rate;
-extern int msleep(unsigned long msec);
 
 #include <CoreAudio/CoreAudio.h>
 #include <AudioUnit/AudioUnit.h>

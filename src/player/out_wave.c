@@ -22,9 +22,13 @@
  */
 
 #include "out_wave.h"
-#include "fileops.h"
 
 #if (AUDIODRV_WAVE == 1)
+
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include "wildplay.h"
 
 extern unsigned int rate;
 
@@ -152,4 +156,4 @@ end:
     out_wav = NULL;
 }
 
-#endif // (AUDIODRV_WAVE == 1)
+#endif /* AUDIODRV_WAVE */

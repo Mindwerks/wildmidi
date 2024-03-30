@@ -2,7 +2,7 @@
 
 SET(wildmidi_executable_SRCS
 		amiga.c
-		fileops.c
+		msleep.c
 		out_ahi.c
 		out_alsa.c
 		out_coreaudio.c

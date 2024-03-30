@@ -28,21 +28,7 @@
 
 #if (AUDIODRV_WINMM == 1)
 
-#include <conio.h>
-#include <fcntl.h>
-#include <io.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <windows.h>
-#include <mmsystem.h>   // should be after windows.h
-
-#include "getopt_long.h"
-
-#ifdef __WATCOMC__
-#define _putch putch
-#endif
 
 int open_mm_output(const char * output);
 int write_mm_output(int8_t *output_data, int output_size);

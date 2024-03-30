@@ -24,14 +24,11 @@
 #ifndef OUT_COREAUDIO_H
 #define OUT_COREAUDIO_H
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "config.h"
 
 #if (AUDIODRV_COREAUDIO == 1)
+
+#include <stdint.h>
 
 int open_coreaudio_output(const char * output);
 void pause_coreaudio_output(void);

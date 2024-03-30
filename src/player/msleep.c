@@ -1,9 +1,4 @@
-/*
- * fileops.c -- Platform specific file operations
- *
- * Copyright (C) WildMidi Developers 2020
- *
- * This file is part of WildMIDI.
+/* Copyright (C) WildMIDI Developers 2016
  *
  * WildMIDI is free software: you can redistribute and/or modify the player
  * under the terms of the GNU General Public License and you can redistribute
@@ -22,26 +17,36 @@
  */
 
 #include "config.h"
-#include "fileops.h"
+#include <stdint.h>
 
-#if defined(_WIN32)
-
-#elif defined(__DJGPP__)
-
-#elif defined(__OS2__) || defined(__EMX__)
-
-#elif defined(WILDMIDI_AMIGA)
-
-#else /* common posix case */
-int msleep(unsigned long millisec) {
-  struct timespec req = { 0, 0 };
-  time_t sec = (int) (millisec / 1000);
-  millisec = millisec - (sec * 1000);
-  req.tv_sec = sec;
-  req.tv_nsec = millisec * 1000000L;
-  while (nanosleep(&req, &req) == -1)
-    continue;
-  return (1);
+#if defined(_WIN32) || defined(__CYGWIN__)
+#include <windows.h>
+void msleep(uint32_t msec) {
+    Sleep(msec);
 }
 
+#elif defined(__OS2__)||defined(__EMX__)
+#define INCL_DOSPROCESS
+#include <os2.h>
+void msleep(uint32_t msec) {
+    DosSleep(msec);
+}
+
+#elif defined(__WATCOMC__) && defined(_DOS)
+#include <dos.h>
+void msleep(uint32_t msec) {
+    delay(msec); /* doesn't seem to use int 15h. */
+}
+
+#elif defined(WILDMIDI_AMIGA)
+#include "wildplay.h"			/* for the amiga_xxx prototypes. */
+void msleep(uint32_t msec) {
+    amiga_usleep(msec * 1000);
+}
+
+#else /* DJGPP, POSIX... */
+#include <unistd.h>
+void msleep(uint32_t msec) {
+    usleep(msec * 1000);
+}
 #endif

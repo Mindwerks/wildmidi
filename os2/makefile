@@ -38,7 +38,7 @@ BLD_TARGET=$(DLLNAME) $(PLAYER)
 INCLUDES=-I. -I"../include"  -I"../include/player"
 
 OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj internal_midi.obj patches.obj sample.obj
-PLAYER_OBJ=getopt_long.obj wm_tty.obj wildmidi.obj out_wave.obj out_dart.obj fileops.obj
+PLAYER_OBJ=wm_tty.obj msleep.obj getopt_long.obj out_wave.obj out_dart.obj wildmidi.obj
 
 all: $(BLD_TARGET)
 
@@ -71,7 +71,7 @@ out_wave.obj: out_wave.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 out_dart.obj: out_dart.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
-fileops.obj: fileops.c
+msleep.obj: msleep.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 
 distclean: clean .symbolic
