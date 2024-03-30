@@ -28,7 +28,8 @@
 
 extern unsigned int rate;
 
-uint32_t wav_size;
+static uint32_t wav_size;
+static FILE *out_wav;
 
 int open_wav_output(const char * output) {
     uint8_t wav_hdr[] = {
@@ -61,10 +62,10 @@ int open_wav_output(const char * output) {
         return (-1);
     }
 
-    audio_fd = wmidi_open_write(output);
-    if (WM_IS_BADF(audio_fd)) {
+    out_wav = fopen(output, "wb");
+    if (!out_wav) {
         fprintf(stderr, "Error: unable to open file for writing (%s)\r\n",
-                strerror(wmidi_geterrno()));
+                strerror(errno));
         return (-1);
     } else {
         uint32_t bytes_per_sec;
@@ -79,11 +80,11 @@ int open_wav_output(const char * output) {
         wav_hdr[31] = (bytes_per_sec >> 24) & 0xFF;
     }
 
-    if (wmidi_write(audio_fd, wav_hdr, 44) < 0) {
+    if (fwrite(wav_hdr, 1, 44, out_wav) != 44) {
         fprintf(stderr, "ERROR: failed writing wav header (%s)\r\n",
-                strerror(wmidi_geterrno()));
-        wmidi_close(audio_fd);
-        audio_fd = WM_BADF;
+                strerror(errno));
+        fclose(out_wav);
+        out_wav = NULL;
         return (-1);
     }
 
@@ -101,11 +102,12 @@ int write_wav_output(int8_t *output_data, int output_size) {
         swp[i] = (swp[i] << 8) | (swp[i] >> 8);
     }
 #endif
-    if (wmidi_write(audio_fd, output_data, output_size) < 0) {
+    if (output_size < 0) return (-1);
+    if (fwrite(output_data, 1, output_size, out_wav) != (size_t)output_size) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n",
-              strerror(wmidi_geterrno()));
-        wmidi_close(audio_fd);
-        audio_fd = WM_BADF;
+              strerror(errno));
+        fclose(out_wav);
+        out_wav = NULL;
         return (-1);
     }
 
@@ -115,7 +117,7 @@ int write_wav_output(int8_t *output_data, int output_size) {
 
 void close_wav_output(void) {
     uint8_t wav_count[4];
-    if (WM_IS_BADF(audio_fd))
+    if (!out_wav)
         return;
 
     printf("Finishing and closing wav output\r");
@@ -123,10 +125,10 @@ void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    wmidi_seekset(audio_fd, 40);
-    if (wmidi_write(audio_fd, wav_count, 4) < 0) {
+    fseek(out_wav, SEEK_SET, 40);
+    if (fwrite(wav_count, 1, 4, out_wav) != 4) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n",
-                strerror(wmidi_geterrno()));
+                strerror(errno));
         goto end;
     }
 
@@ -135,19 +137,19 @@ void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    wmidi_seekset(audio_fd, 4);
-    if (wmidi_write(audio_fd, wav_count, 4) < 0) {
+    fseek(out_wav, SEEK_SET, 4);
+    if (fwrite(wav_count, 1, 4, out_wav) != 4) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n",
-                strerror(wmidi_geterrno()));
+                strerror(errno));
         goto end;
     }
 
 end:
     printf("\n");
-    if (!WM_IS_BADF(audio_fd)) {
-        wmidi_close(audio_fd);
+    if (!out_wav) {
+        fclose(out_wav);
     }
-    audio_fd = WM_BADF;
+    out_wav = NULL;
 }
 
 #endif // (AUDIODRV_WAVE == 1)

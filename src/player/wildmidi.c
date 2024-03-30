@@ -303,33 +303,34 @@ static void mk_midifile_name(const char *src) {
     memcpy(p, ".mid", 5);
 }
 
-static int write_midi_output(void *output_data, int output_size) {
+static int write_midi_output(void *output_data, size_t output_size) {
+    FILE *outf;
+
     if (midi_file[0] == '\0')
         return (-1);
 
 /*
  * Test if file already exists 
  */
-    if (wmidi_fileexists(midi_file)) {
+    outf = fopen(midi_file, "rb");
+    if (outf != NULL) {
         fprintf(stderr, "\rError: %s already exists\r\n", midi_file);
         return (-1);
     }
 
-    audio_fd = wmidi_open_write(midi_file);
-    if (WM_IS_BADF(audio_fd)) {
-        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(wmidi_geterrno()));
+    outf = fopen(midi_file, "wb");
+    if (!outf) {
+        fprintf(stderr, "Error: unable to open file for writing (%s)\r\n", strerror(errno));
         return (-1);
     }
 
-    if (wmidi_write(audio_fd, output_data, output_size) < 0) {
-        fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(wmidi_geterrno()));
-        wmidi_close(audio_fd);
-        audio_fd = WM_BADF;
+    if (fwrite(output_data, 1, output_size, outf) != output_size) {
+        fprintf(stderr, "\nERROR: failed writing midi (%s)\r\n", strerror(errno));
+        fclose(outf);
         return (-1);
     }
 
-    wmidi_close(audio_fd);
-    audio_fd = WM_BADF;
+    fclose(outf);
     return (0);
 }
 

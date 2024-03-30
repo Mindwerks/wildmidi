@@ -37,7 +37,7 @@
 #define DEFAULT_NUMFRAGS 16
 
 extern unsigned int rate;
-extern int audio_fd;
+static int audio_fd;
 
 void pause_oss_output(void) {
     ioctl(audio_fd, SNDCTL_DSP_POST, 0);

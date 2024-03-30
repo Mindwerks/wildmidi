@@ -24,8 +24,6 @@
 #ifndef FILEOPS_H
 #define FILEOPS_H
 
-#define wmidi_geterrno() errno /* generic case */
-
 #if defined(__DJGPP__)
 #include <sys/types.h>
 #include <fcntl.h>
@@ -38,18 +36,6 @@
 #define msleep(s) usleep((s)*1000)
 #include <io.h>
 #include <dir.h>
-
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF -1
-
-extern int audio_fd;
-
-int wmidi_fileexists (const char *path);
-int wmidi_open_write (const char *path);
-void wmidi_close (int fd);
-off_t wmidi_seekset (int fd, off_t ofs);
-int wmidi_write (int fd, const void *buf, size_t size);
-
 
 #elif (defined _WIN32) || (defined __CYGWIN__)
 #include <sys/types.h>
@@ -64,18 +50,6 @@ int wmidi_write (int fd, const void *buf, size_t size);
 #ifdef __WATCOMC__
 #define _putch putch
 #endif
-
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF (-1)
-
-extern int audio_fd;
-
-int wmidi_fileexists (const char *path);
-int wmidi_open_write (const char *path);
-void wmidi_close (int fd);
-long wmidi_seekset (int fd, long ofs);
-int wmidi_write (int fd, const void *buf, size_t size);
-
 
 #elif defined(__OS2__) || defined(__EMX__)
 #define INCL_DOS
@@ -95,16 +69,6 @@ int wmidi_write (int fd, const void *buf, size_t size);
 #include <sys/types.h> /* for off_t typedef */
 #endif
 
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF -1
-extern int audio_fd;
-
-int wmidi_fileexists (const char *path);
-int wmidi_open_write (const char *path);
-void wmidi_close (int fd);
-off_t wmidi_seekset (int fd, off_t ofs);
-int wmidi_write (int fd, const void *buf, size_t size);
-
 #elif defined(WILDMIDI_AMIGA)
 extern void amiga_sysinit (void);
 extern int amiga_usleep(unsigned long millisec);
@@ -113,20 +77,6 @@ extern int amiga_getch (unsigned char *ch);
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "getopt_long.h"
-
-#define WM_IS_BADF(_fd) ((_fd)==0)
-#define WM_BADF 0
-
-extern BPTR audio_fd;
-
-#undef wmidi_geterrno
-#include <errno.h>
-int wmidi_geterrno (void);
-int wmidi_fileexists (const char *path);
-BPTR wmidi_open_write (const char *path);
-LONG wmidi_close (BPTR fd);
-LONG wmidi_seekset (BPTR fd, LONG ofs);
-LONG wmidi_write (BPTR fd, /*const*/ void *buf, LONG size);
 
 #else /* unix build */
 
@@ -138,17 +88,7 @@ LONG wmidi_write (BPTR fd, /*const*/ void *buf, LONG size);
 #include <getopt.h>
 #include <time.h>
 
-#define WM_IS_BADF(_fd) ((_fd)<0)
-#define WM_BADF (-1)
-
-extern int audio_fd;
-
 int msleep(unsigned long millisec);
-int wmidi_fileexists (const char *path);
-int wmidi_open_write (const char *path);
-int wmidi_close (int fd);
-off_t wmidi_seekset (int fd, off_t ofs);
-ssize_t wmidi_write (int fd, const void *buf, size_t size);
 
 #endif /* !_WIN32, !__DJGPP__ (unix build) */
 
