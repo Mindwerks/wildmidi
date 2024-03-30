@@ -129,7 +129,7 @@ void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    fseek(out_wav, SEEK_SET, 40);
+    fseek(out_wav, 40, SEEK_SET);
     if (fwrite(wav_count, 1, 4, out_wav) != 4) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n",
                 strerror(errno));
@@ -141,7 +141,7 @@ void close_wav_output(void) {
     wav_count[1] = (wav_size >> 8) & 0xFF;
     wav_count[2] = (wav_size >> 16) & 0xFF;
     wav_count[3] = (wav_size >> 24) & 0xFF;
-    fseek(out_wav, SEEK_SET, 4);
+    fseek(out_wav, 4, SEEK_SET);
     if (fwrite(wav_count, 1, 4, out_wav) != 4) {
         fprintf(stderr, "\nERROR: failed writing wav (%s)\r\n",
                 strerror(errno));
