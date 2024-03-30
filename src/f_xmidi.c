@@ -228,7 +228,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                                 xmi_tmpdata = xmi_delta;
                             }
 
-                            if ((float)xmi_tmpdata >= 0x7fffffff / xmi_samples_per_delta_f) {
+                            if ((float)xmi_tmpdata >= (float)0x7fffffff / xmi_samples_per_delta_f) {
                                 /* DEBUG */
                                 /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
                                 /*        xmi_samples_per_delta_f, xmi_tmpdata); */

@@ -262,7 +262,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         goto _hmp_end;
     }
 
-    if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+    if ((float)smallest_delta >= (float)0x7fffffff / samples_per_delta_f) {
         /* DEBUG */
         /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
         /*        samples_per_delta_f, smallest_delta); */
@@ -357,7 +357,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         NEXT_CHUNK: continue;
         }
 
-        if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+        if ((float)smallest_delta >= (float)0x7fffffff / samples_per_delta_f) {
             /* DEBUG */
             /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
             /*        samples_per_delta_f, smallest_delta); */

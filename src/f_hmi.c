@@ -200,7 +200,7 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
         goto _hmi_end;
     }
 
-    if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+    if ((float)smallest_delta >= (float)0x7fffffff / samples_per_delta_f) {
         /* DEBUG */
         /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
         /*        samples_per_delta_f, smallest_delta); */
@@ -383,7 +383,7 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
         }
 
         /* convert smallest delta to samples till next */
-        if ((float)smallest_delta >= 0x7fffffff / samples_per_delta_f) {
+        if ((float)smallest_delta >= (float)0x7fffffff / samples_per_delta_f) {
             /* DEBUG */
             /* fprintf(stderr,"INTEGER OVERFLOW (samples_per_delta: %f, smallest_delta: %u)\n", */
             /*        samples_per_delta_f, smallest_delta); */
