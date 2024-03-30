@@ -33,6 +33,27 @@
 #define WMPLAY_UNUSED(x) /* vbcc emits an annoying warning for (void)(x) */
 #endif
 
+/* Macros to suppress -Wimplicit-fallthrough warnings */
+/* The following taken from SDL: */
+#if (defined(__cplusplus) && __cplusplus >= 201703L) || \
+    (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202000L)
+#define WMPLAY_FALLTHROUGH [[fallthrough]]
+#else  /**/
+#ifdef __has_attribute
+#define WMPLAY_HAS_FALLTHROUGH __has_attribute(__fallthrough__)
+#else
+#define WMPLAY_HAS_FALLTHROUGH 0
+#endif /* __has_attribute */
+#if WMPLAY_HAS_FALLTHROUGH && \
+   ((defined(__GNUC__) && __GNUC__ >= 7) || \
+    (defined(__clang_major__) && __clang_major__ >= 10))
+#define WMPLAY_FALLTHROUGH __attribute__((__fallthrough__))
+#else
+#define WMPLAY_FALLTHROUGH do {} while (0) /* fallthrough */
+#endif
+#undef WMPLAY_HAS_FALLTHROUGH
+#endif /**/
+
 typedef struct {
     const char *name;
     const char *description;

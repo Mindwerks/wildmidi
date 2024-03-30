@@ -420,8 +420,8 @@ int main(int argc, char **argv) {
             break;
         case 'o': /* Wav Output    */
             playback_id = 1;
-            /* FALL THROUGH */
         #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+            WMPLAY_FALLTHROUGH;
         case 'd': /* Device Output */
         #endif
             if (!*optarg) {
