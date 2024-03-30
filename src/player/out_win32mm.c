@@ -146,6 +146,8 @@ void close_mm_output(void) {
     if (!hWaveOut) return;
 
     printf("Shutting down sound output\r\n");
+
+    waveOutReset(hWaveOut);
     for (i = 0; i < MM_BLOCK_COUNT; i++) {
         while (waveOutUnprepareHeader(hWaveOut, &mm_blocks[i], sizeof(WAVEHDR))
                 == WAVERR_STILLPLAYING) {
