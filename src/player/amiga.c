@@ -42,8 +42,6 @@ static BPTR amiga_stdin, amiga_stdout;
 #define MODE_NORMAL 0
 
 static void amiga_atexit (void) {
-    if (amiga_stdin)
-        SetMode(amiga_stdin, MODE_NORMAL);
     if (TimerBase) {
         WaitIO((struct IORequest *) timerio);
         CloseDevice((struct IORequest *) timerio);
@@ -84,11 +82,19 @@ void amiga_sysinit (void) {
     SendIO((struct IORequest *) timerio);
     WaitIO((struct IORequest *) timerio);
 
+    atexit (amiga_atexit);
+}
+
+void amiga_inittty (void) {
     amiga_stdout = Output();
     amiga_stdin = Input();
     SetMode(amiga_stdin, MODE_RAW);
+}
 
-    atexit (amiga_atexit);
+void amiga_resetty (void) {
+    if (amiga_stdin) {
+        SetMode(amiga_stdin, MODE_NORMAL);
+    }
 }
 
 int amiga_getch (unsigned char *c) {

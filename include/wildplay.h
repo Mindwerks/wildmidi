@@ -77,7 +77,10 @@ extern audiodrv_info audiodrv_openal;
 extern void msleep(uint32_t msec);
 
 #if defined(WILDMIDI_AMIGA)
-extern void amiga_sysinit (void);
+extern void amiga_sysinit (void); /* must be called first. */
+
+extern void amiga_inittty (void);
+extern void amiga_resetty (void);
 extern int amiga_getch (unsigned char *ch);
 extern void amiga_usleep (uint32_t usec);
 #endif

@@ -74,8 +74,12 @@ void wm_getch(unsigned char *c) {
     if (amiga_getch (c) <= 0)
         *c = 0;
 }
-void wm_inittty(void) {}
-void wm_resetty(void) {}
+void wm_inittty(void) {
+    amiga_inittty();
+}
+void wm_resetty(void) {
+    amiga_resetty();
+}
 
 #else /* unix case: */
 

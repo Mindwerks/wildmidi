@@ -563,10 +563,10 @@ int main(int argc, char **argv) {
         return (1);
     }
 
-    wm_inittty();
 #ifdef WILDMIDI_AMIGA
     amiga_sysinit();
 #endif
+    wm_inittty();
 
     WildMidi_MasterVolume(master_volume);
 
