@@ -45,6 +45,7 @@ void wm_resetty(void) {}
 #define INCL_KBD
 #define INCL_VIO
 #include <os2.h>
+#include <stdlib.h>
 int putch (int c) {
     char ch = c;
     VioWrtTTY(&ch, 1, 0);
