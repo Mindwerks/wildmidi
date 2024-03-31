@@ -36,10 +36,11 @@
 #include <getopt.h>
 #endif
 
+#include "wildmidi_lib.h"
+
 #include "wildplay.h"
 #include "filenames.h"
 #include "wm_tty.h"
-#include "wildmidi_lib.h"
 
 /* available outputs */
 static const audiodrv_info *available_outputs[] = {
@@ -240,7 +241,7 @@ static struct option const long_options[] = {
     { "mastervol", 1, 0, 'm' },
     { "config", 1, 0, 'c' },
 #if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
-    { "device", 1, 0, 'd' }, /* treated the same as --wavout, keeping here for compat. */
+    { "device", 1, 0, 'd' },
 #endif
     { "wavout", 1, 0, 'o' },
     { "tomidi", 1, 0, 'x' },
