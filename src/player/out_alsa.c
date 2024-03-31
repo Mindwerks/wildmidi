@@ -36,19 +36,16 @@ static snd_pcm_t *pcm = NULL;
 
 static void close_alsa_output(void);
 
-static int open_alsa_output(const char * output, unsigned int *rate) {
+static int open_alsa_output(const char *pcmname, unsigned int *rate) {
     snd_pcm_hw_params_t *hw;
     snd_pcm_sw_params_t *sw;
-    int err;
     unsigned int alsa_buffer_time;
     unsigned int alsa_period_time;
-    unsigned int r;
-    char pcmname[1024];
+    const unsigned int r = *rate;
+    int err;
 
-    if (!output[0]) {
-        strcpy(pcmname, "default");
-    } else {
-        strcpy(pcmname, output);
+    if (!pcmname || !*pcmname) {
+        pcmname = "default";
     }
 
     if ((err = snd_pcm_open(&pcm, pcmname, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
@@ -59,8 +56,7 @@ static int open_alsa_output(const char * output, unsigned int *rate) {
     snd_pcm_hw_params_alloca(&hw);
 
     if ((err = snd_pcm_hw_params_any(pcm, hw)) < 0) {
-        fprintf(stderr, "ERROR: No configuration available for playback: %s\r\n",
-                snd_strerror(err));
+        fprintf(stderr, "ERROR: No configuration available for playback: %s\r\n", snd_strerror(err));
         goto fail;
     }
 
@@ -79,7 +75,6 @@ static int open_alsa_output(const char * output, unsigned int *rate) {
         goto fail;
     }
 
-    r = *rate;
     if (snd_pcm_hw_params_set_rate_near(pcm, hw, rate, 0) < 0) {
         fprintf(stderr, "ALSA does not support %uHz for your soundcard\r\n", r);
         goto fail;

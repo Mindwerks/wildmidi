@@ -57,17 +57,13 @@ static void pause_oss_output(void) {
 }
 static void resume_oss_output(void) {}
 
-static int open_oss_output(const char *output, unsigned int *rate) {
+static int open_oss_output(const char *pcmname, unsigned int *rate) {
+    const unsigned int r = *rate;
     int tmp;
-    unsigned int r;
-    char pcmname[1024];
 
-    if (!output[0]) {
-        strcpy(pcmname, "/dev/dsp");
-    } else {
-        strcpy(pcmname, output);
+    if (!pcmname || !*pcmname) {
+        pcmname = "/dev/dsp";
     }
-
     if ((audio_fd = open(pcmname, O_WRONLY)) < 0) {
         fprintf(stderr, "ERROR: Unable to open %s (%s)\r\n", pcmname, strerror(errno));
         return (-1);
@@ -89,7 +85,6 @@ static int open_oss_output(const char *output, unsigned int *rate) {
         goto fail;
     }
 
-    r = *rate;
     if (ioctl(audio_fd, SNDCTL_DSP_SPEED, rate) < 0) {
         fprintf(stderr, "ERROR: Unable to set %uHz sample rate\r\n", r);
         goto fail;
