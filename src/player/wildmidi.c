@@ -1,7 +1,7 @@
 /*
  * wildmidi.c -- Midi Player using the WildMidi Midi Processing Library
  *
- * Copyright (C) WildMidi Developers 2001-2016
+ * Copyright (C) WildMidi Developers 2001-2024
  *
  * This file is part of WildMIDI.
  *

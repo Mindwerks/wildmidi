@@ -1,7 +1,7 @@
 /*
  * out_noout.h -- NULL output
  *
- * Copyright (C) WildMidi Developers 2020
+ * Copyright (C) WildMidi Developers 2024
  *
  * This file is part of WildMIDI.
  *

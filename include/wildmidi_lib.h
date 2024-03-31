@@ -1,7 +1,7 @@
 /*
  * wildmidi_lib.h -- Midi Wavetable Processing library
  *
- * Copyright (C) WildMIDI Developers 2001-2016
+ * Copyright (C) WildMIDI Developers 2001-2024
  *
  * This file is part of WildMIDI.
  *

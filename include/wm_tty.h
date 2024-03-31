@@ -1,7 +1,7 @@
 /* wm_tty.h - unix termios code for player
  *
  * Copyright (C) Chris Ison 2001-2011
- * Copyright (C) Bret Curtis 2013-2016
+ * Copyright (C) Bret Curtis 2013-2024
  *
  * This file is part of WildMIDI.
  *

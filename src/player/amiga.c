@@ -1,5 +1,5 @@
 /* amiga-specific stuff for WildMIDI player
- * Copyright (C) WildMIDI Developers 2016
+ * Copyright (C) WildMIDI Developers 2016-2024
  *
  * WildMIDI is free software: you can redistribute and/or modify the player
  * under the terms of the GNU General Public License and you can redistribute
