@@ -13,16 +13,16 @@
 #define PACKAGE_NAME "WildMidi"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "WildMidi 0.4.5"
+#define PACKAGE_STRING "WildMidi 0.4.6"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "wildmidi"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.4.5"
+#define PACKAGE_VERSION "0.4.6"
 
 /* Version number of package */
-#define VERSION "0.4.5"
+#define VERSION "0.4.6"
 
 /* Define this to the location of the wildmidi config file */
 /* #undef WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" */

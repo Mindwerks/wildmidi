@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.4.5
+Version: 0.4.6
 Licenses: GPLv3+ and LGPLv3
 Website: https://github.com/Mindwerks/wildmidi
 
@@ -30,13 +30,25 @@ Requirements:
 * cmake
 * GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
 * DOS port: DJGPP / GNU make
-* OS/2 port: OpenWatcom (tested with version 1.9)
+* OS/2 port: OpenWatcom (tested with version 1.9 and newer)
 * Nintendo 3DS port: devkitARM
 * Nintendo Wii port: devkitPPC
 * Nintendo Switch port: devkitA64
 * PSVita port: Vitasdk
 
 CHANGELOG
+
+0.4.6
+* A lot of player clean-up and refactoring, thanks to initial work
+  by Azamat H. Hackimov.
+* Ability to choose which audio output backends to include in the
+  build system: see the cmake script for the relevant `WANT_???`
+  options. Player's `--help` command line switch lists the available
+  backends. Thanks to initial work by Azamat H. Hackimov.
+* New player audio output backends: coreaudio for macOS, sndio for
+  OpenBSD.
+* Workaround a link failure on AmigaOS4 with newer SDKs (bug #241).
+* Other minor source clean-ups.
 
 0.4.5
 * Fixed MUS drum channels 9 and 15 being swapped if the same file
