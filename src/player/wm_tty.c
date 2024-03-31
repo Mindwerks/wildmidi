@@ -71,7 +71,8 @@ void wm_resetty(void) {}
 #elif defined(WILDMIDI_AMIGA)
 #include "wildplay.h"			/* for the amiga_xxx prototypes. */
 void wm_getch(unsigned char *c) {
-    amiga_getch (c);
+    if (amiga_getch (c) <= 0)
+        *c = 0;
 }
 void wm_inittty(void) {}
 void wm_resetty(void) {}
