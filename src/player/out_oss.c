@@ -48,7 +48,6 @@
 #define DEFAULT_FRAGSIZE 14
 #define DEFAULT_NUMFRAGS 16
 
-extern unsigned int rate;
 static int audio_fd;
 
 static void close_oss_output(void);
@@ -58,7 +57,7 @@ static void pause_oss_output(void) {
 }
 static void resume_oss_output(void) {}
 
-static int open_oss_output(const char * output) {
+static int open_oss_output(const char *output, unsigned int *rate) {
     int tmp;
     unsigned int r;
     char pcmname[1024];
@@ -90,13 +89,13 @@ static int open_oss_output(const char * output) {
         goto fail;
     }
 
-    r = rate;
-    if (ioctl(audio_fd, SNDCTL_DSP_SPEED, &rate) < 0) {
-        fprintf(stderr, "ERROR: Unable to set %uHz sample rate\r\n", rate);
+    r = *rate;
+    if (ioctl(audio_fd, SNDCTL_DSP_SPEED, rate) < 0) {
+        fprintf(stderr, "ERROR: Unable to set %uHz sample rate\r\n", r);
         goto fail;
     }
-    if (r != rate) {
-        fprintf(stderr, "OSS: sample rate set to %uHz instead of %u\r\n", rate, r);
+    if (r != *rate) {
+        fprintf(stderr, "OSS: sample rate set to %uHz instead of %u\r\n", *rate, r);
     }
 
     tmp = (DEFAULT_NUMFRAGS<<16)|DEFAULT_FRAGSIZE;
@@ -112,7 +111,8 @@ fail:
     return (-1);
 }
 
-static int write_oss_output(int8_t *output_data, int output_size) {
+static int write_oss_output(void *data, int output_size) {
+    const unsigned char *output_data = (unsigned char *)data;
     int res = 0;
     while (output_size > 0) {
         res = write(audio_fd, output_data, output_size);
@@ -120,8 +120,7 @@ static int write_oss_output(int8_t *output_data, int output_size) {
             output_size -= res;
             output_data += res;
         } else {
-            fprintf(stderr, "\nOSS: write failure to dsp: %s.\r\n",
-                    strerror(errno));
+            fprintf(stderr, "\nOSS: write failure to dsp: %s.\r\n", strerror(errno));
             return (-1);
         }
     }

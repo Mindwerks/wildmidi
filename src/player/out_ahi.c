@@ -54,9 +54,7 @@ static int8_t *AHIBuf[2] = { NULL, NULL };
 
 static void close_ahi_output(void);
 
-extern unsigned int rate;
-
-static int open_ahi_output(const char * output) {
+static int open_ahi_output(const char *output, unsigned int *rate) {
     WMPLAY_UNUSED(output);
 
     AHImp = CreateMsgPort();
@@ -71,7 +69,7 @@ static int open_ahi_output(const char * output) {
                     AHIReq[0]->ahir_Std.io_Command = CMD_WRITE;
                     AHIReq[0]->ahir_Std.io_Data = NULL;
                     AHIReq[0]->ahir_Std.io_Offset = 0;
-                    AHIReq[0]->ahir_Frequency = rate;
+                    AHIReq[0]->ahir_Frequency = *rate;
                     AHIReq[0]->ahir_Type = AHIST_S16S;/* 16 bit stereo */
                     AHIReq[0]->ahir_Volume = 0x10000;
                     AHIReq[0]->ahir_Position = 0x8000;
@@ -94,7 +92,7 @@ static int open_ahi_output(const char * output) {
     return (-1);
 }
 
-static int write_ahi_output(int8_t *output_data, int output_size) {
+static int write_ahi_output(void *output_data, int output_size) {
     int chunk;
     while (output_size > 0) {
         if (AHIReq[active]->ahir_Std.io_Data) {
@@ -103,7 +101,7 @@ static int write_ahi_output(int8_t *output_data, int output_size) {
         chunk = (output_size < BUFFERSIZE)? output_size : BUFFERSIZE;
         memcpy(AHIBuf[active], output_data, chunk);
         output_size -= chunk;
-        output_data += chunk;
+        output_data = (char *)output_data + chunk;
 
         AHIReq[active]->ahir_Std.io_Data = AHIBuf[active];
         AHIReq[active]->ahir_Std.io_Length = chunk;

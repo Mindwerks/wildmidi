@@ -31,8 +31,6 @@
 #include "wildplay.h"
 #include "dossb.h"
 
-extern unsigned int rate;
-
 /* SoundBlaster/Pro/16/AWE32 driver for DOS -- adapted from
  * libMikMod,  written by Andrew Zabolotny <bit@eltech.ru>,
  * further fixes by O.Sezer <sezero@users.sourceforge.net>.
@@ -43,7 +41,7 @@ extern unsigned int rate;
 /* The last buffer byte filled with sound */
 static unsigned int buff_tail = 0;
 
-static int write_sb_common(int8_t *data, int siz) {
+static int write_sb_common(void *data, int siz) {
     unsigned int dma_size, dma_pos;
     unsigned int cnt;
 
@@ -77,17 +75,19 @@ static int write_sb_common(int8_t *data, int siz) {
         /* Now fill from buffer beginning to current DMA pointer */
         if (dma_pos > (unsigned int)siz)
             dma_pos = siz;
-        data += cnt;
+        data = (char *)data + cnt;
         cnt += dma_pos;
 
         memcpy(sb.dma_buff->linear, data, dma_pos);
         buff_tail = dma_pos;
     }
+
     return cnt;
 }
 
-static int write_sb_output(int8_t *data, int siz) {
+static int write_sb_output(void *data, int siz) {
     int i;
+
     if (sb.caps & SBMODE_16BITS) {
         /* libWildMidi sint16 stereo -> SB16 sint16 stereo */
         /* do nothing, we can do 16 bit stereo by default */
@@ -115,7 +115,8 @@ static int write_sb_output(int8_t *data, int siz) {
         i = write_sb_common(data, siz);
         if ((siz -= i) <= 0)
             return 0;
-        data += i;
+
+        data = (char *)data + i;
         /*usleep(100);*/
     }
 }
@@ -139,7 +140,7 @@ static void close_sb_output(void) {
     sb_close();
 }
 
-static int open_sb_output(const char * output) {
+static int open_sb_output(const char *output, unsigned int *rate) {
     WMPLAY_UNUSED(output);
 
     if (!sb_open()) {
@@ -147,13 +148,13 @@ static int open_sb_output(const char * output) {
         return -1;
     }
 
-    if (rate < 4000) rate = 4000;
+    if (*rate < 4000) *rate = 4000;
     if (sb.caps & SBMODE_STEREO) {
-        if (rate > sb.maxfreq_stereo)
-            rate = sb.maxfreq_stereo;
+        if (*rate > sb.maxfreq_stereo)
+            *rate = sb.maxfreq_stereo;
     } else {
-        if (rate > sb.maxfreq_mono)
-            rate = sb.maxfreq_mono;
+        if (*rate > sb.maxfreq_mono)
+            *rate = sb.maxfreq_mono;
     }
 
     /* Enable speaker output */
@@ -165,7 +166,7 @@ static int open_sb_output(const char * output) {
 
     /* Start cyclic DMA transfer */
     if (!sb_start_dma(((sb.caps & SBMODE_16BITS) ? SBMODE_16BITS | SBMODE_SIGNED : 0) |
-                            (sb.caps & SBMODE_STEREO), rate)) {
+                            (sb.caps & SBMODE_STEREO), *rate)) {
         sb_output(FALSE);
         sb_close();
         fprintf(stderr, "Sound Blaster: DMA start failed.\n");

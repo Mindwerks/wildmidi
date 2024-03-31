@@ -28,12 +28,11 @@
 #include <stdio.h>
 #include "wildplay.h"
 
-extern unsigned int rate;
-
 static uint32_t wav_size;
 static FILE *out_wav;
 
-static int open_wav_output(const char * output) {
+static int open_wav_output(const char *output, unsigned int *r) {
+    const unsigned int rate = *r;
     uint8_t wav_hdr[] = {
         0x52, 0x49,
         0x46, 0x46, /* "RIFF"  */
@@ -95,7 +94,7 @@ static int open_wav_output(const char * output) {
     return (0);
 }
 
-static int write_wav_output(int8_t *output_data, int output_size) {
+static int write_wav_output(void *output_data, int output_size) {
 #ifdef WORDS_BIGENDIAN
     /* libWildMidi outputs host-endian, *.wav must have little-endian. */
     uint16_t *swp = (uint16_t *)output_data;

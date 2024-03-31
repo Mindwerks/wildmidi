@@ -37,8 +37,6 @@
 
 #include "wildplay.h"
 
-extern unsigned int rate;
-
 #define BUFFERCOUNT 4
 
 static MCI_MIX_BUFFER MixBuffers[BUFFERCOUNT];
@@ -69,9 +67,9 @@ static LONG APIENTRY OS2_Dart_UpdateBuffers
     return (TRUE);
 }
 
-static int open_dart_output(const char * output) {
-    int i;
+static int open_dart_output(const char *output, unsigned int *rate) {
     MCI_AMP_OPEN_PARMS AmpOpenParms;
+    int i;
 
     WMPLAY_UNUSED(output);
 
@@ -81,7 +79,7 @@ static int open_dart_output(const char * output) {
     }
 
     /* compute a size for circa 1/4" of playback. */
-    bsize = rate >> 2;
+    bsize = *rate >> 2;
     bsize <<= 1; /* stereo */
     bsize <<= 1; /* 16 bit */
     for (i = 15; i >= 12; i--) {
@@ -116,7 +114,7 @@ static int open_dart_output(const char * output) {
 
     MixSetupParms.ulBitsPerSample = 16;
     MixSetupParms.ulFormatTag = MCI_WAVE_FORMAT_PCM;
-    MixSetupParms.ulSamplesPerSec = rate;
+    MixSetupParms.ulSamplesPerSec = *rate;
     MixSetupParms.ulChannels = 2;
     MixSetupParms.ulFormatMode = MCI_PLAY;
     MixSetupParms.ulDeviceType = MCI_DEVTYPE_WAVEFORM_AUDIO;
@@ -153,14 +151,14 @@ static int open_dart_output(const char * output) {
     }
 
     /* Start Playback */
-    memset(MixBuffers[0].pBuffer, /*32767 */ 0, bsize);
-    memset(MixBuffers[1].pBuffer, /*32767 */ 0, bsize);
+    memset(MixBuffers[0].pBuffer, 0, bsize);
+    memset(MixBuffers[1].pBuffer, 0, bsize);
     MixSetupParms.pmixWrite(MixSetupParms.ulMixHandle, MixBuffers, 2);
 
     return (0);
 }
 
-static int write_dart_output(int8_t *output_data, int output_size) {
+static int write_dart_output(void *output_data, int output_size) {
     static int idx = 0;
 
     if (idx + output_size > bsize) {

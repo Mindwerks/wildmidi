@@ -33,8 +33,6 @@
 
 #include "wildplay.h"
 
-extern unsigned int rate;
-
 #include <CoreAudio/CoreAudio.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
@@ -166,7 +164,7 @@ static OSStatus render_proc(void *inRefCon,
  */
 
 
-static int open_coreaudio_output(const char * output)
+static int open_coreaudio_output(const char *output, unsigned int *rate)
 {
     AudioStreamBasicDescription ad;
     AudioComponent comp;
@@ -183,7 +181,7 @@ static int open_coreaudio_output(const char * output)
     }
 
     /* Setup for signed 16 bit output: */
-    ad.mSampleRate = rate;
+    ad.mSampleRate = *rate;
     ad.mFormatID = kAudioFormatLinearPCM;
     ad.mFormatFlags = kAudioFormatFlagIsPacked | kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsSignedInteger;
     ad.mChannelsPerFrame = 2;
@@ -226,7 +224,7 @@ static int open_coreaudio_output(const char * output)
     }
 
     chunk_size = max_frames;
-    num_chunks = (rate * ad.mBytesPerFrame * latency / 1000 + chunk_size - 1) / chunk_size;
+    num_chunks = (*rate * ad.mBytesPerFrame * latency / 1000 + chunk_size - 1) / chunk_size;
     buffer_len = (num_chunks + 1) * chunk_size;
     if ((buffer = calloc(num_chunks + 1, chunk_size)) == NULL) {
         goto err;
@@ -257,7 +255,7 @@ static int open_coreaudio_output(const char * output)
 }
 
 
-static int write_coreaudio_output(int8_t *buf, int len)
+static int write_coreaudio_output(void *buf, int len)
 {
     int j = 0;
 
@@ -267,10 +265,10 @@ static int write_coreaudio_output(int8_t *buf, int len)
     }
 
     while (len) {
-        j = write_buffer((unsigned char *)buf, len);
+        j = write_buffer(buf, len);
         if (j > 0) {
             len -= j;
-            buf += j;
+            buf = (char *)buf + j;
         } else
             break;
     }

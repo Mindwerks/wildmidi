@@ -31,14 +31,12 @@
 
 #include "wildplay.h"
 
-extern unsigned int rate;
-
 static int alsa_first_time = 1;
 static snd_pcm_t *pcm = NULL;
 
 static void close_alsa_output(void);
 
-static int open_alsa_output(const char * output) {
+static int open_alsa_output(const char * output, unsigned int *rate) {
     snd_pcm_hw_params_t *hw;
     snd_pcm_sw_params_t *sw;
     int err;
@@ -81,13 +79,13 @@ static int open_alsa_output(const char * output) {
         goto fail;
     }
 
-    r = rate;
-    if (snd_pcm_hw_params_set_rate_near(pcm, hw, &rate, 0) < 0) {
-        fprintf(stderr, "ALSA does not support %uHz for your soundcard\r\n", rate);
+    r = *rate;
+    if (snd_pcm_hw_params_set_rate_near(pcm, hw, rate, 0) < 0) {
+        fprintf(stderr, "ALSA does not support %uHz for your soundcard\r\n", r);
         goto fail;
     }
-    if (r != rate) {
-        fprintf(stderr, "ALSA: sample rate set to %uHz instead of %u\r\n", rate, r);
+    if (r != *rate) {
+        fprintf(stderr, "ALSA: sample rate set to %uHz instead of %u\r\n", *rate, r);
     }
 
     alsa_buffer_time = 500000;
@@ -122,9 +120,10 @@ fail:
     return -1;
 }
 
-static int write_alsa_output(int8_t *output_data, int output_size) {
-    int err;
+static int write_alsa_output(void *data, int output_size) {
+    const unsigned char *output_data = (unsigned char *)data;
     snd_pcm_uframes_t frames;
+    int err;
 
     while (output_size > 0) {
         frames = snd_pcm_bytes_to_frames(pcm, output_size);

@@ -46,13 +46,11 @@
 
 #include "wildplay.h"
 
-extern unsigned int rate;
-
 static struct sio_hdl * hdl;
 #define DEFAULT_FRAGSIZE 12
 static int fragsize = 1 << DEFAULT_FRAGSIZE;
 
-static int open_sndio_output(const char *output)
+static int open_sndio_output(const char *output, unsigned int *rate)
 {
     struct sio_par par;
 
@@ -67,7 +65,7 @@ static int open_sndio_output(const char *output)
     /* Setup for signed 16 bit output: */
     sio_initpar(&par);
     par.pchan = 2;
-    par.rate = rate;
+    par.rate = *rate;
     par.le = SIO_LE_NATIVE;
     par.bits = 16;
     par.sig = 1;
@@ -88,7 +86,7 @@ static int open_sndio_output(const char *output)
         goto error;
     }
 
-    rate = par.rate; /* update rate with the received value */
+    *rate = par.rate; /* update rate with the received value */
     return 0;
 
   error:
@@ -96,7 +94,7 @@ static int open_sndio_output(const char *output)
     return -1;
 }
 
-static int write_sndio_output(int8_t *buf, int len)
+static int write_sndio_output(void *buf, int len)
 {
     sio_write(hdl, buf, len);
     return 0;

@@ -55,10 +55,9 @@
 #endif /**/
 
 typedef struct {
-    const char *name;
-    const char *description;
-    int (* open_out)(const char *);
-    int (* send_out)(int8_t *, int);
+    const char *name, *description;
+    int  (* open_out)(const char *, unsigned int *);
+    int  (* send_out)(void *, int);
     void (* close_out)(void);
     void (* pause_out)(void);
     void (* resume_out)(void);

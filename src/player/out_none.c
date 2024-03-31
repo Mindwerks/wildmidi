@@ -28,12 +28,13 @@
 
 #include "wildplay.h"
 
-static int open_output_noout(const char * output) {
+static int open_output_noout(const char *output, unsigned int *rate) {
     WMPLAY_UNUSED(output);
+    WMPLAY_UNUSED(rate);
     fprintf(stderr, "Selected audio output driver was not enabled at compile time.\r\n");
     return (-1);
 }
-static int send_output_noout(int8_t *output_data, int output_size) {
+static int send_output_noout(void *output_data, int output_size) {
     WMPLAY_UNUSED(output_data);
     WMPLAY_UNUSED(output_size);
     return (-1);

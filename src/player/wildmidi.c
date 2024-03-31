@@ -172,7 +172,7 @@ static struct _midi_test midi_test[] = {
 };
 
 static int midi_test_max = 1;
-unsigned int rate = 32072;
+static unsigned int rate = 32072;
 
 /*
  MIDI Output Functions
@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
     uint16_t mixer_options = 0;
     void *midi_ptr;
     uint8_t master_volume = 100;
-    int8_t *output_buffer;
+    void *output_buffer;
     uint32_t perc_play;
     uint32_t pro_mins;
     uint32_t pro_secs;
@@ -536,7 +536,7 @@ int main(int argc, char **argv) {
 
     printf("Initializing Sound System (%s)\n", available_outputs[playback_id]->name);
 
-    if (available_outputs[playback_id]->open_out(output) == -1) {
+    if (available_outputs[playback_id]->open_out(output, &rate) == -1) {
         return (1);
     }
 
@@ -556,7 +556,7 @@ int main(int argc, char **argv) {
     printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
     printf(" m  save as midi     p  Pause On/Off\n\n");
 
-    output_buffer = (int8_t *) malloc(16384);
+    output_buffer = malloc(16384);
     if (output_buffer == NULL) {
         fprintf(stderr, "Not enough memory, exiting\n");
         WildMidi_Shutdown();
@@ -770,7 +770,7 @@ int main(int argc, char **argv) {
             else {
                 samples = 16384;
             }
-            res = WildMidi_GetOutput(midi_ptr, output_buffer, samples);
+            res = WildMidi_GetOutput(midi_ptr, (int8_t *)output_buffer, samples);
 
             if (res <= 0)
                 break;
@@ -805,7 +805,7 @@ int main(int argc, char **argv) {
                 pro_secs, perc_play, spinner[spinpoint++ % 4]);
 
             if (available_outputs[playback_id]->send_out(output_buffer, res) < 0) {
-            /* driver prints an error message already. */
+                /* driver prints an error message already. */
                 printf("\r");
                 goto end2;
             }
@@ -818,10 +818,12 @@ int main(int argc, char **argv) {
         memset(output_buffer, 0, 16384);
         available_outputs[playback_id]->send_out(output_buffer, 16384);
     }
+
 end1:
     memset(output_buffer, 0, 16384);
     available_outputs[playback_id]->send_out(output_buffer, 16384);
     msleep(5);
+
 end2:
     available_outputs[playback_id]->close_out();
     free(output_buffer);

@@ -40,13 +40,13 @@
 
 #define NUM_BUFFERS 4
 
-extern unsigned int rate;
-
 static ALCdevice *device;
 static ALCcontext *context;
 static ALuint sourceId = 0;
 static ALuint buffers[NUM_BUFFERS];
 static ALuint frames = 0;
+
+static unsigned int rate;
 
 static void pause_openal_output(void) {
     alSourcePause(sourceId);
@@ -54,13 +54,12 @@ static void pause_openal_output(void) {
 
 static void resume_openal_output(void) {}
 
-static int write_openal_output(int8_t *output_data, int output_size) {
+static int write_openal_output(void *output_data, int output_size) {
     ALint processed, state;
     ALuint bufid;
 
     if (frames < NUM_BUFFERS) { /* initial state: fill the buffers */
-        alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data,
-                     output_size, rate);
+        alBufferData(buffers[frames], AL_FORMAT_STEREO16, output_data, output_size, rate);
 
         /* Now queue and start playback! */
         if (++frames == NUM_BUFFERS) {
@@ -99,7 +98,6 @@ static int write_openal_output(int8_t *output_data, int output_size) {
 
     /* Make sure the source hasn't underrun */
     alGetSourcei(sourceId, AL_SOURCE_STATE, &state);
-    /*printf("STATE: %#08x - %d\n", state, queued);*/
     if (state != AL_PLAYING) {
         ALint queued;
 
@@ -130,7 +128,7 @@ static void close_openal_output(void) {
     frames = 0;
 }
 
-static int open_openal_output(const char * output) {
+static int open_openal_output(const char *output, unsigned int *r) {
     WMPLAY_UNUSED(output);
 
     /* setup our audio devices and contexts */
@@ -154,6 +152,7 @@ static int open_openal_output(const char * output) {
     /* setup our sources and buffers */
     alGenSources(1, &sourceId);
     alGenBuffers(NUM_BUFFERS, buffers);
+    rate = *r;
 
     return (0);
 }

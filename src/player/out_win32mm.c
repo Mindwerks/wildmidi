@@ -31,8 +31,6 @@
 
 #include "wildplay.h"
 
-extern unsigned int rate;
-
 static HWAVEOUT hWaveOut = NULL;
 static CRITICAL_SECTION waveCriticalSection;
 
@@ -60,7 +58,7 @@ static void CALLBACK mmOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstanc
     LeaveCriticalSection(&waveCriticalSection);
 }
 
-static int open_mm_output(const char * output) {
+static int open_mm_output(const char *output, unsigned int *rate) {
     WAVEFORMATEX wfx;
     char *mm_buffer;
     int i;
@@ -83,7 +81,7 @@ static int open_mm_output(const char * output) {
         mm_buffer += MM_BLOCK_SIZE;
     }
 
-    wfx.nSamplesPerSec = rate;
+    wfx.nSamplesPerSec = *rate;
     wfx.wBitsPerSample = 16;
     wfx.nChannels = 2;
     wfx.cbSize = 0;
@@ -102,7 +100,8 @@ static int open_mm_output(const char * output) {
     return (0);
 }
 
-static int write_mm_output(int8_t *output_data, int output_size) {
+static int write_mm_output(void *data, int output_size) {
+    const unsigned char *outdata = (unsigned char *)data;
     WAVEHDR* current;
     int free_size = 0;
     int data_read = 0;
@@ -115,7 +114,7 @@ static int write_mm_output(int8_t *output_data, int output_size) {
         if (free_size > output_size)
             free_size = output_size;
 
-        memcpy(current->lpData + current->dwUser, &output_data[data_read], free_size);
+        memcpy(current->lpData + current->dwUser, &outdata[data_read], free_size);
         current->dwUser += free_size;
         output_size -= free_size;
         data_read += free_size;
