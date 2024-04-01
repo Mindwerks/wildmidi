@@ -26,7 +26,7 @@ jobs:
               install_cmd: 'sudo pkg_add cmake',
             }
           - { name: NetBSD,   os: netbsd,   os-version: 9.3,  os-arch: x86-64,
-              cmake_opts: '-DWANT_OSS=ON',
+              cmake_opts: '-DWANT_NETBSD=ON',
               setup_cmd: 'export PATH="/usr/pkg/sbin:/usr/pkg/bin:/sbin:$PATH";export PKG_PATH="https://cdn.netBSD.org/pub/pkgsrc/packages/NetBSD/$(uname -p)/$(uname -r|cut -f "1 2" -d.)/All/";echo "PKG_PATH=$PKG_PATH";echo "uname -a -> \"$(uname -a)\"";sudo -E sysctl -w security.pax.aslr.enabled=0;sudo -E sysctl -w security.pax.aslr.global=0;sudo -E pkgin clean;sudo -E pkgin update',
               install_cmd: 'sudo -E pkgin -y install cmake',
             }

@@ -26,7 +26,11 @@ Turns on an 8 point reverb engine that adds depth to the final mix.
 Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmidi/wildmidi.cfg
 .PP
 .IP "\fB\-d\fP \fIaudiodev\fP | \fB\-\-device=\fIaudiodev\fP"
-Send the audio to \fIaudiodev\fP instead of the default. ALSA defaults to the system "default" while OSS defaults to "/dev/dsp". Other environments do not support this option.
+Send audio to \fIaudiodev\fP instead of the default device.
+  alsa   : defaults to the system "default"
+  oss    : defaults to "/dev/dsp"
+  netbsd : defaults to "/dev/audio"
+  Other environments do not support this option.
 .PP
 .IP "\fB\-h\fP | \fB\-\-help\fP"
 Displays command line options.

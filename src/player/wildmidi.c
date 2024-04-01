@@ -55,6 +55,9 @@ static const audiodrv_info *available_outputs[] = {
 #ifdef AUDIODRV_SNDIO
     &audiodrv_sndio,
 #endif
+#ifdef AUDIODRV_NETBSD
+    &audiodrv_netbsd,
+#endif
 #ifdef AUDIODRV_OSS
     &audiodrv_oss,
 #endif
@@ -240,7 +243,7 @@ static struct option const long_options[] = {
     { "rate", 1, 0, 'r' },
     { "mastervol", 1, 0, 'm' },
     { "config", 1, 0, 'c' },
-#if defined(AUDIODRV_OSS) || defined(AUDIODRV_ALSA)
+#if defined(AUDIODRV_OSS) || defined(AUDIODRV_NETBSD) || defined(AUDIODRV_ALSA)
     { "device", 1, 0, 'd' },
 #endif
     { "wavout", 1, 0, 'o' },
@@ -285,9 +288,9 @@ static void do_help(void) {
            available_outputs[get_default_output()]->name);
     printf("  -o W  --wavout=W    Save output to W in 16bit stereo format wav file\n");
     printf("                     (implies '-P wave' )\n");
-#if defined(AUDIODRV_OSS)|| defined(AUDIODRV_ALSA)
-    printf("  -d D  --device=D    For ALSA or OSS output: use device 'D' for audio\n");
-    printf("                      output instead of the default\n");
+#if defined(AUDIODRV_OSS) || defined(AUDIODRV_NETBSD)|| defined(AUDIODRV_ALSA)
+    printf("  -d D  --device=D    For alsa, netbsd or oss output: use device 'D'\n");
+    printf("                      instead of the default\n");
 #endif
     printf("Software Wavetable Options:\n");
     printf("  -l    --log_vol     Use log volume adjustments\n");

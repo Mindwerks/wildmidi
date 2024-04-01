@@ -17,8 +17,8 @@ PLATFORMS:
 * Windows: x86 and x64
 * OSX: x86, x64 and powerpc (player: CoreAudio output)
 * FreeBSD, Debian kFreeBSD (player: OSS output)
-* NetBSD (player: OSS output.)
 * OpenBSD (player: sndio output.)
+* NetBSD (player: netbsd output.)
 * Hurd: Debian
 * DOS (player: sound blaster or compatibles output.)
 * OS/2 (player: Dart output.)
@@ -39,14 +39,14 @@ Requirements:
 CHANGELOG
 
 0.4.6
-* A lot of player clean-up and refactoring, thanks to initial work
+* A lot of player cleanup and refactoring, thanks to initial work
   by Azamat H. Hackimov.
 * Ability to choose which audio output backends to include in the
   build system: see the cmake script for the relevant `WANT_???`
   options. Player's `--help` command line switch lists the available
   backends. Thanks to initial work by Azamat H. Hackimov.
-* New player audio output backends: coreaudio for macOS, sndio for
-  OpenBSD.
+* New native audio output backends for player: coreaudio for macOS,
+  sndio for OpenBSD, netbsd (sunaudio) for NetBSD.
 * Workaround a link failure on AmigaOS4 with newer SDKs (bug #241).
 * Other minor source clean-ups.
 

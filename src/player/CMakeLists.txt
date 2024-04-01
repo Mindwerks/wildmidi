@@ -9,6 +9,7 @@ SET(wildmidi_executable_SRCS
 		out_coreaudio.c
 		out_dart.c
 		out_dossb.c
+		out_netbsd.c
 		out_openal.c
 		out_oss.c
 		out_sndio.c

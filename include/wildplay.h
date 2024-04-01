@@ -68,6 +68,7 @@ extern audiodrv_info audiodrv_wave;
 extern audiodrv_info audiodrv_coreaudio;
 extern audiodrv_info audiodrv_alsa;
 extern audiodrv_info audiodrv_sndio;
+extern audiodrv_info audiodrv_netbsd;
 extern audiodrv_info audiodrv_oss;
 extern audiodrv_info audiodrv_ahi;
 extern audiodrv_info audiodrv_winmm;

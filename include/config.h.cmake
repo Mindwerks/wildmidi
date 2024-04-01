@@ -66,9 +66,9 @@
 #cmakedefine AUDIODRV_OSS
 #cmakedefine AUDIODRV_SNDIO
 #cmakedefine AUDIODRV_COREAUDIO
+#cmakedefine AUDIODRV_NETBSD
 #cmakedefine AUDIODRV_OPENAL
 #cmakedefine AUDIODRV_AHI
 #cmakedefine AUDIODRV_WINMM
 #cmakedefine AUDIODRV_OS2DART
 #cmakedefine AUDIODRV_DOSSB
-
