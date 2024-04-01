@@ -102,6 +102,7 @@ static int write_sndio_output(void *buf, int len)
 
 static void close_sndio_output(void)
 {
+    if (!hdl) return;
     sio_close(hdl);
     hdl = NULL;
 }

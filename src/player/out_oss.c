@@ -48,7 +48,7 @@
 #define DEFAULT_FRAGSIZE 14
 #define DEFAULT_NUMFRAGS 16
 
-static int audio_fd;
+static int audio_fd = -1;
 
 static void close_oss_output(void);
 

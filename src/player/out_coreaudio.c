@@ -287,6 +287,7 @@ static void close_coreaudio_output(void)
     AudioUnitUninitialize(au);
     AudioComponentInstanceDispose(au);
     free(buffer);
+    buffer = NULL;
 }
 
 static void pause_coreaudio_output(void)
@@ -308,5 +309,4 @@ audiodrv_info audiodrv_coreaudio = {
     pause_coreaudio_output,
     resume_coreaudio_output
 };
-
 #endif /* AUDIODRV_COREAUDIO */
