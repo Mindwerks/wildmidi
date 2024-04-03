@@ -538,6 +538,10 @@ int main(int argc, char **argv) {
         config_file[sizeof(config_file) - 1] = 0;
     }
 
+#ifdef WILDMIDI_AMIGA
+    amiga_sysinit();
+#endif
+
     printf("Initializing Sound System (%s)\n", available_outputs[playback_id]->name);
 
     if (available_outputs[playback_id]->open_out(output, &rate) == -1) {
@@ -550,8 +554,17 @@ int main(int argc, char **argv) {
                         (libraryver>> 8) & 255,
                         (libraryver    ) & 255);
     if (WildMidi_Init(config_file, rate, mixer_options) == -1) {
+        available_outputs[playback_id]->close_out();
         fprintf(stderr, "%s\r\n", WildMidi_GetError());
         WildMidi_ClearError();
+        return (1);
+    }
+
+    output_buffer = malloc(16384);
+    if (output_buffer == NULL) {
+        fprintf(stderr, "Not enough memory, exiting\n");
+        available_outputs[playback_id]->close_out();
+        WildMidi_Shutdown();
         return (1);
     }
 
@@ -560,16 +573,6 @@ int main(int argc, char **argv) {
     printf(" ,  1sec Seek Back   r  Reverb               .  1sec Seek Forward\n");
     printf(" m  save as midi     p  Pause On/Off\n\n");
 
-    output_buffer = malloc(16384);
-    if (output_buffer == NULL) {
-        fprintf(stderr, "Not enough memory, exiting\n");
-        WildMidi_Shutdown();
-        return (1);
-    }
-
-#ifdef WILDMIDI_AMIGA
-    amiga_sysinit();
-#endif
     wm_inittty();
 
     WildMidi_MasterVolume(master_volume);
