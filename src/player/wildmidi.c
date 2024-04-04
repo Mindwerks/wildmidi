@@ -70,6 +70,9 @@ static const audiodrv_info *available_outputs[] = {
 #ifdef AUDIODRV_OS2DART
     &audiodrv_dart,
 #endif
+#ifdef AUDIODRV_DOSSB
+    &audiodrv_dossb,
+#endif
 #ifdef AUDIODRV_OPENAL
     &audiodrv_openal,
 #endif

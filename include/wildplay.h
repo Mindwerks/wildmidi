@@ -73,6 +73,7 @@ extern audiodrv_info audiodrv_oss;
 extern audiodrv_info audiodrv_ahi;
 extern audiodrv_info audiodrv_winmm;
 extern audiodrv_info audiodrv_dart;
+extern audiodrv_info audiodrv_dossb;
 extern audiodrv_info audiodrv_openal;
 
 extern void msleep(uint32_t msec);
