@@ -37,6 +37,8 @@ SET(wildmidi_library_HDRS
         ../include/filenames.h
         ../include/mus2mid.h
         ../include/xmi2mid.h
+        ../include/wm_tty.h
+        ../include/wildplay.h
         )
 
 # set our library names
