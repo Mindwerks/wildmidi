@@ -50,8 +50,29 @@ enum {
 extern char * _WM_Global_ErrorS;
 extern int _WM_Global_ErrorI;
 
+/* This is for https://github.com/Mindwerks/wildmidi/pull/243
+ * Change to 0 if you really want to see -Wpedantic warnings. */
+#define KILL_PEDANTIC_WARNS 1
+
+/* TODO: add more here as needed. */
 #if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || (defined(__cplusplus) && __cplusplus >= 201103L)
 #define _WM_FUNCTION __func__
+#elif defined(__clang__)
+#define _WM_FUNCTION __func__
+#if KILL_PEDANTIC_WARNS
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+#elif defined(__GNUC__) && (__GNUC__ >= 3)
+#define _WM_FUNCTION __func__
+#if (__GNUC__ >= 5) && KILL_PEDANTIC_WARNS
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+#elif defined(__GNUC__)
+#define _WM_FUNCTION __FUNCTION__
+#elif defined(__WATCOMC__)
+#define _WM_FUNCTION __FUNCTION__
+#elif defined(_MSC_VER) && (_MSC_VER >= 1300) && defined(__FUNCTION__)  /* VC7 (Visual Studio .NET) and newer. */
+#define _WM_FUNCTION __FUNCTION__
 #else
 #define _WM_FUNCTION "<unknown>"
 #endif
