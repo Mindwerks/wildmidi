@@ -226,7 +226,7 @@ static int open_coreaudio_output(const char *output, unsigned int *rate)
     chunk_size = max_frames;
     num_chunks = (*rate * ad.mBytesPerFrame * latency / 1000 + chunk_size - 1) / chunk_size;
     buffer_len = (num_chunks + 1) * chunk_size;
-    if ((buffer = calloc(num_chunks + 1, chunk_size)) == NULL) {
+    if ((buffer = (unsigned char *)calloc(num_chunks + 1, chunk_size)) == NULL) {
         goto err;
     }
 
@@ -265,7 +265,7 @@ static int write_coreaudio_output(void *buf, int len)
     }
 
     while (len) {
-        j = write_buffer(buf, len);
+        j = write_buffer((unsigned char *)buf, len);
         if (j > 0) {
             len -= j;
             buf = (char *)buf + j;
