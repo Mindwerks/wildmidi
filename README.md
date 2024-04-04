@@ -47,6 +47,7 @@ CHANGELOG
   backends. Thanks to initial work by Azamat H. Hackimov.
 * New native audio output backends for player: coreaudio for macOS,
   sndio for OpenBSD, netbsd (sunaudio) for NetBSD.
+* Improved pkg-config file generation in cmake script (bug #236).
 * Workaround a link failure on AmigaOS4 with newer SDKs (bug #241).
 * Other minor source clean-ups.
 
