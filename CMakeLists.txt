@@ -61,11 +61,9 @@ CMAKE_DEPENDENT_OPTION(WANT_WINMM "Include Windows WinMM audio support" ON "WIN3
 OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
-CMAKE_DEPENDENT_OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF "APPLE" OFF)
 
-IF (WIN32 AND MSVC)
-    OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF)
-ENDIF()
+CMAKE_DEPENDENT_OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF "WIN32;MSVC" OFF)
+CMAKE_DEPENDENT_OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF "APPLE" OFF)
 
 IF (UNIX AND NOT APPLE AND NOT RISCOS)
     SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
@@ -81,9 +79,9 @@ ENDIF()
 IF (UNIX)
     # allow 'large' files in 32 bit builds
     ADD_DEFINITIONS(
-            -D_LARGEFILE_SOURCE
-            -D_FILE_OFFSET_BITS=64
-            -D_LARGE_FILES
+        -D_LARGEFILE_SOURCE
+        -D_FILE_OFFSET_BITS=64
+        -D_LARGE_FILES
     )
 ENDIF()
 
