@@ -164,7 +164,7 @@ static void pause_mm_output(void) {}
 static void resume_mm_output(void) {}
 
 audiodrv_info audiodrv_winmm = {
-    "win32mm",
+    "winmm",
     "Windows WinMM output",
     open_mm_output,
     write_mm_output,
@@ -173,4 +173,4 @@ audiodrv_info audiodrv_winmm = {
     resume_mm_output
 };
 
-#endif
+#endif /* AUDIODRV_WINMM */
