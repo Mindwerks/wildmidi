@@ -20,6 +20,10 @@
    <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
+
+#ifdef AUDIODRV_DOSSB
+
 #include <stdlib.h>
 #include <dpmi.h>
 #include <go32.h>
@@ -559,3 +563,4 @@ void sb_query_dma(unsigned int *dma_size, unsigned int *dma_pos)
 	}
 	*dma_pos = *dma_size - dma_left;
 }
+#endif /* AUDIODRV_DOSSB */

@@ -29,10 +29,6 @@ INCLUDE = -I. -I../include/stdint -I../include
 CFLAGS = $(INCLUDE) -Wall -W -fno-common
 ARFLAGS = cr
 
-# SB output support (comment out if not wanted)
-CFLAGS+= -DAUDIODRV_DOSSB
-SB_OBJ = dosirq.o dosdma.o dossb.o
-
 LD = $(CC)
 ifneq ($(USE_DXE),1)
 WM_LINK = WildMidi
@@ -56,11 +52,13 @@ endif
 	$(CC) -c $(CFLAGS) -o $@ $<
 %.o: ../src/player/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
+%.o: ../src/player/dos/%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 
 # Objects
 LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o internal_midi.o patches.o sample.o
-PLAYER_OBJ= wm_tty.o msleep.o getopt_long.o out_none.o $(SB_OBJ) out_dossb.o out_wave.o wildmidi.o
+PLAYER_OBJ= wm_tty.o msleep.o getopt_long.o out_none.o dosirq.o dosdma.o dossb.o out_dossb.o out_wave.o wildmidi.o
 
 # Build targets
 TARGETS = libWildMidi.a wildmidi.exe libWildMidi_dxe.a wildmidi.dxe

@@ -19,7 +19,9 @@
    <http://www.gnu.org/licenses/>.
 */
 
-#include "dosirq.h"
+#include "config.h"
+
+#ifdef AUDIODRV_DOSSB
 
 #include <dpmi.h>
 #include <go32.h>
@@ -27,6 +29,8 @@
 #include <sys/nearptr.h>
 #include <malloc.h>
 #include <string.h>
+
+#include "dosirq.h"
 
 unsigned int __irq_stack_size = 0x4000;
 unsigned int __irq_stack_count = 1;
@@ -320,3 +324,4 @@ void irq_detect_clear()
 	if (oldirq)
 		enable();
 }
+#endif /* AUDIODRV_DOSSB */

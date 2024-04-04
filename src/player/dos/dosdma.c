@@ -19,7 +19,9 @@
    <http://www.gnu.org/licenses/>.
 */
 
-#include "dosdma.h"
+#include "config.h"
+
+#ifdef AUDIODRV_DOSSB
 
 #include <sys/version.h>
 #include <dos.h>
@@ -213,3 +215,4 @@ void dma_start(dma_buffer * buffer, unsigned long count, unsigned char mode)
 	if (old_ints)
 		enable();
 }
+#endif /* AUDIODRV_DOSSB */

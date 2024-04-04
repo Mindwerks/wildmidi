@@ -29,7 +29,7 @@
 #include <string.h>
 
 #include "wildplay.h"
-#include "dossb.h"
+#include "dos/dossb.h"
 
 /* SoundBlaster/Pro/16/AWE32 driver for DOS -- adapted from
  * libMikMod,  written by Andrew Zabolotny <bit@eltech.ru>,
