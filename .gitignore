@@ -3,6 +3,9 @@
 *.obj
 *.so
 *.dll
+*.dxe
+*.a
+*.exe
 
 # logs and other texts #
 *.log
