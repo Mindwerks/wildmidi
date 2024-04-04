@@ -80,6 +80,10 @@ static int open_alsa_output(const char *pcmname, unsigned int *rate) {
         goto fail;
     }
     if (r != *rate) {
+        if (*rate > 65535) { /* WildMidi_Init() accepts uint16_t as rate */
+            fprintf(stderr, "ALSA: an unsupported sample rate (%uHz) was set\r\n", *rate);
+            goto fail;
+        }
         fprintf(stderr, "ALSA: sample rate set to %uHz instead of %u\r\n", *rate, r);
     }
 

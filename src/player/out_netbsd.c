@@ -86,13 +86,20 @@ static int open_netbsd_output(const char *pcmname, unsigned int *rate)
     ainfo.blocksize = 0;
 
     if (ioctl(audio_fd, AUDIO_SETINFO, &ainfo) < 0) {
-        fprintf(stderr, "netbsdaudio: AUDIO_SETINFO failed!\n");
+        fprintf(stderr, "netbsdaudio: AUDIO_SETINFO failed!\r\n");
         goto err1;
     }
     if (ioctl(audio_fd, AUDIO_GETINFO, &ainfo) < 0) {
         err0:
-        fprintf(stderr, "netbsdaudio: AUDIO_GETINFO failed!\n");
+        fprintf(stderr, "netbsdaudio: AUDIO_GETINFO failed!\r\n");
         goto err1;
+    }
+    if (ainfo.play.sample_rate != *rate) {
+        if (ainfo.play.sample_rate > 65535) { /* WildMidi_Init() accepts uint16_t as rate */
+            fprintf(stderr, "netbsdaudio: an unsupported sample rate (%uHz) was set\r\n", ainfo.play.sample_rate);
+            goto err1;
+        }
+        fprintf(stderr, "netbsdaudio: sample rate set to %uHz instead of %u\r\n", ainfo.play.sample_rate, *rate);
     }
     *rate = ainfo.play.sample_rate;
 

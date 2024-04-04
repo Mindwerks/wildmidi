@@ -90,6 +90,10 @@ static int open_oss_output(const char *pcmname, unsigned int *rate) {
         goto fail;
     }
     if (r != *rate) {
+        if (*rate > 65535) { /* WildMidi_Init() accepts uint16_t as rate */
+            fprintf(stderr, "OSS: set an unsupported sample rate (%uHz) was set\r\n", *rate);
+            goto fail;
+        }
         fprintf(stderr, "OSS: sample rate set to %uHz instead of %u\r\n", *rate, r);
     }
 

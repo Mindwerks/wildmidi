@@ -86,6 +86,13 @@ static int open_sndio_output(const char *output, unsigned int *rate)
         goto error;
     }
 
+    if (par.rate != *rate) {
+        if (par.rate > 65535) { /* WildMidi_Init() accepts uint16_t as rate */
+            fprintf(stderr, "sndio: an unsupported sample rate (%uHz) was set\r\n", par.rate);
+            goto error;
+        }
+        fprintf(stderr, "sndio: sample rate set to %uHz instead of %u\r\n", par.rate, *rate);
+    }
     *rate = par.rate; /* update rate with the received value */
     return 0;
 
