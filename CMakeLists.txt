@@ -292,8 +292,10 @@ IF(WANT_PLAYER OR WANT_PLAYERSTATIC)
         STRING(APPEND ENABLED_OUTPUT " winmm")
     ENDIF()
 
-    STRING(STRIP ${ENABLED_OUTPUT} ENABLED_OUTPUT)
+    # WAV file output as an audio output backend is always enabled
     STRING(APPEND ENABLED_OUTPUT " wave")
+
+    STRING(STRIP ${ENABLED_OUTPUT} ENABLED_OUTPUT)
     MESSAGE(STATUS "Enabled audio output backends: ${ENABLED_OUTPUT}")
 ENDIF()
 
