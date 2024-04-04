@@ -132,6 +132,10 @@ IF (WANT_DEVTEST)
 ENDIF()
 
 # prepare pkg-config file
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix "\${prefix}")
+set(includedir "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}")
 CONFIGURE_FILE("wildmidi.pc.in" "${PROJECT_BINARY_DIR}/wildmidi.pc" @ONLY)
 
 INSTALL(TARGETS ${wildmidi_lib_install}
