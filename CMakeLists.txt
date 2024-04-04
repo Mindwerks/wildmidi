@@ -1,4 +1,4 @@
-# ########## Project setup ##########
+# Project setup
 CMAKE_MINIMUM_REQUIRED(VERSION 3.4...3.5)
 PROJECT(wildmidi LANGUAGES C VERSION 0.4.6)
 
@@ -38,8 +38,10 @@ ELSE()
 ENDIF()
 IF (CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
     SET(SNDIO_DEFAULT ON)
+    SET(SYS_OPENBSD TRUE)
 ELSE()
     SET(SNDIO_DEFAULT OFF)
+    SET(SYS_OPENBSD FALSE)
 ENDIF()
 IF(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
     SET(SYS_NETBSD TRUE)
@@ -63,17 +65,17 @@ CMAKE_DEPENDENT_OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF "APPLE" OFF)
 
 IF (WIN32 AND MSVC)
     OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF)
-ENDIF ()
+ENDIF()
 
 IF (UNIX AND NOT APPLE AND NOT RISCOS)
     SET(WILDMIDI_CFG "/etc/wildmidi/wildmidi.cfg" CACHE STRING "default config location")
 ELSE ()
     SET(WILDMIDI_CFG "wildmidi.cfg" CACHE STRING "default config location")
-ENDIF ()
+ENDIF()
 
 IF ((NOT BUILD_SHARED_LIBS) AND (NOT WANT_STATIC))
     MESSAGE(FATAL_ERROR "Neither dynamic nor static library build is selected.")
-ENDIF ()
+ENDIF()
 
 # Platform specific defines
 IF (UNIX)
@@ -83,16 +85,16 @@ IF (UNIX)
             -D_FILE_OFFSET_BITS=64
             -D_LARGE_FILES
     )
-ENDIF (UNIX)
+ENDIF()
 
-IF (OPENBSD)  # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
+IF (SYS_OPENBSD)
+    # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
     # use, i.e. don't skip the full RPATH for the build tree
     SET(CMAKE_SKIP_BUILD_RPATH FALSE)
 
     # when building, don't use the install RPATH already
     # (but later on when installing)
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-
     SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
     # add the automatically determined parts of the RPATH
@@ -103,16 +105,16 @@ IF (OPENBSD)  # Set RPATH for OpenBSD so WildMIDI can find libWildMidi.so
     LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
     IF ("${isSystemDir}" STREQUAL "-1")
         SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-    ENDIF ()
-ENDIF (OPENBSD)
+    ENDIF()
+ENDIF()
 
 IF (WIN32)
     ADD_DEFINITIONS(
-            -DNOMINMAX
-            -DWIN32_LEAN_AND_MEAN
-            -D_CRT_SECURE_NO_WARNINGS
+        -DWIN32_LEAN_AND_MEAN
+        -DNOMINMAX
+        -D_CRT_SECURE_NO_WARNINGS
     )
-ENDIF (WIN32)
+ENDIF()
 
 # Compiler specific settings
 IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
@@ -128,16 +130,16 @@ IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") OR (CMAKE_C_COMPILER_ID MATCHES "Clang")
                                  int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
         IF (HAVE_VISIBILITY_DEFAULT)
             CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN)
-        ENDIF ()
+        ENDIF()
         SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
-    ENDIF ()
+    ENDIF()
 
     IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
         ADD_DEFINITIONS(-ggdb3 -O0)
     ELSEIF (CMAKE_BUILD_TYPE STREQUAL "Release")
         ADD_DEFINITIONS(-O3)
-    ENDIF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-ENDIF ()
+    ENDIF()
+ENDIF()
 
 IF (CMAKE_C_COMPILER_ID MATCHES "SunPro")
     SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
@@ -150,9 +152,9 @@ IF (CMAKE_C_COMPILER_ID MATCHES "SunPro")
                              int main(void) {return 0;}" HAVE_LDSCOPE_GLOBAL)
     IF (HAVE_LDSCOPE_GLOBAL)# OR HAVE_VISIBILITY_DEFAULT
         SET(HAVE_LDSCOPE_HIDDEN 1)
-    ENDIF ()
+    ENDIF()
     SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
-ENDIF ()
+ENDIF()
 
 CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
 
@@ -166,7 +168,7 @@ CHECK_C_SOURCE_COMPILES("static __inline int static_foo() {return 0;}
 # we must not have any unresolved symbols:
 if (APPLE)
     SET(EXTRA_LDFLAGS "-Wl,-undefined,error")
-ELSEIF(CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
+ELSEIF(SYS_OPENBSD)
     SET(EXTRA_LDFLAGS "")
 ELSE()
     SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
@@ -192,30 +194,30 @@ IF (UNIX AND NOT APPLE)
     MESSAGE(STATUS "M_LIBRARY: ${M_LIBRARY}")
     IF (NOT M_LIBRARY)
         SET(M_LIBRARY "")
-    ENDIF ()
-ENDIF (UNIX AND NOT APPLE)
+    ENDIF()
+ENDIF()
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")
 IF (NOT HAVE_STDINT_H) # AND NOT HAVE_INTTYPES_H
     INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include/stdint")
-ENDIF ()
+ENDIF()
 
 IF (AMIGA OR AROS)
     SET(WILDMIDI_AMIGA 1)
-ENDIF ()
+ENDIF()
 
 IF (APPLE)
     SET(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
     SET(APP_BUNDLE_DIR "${wildmidi_BINARY_DIR}/${APP_BUNDLE_NAME}")
     IF (WANT_OSX_DEPLOYMENT)
         SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-    ENDIF ()
-ENDIF (APPLE)
+    ENDIF()
+ENDIF()
 
 IF (APPLE)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APP_BUNDLE_DIR}/Contents/MacOS")
-ENDIF (APPLE)
+ENDIF()
 
 IF(WANT_PLAYER OR WANT_PLAYERSTATIC)
     SET(ENABLED_OUTPUT "")
