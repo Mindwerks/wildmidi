@@ -1,0 +1,13 @@
+# Makefile for Win32 using Visual Studio 6:
+#	nmake -f Makefile.vs6
+
+INCLUDES  = -I. -I..\include -I..\include\stdint
+CPPFLAGS  = -DNDEBUG
+
+CFLAGS    = -nologo /O2 /MD /W3 /G6
+LDFLAGS   = -nologo /OPT:WIN98 /MACHINE:IX86 /SUBSYSTEM:CONSOLE
+
+DLL_FLAGS = $(CFLAGS) $(CPPFLAGS) -DWILDMIDI_BUILD -DDLL_EXPORT
+PLY_FLAGS = $(CFLAGS) $(CPPFLAGS)
+
+!INCLUDE common.mak
