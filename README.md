@@ -40,7 +40,8 @@ CHANGELOG
 
 0.4.6
 * A lot of player cleanup and refactoring, thanks to initial work
-  by Azamat H. Hackimov.
+  by Azamat H. Hackimov, with addition of several safeguards and
+  minor fixes.
 * Ability to choose which audio output backends to include in the
   build system: see the cmake script for the relevant `WANT_???`
   options. Player's `--help` command line switch lists the available
@@ -50,6 +51,7 @@ CHANGELOG
 * Improved pkg-config file generation in cmake script (bug #236).
 * Workaround a link failure on AmigaOS4 with newer SDKs (bug #241).
 * Other minor source clean-ups.
+* CMake project clean-ups. Cmake v3.4 or newer is now required.
 
 0.4.5
 * Fixed MUS drum channels 9 and 15 being swapped if the same file
