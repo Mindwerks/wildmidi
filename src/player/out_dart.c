@@ -27,6 +27,7 @@
 
 #ifdef AUDIODRV_OS2DART
 
+#undef VERSION /* stop conflict with os2medef.h */
 #define INCL_DOS
 #define INCL_DOSERRORS
 #define INCL_OS2MM
@@ -130,9 +131,6 @@ static int open_dart_output(const char *output, unsigned int *rate) {
         return (-1);
     }
 
-    /*bsize = MixSetupParms.ulBufferSize;*/
-    /*printf("Dart Buffer Size = %lu\n", bsize);*/
-
     BufferParms.ulNumBuffers = BUFFERCOUNT;
     BufferParms.ulBufferSize = bsize;
     BufferParms.pBufList = MixBuffers;
@@ -146,6 +144,10 @@ static int open_dart_output(const char *output, unsigned int *rate) {
         return (-1);
     }
 
+    /*
+    bsize = MixSetupParms.ulBufferSize;
+    printf("Dart Buffer Size = %lu\n", bsize);
+    */
     for (i = 0; i < BUFFERCOUNT; i++) {
         MixBuffers[i].ulBufferLength = bsize;
     }
