@@ -79,16 +79,6 @@ IF ((NOT BUILD_SHARED_LIBS) AND (NOT WANT_STATIC))
     MESSAGE(FATAL_ERROR "Neither dynamic nor static library build is selected.")
 ENDIF()
 
-# Platform specific defines
-IF (UNIX)
-    # allow 'large' files in 32 bit builds
-    ADD_DEFINITIONS(
-        -D_LARGEFILE_SOURCE
-        -D_FILE_OFFSET_BITS=64
-        -D_LARGE_FILES
-    )
-ENDIF()
-
 ### See:  http://www.cmake.org/Wiki/CMake_RPATH_handling
 IF (WANT_RPATH)
     # use, i.e. don't skip the full RPATH for the build tree
@@ -109,20 +99,30 @@ IF (WANT_RPATH)
     ENDIF()
 ENDIF()
 
+# Platform specific defines
 IF (WIN32)
     ADD_DEFINITIONS(
         -DWIN32_LEAN_AND_MEAN
         -DNOMINMAX
         -D_CRT_SECURE_NO_WARNINGS
     )
+ELSEIF (UNIX)
+    # allow 'large' files in 32 bit builds
+    ADD_DEFINITIONS(
+        -D_LARGEFILE_SOURCE
+        -D_FILE_OFFSET_BITS=64
+        -D_LARGE_FILES
+    )
 ENDIF()
 
 # Compiler specific settings
-IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
-    ADD_DEFINITIONS(
+IF (CMAKE_COMPILER_IS_GNUCC OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
+    IF (NOT MSVC) # exclude clang-cl
+        ADD_DEFINITIONS(
             -Wall -W
             -fno-common
-    )
+        )
+    ENDIF()
 
     IF (NOT WIN32 AND NOT CYGWIN)
         SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
