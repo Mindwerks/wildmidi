@@ -22,8 +22,7 @@ endif
 LIBSTATIC=wildmidi.a
 PLAYER_STATIC=wildmidi.exe
 PLAYER_LIBS=-L. -lwildmidi
-#PLAYER_LIBS+=-lmmpm2
-PLAYER_LIBS+=-los2me
+PLAYER_LIBS+=-lmmpm2
 
 CFLAGS_LIB= $(CFLAGS) -DWILDMIDI_BUILD
 CFLAGS_EXE= $(CFLAGS)
@@ -60,6 +59,6 @@ wildmidi.o: ../src/player/wildmidi.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
 
 clean:
-	$(RM) *.o
+	-del *.o
 distclean: clean
-	$(RM) $(LIBSTATIC) $(PLAYER_STATIC)
+	-del $(LIBSTATIC) $(PLAYER_STATIC)
