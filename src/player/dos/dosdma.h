@@ -78,7 +78,7 @@
 #define DMA_MODE_AUTOINIT	0x10	/* Auto-init mode bit */
 #define DMA_MODE_READ		0x44	/* I/O to memory, no autoinit, increment, single mode */
 #define DMA_MODE_WRITE		0x48	/* memory to I/O, no autoinit, increment, single mode */
-#define DMA_MODE_CASCADE	0xC0	/* pass thru DREQ->HRQ, DACK<-HLDA only */
+#define DMA_MODE_CASCADE	0xC0	/* pass through DREQ->HRQ, DACK<-HLDA only */
 
 /* Indexable specific DMA registers */
 typedef struct __dma_regs_s {
