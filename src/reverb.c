@@ -65,7 +65,7 @@ void _WM_reset_reverb(struct _rvb *rvb) {
 
  Sounds come from the speakers to all points and to the listener.
  Sound comes from the reflective points to the listener.
- These sounds are combined, put through a filter that mimics surface absorbtion.
+ These sounds are combined, put through a filter that mimics surface absorption.
  The combined sounds are also sent to the reflective points on the opposite side.
 
  */
