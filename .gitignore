@@ -36,3 +36,4 @@ wildmidi.pc
 # Zig
 zig-out/
 zig-cache/
+.zig-cache

@@ -7,13 +7,13 @@ pub fn build(b: *std.Build) void {
 
     const lib = b.addStaticLibrary(.{
         .name = "wildmidi",
-        .root_source_file = .{ .path = "include/wildmidi_lib.h" },
+        // .root_source_file = b.path("include/wildmidi_lib.h"),
         .target = target,
         .optimize = optimize,
     });
 
     lib.linkLibC();
-    lib.addIncludePath("include");
+    lib.addIncludePath(b.path("include"));
 
     const sourceFiles = .{
         "src/wm_error.c",
@@ -43,7 +43,7 @@ pub fn build(b: *std.Build) void {
     };
 
     const config_header = b.addConfigHeader(.{ .style = .{
-        .cmake = .{ .path = "include/config.h.cmake" },
+        .cmake = b.path("include/config.h.cmake"),
     } }, .{
         .HAVE_C_INLINE = 1,
         .HAVE_C___INLINE = 1,
@@ -62,21 +62,30 @@ pub fn build(b: *std.Build) void {
 
     lib.addConfigHeader(config_header);
 
-    switch (lib.target.toTarget().os.tag) {
+    switch (target.result.os.tag) {
         .windows => {
-            lib.addCSourceFiles(&sourceFiles, &(.{"-DWILDMIDI_STATIC"} ++ defaultFlags));
-            lib.addIncludePath("mingw");
+            lib.addCSourceFiles(.{
+                .files = &sourceFiles,
+                .flags = &(.{"-DWILDMIDI_STATIC"} ++ defaultFlags),
+            });
+            lib.addIncludePath(b.path("mingw"));
         },
         .macos => {
-            lib.addCSourceFiles(&sourceFiles, &defaultFlags);
-            lib.addIncludePath("macosx");
+            lib.addCSourceFiles(.{
+                .files = &sourceFiles,
+                .flags = &defaultFlags,
+            });
+            lib.addIncludePath(b.path("macosx"));
         },
         else => {
-            lib.addCSourceFiles(&sourceFiles, &defaultFlags);
+            lib.addCSourceFiles(.{
+                .files = &sourceFiles,
+                .flags = &defaultFlags,
+            });
         },
     }
 
     b.installArtifact(lib);
 
-    _ = b.addModule("wildmidi", .{ .source_file = .{ .path = "./lib-wildmidi.zig" } });
+    _ = b.addModule("wildmidi", .{ .root_source_file = b.path("lib-wildmidi.zig") });
 }
