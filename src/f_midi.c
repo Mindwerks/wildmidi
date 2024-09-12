@@ -474,6 +474,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint32_t track_size = 0;
     uint32_t track_start = 0;
     uint32_t track_count = 0;
+    uint8_t *new_out;
 
     if (!mdi->event_count) {
         _WM_GLOBAL_ERROR(WM_ERR_CONVERT, "(No events to convert)", 0);
@@ -1014,7 +1015,13 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     (*out)[10] = (track_count >> 8) & 0xff;
     (*out)[11] = track_count & 0xff;
 
-    (*out) = (uint8_t *) realloc((*out), out_ofs);
+    new_out = (uint8_t *) realloc((*out), out_ofs);
+    if (!new_out) {
+        free(out);
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, "Unable to reallocate memory.", 0);
+        return -1;
+    }
+    *out = new_out;
     (*outsize) = out_ofs;
 
     return 0;
