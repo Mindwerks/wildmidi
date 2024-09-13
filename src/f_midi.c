@@ -38,7 +38,7 @@
 
 
 struct _mdi *
-_WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
+_WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size, float tempo_mult) {
     struct _mdi *mdi;
 
     uint32_t tmp_val;
@@ -142,6 +142,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     }
 
     samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
+    samples_per_delta_f /= tempo_mult;
 
     mdi = _WM_initMDI();
     _WM_midi_setup_divisions(mdi,divisions);
@@ -298,6 +299,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                                 tempo = 500000;
 
                             samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
+                            samples_per_delta_f /= tempo_mult;
                         }
                     }
                     tracks[i] += setup_ret;
@@ -372,6 +374,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                             tempo = 500000;
 
                         samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
+                        samples_per_delta_f /= tempo_mult;
                     }
                 }
                 tracks[i] += setup_ret;
