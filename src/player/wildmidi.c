@@ -180,6 +180,7 @@ static struct _midi_test midi_test[] = {
 
 static int midi_test_max = 1;
 static unsigned int rate = 32072;
+static float tempo_mult = 1.0f;
 
 /*
  MIDI Output Functions
@@ -264,6 +265,7 @@ static struct option const long_options[] = {
     { "textaslyric", 0, 0, 'a' },
     { "playfrom", 1, 0, 'i'},
     { "playto", 1, 0, 'j'},
+    { "tempomult", 1, 0, 'T'},
     { NULL, 0, NULL, 0 }
 };
 
@@ -302,6 +304,7 @@ static void do_help(void) {
     printf("                      defaults to: %s\n", WILDMIDI_CFG);
     printf("  -m V  --mastervol=V Set the master volume (0..127), default is 100\n");
     printf("  -b    --reverb      Enable final output reverb engine\n\n");
+    printf("  -T    --tempomult=v Playing speed multiplier, default is 1.0\n\n");
 }
 
 static void do_available_outputs(void) {
@@ -327,6 +330,23 @@ static void do_version(void) {
 
 static void do_syntax(void) {
     printf("Usage: wildmidi [options] filename.mid\n\n");
+}
+
+static void samples_to_min_sec(uint32_t samples, uint32_t *pmin, uint32_t *psec) {
+    uint32_t rate60 = 60 * rate;
+    uint32_t samples_tempo_mult = samples * tempo_mult;
+    uint32_t seconds = samples_tempo_mult / rate;
+    *pmin = seconds / 60;
+    *psec = seconds % 60;
+}
+
+static void get_current_pro_perc_min_sec(
+    const struct _WM_Info *wm_info,
+    uint32_t *perc,
+    uint32_t *pro_min,
+    uint32_t *pro_sec) {
+    *perc = (100 * wm_info->current_sample) / wm_info->approx_total_samples;
+    samples_to_min_sec(wm_info->current_sample, pro_min, pro_sec);
 }
 
 static char config_file[1024];
@@ -382,7 +402,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:T:", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -495,6 +515,17 @@ int main(int argc, char **argv) {
         case 'j':
             play_to = (unsigned long int)(atof(optarg) * (double)rate);
             break;
+        case 'T': /* Config File */
+            if (!*optarg) {
+                fprintf(stderr, "Error: empty tempo multiplier.\n");
+                return (1);
+            }
+            tempo_mult = atof(optarg);
+            if (!((1.0/4.0) < tempo_mult) && (tempo_mult < 4.0)) {
+                fprintf(stderr, "Error: bad tempo_mult %g.\n", tempo_mult);
+                return (1);
+            }
+            break;
         default:
             do_syntax();
             return (1);
@@ -513,6 +544,8 @@ int main(int argc, char **argv) {
             return (1);
         }
     }
+    play_to /= tempo_mult;
+    play_from /= tempo_mult;
 
     /* check if we only need to convert a file to midi */
     if (midi_file[0] != '\0') {
@@ -589,7 +622,7 @@ int main(int argc, char **argv) {
             else real_file++;
             printf("\rPlaying %s ", real_file);
 
-            midi_ptr = WildMidi_Open(argv[optind]);
+            midi_ptr = WildMidi_Open(argv[optind], tempo_mult);
             optind++;
             if (midi_ptr == NULL) {
                 ret_err = WildMidi_GetError();
@@ -605,7 +638,7 @@ int main(int argc, char **argv) {
                     midi_test[test_count].size);
             test_data[25] = test_bank;
             test_data[28] = test_patch;
-            midi_ptr = WildMidi_OpenBuffer(test_data, 633);
+            midi_ptr = WildMidi_OpenBuffer(test_data, 633, tempo_mult);
             test_count++;
             if (midi_ptr == NULL) {
                 fprintf(stderr, "\rFailed loading test midi no. %i\r\n", test_count);
@@ -616,8 +649,7 @@ int main(int argc, char **argv) {
 
         wm_info = WildMidi_GetInfo(midi_ptr);
 
-        apr_mins = wm_info->approx_total_samples / (rate * 60);
-        apr_secs = (wm_info->approx_total_samples % (rate * 60)) / rate;
+        samples_to_min_sec(wm_info->approx_total_samples, &apr_mins, &apr_secs);
         mixer_options = wm_info->mixer_options;
         modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
         modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
@@ -754,10 +786,7 @@ int main(int argc, char **argv) {
 
             if (inpause) {
                 wm_info = WildMidi_GetInfo(midi_ptr);
-                perc_play = (wm_info->current_sample * 100)
-                            / wm_info->approx_total_samples;
-                pro_mins = wm_info->current_sample / (rate * 60);
-                pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
+                get_current_pro_perc_min_sec(wm_info, &perc_play, &pro_mins, &pro_secs);
                 fprintf(stderr,
                         "%s [%s] [%3i] [%2um %2us Processed] [%2u%%] P  \r",
                         display_lyrics, modes, (int)master_volume, pro_mins,
@@ -805,10 +834,7 @@ int main(int argc, char **argv) {
             memcpy(display_lyrics,lyrics,MAX_DISPLAY_LYRICS);
             display_lyrics[MAX_DISPLAY_LYRICS] = '\0';
 
-            perc_play = (wm_info->current_sample * 100)
-                        / wm_info->approx_total_samples;
-            pro_mins = wm_info->current_sample / (rate * 60);
-            pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
+            get_current_pro_perc_min_sec(wm_info, &perc_play, &pro_mins, &pro_secs);
             fprintf(stderr,
                 "%s [%s] [%3i] [%2um %2us Processed] [%2u%%] %c  \r",
                 display_lyrics, modes, (int)master_volume, pro_mins,
