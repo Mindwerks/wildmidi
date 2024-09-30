@@ -36,32 +36,48 @@
 struct _patch *_WM_patch[128];
 int _WM_patch_lock = 0;
 
+static struct _patch *
+_find_matched_patch(uint16_t patchid) {
+    struct _patch *ret = NULL;
+    struct _patch *search_patch;
+
+    for (search_patch = _WM_patch[patchid & 0x007F];
+            search_patch && !ret; search_patch = search_patch->next) {
+        if (search_patch->patchid == patchid) {
+            ret = search_patch;
+        }
+    }
+    return ret;
+}
+
+static struct _patch *
+_find_nearest_patch(uint16_t patchid) {
+    struct _patch *ret = NULL;
+    const uint16_t patchid_low = patchid & 0x7F;
+    const uint16_t range_down = patchid_low;
+    const uint16_t range_up = 0x7F - patchid_low;
+    const uint16_t step_max = range_down < range_up ? range_up : range_down;
+    uint16_t step;
+
+    for (step = 0; (!ret) && (step <= step_max); ++step) {
+        if (patchid_low - step >= 0) {
+            ret = _find_matched_patch(patchid - step);
+        }
+        if ((patchid_low + step <= 0x7F) && !ret) {
+            ret = _find_matched_patch(patchid + step);
+        }
+    }
+    return ret;
+}
+
 struct _patch *
 _WM_get_patch_data(struct _mdi *mdi, uint16_t patchid) {
     struct _patch *search_patch;
 
     _WM_Lock(&_WM_patch_lock);
-
-    search_patch = _WM_patch[patchid & 0x007F];
-
-    if (search_patch == NULL) {
-        _WM_Unlock(&_WM_patch_lock);
-        return (NULL);
-    }
-
-    while (search_patch) {
-        if (search_patch->patchid == patchid) {
-            _WM_Unlock(&_WM_patch_lock);
-            return (search_patch);
-        }
-        search_patch = search_patch->next;
-    }
-    if ((patchid >> 8) != 0) {
-        _WM_Unlock(&_WM_patch_lock);
-        return (_WM_get_patch_data(mdi, patchid & 0x00FF));
-    }
+    search_patch = _find_nearest_patch(patchid);
     _WM_Unlock(&_WM_patch_lock);
-    return (NULL);
+    return (search_patch);
 }
 
 void _WM_load_patch(struct _mdi *mdi, uint16_t patchid) {
