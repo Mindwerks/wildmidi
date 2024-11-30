@@ -306,6 +306,7 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
     int line_ofs = 0;
     int token_start = 0;
     char **token_data = NULL;
+    char **new_data;
     int token_count = 0;
 
     if (!line_length) return (NULL);
@@ -328,11 +329,13 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
                 token_start = 1;
                 if (token_count >= token_data_length) {
                     token_data_length += TOKEN_CNT_INC;
-                    token_data = (char **) realloc(token_data, token_data_length * sizeof(char *));
-                    if (token_data == NULL) {
+                    new_data = (char **) realloc(token_data, token_data_length * sizeof(char *));
+                    if (!new_data) {
+                        free(token_data);
                         _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                         return (NULL);
                     }
+                    token_data = new_data;
                 }
 
                 token_data[token_count] = &line_data[line_ofs];
@@ -345,7 +348,13 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
     /* if we have found some tokens then add a null token to the end */
     if (token_count) {
         if (token_count >= token_data_length) {
-            token_data = (char **) realloc(token_data, ((token_count + 1) * sizeof(char *)));
+            new_data = (char **) realloc(token_data, ((token_count + 1) * sizeof(char *)));
+            if (!new_data) {
+                free(token_data);
+                _WM_GLOBAL_ERROR(WM_ERR_MEM,"to parse config", errno);
+                return (NULL);
+            }
+            token_data = new_data;
         }
         token_data[token_count] = NULL;
     }
@@ -838,12 +847,19 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
     memset(buffer, 0, size);
 
     if ( (size / 2) > mdi->mix_buffer_size) {
+        int32_t *new_mix_buffer;
         if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
             mdi->mix_buffer_size += MEM_CHUNK;
         } else {
             mdi->mix_buffer_size = size / 2;
         }
-        mdi->mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        new_mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        if (!new_mix_buffer){
+            free(mdi->mix_buffer);
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, "Unable to reallocate memory.", 0);
+            return(-1);
+        }
+        mdi->mix_buffer = new_mix_buffer;
     }
 
     tmp_buffer = mdi->mix_buffer;
@@ -1155,12 +1171,19 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
     memset(buffer, 0, size);
 
     if ( (size / 2) > mdi->mix_buffer_size) {
+        int32_t *new_mix_buffer;
         if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
             mdi->mix_buffer_size += MEM_CHUNK;
         } else {
             mdi->mix_buffer_size = size / 2;
         }
-        mdi->mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        new_mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        if (!new_mix_buffer){
+            free(mdi->mix_buffer);
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, "Unable to reallocate memory.", 0);
+            return(-1);
+        }
+        mdi->mix_buffer = new_mix_buffer;
     }
 
     tmp_buffer = mdi->mix_buffer;
@@ -2086,7 +2109,7 @@ WildMidi_GetInfo(midi * handle) {
         mdi->tmp_info->copyright = NULL;
     }
     _WM_Unlock(&mdi->lock);
-    return ((struct _WM_Info *)mdi->tmp_info);
+    return (mdi->tmp_info);
 }
 
 WM_SYMBOL int WildMidi_Shutdown(void) {

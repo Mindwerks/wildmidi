@@ -28,6 +28,7 @@
 #include <stdlib.h>
 
 #include "wildmidi_lib.h"
+#include "wm_error.h"
 #include "internal_midi.h"
 #include "lock.h"
 #include "patches.h"
@@ -83,6 +84,7 @@ _WM_get_patch_data(struct _mdi *mdi, uint16_t patchid) {
 void _WM_load_patch(struct _mdi *mdi, uint16_t patchid) {
     uint32_t i;
     struct _patch *tmp_patch = NULL;
+    struct _patch **new_patches;
 
     for (i = 0; i < mdi->patch_count; i++) {
         if (mdi->patches[i]->patchid == patchid) {
@@ -109,8 +111,14 @@ void _WM_load_patch(struct _mdi *mdi, uint16_t patchid) {
     }
 
     mdi->patch_count++;
-    mdi->patches = (struct _patch **) realloc(mdi->patches,
-                           (sizeof(struct _patch*) * mdi->patch_count));
+    new_patches = (struct _patch **) realloc(mdi->patches, (sizeof(struct _patch*) * mdi->patch_count));
+    if (!new_patches) {
+        free(mdi->patches);
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, "Unable to reallocate memory.", 0);
+        _WM_Unlock(&_WM_patch_lock);
+        return;
+    }
+    mdi->patches = new_patches;
     mdi->patches[mdi->patch_count - 1] = tmp_patch;
     tmp_patch->inuse_count++;
     _WM_Unlock(&_WM_patch_lock);
