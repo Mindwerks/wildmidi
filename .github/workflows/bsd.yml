@@ -15,17 +15,17 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { name: FreeBSD,  os: freebsd,  os-version: 13.3, os-arch: x86-64,
+          - { name: FreeBSD,  os: freebsd,  os-version: 14.2, os-arch: x86-64,
               cmake_opts: '-DWANT_OSS=ON',
               setup_cmd: 'sudo pkg update',
               install_cmd: 'sudo pkg install -y cmake',
             }
-          - { name: OpenBSD,  os: openbsd,  os-version: 7.4,  os-arch: x86-64,
+          - { name: OpenBSD,  os: openbsd, os-version: 7.4,  os-arch: x86-64,
               cmake_opts: '-DWANT_SNDIO=ON',
               setup_cmd: 'sudo pkg_add -u',
               install_cmd: 'sudo pkg_add cmake',
             }
-          - { name: NetBSD,   os: netbsd,   os-version: 9.3,  os-arch: x86-64,
+          - { name: NetBSD,   os: netbsd,  os-version: 10.1, os-arch: x86-64,
               cmake_opts: '-DWANT_NETBSD=ON',
               setup_cmd: 'export PATH="/usr/pkg/sbin:/usr/pkg/bin:/sbin:$PATH";export PKG_PATH="https://cdn.netBSD.org/pub/pkgsrc/packages/NetBSD/$(uname -p)/$(uname -r|cut -f "1 2" -d.)/All/";echo "PKG_PATH=$PKG_PATH";echo "uname -a -> \"$(uname -a)\"";sudo -E sysctl -w security.pax.aslr.enabled=0;sudo -E sysctl -w security.pax.aslr.global=0;sudo -E pkgin clean;sudo -E pkgin update',
               install_cmd: 'sudo -E pkgin -y install cmake',
@@ -33,7 +33,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      uses: cross-platform-actions/action@v0.25.0
+      uses: cross-platform-actions/action@v0.27.0
       with:
         operating_system: ${{ matrix.platform.os }}
         architecture: ${{ matrix.platform.os-arch }}
