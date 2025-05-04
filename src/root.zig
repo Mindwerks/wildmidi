@@ -32,7 +32,7 @@ pub fn Open(midi_file: []const u8) !MidiFile {
     const midi_file_terminated = try std.mem.concat(std.heap.c_allocator, u8, &.{ midi_file, "\x00" });
     defer std.heap.c_allocator.free(midi_file_terminated);
 
-    const handle = WildMidi_Open(@ptrCast([*c]const u8, midi_file_terminated));
+    const handle = WildMidi_Open(@ptrCast(midi_file_terminated));
 
     return MidiFile{
         .handle = handle,

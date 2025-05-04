@@ -4,10 +4,41 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
-        .name = "wildmidi",
+    const dep_cli = b.dependency("cli", .{});
+    const mod_cli = dep_cli.module("zig-cli");
+
+    const dep_zigft = b.dependency("zigft", .{});
+    const mod_zigft = dep_zigft.module("zigft");
+
+    const codegen_exe = b.addExecutable(.{
+        .name = "codegen",
+        .root_source_file = b.path("codegen/gen-zig-api.zig"),
         .target = target,
         .optimize = optimize,
+    });
+    codegen_exe.root_module.addImport("cli", mod_cli);
+    codegen_exe.root_module.addImport("zigft", mod_zigft);
+
+    const codegen_step = b.step("codegen", "Run codegen");
+    codegen_step.dependOn(&codegen_exe.step);
+
+    const codegen_run = b.addRunArtifact(codegen_exe);
+    codegen_step.dependOn(&codegen_run.step);
+    codegen_run.addArg("--outpath");
+    const codegen_output_file = codegen_run.addOutputFileArg("wildmidi.zig");
+
+    const mod_root = b.addModule("wildmidi", .{
+        .root_source_file = codegen_output_file,
+        .target = target,
+        .optimize = optimize,
+    });
+    mod_root.addAnonymousImport("api-translator.zig", .{
+        .root_source_file = dep_zigft.builder.path("api-translator.zig"),
+    });
+
+    const lib = b.addStaticLibrary(.{
+        .name = "wildmidi",
+        .root_module = mod_root,
     });
 
     lib.linkLibC();
@@ -92,7 +123,15 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lib);
 
-    _ = b.addModule("wildmidi", .{ .root_source_file = b.path("src/root.zig") });
+    const tests = b.addTest(.{
+        .root_source_file = b.path("test/tests.zig"),
+    });
+    tests.root_module.addImport("wildmidi", mod_root);
+
+    const test_run = b.addRunArtifact(tests);
+
+    const test_step = b.step("test", "Run tests");
+    test_step.dependOn(&test_run.step);
 }
 
 fn getVersionFromZon() []const u8 {
