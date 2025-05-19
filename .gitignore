@@ -32,3 +32,8 @@ Thumbs.db
 # config files
 include/config.h
 wildmidi.pc
+
+# Zig
+zig-out/
+zig-cache/
+.zig-cache

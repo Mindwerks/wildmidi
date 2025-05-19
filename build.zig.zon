@@ -1,0 +1,34 @@
+.{
+    .name = .wildmidi,
+    .fingerprint = 0x75a8f8547fdc097d,
+    .version = "0.4.6",
+    .dependencies = .{
+        .cli = .{
+            .url = "git+https://github.com/sam701/zig-cli#9fca749122a321fd4af4fecafba0062b3e36db98",
+            .hash = "cli-0.9.0-2eKe_zP5AAD96LcpU9Gdo7vRHvHIKjYnyR9ME6si527r",
+        },
+        .zigft = .{
+            .url = "git+https://github.com/chung-leong/zigft#af0a0ad2b2031ede64800efbb7579d8b63ddc77a",
+            .hash = "zigft-0.14.5-AV-BnzvXBAD3Xt1sXKyFvEr-X7_-3yVZmsT99OF1PxV4",
+        },
+    },
+    .paths = .{
+        "amiga",
+        "android",
+        "cfg",
+        "cmake",
+        "djgpp",
+        "docs",
+        "include",
+        "macosx",
+        "mingw",
+        "msvc",
+        "src",
+        "test",
+        "build.zig",
+        "build.zig.zon",
+        "CMakeLists.txt",
+        "COPYING",
+        "README.md",
+    },
+}
