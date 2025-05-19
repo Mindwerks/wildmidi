@@ -1,5 +1,4 @@
 const std = @import("std");
-const case = @import("case");
 const cli = @import("cli");
 const zigft = @import("zigft");
 const api_translator = zigft.api_translator;
