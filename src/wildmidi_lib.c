@@ -1652,7 +1652,7 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
     return (0);
 }
 
-WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
+WM_SYMBOL midi *WildMidi_Open(const char *midifile, float tempo_mult) {
     uint8_t *mididata = NULL;
     uint32_t midisize = 0;
     uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
@@ -1684,7 +1684,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
     } else if (memcmp(mididata, xmi_hdr, 4) == 0) {
         ret = (void *) _WM_ParseNewXmi(mididata, midisize);
     } else {
-        ret = (void *) _WM_ParseNewMidi(mididata, midisize);
+        ret = (void *) _WM_ParseNewMidi(mididata, midisize, tempo_mult);
     }
     _WM_FreeBufferFile(mididata);
 
@@ -1698,7 +1698,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
     return (ret);
 }
 
-WM_SYMBOL midi *WildMidi_OpenBuffer(const uint8_t *midibuffer, uint32_t size) {
+WM_SYMBOL midi *WildMidi_OpenBuffer(const uint8_t *midibuffer, uint32_t size, float tempo_mult) {
     uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
     uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
     midi * ret = NULL;
@@ -1729,7 +1729,7 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(const uint8_t *midibuffer, uint32_t size) {
     } else if (memcmp(midibuffer, xmi_hdr, 4) == 0) {
         ret = (void *) _WM_ParseNewXmi(midibuffer, size);
     } else {
-        ret = (void *) _WM_ParseNewMidi(midibuffer, size);
+        ret = (void *) _WM_ParseNewMidi(midibuffer, size, tempo_mult);
     }
 
     if (ret) {
