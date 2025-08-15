@@ -15,14 +15,14 @@ PLATFORMS:
 * Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS,
   or optionally OpenAL output.)
 * Windows: x86 and x64
-* OSX: x86, x64 and powerpc (player: CoreAudio output)
+* OSX: x86, x64, and powerpc (player: CoreAudio output)
 * FreeBSD, Debian kFreeBSD (player: OSS output)
-* OpenBSD (player: sndio output.)
-* NetBSD (player: netbsd output.)
+* OpenBSD (player: sndio output)
+* NetBSD (player: netbsd output)
 * Hurd: Debian
-* DOS (player: sound blaster or compatibles output.)
-* OS/2 (player: Dart output.)
-* AmigaOS & variants like MorphOS, AROS. (player: AHI output)
+* DOS (player: sound blaster or compatibles output)
+* OS/2 (player: Dart output)
+* AmigaOS & variants like MorphOS, AROS (player: AHI output)
 
 BUILD FROM SOURCE:
 
@@ -47,7 +47,7 @@ CHANGELOG
   options. Player's `--help` command line switch lists the available
   backends. Thanks to initial work by Azamat H. Hackimov.
 * New native audio output backends for player: coreaudio for macOS,
-  sndio for OpenBSD, netbsd (sunaudio) for NetBSD.
+  sndio for OpenBSD, and netbsd (sunaudio) for NetBSD.
 * Improved pkg-config file generation in cmake script (bug #236).
 * Workaround a link failure on AmigaOS4 with newer SDKs (bug #241).
 * Other minor source clean-ups.
@@ -56,20 +56,20 @@ CHANGELOG
 0.4.5
 * Fixed MUS drum channels 9 and 15 being swapped if the same file
   is played twice from the same memory buffer (bug #234).
-* Player: Fixed save midi reading wrong argv if there are no path
+* Player: Fixed save MIDI reading wrong argv if there are no path
   seperators (bug #227).
 * Other code and build system clean-ups.
 
 0.4.4
-* Fixed integer overflow in midi parser sample count calculation
+* Fixed integer overflow in MIDI parser sample count calculation
  (bug #200).
-* Fixed 8 bit ping pong GUS patch loaders (bug #207).
+* Fixed 8-bit ping pong GUS patch loaders (bug #207).
 * Fixed wrong variable use in reverb code (bug #210).
 * Reset block status of tty after playback (bug #211).
 * Fixed broken file name handling for 'save as midi' command during
   playback.
 * Clamp MUS volume commands (PR #226).
-* CMake project improvements (bugs: #214, #216, #217, #218) - cmake
+* CMake project improvements (bugs: #214, #216, #217, #218); cmake
   version 3.1 or newer is now required.
 
 0.4.3
@@ -82,22 +82,22 @@ CHANGELOG
 * Fixed possible out of bounds reads in sysex commands (bug #190).
 * Fixed invalid reads during config parse with short patch file names.
 * Do not treat a missing end-of-track marker as an error for type-0
-  midi files (bug #183).
+  MIDI files (bug #183).
 * Fixed bad reading of high delta values in XMI converter (bug #199).
 * Fixed a memory leak when freeing a midi (bug #204).
 * Fixed slurred/echoy playback at quick tempos on looped instruments
   (bug #185).
-* Fixed certain midis sounding different compared to timidity, as if
+* Fixed certain MIDIs sounding different compared to timidity, as if
   instruments not turned off (bug #186).
 * Fixed compilation on systems without libm.
-* Support for RISC OS, Nintendo Switch and PS Vita.
+* Support for RISC OS, Nintendo Switch, and PS Vita.
 * Several clean-ups.
 
 0.4.2
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
   (bug #175).
 * Fixed CVE-2017-1000418 (bug #178).
-* Fixed a buffer overflow during playback with malformed midi files
+* Fixed a buffer overflow during playback with malformed MIDI files
   (bug #180).
 * GUS patch processing changes to meet users expectations (bug #132).
 * Worked around a build failure with newer FreeBSD versions failing to
@@ -110,22 +110,22 @@ CHANGELOG
 * Fixed a nasty bug in dBm_pan_volume. Other fixes and clean-ups.
 * Build system updates. Install a pkg-config file on supported platforms
   such as Linux. New android ndk makefile.
-* File i/o updates.
+* File I/O updates.
 * Support for OS/2.
-* Support for Nintendo 3DS
-* Support for Nintendo Wii
+* Support for Nintendo 3DS.
+* Support for Nintendo Wii.
 * Support for AmigaOS and its variants like MorphOS and AROS.
 
 0.4.0
 * API change: The library now returns audio data in host-endian format,
   not little-endian.
-* API change: WildMidi_GetVersion() added to the api, along with new
+* API change: WildMidi_GetVersion() added to the API, along with new
   numeric version macros in the wildmidi_lib.h header. the dso version
   is changed from 1 to 2.
 * API change: All long or unsigned long type _WM_Info fields changed
-  into strictly 32bit fields (int32_t or uint32_t.)
+  into strictly 32-bit fields (int32_t or uint32_t.)
 * API change: WildMidi_OpenBuffer() and WildMidi_GetOutput() changed
-  to accept strictly 32bit size parameters, i.e. uint32_t, instead of
+  to accept strictly 32-bit size parameters, i.e. uint32_t, instead of
   unsigned long.
 * API change: WildMidi_ConvertToMidi() and WildMidi_ConvertBufferToMidi() 
   added for MIDI-like files to be converted to MIDI.
@@ -134,7 +134,7 @@ CHANGELOG
 * API change: WildMidi_GetLyric() added to support embedded text, 
   such as KAR files.
 * API change: WildMidi_GetError() and WildMidi_ClearError() added to
-  cleanly check for, retrieve and clear error messages. They no longer
+  cleanly check for, retrieve, and clear error messages. They no longer
   go to stderr.
 * Support for loading XMI (XMIDI format) and XFM files, such as from Arena.
   Thanks Ryan Nunn for releasing his code under the LGPL.
@@ -144,18 +144,18 @@ CHANGELOG
 * Build requires cmake-2.8.11 or newer now.
 
 0.3.9
-* Library: Fixed a segmentation fault with bad midi files.
+* Library: Fixed a segmentation fault with bad MIDI files.
 
 0.3.8
 * Library: Fixed a seek-to-0 bug in order to cure an issue of truncated
   start (bug #100, gnome/gstreamer bug #694811.)
-* Player, OpenAL: reduced buffers from 8 to 4 so as to cure some output
+* Player, OpenAL: Reduced buffers from 8 to 4 so as to cure some output
   delay issues (bug #85.)
 
 0.3.7
-* Plug a memory leak in case of broken midis.
+* Plug a memory leak in case of broken MIDIs.
 * Properly reset global state upon library shutdown.
-* Support for type-2 midi files.
+* Support for type-2 MIDI files.
 * Fix a possible crash in WildMidi_SetOption.
 * DOS port: Support for Sound Blaster output in player.
 * Uglify the library's private global variable and function names.
@@ -171,7 +171,7 @@ CHANGELOG
 * Fix the roundtempo option which had been broken since its invention
   in 0.2.3.5 (WM_MO_ROUNDTEMPO: was 0xA000 instead of 0x2000.)
 * Fix cfg files without a newline at the end weren't parsed correctly.
-* Handle cfg files with mac line-endings.
+* Handle cfg files with Mac line-endings.
 * Refuse loading suspiciously long files.
 
 0.3.5
@@ -196,22 +196,22 @@ CHANGELOG
 * Add missing parts of the absolute paths fix in config parsing.
 * New portable file and path-name system to handle cross-platform
   support.
-* Support for Debian/kFreeBSD, Debian/Hurd and other Debian archs.
-* Many bug fixes, code clean-ups and cosmetic fixes.
+* Support for Debian/kFreeBSD, Debian/Hurd, and other Debian archs.
+* Many bug fixes, code clean-ups, and cosmetic fixes.
 
 0.3.3
-* default to hidden visibility and only export our API functions
-* windows lean and mean to help compile times on Windows
-* cli and xcode work now on OSX
-* better FreeBSD support
-* Supported platforms are Debian, FreeBSD, Windows and OSX (but only
+* Default to hidden visibility and only export our API functions
+* Windows lean and mean to help compile times on Windows
+* CLI and XCode work now on OSX
+* Better FreeBSD support
+* Supported platforms are Debian, FreeBSD, Windows, and OSX (but only
   for WAV output)
 
 0.3.1 - 0.3.2
 * Cmake updates/fixes/cleanups.
 
 0.3.0
-* initial CMake support.
-* process non-registered params. fix issue of notes ending before
+* Initial CMake support.
+* Process non-registered params. Fix issue of notes ending before
   attack envelope completed. (sf.net svn r149/r151.)
 
