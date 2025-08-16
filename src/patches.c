@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "common.h"
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "lock.h"
@@ -74,6 +75,8 @@ struct _patch *
 _WM_get_patch_data(struct _mdi *mdi, uint16_t patchid) {
     struct _patch *search_patch;
 
+    WMIDI_UNUSED(mdi);
+
     _WM_Lock(&_WM_patch_lock);
     search_patch = _find_nearest_patch(patchid);
     _WM_Unlock(&_WM_patch_lock);
@@ -81,8 +84,8 @@ _WM_get_patch_data(struct _mdi *mdi, uint16_t patchid) {
 }
 
 void _WM_load_patch(struct _mdi *mdi, uint16_t patchid) {
+    struct _patch *tmp_patch;
     uint32_t i;
-    struct _patch *tmp_patch = NULL;
 
     for (i = 0; i < mdi->patch_count; i++) {
         if (mdi->patches[i]->patchid == patchid) {
