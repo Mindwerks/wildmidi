@@ -831,6 +831,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
     struct _event *event = mdi->current_event;
     int32_t *tmp_buffer;
     int32_t *out_buffer;
+    int end_encountered;
 
     _WM_Lock(&mdi->lock);
 
@@ -853,9 +854,11 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 
     do {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
+            end_encountered = 0;
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack)) {
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack) && !end_encountered) {
+                    end_encountered = 1; /* Avoid an infinite loop. */
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
@@ -1148,6 +1151,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
     struct _event *event = mdi->current_event;
     int32_t *tmp_buffer;
     int32_t *out_buffer;
+    int end_encountered;
 
     _WM_Lock(&mdi->lock);
 
@@ -1170,9 +1174,11 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
 
     do {
         if (__builtin_expect((!mdi->samples_to_mix), 0)) {
+            end_encountered = 0;
             while ((!mdi->samples_to_mix) && (event->do_event)) {
                 event->do_event(mdi, &event->event_data);
-                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack)) {
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack) && !end_encountered) {
+                    end_encountered = 1; /* Avoid an infinite loop. */
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
