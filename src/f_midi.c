@@ -273,10 +273,6 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                     }
                 }
                 do {
-                    setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], track_size[i], running_event[i]);
-                    if (setup_ret == 0) {
-                        goto _end;
-                    }
                     if (tracks[i][0] > 0x7f) {
                         if (tracks[i][0] < 0xf0) {
                             /* Events 0x80 - 0xef set running event */
@@ -287,6 +283,16 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                         } else if ((tracks[i][0] == 0xff) && (tracks[i][1] == 0x2f) && (tracks[i][2] == 0x00)) {
                             /* End of Track */
                             end_of_tracks++;
+                            /*
+                             * Since the events are 'flattened' into a single track, only keep the final
+                             * end-of-track event to prevent premature looping.
+                             */
+                            if (end_of_tracks == no_tracks) {
+                                setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], track_size[i], running_event[i]);
+                                if (setup_ret == 0) {
+                                    goto _end;
+                                }
+                            }
                             track_end[i] = 1;
                             tracks[i] += 3;
                             track_size[i] -= 3;
@@ -299,6 +305,10 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
 
                             samples_per_delta_f = _WM_GetSamplesPerTick(divisions, tempo);
                         }
+                    }
+                    setup_ret = _WM_SetupMidiEvent(mdi, tracks[i], track_size[i], running_event[i]);
+                    if (setup_ret == 0) {
+                        goto _end;
                     }
                     tracks[i] += setup_ret;
                     track_size[i] -= setup_ret;
