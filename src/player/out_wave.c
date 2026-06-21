@@ -147,9 +147,7 @@ static void close_wav_output(void) {
 
 end:
     printf("\n");
-    if (!out_wav) {
-        fclose(out_wav);
-    }
+    fclose(out_wav);
     out_wav = NULL;
 }
 
