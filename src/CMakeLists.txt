@@ -54,6 +54,9 @@ ADD_LIBRARY(libwildmidi-static STATIC
     ${wildmidi_library_SRCS}
     ${wildmidi_library_HDRS}
 )
+IF(NOT BUILD_SHARED_LIBS)
+   ADD_LIBRARY(libwildmidi ALIAS libwildmidi-static)
+ENDIF()
 
 SET_TARGET_PROPERTIES(libwildmidi-static PROPERTIES
     OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
