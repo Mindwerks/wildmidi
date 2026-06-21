@@ -49,6 +49,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     uint32_t hmp_unknown = 0;
     uint32_t hmp_bpm = 0;
     uint32_t hmp_song_time = 0;
+    const uint8_t *data_end;
     struct _mdi *hmp_mdi;
     const uint8_t **hmp_chunk;
     uint32_t *chunk_length;
@@ -78,6 +79,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, NULL, 0);
         return NULL;
     }
+    data_end = hmp_data + hmp_size;
     hmp_data += 8;
     hmp_size -= 8;
 
@@ -199,7 +201,10 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     smallest_delta = 0x7fffffff;
     /* store chunk info for use, and check chunk lengths */
     for (i = 0; i < hmp_chunks; i++) {
-        /* FIXME: add proper size checks!!! */
+        if (data_end - hmp_data < 14) {
+            goto tooshort;
+        }
+
         hmp_chunk[i] = hmp_data;
         chunk_ofs[i] = 0;
 
@@ -218,6 +223,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_ofs[i] += 4;
 
         if (chunk_length[i] > hmp_size) {
+        tooshort:
             _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, "file too short", 0);
             goto _hmp_end;
         }
@@ -239,8 +245,9 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
                 chunk_delta[i] = chunk_delta[i] | ((*hmp_data++ & 0x7F) << var_len_shift);
                 var_len_shift += 7;
                 chunk_ofs[i]++;
-            } while (*hmp_data < 0x80);
+            } while (hmp_data < data_end && *hmp_data < 0x80);
         }
+        if (hmp_data == data_end) goto tooshort;
         chunk_delta[i] = chunk_delta[i] | ((*hmp_data++ & 0x7F) << var_len_shift);
         chunk_ofs[i]++;
 
