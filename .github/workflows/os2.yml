@@ -2,6 +2,9 @@ name: Build (OS/2)
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   os2:
     runs-on: ubuntu-latest
