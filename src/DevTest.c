@@ -188,18 +188,6 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
         strcpy(buffer_file, filename);
     }
 
-    if (stat(buffer_file, &buffer_stat)) {
-        printf("Unable to stat %s: %s\n", filename, strerror(errno));
-        free(buffer_file);
-        return NULL;
-    }
-    *size = buffer_stat.st_size;
-    data = malloc(*size);
-    if (data == NULL) {
-        printf("Unable to get ram for %s: %s\n", filename, strerror(errno));
-        free(buffer_file);
-        return NULL;
-    }
 #ifdef _WIN32
     if ((buffer_fd = open(buffer_file,(O_RDONLY | O_BINARY))) == -1) {
 #else
@@ -207,7 +195,20 @@ DT_BufferFile(const char *filename, unsigned long int *size) {
 #endif
         printf("Unable to open %s: %s\n", filename, strerror(errno));
         free(buffer_file);
-        free(data);
+        return NULL;
+    }
+    if (fstat(buffer_fd, &buffer_stat)) {
+        printf("Unable to stat %s: %s\n", filename, strerror(errno));
+        free(buffer_file);
+        close(buffer_fd);
+        return NULL;
+    }
+    *size = buffer_stat.st_size;
+    data = malloc(*size);
+    if (data == NULL) {
+        printf("Unable to get ram for %s: %s\n", filename, strerror(errno));
+        free(buffer_file);
+        close(buffer_fd);
         return NULL;
     }
     if (read(buffer_fd, data, *size) != buffer_stat.st_size) {
