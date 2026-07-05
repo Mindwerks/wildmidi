@@ -304,23 +304,33 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
     int line_length = (int) strlen(line_data);
     int token_data_length = 0;
     int line_ofs = 0;
+    int write_ofs = 0;
     int token_start = 0;
+    int in_quotes = 0;
     char **token_data = NULL;
     int token_count = 0;
 
     if (!line_length) return (NULL);
 
     do {
-        /* ignore everything after #  */
-        if (line_data[line_ofs] == '#') {
+        char c = line_data[line_ofs];
+
+        /* ignore everything after # (outside of quotes) */
+        if (c == '#' && !in_quotes) {
             break;
         }
 
-        if ((line_data[line_ofs] == ' ') || (line_data[line_ofs] == '\t')) {
+        if (c == '"') {
+            /* double quotes toggle a "literal-whitespace" mode so paths like
+             * `dir "/Users/foo/Application Support/patches"` parse as one
+             * token. The quote characters themselves are stripped via the
+             * write_ofs compaction below. */
+            in_quotes = !in_quotes;
+        } else if ((c == ' ' || c == '\t') && !in_quotes) {
             /* whitespace means we aren't in a token */
             if (token_start) {
                 token_start = 0;
-                line_data[line_ofs] = '\0';
+                line_data[write_ofs++] = '\0';
             }
         } else {
             if (!token_start) {
@@ -335,12 +345,18 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
                     }
                 }
 
-                token_data[token_count] = &line_data[line_ofs];
+                token_data[token_count] = &line_data[write_ofs];
                 token_count++;
             }
+            line_data[write_ofs++] = c;
         }
         line_ofs++;
     } while (line_ofs != line_length);
+
+    /* terminate the final token when the line didn't end with whitespace */
+    if (write_ofs < line_length) {
+        line_data[write_ofs] = '\0';
+    }
 
     /* if we have found some tokens then add a null token to the end */
     if (token_count) {
