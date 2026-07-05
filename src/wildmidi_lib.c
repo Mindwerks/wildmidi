@@ -300,7 +300,8 @@ static int wm_strncasecmp(const char *s1, const char *s2, size_t n) {
 }
 
 #define TOKEN_CNT_INC 8
-static char** WM_LC_Tokenize_Line(char *line_data) {
+/* not static: exposed for test/test_tokenize.c */
+char** WM_LC_Tokenize_Line(char *line_data) {
     int line_length = (int) strlen(line_data);
     int token_data_length = 0;
     int line_ofs = 0;

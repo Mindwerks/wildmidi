@@ -52,6 +52,7 @@ jobs:
             -DWANT_PLAYER=ON -DWANT_STATIC=ON \
             ${{ matrix.platform.cmake_opts }}
           cmake --build build --config Release
+          ctest --test-dir build --output-on-failure
           cmake --install build
 
     - uses: actions/upload-artifact@v4

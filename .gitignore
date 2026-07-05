@@ -10,6 +10,10 @@
 # build dirs
 build/
 
+# stray in-source cmake configure (should always use -B build)
+CMakeCache.txt
+CMakeFiles/
+
 # logs and other texts #
 *.log
 
