@@ -303,3 +303,8 @@ ENDIF()
 CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/include/config.h.cmake" "${PROJECT_BINARY_DIR}/include/config.h")
 
 ADD_SUBDIRECTORY(src)
+
+INCLUDE(CTest)
+IF (BUILD_TESTING)
+    ADD_SUBDIRECTORY(test)
+ENDIF()
