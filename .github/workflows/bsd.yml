@@ -1,6 +1,9 @@
 name: bsd
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
 
 permissions:
   contents: read
@@ -20,7 +23,7 @@ jobs:
         platform:
           - { name: FreeBSD,  os: freebsd,  os-version: 14.3, os-arch: x86-64,
               cmake_opts: '-DWANT_OSS=ON',
-              setup_cmd: 'sudo pkg update',
+              setup_cmd: 'sudo env IGNORE_OSVERSION=yes pkg update',
               install_cmd: 'sudo pkg install -y cmake',
             }
           - { name: OpenBSD,  os: openbsd, os-version: 7.7,  os-arch: x86-64,

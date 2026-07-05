@@ -324,7 +324,22 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
             /* double quotes toggle a "literal-whitespace" mode so paths like
              * `dir "/Users/foo/Application Support/patches"` parse as one
              * token. The quote characters themselves are stripped via the
-             * write_ofs compaction below. */
+             * write_ofs compaction below. Opening a quote also starts a
+             * token so an empty quoted string ("") still yields a token. */
+            if (!token_start) {
+                token_start = 1;
+                if (token_count >= token_data_length) {
+                    token_data_length += TOKEN_CNT_INC;
+                    token_data = (char **) realloc(token_data, token_data_length * sizeof(char *));
+                    if (token_data == NULL) {
+                        _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+                        return (NULL);
+                    }
+                }
+
+                token_data[token_count] = &line_data[write_ofs];
+                token_count++;
+            }
             in_quotes = !in_quotes;
         } else if ((c == ' ' || c == '\t') && !in_quotes) {
             /* whitespace means we aren't in a token */
@@ -352,6 +367,10 @@ static char** WM_LC_Tokenize_Line(char *line_data) {
         }
         line_ofs++;
     } while (line_ofs != line_length);
+
+    if (in_quotes) {
+        _WM_DEBUG_MSG("config line has an unterminated quote: %s", line_data);
+    }
 
     /* terminate the final token when the line didn't end with whitespace */
     if (write_ofs < line_length) {

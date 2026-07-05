@@ -7,6 +7,9 @@
 *.a
 *.exe
 
+# build dirs
+build/
+
 # logs and other texts #
 *.log
 
