@@ -56,8 +56,6 @@ Channel 9 defaults to bank 128 (drums) at synth creation, per GM convention.
 * `WANT_SF2` CMake option, default `ON`. No network dependency: TinySoundFont is
   vendored at `extern/TinySoundFont/` (MIT licensed, compatible with LGPLv3
   linking). Refresh by replacing `tsf.h` with a newer upstream revision.
-* Test fixtures (`florestan-subset.sf2`, `venture.mid`) live under
-  `extern/TinySoundFont/examples/` and are used by CTest when `WANT_SF2=ON`.
 
 ## Non-goals (first pass)
 
