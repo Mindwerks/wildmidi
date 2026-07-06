@@ -553,7 +553,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             }
                         }
                         sf2_buffer = (uint8_t *) _WM_BufferFile(sf2_path, &sf2_size);
-                        if ((sf2_buffer == NULL) || (_WM_SF2_Load(sf2_buffer, sf2_size) == -1)) {
+                        if ((sf2_buffer == NULL) || (_WM_SF2_Load(sf2_buffer, sf2_size) < 0)) {
                             _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(unable to load soundfont)", 0);
                             _WM_FreeBufferFile(sf2_buffer);
                             free(sf2_path);
@@ -1679,14 +1679,14 @@ static int _WM_Init(const struct _WM_VIO *callbacks,
         if (_WM_SF2_Magic(cfg_buffer, cfg_size)) {
             int res = _WM_SF2_Load(cfg_buffer, cfg_size);
             _WM_FreeBufferFile(cfg_buffer);
-            if (res == -1) {
+            if (res < 0) {
                 _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(unable to load soundfont)", 0);
                 WM_FreePatches();
                 return (-1);
             }
         } else {
             _WM_FreeBufferFile(cfg_buffer);
-            if (WM_LoadConfig(config_file) == -1) {
+            if (WM_LoadConfig(config_file) < 0) {
                 /* a `soundfont` line may have loaded state before a later
                    line failed; drop it so the next Init starts clean */
                 _WM_SF2_Unload();
