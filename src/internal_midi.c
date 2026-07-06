@@ -1434,8 +1434,11 @@ void _WM_ResetToStart(struct _mdi *mdi) {
 
     _WM_do_sysex_gm_reset(mdi, NULL);
 
-    /* Ensure last event is NULL */
-    if (_WM_CheckEventMemoryPool(mdi) < 0) return; /* void — best we can do */
+    /* Ensure last event is NULL. Unlike the setup_* callers, the terminator
+       doesn't post-increment event_count, so the slot at events[event_count]
+       is fine if event_count < events_size — only grow when truly out. */
+    if (mdi->event_count >= mdi->events_size &&
+        _WM_CheckEventMemoryPool(mdi) < 0) return; /* void — best we can do */
     mdi->events[mdi->event_count].evtype = ev_null;
     mdi->events[mdi->event_count].do_event = NULL;
     mdi->events[mdi->event_count].event_data.channel = 0;
