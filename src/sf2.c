@@ -23,6 +23,7 @@
 
 #include "config.h"
 
+#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,7 +46,11 @@ int _WM_SF2_Magic(const uint8_t *data, uint32_t size) {
 }
 
 int _WM_SF2_Load(const uint8_t *data, uint32_t size) {
-    tsf *f = tsf_load_memory(data, (int)size);
+    tsf *f;
+    if (size > (uint32_t)INT_MAX) { /* tsf_load_memory takes int; refuse to wrap negative */
+        return (-1);
+    }
+    f = tsf_load_memory(data, (int)size);
     if (f == NULL) {
         return (-1);
     }
