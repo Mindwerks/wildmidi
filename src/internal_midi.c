@@ -37,6 +37,9 @@
 #include "wildmidi_lib.h"
 #include "patches.h"
 #include "internal_midi.h"
+#ifdef WILDMIDI_SF2
+#include "sf2.h"
+#endif
 
 #define HOLD_OFF 0x02
 
@@ -1946,6 +1949,12 @@ _WM_initMDI(void) {
 
     mdi->lyric = NULL;
 
+#ifdef WILDMIDI_SF2
+    if (_WM_SF2_Active()) {
+        mdi->sf2_synth = _WM_SF2_NewSynth(_WM_SampleRate);
+    }
+#endif
+
     _WM_do_sysex_gm_reset(mdi, NULL);
 
     return (mdi);
@@ -1996,6 +2005,9 @@ void _WM_freeMDI(struct _mdi *mdi) {
     free(mdi->events);
     _WM_free_reverb(mdi->reverb);
     free(mdi->mix_buffer);
+#ifdef WILDMIDI_SF2
+    _WM_SF2_FreeSynth(mdi->sf2_synth);
+#endif
     if (mdi->tmp_info) {
         free(mdi->tmp_info->copyright);
         free(mdi->tmp_info);

@@ -55,6 +55,9 @@
 /* define this if building for AmigaOS variants */
 #cmakedefine WILDMIDI_AMIGA 1
 
+/* define this to enable SoundFont2 support via TinySoundFont */
+#cmakedefine WILDMIDI_SF2 1
+
 /* Define if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H
 
