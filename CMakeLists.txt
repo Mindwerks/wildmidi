@@ -67,10 +67,6 @@ OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
 
 OPTION(WANT_SF2 "SoundFont2 (SF2) support via TinySoundFont" ON)
-IF (WANT_SF2 AND CMAKE_VERSION VERSION_LESS 3.14)
-    MESSAGE(WARNING "WANT_SF2 requires CMake 3.14+ (FetchContent); disabling SF2 support")
-    SET(WANT_SF2 OFF)
-ENDIF()
 
 CMAKE_DEPENDENT_OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF "WIN32;MSVC" OFF)
 CMAKE_DEPENDENT_OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF "APPLE" OFF)
@@ -306,13 +302,11 @@ IF(WANT_PLAYER OR WANT_PLAYERSTATIC)
 ENDIF()
 
 IF (WANT_SF2)
-    INCLUDE(FetchContent)
-    FetchContent_Declare(tinysoundfont
-        GIT_REPOSITORY https://github.com/schellingb/TinySoundFont.git
-        GIT_TAG fbc913531b85f5707f49115110bb86b1cd583885 # 2025-07-19
-    )
-    FetchContent_MakeAvailable(tinysoundfont)
-    INCLUDE_DIRECTORIES(SYSTEM "${tinysoundfont_SOURCE_DIR}")
+    SET(TINYSOUNDFONT_DIR "${PROJECT_SOURCE_DIR}/extern/TinySoundFont")
+    IF (NOT EXISTS "${TINYSOUNDFONT_DIR}/tsf.h")
+        MESSAGE(FATAL_ERROR "WANT_SF2 is ON but ${TINYSOUNDFONT_DIR}/tsf.h is missing")
+    ENDIF()
+    INCLUDE_DIRECTORIES(SYSTEM "${TINYSOUNDFONT_DIR}")
     SET(WILDMIDI_SF2 1)
 ENDIF()
 
