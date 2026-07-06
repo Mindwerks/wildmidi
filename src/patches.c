@@ -23,12 +23,14 @@
 
 #include "config.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "common.h"
 #include "wildmidi_lib.h"
+#include "wm_error.h"
 #include "internal_midi.h"
 #include "lock.h"
 #include "patches.h"
@@ -111,10 +113,18 @@ void _WM_load_patch(struct _mdi *mdi, uint16_t patchid) {
         return;
     }
 
+    {
+        struct _patch **new_patches = (struct _patch **) realloc(mdi->patches,
+                                          sizeof(struct _patch *) * (mdi->patch_count + 1));
+        if (new_patches == NULL) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+            _WM_Unlock(&_WM_patch_lock);
+            return;
+        }
+        mdi->patches = new_patches;
+    }
+    mdi->patches[mdi->patch_count] = tmp_patch;
     mdi->patch_count++;
-    mdi->patches = (struct _patch **) realloc(mdi->patches,
-                           (sizeof(struct _patch*) * mdi->patch_count));
-    mdi->patches[mdi->patch_count - 1] = tmp_patch;
     tmp_patch->inuse_count++;
     _WM_Unlock(&_WM_patch_lock);
 }

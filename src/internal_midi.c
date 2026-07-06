@@ -24,6 +24,7 @@
 #include "config.h"
 
 #include <stdint.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -550,9 +551,16 @@ float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
 
 static void _WM_CheckEventMemoryPool(struct _mdi *mdi) {
     if ((mdi->event_count + 1) >= mdi->events_size) {
-        mdi->events_size += MEM_CHUNK;
-        mdi->events = (struct _event *) realloc(mdi->events,
-                              (mdi->events_size * sizeof(struct _event)));
+        uint32_t new_size = mdi->events_size + MEM_CHUNK;
+        struct _event *new_events = (struct _event *) realloc(mdi->events,
+                              (new_size * sizeof(struct _event)));
+        if (new_events == NULL) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+            return; /* old buffer intact; the next setup_* write will still crash,
+                      but at least the leak-then-crash sequence is now leak-free */
+        }
+        mdi->events = new_events;
+        mdi->events_size = new_size;
     }
 }
 
@@ -2159,10 +2167,18 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, const uint8_t * event_data, uint32
 
                     /* Copy copyright info in the getinfo struct */
                     if (mdi->extra_info.copyright) {
-                        mdi->extra_info.copyright = (char *) realloc(mdi->extra_info.copyright,(strlen(mdi->extra_info.copyright) + 1 + tmp_length + 1));
-                        memcpy(&mdi->extra_info.copyright[strlen(mdi->extra_info.copyright) + 1], event_data, tmp_length);
-                        mdi->extra_info.copyright[strlen(mdi->extra_info.copyright) + 1 + tmp_length] = '\0';
-                        mdi->extra_info.copyright[strlen(mdi->extra_info.copyright)] = '\n';
+                        size_t old_len = strlen(mdi->extra_info.copyright);
+                        char *new_copyright = (char *) realloc(mdi->extra_info.copyright,
+                                                  old_len + 1 + tmp_length + 1);
+                        if (new_copyright == NULL) {
+                            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+                            /* keep the copyright collected so far; drop just this fragment */
+                        } else {
+                            mdi->extra_info.copyright = new_copyright;
+                            memcpy(&mdi->extra_info.copyright[old_len + 1], event_data, tmp_length);
+                            mdi->extra_info.copyright[old_len + 1 + tmp_length] = '\0';
+                            mdi->extra_info.copyright[old_len] = '\n';
+                        }
                     } else {
                         mdi->extra_info.copyright = (char *) malloc(tmp_length + 1);
                         memcpy(mdi->extra_info.copyright, event_data, tmp_length);
