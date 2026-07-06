@@ -23,6 +23,10 @@
 
 #include "config.h"
 
+#if defined(WORDS_BIGENDIAN)
+#error "SF2 support (WILDMIDI_SF2) requires a little-endian host; tsf.h does not byteswap"
+#endif
+
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>

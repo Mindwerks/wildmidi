@@ -554,8 +554,16 @@ float _WM_GetSamplesPerTick(uint32_t divisions, uint32_t tempo) {
 static int _WM_CheckEventMemoryPool(struct _mdi *mdi) {
     if ((mdi->event_count + 1) >= mdi->events_size) {
         uint32_t new_size = mdi->events_size + MEM_CHUNK;
-        struct _event *new_events = (struct _event *) realloc(mdi->events,
-                              (new_size * sizeof(struct _event)));
+        size_t bytes = (size_t)new_size * sizeof(struct _event);
+        struct _event *new_events;
+        /* refuse on uint32_t wrap or size_t overflow on the byte-size math
+           (the byte overflow only bites on 32-bit hosts) */
+        if (new_size < mdi->events_size
+            || bytes / sizeof(struct _event) != new_size) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
+            return (-1);
+        }
+        new_events = (struct _event *) realloc(mdi->events, bytes);
         if (new_events == NULL) {
             _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
             return (-1);
@@ -2170,8 +2178,15 @@ uint32_t _WM_SetupMidiEvent(struct _mdi *mdi, const uint8_t * event_data, uint32
                     /* Copy copyright info in the getinfo struct */
                     if (mdi->extra_info.copyright) {
                         size_t old_len = strlen(mdi->extra_info.copyright);
-                        char *new_copyright = (char *) realloc(mdi->extra_info.copyright,
+                        char *new_copyright;
+                        /* refuse if the size math would wrap size_t */
+                        if (tmp_length > SIZE_MAX - old_len - 2) {
+                            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
+                            new_copyright = NULL;
+                        } else {
+                            new_copyright = (char *) realloc(mdi->extra_info.copyright,
                                                   old_len + 1 + tmp_length + 1);
+                        }
                         if (new_copyright == NULL) {
                             _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                             /* keep the copyright collected so far; drop just this fragment */
