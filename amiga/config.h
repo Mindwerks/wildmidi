@@ -6,7 +6,7 @@
 #define PACKAGE_URL "https://github.com/Mindwerks/wildmidi"
 #define PACKAGE_BUGREPORT "https://github.com/Mindwerks/wildmidi/issues"
 
-#define PACKAGE_VERSION "0.4.6"
+#define PACKAGE_VERSION "0.5.0"
 
 #define HAVE_C_INLINE
 
