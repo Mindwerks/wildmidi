@@ -31,6 +31,28 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+
+#define TSF_POW pow
+#define TSF_LOG log
+#define TSF_TAN tan
+#define TSF_LOG10 log10
+
+#ifdef HAVE_POWF
+#define TSF_POWF powf
+#else
+#define TSF_POWF(x,y) (float)pow(x,y)
+#endif
+#ifdef HAVE_EXPF
+#define TSF_EXPF expf
+#else
+#define TSF_EXPF(x) (float)exp(x)
+#endif
+#ifdef HAVE_SQRTF
+#define TSF_SQRTF sqrtf
+#else
+#define TSF_SQRTF(x) (float)sqrt(x)
+#endif
 
 #define TSF_STATIC /* keep tsf symbols out of the library's export table */
 #define TSF_IMPLEMENTATION

@@ -12,10 +12,12 @@ SET(VERSION 2.1.0)
 # Find Macros
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+INCLUDE(CMakePushCheckState)
 INCLUDE(CMakeDependentOption)
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CheckCSourceCompiles)
 INCLUDE(CheckIncludeFile)
+INCLUDE(CheckSymbolExists)
 INCLUDE(GNUInstallDirs)
 INCLUDE(TestBigEndian)
 
@@ -191,6 +193,7 @@ CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
 # UNIX-like environments
+cmake_push_check_state()
 IF (UNIX AND NOT APPLE)
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m)
@@ -199,9 +202,15 @@ IF (UNIX AND NOT APPLE)
         SET(M_LIBRARY "")
         SET(PKG_PRIVATELIBS "")
     ELSE()
+        LIST(APPEND CMAKE_REQUIRED_LIBRARIES m)
         SET(PKG_PRIVATELIBS "-lm")
     ENDIF()
 ENDIF()
+
+check_symbol_exists(powf math.h HAVE_POWF)
+check_symbol_exists(expf math.h HAVE_EXPF)
+check_symbol_exists(sqrtf math.h HAVE_SQRTF)
+cmake_pop_check_state()
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")
