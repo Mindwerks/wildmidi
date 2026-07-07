@@ -42,6 +42,10 @@
 #include "sf2.h"
 #endif
 
+#ifndef SIZE_MAX
+#define SIZE_MAX ((size_t) (-1))
+#endif
+
 #define HOLD_OFF 0x02
 
 /* #define DEBUG_MIDI */
