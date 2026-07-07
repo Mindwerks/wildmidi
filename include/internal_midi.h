@@ -161,6 +161,8 @@ struct _mdi {
     uint8_t is_type2;
 
     char *lyric;
+
+    void *sf2_synth; /* per-mdi TinySoundFont instance, NULL unless a soundfont is loaded */
 };
 
 

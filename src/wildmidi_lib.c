@@ -51,6 +51,9 @@
 #include "sample.h"
 #include "mus2mid.h"
 #include "xmi2mid.h"
+#ifdef WILDMIDI_SF2
+#include "sf2.h"
+#endif
 
 /*
  * =========================
@@ -328,14 +331,17 @@ char** WM_LC_Tokenize_Line(char *line_data) {
              * write_ofs compaction below. Opening a quote also starts a
              * token so an empty quoted string ("") still yields a token. */
             if (!token_start) {
+                char **new_tokens;
                 token_start = 1;
                 if (token_count >= token_data_length) {
                     token_data_length += TOKEN_CNT_INC;
-                    token_data = (char **) realloc(token_data, token_data_length * sizeof(char *));
-                    if (token_data == NULL) {
+                    new_tokens = (char **) realloc(token_data, token_data_length * sizeof(char *));
+                    if (new_tokens == NULL) {
                         _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+                        free(token_data);
                         return (NULL);
                     }
+                    token_data = new_tokens;
                 }
 
                 token_data[token_count] = &line_data[write_ofs];
@@ -350,15 +356,18 @@ char** WM_LC_Tokenize_Line(char *line_data) {
             }
         } else {
             if (!token_start) {
+                char **new_tokens;
                 /* the start of a token in the line */
                 token_start = 1;
                 if (token_count >= token_data_length) {
                     token_data_length += TOKEN_CNT_INC;
-                    token_data = (char **) realloc(token_data, token_data_length * sizeof(char *));
-                    if (token_data == NULL) {
+                    new_tokens = (char **) realloc(token_data, token_data_length * sizeof(char *));
+                    if (new_tokens == NULL) {
                         _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+                        free(token_data);
                         return (NULL);
                     }
+                    token_data = new_tokens;
                 }
 
                 token_data[token_count] = &line_data[write_ofs];
@@ -381,7 +390,13 @@ char** WM_LC_Tokenize_Line(char *line_data) {
     /* if we have found some tokens then add a null token to the end */
     if (token_count) {
         if (token_count >= token_data_length) {
-            token_data = (char **) realloc(token_data, ((token_count + 1) * sizeof(char *)));
+            char **new_tokens = (char **) realloc(token_data, ((token_count + 1) * sizeof(char *)));
+            if (new_tokens == NULL) {
+                _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+                free(token_data);
+                return (NULL);
+            }
+            token_data = new_tokens;
         }
         token_data[token_count] = NULL;
     }
@@ -503,6 +518,57 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             return (-1);
                         }
                         free(new_config);
+                    } else if (wm_strcasecmp(line_tokens[0], "soundfont") == 0) {
+#ifdef WILDMIDI_SF2
+                        char *sf2_path = NULL;
+                        uint8_t *sf2_buffer = NULL;
+                        uint32_t sf2_size = 0;
+                        if (!line_tokens[1]) {
+                            _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(missing name in soundfont line)", 0);
+                            WM_FreePatches();
+                            free(config_dir);
+                            free(line_tokens);
+                            _WM_FreeBufferFile(config_buffer);
+                            return (-1);
+                        } else if (!IS_ABSOLUTE_PATH(line_tokens[1]) && config_dir) {
+                            sf2_path = (char *) malloc(strlen(config_dir) + strlen(line_tokens[1]) + 1);
+                            if (sf2_path == NULL) {
+                                _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+                                WM_FreePatches();
+                                free(config_dir);
+                                free(line_tokens);
+                                _WM_FreeBufferFile(config_buffer);
+                                return (-1);
+                            }
+                            strcpy(sf2_path, config_dir);
+                            strcpy(&sf2_path[strlen(config_dir)], line_tokens[1]);
+                        } else {
+                            if ((sf2_path = wm_strdup(line_tokens[1])) == NULL) {
+                                _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+                                WM_FreePatches();
+                                free(config_dir);
+                                free(line_tokens);
+                                _WM_FreeBufferFile(config_buffer);
+                                return (-1);
+                            }
+                        }
+                        sf2_buffer = (uint8_t *) _WM_BufferFile(sf2_path, &sf2_size);
+                        if ((sf2_buffer == NULL) || (_WM_SF2_Load(sf2_buffer, sf2_size) < 0)) {
+                            _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(unable to load soundfont)", 0);
+                            _WM_FreeBufferFile(sf2_buffer);
+                            free(sf2_path);
+                            WM_FreePatches();
+                            free(config_dir);
+                            free(line_tokens);
+                            _WM_FreeBufferFile(config_buffer);
+                            return (-1);
+                        }
+                        _WM_FreeBufferFile(sf2_buffer);
+                        free(sf2_path);
+#else
+                        _WM_DEBUG_MSG("%s: soundfont support not compiled in, ignoring %s",
+                                      config_file, line_tokens[1] ? line_tokens[1] : "");
+#endif
                     } else if (wm_strcasecmp(line_tokens[0], "bank") == 0) {
                         if (!line_tokens[1] || !wm_isdigit(line_tokens[1][0])) {
                             _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(syntax error in bank line)", 0);
@@ -864,23 +930,28 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
 /*  int32_t vol_mul; */
     struct _note *note_data = NULL;
     uint32_t count;
-    struct _event *event = mdi->current_event;
+    struct _event *event;
     int32_t *tmp_buffer;
     int32_t *out_buffer;
     int end_encountered;
 
     _WM_Lock(&mdi->lock);
+    event = mdi->current_event;
 
     buffer_used = 0;
     memset(buffer, 0, size);
 
     if ( (size / 2) > mdi->mix_buffer_size) {
-        if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
-            mdi->mix_buffer_size += MEM_CHUNK;
-        } else {
-            mdi->mix_buffer_size = size / 2;
+        uint32_t new_size = ((size / 2) <= (mdi->mix_buffer_size * 2))
+            ? mdi->mix_buffer_size + MEM_CHUNK : size / 2;
+        int32_t *new_buf = (int32_t *) realloc(mdi->mix_buffer, new_size * sizeof(int32_t));
+        if (new_buf == NULL) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+            _WM_Unlock(&mdi->lock);
+            return (-1);
         }
-        mdi->mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        mdi->mix_buffer = new_buf;
+        mdi->mix_buffer_size = new_size;
     }
 
     tmp_buffer = mdi->mix_buffer;
@@ -1184,23 +1255,28 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
     double *gptr, *gend;
     int left, right, temp_n;
     int ii, jj;
-    struct _event *event = mdi->current_event;
+    struct _event *event;
     int32_t *tmp_buffer;
     int32_t *out_buffer;
     int end_encountered;
 
     _WM_Lock(&mdi->lock);
+    event = mdi->current_event;
 
     buffer_used = 0;
     memset(buffer, 0, size);
 
     if ( (size / 2) > mdi->mix_buffer_size) {
-        if ( (size / 2) <= ( mdi->mix_buffer_size * 2 )) {
-            mdi->mix_buffer_size += MEM_CHUNK;
-        } else {
-            mdi->mix_buffer_size = size / 2;
+        uint32_t new_size = ((size / 2) <= (mdi->mix_buffer_size * 2))
+            ? mdi->mix_buffer_size + MEM_CHUNK : size / 2;
+        int32_t *new_buf = (int32_t *) realloc(mdi->mix_buffer, new_size * sizeof(int32_t));
+        if (new_buf == NULL) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+            _WM_Unlock(&mdi->lock);
+            return (-1);
         }
-        mdi->mix_buffer = (int32_t *) realloc(mdi->mix_buffer, mdi->mix_buffer_size * sizeof(int32_t));
+        mdi->mix_buffer = new_buf;
+        mdi->mix_buffer_size = new_size;
     }
 
     tmp_buffer = mdi->mix_buffer;
@@ -1591,14 +1667,46 @@ static int _WM_Init(const struct _WM_VIO *callbacks,
     _WM_FreeBufferFile = callbacks->free_file;
 
     WM_InitPatches();
+#ifdef WILDMIDI_SF2
+    {
+        /* a soundfont can be given directly in place of a config file */
+        uint32_t cfg_size = 0;
+        uint8_t *cfg_buffer = (uint8_t *) _WM_BufferFile(config_file, &cfg_size);
+        if (cfg_buffer == NULL) {
+            WM_FreePatches();
+            return (-1);
+        }
+        if (_WM_SF2_Magic(cfg_buffer, cfg_size)) {
+            int res = _WM_SF2_Load(cfg_buffer, cfg_size);
+            _WM_FreeBufferFile(cfg_buffer);
+            if (res < 0) {
+                _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(unable to load soundfont)", 0);
+                WM_FreePatches();
+                return (-1);
+            }
+        } else {
+            _WM_FreeBufferFile(cfg_buffer);
+            if (WM_LoadConfig(config_file) < 0) {
+                /* a `soundfont` line may have loaded state before a later
+                   line failed; drop it so the next Init starts clean */
+                _WM_SF2_Unload();
+                return (-1);
+            }
+        }
+    }
+#else
     if (WM_LoadConfig(config_file) == -1) {
         return (-1);
     }
+#endif
 
     if (mixer_options & 0x0FF0) {
         _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(invalid option)",
                 0);
         WM_FreePatches();
+#ifdef WILDMIDI_SF2
+        _WM_SF2_Unload();
+#endif
         return (-1);
     }
     _WM_MixerOptions = mixer_options;
@@ -1607,6 +1715,9 @@ static int _WM_Init(const struct _WM_VIO *callbacks,
         _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG,
                 "(rate out of bounds, range is 11025 - 65535)", 0);
         WM_FreePatches();
+#ifdef WILDMIDI_SF2
+        _WM_SF2_Unload();
+#endif
         return (-1);
     }
     _WM_SampleRate = rate;
@@ -1985,6 +2096,130 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
     return (0);
 }
 
+#ifdef WILDMIDI_SF2
+static int WM_GetOutput_SF2(midi * handle, int8_t *buffer, uint32_t size) {
+    uint32_t buffer_used = 0;
+    uint32_t i;
+    struct _mdi *mdi = (struct _mdi *) handle;
+    uint32_t real_samples_to_mix = 0;
+    int32_t left_mix, right_mix;
+    struct _event *event;
+    int32_t *tmp_buffer;
+    int32_t *out_buffer;
+    int end_encountered;
+
+    _WM_Lock(&mdi->lock);
+    event = mdi->current_event;
+
+    memset(buffer, 0, size);
+
+    if ( (size / 2) > mdi->mix_buffer_size) {
+        uint32_t new_size = ((size / 2) <= (mdi->mix_buffer_size * 2))
+            ? mdi->mix_buffer_size + MEM_CHUNK : size / 2;
+        int32_t *new_buf = (int32_t *) realloc(mdi->mix_buffer, new_size * sizeof(int32_t));
+        if (new_buf == NULL) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+            _WM_Unlock(&mdi->lock);
+            return (-1);
+        }
+        mdi->mix_buffer = new_buf;
+        mdi->mix_buffer_size = new_size;
+    }
+
+    tmp_buffer = mdi->mix_buffer;
+
+    memset(tmp_buffer, 0, ((size / 2) * sizeof(int32_t)));
+    out_buffer = tmp_buffer;
+
+    do {
+        if (__builtin_expect((!mdi->samples_to_mix), 0)) {
+            end_encountered = 0;
+            while ((!mdi->samples_to_mix) && (event->do_event)) {
+                /* do_event keeps channel/meta state in sync, the synth does the sound */
+                _WM_SF2_Event(mdi->sf2_synth, mdi, event);
+                event->do_event(mdi, &event->event_data);
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack) && !end_encountered) {
+                    end_encountered = 1; /* Avoid an infinite loop. */
+                    _WM_SF2_Reset(mdi->sf2_synth);
+                    _WM_ResetToStart(mdi);
+                    event = mdi->current_event;
+                } else {
+                    mdi->samples_to_mix = event->samples_to_next;
+                    event++;
+                    mdi->current_event = event;
+                }
+            }
+
+            if (__builtin_expect((!mdi->samples_to_mix), 0)) {
+                if (mdi->extra_info.current_sample >= mdi->extra_info.approx_total_samples) {
+                    /* let release tails ring out past the end of the event list,
+                       capped so a stuck looping voice cannot play forever */
+                    if ((!_WM_SF2_ActiveVoices(mdi->sf2_synth))
+                        || ((mdi->extra_info.current_sample - mdi->extra_info.approx_total_samples)
+                             > ((uint32_t)_WM_SampleRate * 10))) {
+                        break;
+                    }
+                    mdi->samples_to_mix = size >> 2;
+                } else if ((mdi->extra_info.approx_total_samples
+                             - mdi->extra_info.current_sample) > (size >> 2)) {
+                    mdi->samples_to_mix = size >> 2;
+                } else {
+                    mdi->samples_to_mix = mdi->extra_info.approx_total_samples
+                                           - mdi->extra_info.current_sample;
+                }
+            }
+        }
+        if (__builtin_expect((mdi->samples_to_mix > (size >> 2)), 1)) {
+            real_samples_to_mix = size >> 2;
+        } else {
+            real_samples_to_mix = mdi->samples_to_mix;
+            if (real_samples_to_mix == 0) {
+                continue;
+            }
+        }
+
+        _WM_SF2_Render(mdi->sf2_synth, tmp_buffer, real_samples_to_mix);
+        tmp_buffer += real_samples_to_mix * 2;
+
+        buffer_used += real_samples_to_mix * 4;
+        size -= (real_samples_to_mix << 2);
+        mdi->extra_info.current_sample += real_samples_to_mix;
+        mdi->samples_to_mix -= real_samples_to_mix;
+    } while (size);
+
+    tmp_buffer = out_buffer;
+
+    if (mdi->extra_info.mixer_options & WM_MO_REVERB) {
+        _WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
+    }
+
+    for (i = 0; i < buffer_used; i += 4) {
+        left_mix = *tmp_buffer++;
+        right_mix = *tmp_buffer++;
+
+        /*
+         * ===================
+         * Write to the buffer
+         * ===================
+         */
+#ifdef WORDS_BIGENDIAN
+        (*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
+        (*buffer++) = left_mix & 0xff;
+        (*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+        (*buffer++) = right_mix & 0xff;
+#else
+        (*buffer++) = left_mix & 0xff;
+        (*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
+        (*buffer++) = right_mix & 0xff;
+        (*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+#endif
+    }
+
+    _WM_Unlock(&mdi->lock);
+    return (buffer_used);
+}
+#endif /* WILDMIDI_SF2 */
+
 WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
     if (__builtin_expect((!WM_Initialized), 0)) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_INIT, NULL, 0);
@@ -2006,6 +2241,11 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
         return (-1);
     }
 
+#ifdef WILDMIDI_SF2
+    if (((struct _mdi *) handle)->sf2_synth) {
+        return (WM_GetOutput_SF2(handle, buffer, size));
+    }
+#endif
     if (((struct _mdi *) handle)->extra_info.mixer_options & WM_MO_ENHANCED_RESAMPLING) {
         if (!gauss_table) init_gauss();
         return (WM_GetOutput_Gauss(handle, buffer, size));
@@ -2141,6 +2381,9 @@ WM_SYMBOL int WildMidi_Shutdown(void) {
         WildMidi_Close((struct _mdi *) first_handle->handle);
     }
     WM_FreePatches();
+#ifdef WILDMIDI_SF2
+    _WM_SF2_Unload();
+#endif
     free_gauss();
 
     /* reset the globals */

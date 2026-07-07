@@ -41,6 +41,11 @@ SET(wildmidi_library_HDRS
  ../include/wildplay.h
 )
 
+IF (WANT_SF2)
+    LIST(APPEND wildmidi_library_SRCS sf2.c)
+    LIST(APPEND wildmidi_library_HDRS ../include/sf2.h)
+ENDIF()
+
 # set our library names
 IF (MSVC) # windows uses *.lib for both static and dynamic, workaround
     SET(LIBRARY_DYN_NAME "libWildMidi")

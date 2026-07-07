@@ -1,6 +1,6 @@
 # Project setup
 CMAKE_MINIMUM_REQUIRED(VERSION 3.4...3.10)
-PROJECT(wildmidi LANGUAGES C VERSION 0.4.6)
+PROJECT(wildmidi LANGUAGES C VERSION 0.5.0)
 
 # WildMIDI Version
 SET(WILDMIDI_VERSION ${PROJECT_VERSION})
@@ -12,10 +12,12 @@ SET(VERSION 2.1.0)
 # Find Macros
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+INCLUDE(CMakePushCheckState)
 INCLUDE(CMakeDependentOption)
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CheckCSourceCompiles)
 INCLUDE(CheckIncludeFile)
+INCLUDE(CheckSymbolExists)
 INCLUDE(GNUInstallDirs)
 INCLUDE(TestBigEndian)
 
@@ -65,6 +67,8 @@ CMAKE_DEPENDENT_OPTION(WANT_WINMM "Include Windows WinMM audio support" ON "WIN3
 OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
+
+OPTION(WANT_SF2 "SoundFont2 (SF2) support via TinySoundFont" ON)
 
 CMAKE_DEPENDENT_OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF "WIN32;MSVC" OFF)
 CMAKE_DEPENDENT_OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF "APPLE" OFF)
@@ -189,6 +193,7 @@ CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
 # UNIX-like environments
+cmake_push_check_state()
 IF (UNIX AND NOT APPLE)
     # find our math lib
     FIND_LIBRARY(M_LIBRARY m)
@@ -197,9 +202,15 @@ IF (UNIX AND NOT APPLE)
         SET(M_LIBRARY "")
         SET(PKG_PRIVATELIBS "")
     ELSE()
+        LIST(APPEND CMAKE_REQUIRED_LIBRARIES m)
         SET(PKG_PRIVATELIBS "-lm")
     ENDIF()
 ENDIF()
+
+check_symbol_exists(powf math.h HAVE_POWF)
+check_symbol_exists(expf math.h HAVE_EXPF)
+check_symbol_exists(sqrtf math.h HAVE_SQRTF)
+cmake_pop_check_state()
 
 # ######### General setup ##########
 INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")
@@ -297,6 +308,12 @@ IF(WANT_PLAYER OR WANT_PLAYERSTATIC)
 
     STRING(STRIP ${ENABLED_OUTPUT} ENABLED_OUTPUT)
     MESSAGE(STATUS "Enabled audio output backends: ${ENABLED_OUTPUT}")
+ENDIF()
+
+IF (WANT_SF2)
+    SET(TINYSOUNDFONT_DIR "${PROJECT_SOURCE_DIR}/extern/TinySoundFont")
+    INCLUDE_DIRECTORIES(SYSTEM "${TINYSOUNDFONT_DIR}")
+    SET(WILDMIDI_SF2 1)
 ENDIF()
 
 # Setup up our config file

@@ -49,11 +49,18 @@
 #define __builtin_expect(x,c) x
 #endif
 
+#cmakedefine HAVE_POWF
+#cmakedefine HAVE_EXPF
+#cmakedefine HAVE_SQRTF
+
 /* define this if you are running a bigendian system (motorola, sparc, etc) */
 #cmakedefine WORDS_BIGENDIAN 1
 
 /* define this if building for AmigaOS variants */
 #cmakedefine WILDMIDI_AMIGA 1
+
+/* define this to enable SoundFont2 support via TinySoundFont */
+#cmakedefine WILDMIDI_SF2 1
 
 /* Define if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H

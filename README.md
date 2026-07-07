@@ -6,7 +6,7 @@ files into audio which is then passed back to the calling application.
 The library API is designed so that it is easy to include WildMIDI into
 applications that wish to include MIDI file playback.
 
-Version: 0.4.6
+Version: 0.5.0
 Licenses: GPLv3+ and LGPLv3
 Website: https://github.com/Mindwerks/wildmidi
 
@@ -37,6 +37,15 @@ Requirements:
 * PSVita port: Vitasdk
 
 CHANGELOG
+
+0.5.0
+* SoundFont2 (SF2) rendering support via TinySoundFont, vendored under
+  `extern/TinySoundFont/`. Enabled by default (`WANT_SF2=ON`); pass either a
+  `.sf2` file or a config with a `soundfont` directive to `WildMidi_Init`.
+* Hardened event-pool and mix-buffer growth against realloc failure across the
+  Linear/Gauss/SF2 renderers; the event-setup helpers now propagate allocation
+  errors instead of writing past the buffer.
+* Assorted overflow guards and cleanup on init failure paths.
 
 0.4.6
 * A lot of player cleanup and refactoring, thanks to initial work
