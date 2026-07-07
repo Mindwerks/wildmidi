@@ -23,6 +23,12 @@
 
 #include "config.h"
 
+#ifndef WILDMIDI_SF2
+
+typedef char tsf_char20[20]; /* no empty source. */
+
+#else
+
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -239,3 +245,4 @@ void _WM_SF2_Render(void *synth, int32_t *out, uint32_t frames) {
         frames -= n;
     }
 }
+#endif /* WILDMIDI_SF2 */

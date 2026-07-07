@@ -149,9 +149,6 @@ ENDIF()
 IF (CMAKE_C_COMPILER_ID MATCHES "SunPro")
     SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -xldscope=hidden")
-    # __SUNPRO_C >= 0x590
-    #   CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
-    #                            int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
     # __SUNPRO_C >= 0x550
     CHECK_C_SOURCE_COMPILES("__global int foo(void);
                              int main(void) {return 0;}" HAVE_LDSCOPE_GLOBAL)
@@ -216,6 +213,12 @@ cmake_pop_check_state()
 INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")
 IF (NOT HAVE_STDINT_H) # AND NOT HAVE_INTTYPES_H
     INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include/stdint")
+ENDIF()
+SET(TINYSOUNDFONT_DIR "${PROJECT_SOURCE_DIR}/extern/TinySoundFont")
+INCLUDE_DIRECTORIES(SYSTEM "${TINYSOUNDFONT_DIR}")
+
+IF (WANT_SF2)
+    SET(WILDMIDI_SF2 1)
 ENDIF()
 
 IF (AMIGA OR AROS)
@@ -308,12 +311,6 @@ IF(WANT_PLAYER OR WANT_PLAYERSTATIC)
 
     STRING(STRIP ${ENABLED_OUTPUT} ENABLED_OUTPUT)
     MESSAGE(STATUS "Enabled audio output backends: ${ENABLED_OUTPUT}")
-ENDIF()
-
-IF (WANT_SF2)
-    SET(TINYSOUNDFONT_DIR "${PROJECT_SOURCE_DIR}/extern/TinySoundFont")
-    INCLUDE_DIRECTORIES(SYSTEM "${TINYSOUNDFONT_DIR}")
-    SET(WILDMIDI_SF2 1)
 ENDIF()
 
 # Setup up our config file

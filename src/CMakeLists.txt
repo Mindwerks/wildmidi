@@ -14,6 +14,7 @@ SET(wildmidi_library_SRCS
     f_midi.c
     f_hmi.c
     sample.c
+    sf2.c
     mus2mid.c
     xmi2mid.c
 )
@@ -33,6 +34,7 @@ SET(wildmidi_library_HDRS
  ../include/internal_midi.h
  ../include/patches.h
  ../include/sample.h
+ ../include/sf2.h
  ../include/common.h
  ../include/filenames.h
  ../include/mus2mid.h
@@ -40,11 +42,6 @@ SET(wildmidi_library_HDRS
  ../include/wm_tty.h
  ../include/wildplay.h
 )
-
-IF (WANT_SF2)
-    LIST(APPEND wildmidi_library_SRCS sf2.c)
-    LIST(APPEND wildmidi_library_HDRS ../include/sf2.h)
-ENDIF()
 
 # set our library names
 IF (MSVC) # windows uses *.lib for both static and dynamic, workaround
