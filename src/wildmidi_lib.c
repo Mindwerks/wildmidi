@@ -1937,6 +1937,12 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
         _WM_ResetToStart((struct _mdi *) handle);
         mdi->extra_info.current_sample = 0;
         mdi->samples_to_mix = 0;
+#ifdef WILDMIDI_SF2
+        /* Rewind TSF too so replayed events rebuild its state from scratch. */
+        if (mdi->sf2_synth) {
+            _WM_SF2_Reset(mdi->sf2_synth);
+        }
+#endif
     }
 
     if ((mdi->extra_info.current_sample + mdi->samples_to_mix) > *sample_pos) {
@@ -1946,9 +1952,17 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
         mdi->extra_info.current_sample += mdi->samples_to_mix;
         mdi->samples_to_mix = 0;
         while ((!mdi->samples_to_mix) && (event->do_event)) {
+#ifdef WILDMIDI_SF2
+            /* Mirror GetOutput_SF2: the TSF synth keeps its own voice/channel
+               state, so seek must feed it too — otherwise voices from before
+               the seek get no note-off (hang) and later note-ons pile on. */
+            if (mdi->sf2_synth) {
+                _WM_SF2_Event(mdi->sf2_synth, mdi, event);
+            }
+#endif
             event->do_event(mdi, &event->event_data);
             mdi->samples_to_mix = event->samples_to_next;
-                
+
             if ((mdi->extra_info.current_sample + mdi->samples_to_mix) > *sample_pos) {
                 mdi->samples_to_mix = (mdi->extra_info.current_sample + mdi->samples_to_mix) - *sample_pos;
                 mdi->extra_info.current_sample = *sample_pos;
@@ -2023,7 +2037,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
          * So with this one we have to go back 2 eof's
          * then forward 1 event to get to the start of
          * the previous song.
-         * NOTE: We will automatically stop at the start 
+         * NOTE: We will automatically stop at the start
          * of the data.
          */
         uint8_t eof_cnt = 1;
@@ -2039,6 +2053,9 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         event_new = event;
         event = mdi->events;
         _WM_ResetToStart((struct _mdi *) handle);
+#ifdef WILDMIDI_SF2
+        if (mdi->sf2_synth) _WM_SF2_Reset(mdi->sf2_synth);
+#endif
 
     } else if (nextsong == 1) {
         /* goto start of next song */
@@ -2070,9 +2087,15 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         event_new = event;
         event = mdi->events;
         _WM_ResetToStart((struct _mdi *) handle);
+#ifdef WILDMIDI_SF2
+        if (mdi->sf2_synth) _WM_SF2_Reset(mdi->sf2_synth);
+#endif
     }
 
     while (event != event_new) {
+#ifdef WILDMIDI_SF2
+        if (mdi->sf2_synth) _WM_SF2_Event(mdi->sf2_synth, mdi, event);
+#endif
         event->do_event(mdi, &event->event_data);
         mdi->extra_info.current_sample += event->samples_to_next;
         event++;
