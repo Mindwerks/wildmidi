@@ -181,6 +181,12 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
                 hmi_delta[i] = (hmi_delta[i] << 7) + (*hmi_addr & 0x7f);
                 hmi_addr++;
                 hmi_track_offset[i]++;
+                /* GHSA-f2xg-2rq9-xvhm: a header ending in VLQ continuation
+                 * bytes could otherwise walk past the buffer. */
+                if (hmi_track_offset[i] >= hmi_size) {
+                    _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
+                    goto _hmi_end;
+                }
             } while (*hmi_addr > 0x7f);
         }
         hmi_delta[i] = (hmi_delta[i] << 7) + (*hmi_addr & 0x7f);
