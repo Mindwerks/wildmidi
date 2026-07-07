@@ -20,7 +20,7 @@ endif
 LD = $(CC)
 
 DYLIB_MAJ=2
-DYLIB_MID=1
+DYLIB_MID=2
 DYLIB_MIN=0
 
 LIBNAME=WildMidi
