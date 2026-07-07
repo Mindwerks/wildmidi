@@ -287,7 +287,7 @@ TSFDEF float tsf_channel_get_tuning(tsf* f, int channel);
 #  define TSF_MEMSET  memset
 #endif
 
-#if !defined(TSF_POW) || !defined(TSF_POWF) || !defined(TSF_EXPF) || !defined(TSF_LOG) || !defined(TSF_TAN) || !defined(TSF_LOG10) || !defined(TSF_SQRT)
+#if !defined(TSF_POW) || !defined(TSF_POWF) || !defined(TSF_EXPF) || !defined(TSF_LOG) || !defined(TSF_TAN) || !defined(TSF_LOG10) || !defined(TSF_SQRTF)
 #  include <math.h>
 #  if !defined(__cplusplus) && !defined(NAN) && !defined(powf) && !defined(expf) && !defined(sqrtf)
 #    define powf (float)pow // deal with old math.h
