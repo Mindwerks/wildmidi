@@ -773,6 +773,16 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
         }
 
         gus_sample->next = NULL;
+
+        /* GHSA-c2fg-6v3f-77wq: guard the 96-byte sample header read below.
+         * no_of_samples (file byte 198) is untrusted, so gus_ptr may already
+         * be past the buffer on any iteration. */
+        if (gus_ptr > gus_size || gus_size - gus_ptr < 96) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, filename, 0);
+            _WM_FreeBufferFile(gus_patch);
+            return NULL;
+        }
+
         gus_sample->loop_fraction = gus_patch[gus_ptr + 7];
         gus_sample->data_length = (gus_patch[gus_ptr + 11] << 24)
                                 | (gus_patch[gus_ptr + 10] << 16)
@@ -827,9 +837,9 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
         /* GHSA-g5cc-5xv7-5f32: bounds-check header-supplied sizes so the sample
          * converters cannot integer-overflow their calloc size or read past the
          * source buffer. All 16 convert_* paths derive their allocation and
-         * write offsets from these three fields. */
+         * write offsets from these three fields. Header-range guard above
+         * already ensures gus_ptr + 96 <= gus_size. */
         if (gus_sample->data_length == 0
-            || gus_ptr + 96 > gus_size
             || gus_sample->data_length > gus_size - gus_ptr - 96
             || gus_sample->loop_end > gus_sample->data_length
             || gus_sample->data_length > (UINT32_MAX >> 10)) {
