@@ -311,19 +311,9 @@ IF(WANT_PLAYER OR WANT_PLAYERSTATIC)
 ENDIF()
 
 IF (WANT_SF2)
-    IF (WORDS_BIGENDIAN)
-        # tsf.h parses SF2 chunks little-endian without byteswapping, so on
-        # big-endian hosts it silently loads garbage. Disable rather than lie.
-        MESSAGE(WARNING "WANT_SF2 disabled: TinySoundFont does not support big-endian hosts")
-        SET(WANT_SF2 OFF)
-    ELSE()
-        SET(TINYSOUNDFONT_DIR "${PROJECT_SOURCE_DIR}/extern/TinySoundFont")
-        IF (NOT EXISTS "${TINYSOUNDFONT_DIR}/tsf.h")
-            MESSAGE(FATAL_ERROR "WANT_SF2 is ON but ${TINYSOUNDFONT_DIR}/tsf.h is missing")
-        ENDIF()
-        INCLUDE_DIRECTORIES(SYSTEM "${TINYSOUNDFONT_DIR}")
-        SET(WILDMIDI_SF2 1)
-    ENDIF()
+    SET(TINYSOUNDFONT_DIR "${PROJECT_SOURCE_DIR}/extern/TinySoundFont")
+    INCLUDE_DIRECTORIES(SYSTEM "${TINYSOUNDFONT_DIR}")
+    SET(WILDMIDI_SF2 1)
 ENDIF()
 
 # Setup up our config file
