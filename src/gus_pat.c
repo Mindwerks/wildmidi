@@ -23,6 +23,7 @@
 
 #include "config.h"
 
+#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #include <errno.h>
 #include <stdio.h>
@@ -821,6 +822,20 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
             gus_sample->loop_fraction =
                     ((gus_sample->loop_fraction & 0x0f) << 4)
                             | ((gus_sample->loop_fraction & 0xf0) >> 4);
+        }
+
+        /* GHSA-g5cc-5xv7-5f32: bounds-check header-supplied sizes so the sample
+         * converters cannot integer-overflow their calloc size or read past the
+         * source buffer. All 16 convert_* paths derive their allocation and
+         * write offsets from these three fields. */
+        if (gus_sample->data_length == 0
+            || gus_ptr + 96 > gus_size
+            || gus_sample->data_length > gus_size - gus_ptr - 96
+            || gus_sample->loop_end > gus_sample->data_length
+            || gus_sample->data_length > (UINT32_MAX >> 10)) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, filename, 0);
+            _WM_FreeBufferFile(gus_patch);
+            return NULL;
         }
 
         /* All sorts of annoying things happen with pat files.
