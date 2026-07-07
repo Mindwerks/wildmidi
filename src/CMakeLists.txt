@@ -41,6 +41,7 @@ SET(wildmidi_library_HDRS
  ../include/xmi2mid.h
  ../include/wm_tty.h
  ../include/wildplay.h
+ ../src/tsf/tsf.h
 )
 
 # set our library names
