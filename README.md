@@ -40,8 +40,8 @@ CHANGELOG
 
 0.5.0
 * SoundFont2 (SF2) rendering support via TinySoundFont, vendored under
-  `extern/TinySoundFont/`. Enabled by default (`WANT_SF2=ON`); pass either a
-  `.sf2` file or a config with a `soundfont` directive to `WildMidi_Init`.
+  `src/tsf/`. Enabled by default (`WANT_SF2=ON`); pass either an `.sf2`
+  file or a config with a `soundfont` directive to `WildMidi_Init`.
 * Hardened event-pool and mix-buffer growth against realloc failure across the
   Linear/Gauss/SF2 renderers; the event-setup helpers now propagate allocation
   errors instead of writing past the buffer.
