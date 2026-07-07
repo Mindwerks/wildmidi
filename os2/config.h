@@ -14,4 +14,13 @@
 #define __builtin_expect(x,c) x
 #endif
 
+#ifdef __KLIBC__
+#define HAVE_EXPF 1
+#define HAVE_SQRTF 1
+#define HAVE_POWF 1
+#endif
+
+#define WILDMIDI_SF2 1
+
 #define AUDIODRV_OS2DART 1
+

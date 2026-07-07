@@ -17,5 +17,11 @@
 #define __builtin_expect(x,c) x
 #endif
 
+/* #undef HAVE_EXPF */
+/* #undef HAVE_SQRTF */
+/* #undef HAVE_POWF */
+
+#define WILDMIDI_SF2 1
+
 #define AUDIODRV_AHI 1
 

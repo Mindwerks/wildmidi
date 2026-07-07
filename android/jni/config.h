@@ -61,5 +61,11 @@
 /* Define if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H
 
+#define HAVE_EXPF 1
+#define HAVE_SQRTF 1
+#define HAVE_POWF 1
+
+#define WILDMIDI_SF2 1
+
 /* Define our audio drivers */
 
