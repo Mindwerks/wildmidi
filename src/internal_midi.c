@@ -24,6 +24,7 @@
 #include "config.h"
 
 #include <stdint.h>
+#include <limits.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
