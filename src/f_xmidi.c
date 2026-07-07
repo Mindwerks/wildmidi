@@ -149,6 +149,13 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
     memset(xmi_notelen, 0, (sizeof(uint32_t) * 16 * 128));
 
     for (i = 0; i < xmi_formcnt; i++) {
+        /* FORM header = 4-byte tag + 4-byte length + 4-byte XMID tag = 12
+         * bytes. Guard against a truncated file before we consume them, and
+         * against a xmi_subformlen < 4 that would underflow below. */
+        if (xmi_size < 12) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
+            goto _xmi_end;
+        }
         if (memcmp(xmi_data,"FORM",4)) {
             _WM_GLOBAL_ERROR(WM_ERR_NOT_XMI, NULL, 0);
             goto _xmi_end;
@@ -164,6 +171,10 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
 
         if (memcmp(xmi_data,"XMID",4)) {
             _WM_GLOBAL_ERROR(WM_ERR_NOT_XMI, NULL, 0);
+            goto _xmi_end;
+        }
+        if (xmi_subformlen < 4 || xmi_subformlen - 4 > xmi_size - 4) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
             goto _xmi_end;
         }
         xmi_data += 4;
