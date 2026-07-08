@@ -42,10 +42,24 @@ CHANGELOG
 * SoundFont2 (SF2) rendering support via TinySoundFont, vendored under
   `src/tsf/`. Enabled by default (`WANT_SF2=ON`); pass either an `.sf2`
   file or a config with a `soundfont` directive to `WildMidi_Init`.
+* Find and use a GUS patch with neareset patchid in case of missing patches:
+  https://www.cpdl.org/wiki/images/f/f8/349_Jesu_meiner_Freuden_Freude.mid,
+  for example, now plays well with alternative patches instead of producing
+  silence. (thanks to Yotam Medini, github pull request #254.)
+* Discard extraneous end-of-track events in Type 1 MIDI files: Fixes certain
+  midis from Rise of the Triad looping too soon. (thanks Clownacy, github pull
+  request #263.)
+* Fix infinite loop when looping an empty channel. (thanks Clownacy, github
+  pull request #263.)
+* Support spaces in config file using quoted strings.
 * Hardened event-pool and mix-buffer growth against realloc failure across the
   Linear/Gauss/SF2 renderers; the event-setup helpers now propagate allocation
   errors instead of writing past the buffer.
-* Assorted overflow guards and cleanup on init failure paths.
+* Fix a possible double-free on library shutdown.
+* Fix player WAV writer not closing its output properly (0.4.6 bug)
+* Assorted overflow guards.
+* Cmake build system fixes, other minor fixes/clean-ups.
+* The library is API/ABI compatible with 0.4.x versions.
 
 0.4.6
 * A lot of player cleanup and refactoring, thanks to initial work
