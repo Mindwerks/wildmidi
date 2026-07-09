@@ -21,7 +21,9 @@ if (guspat = _WM_load_gus_pat(...)) { /* existing */ }
 else if (emergency_bank_enabled)   { guspat = _WM_synth_patch(patchid); }
 ```
 
-Trigger: `--emergency` CLI flag, or automatic fallback when no cfg is found.
+Trigger: opt-in only — `--emergency` CLI flag, or pass the sentinel
+`"@emergency"` as the config path to `WildMidi_Init()`. Never silent, so a
+missing cfg still surfaces as an error and debugging stays honest.
 No API break; existing users notice nothing.
 
 ## Licensing
@@ -87,7 +89,7 @@ if every program is touched.
 
 ## Difficulty
 
-- **A**: ~half a day. New `src/emerg_synth.c` + `include/emerg_synth.h`, a
+- **A**: ~half a day. New `src/synth.c` + `include/synth.h`, a
   128‑entry program table, one branch in `_WM_load_sample`, CLI flag in
   `src/player/wildmidi.c`, one env‑target/rate mapping using the existing
   `env_rate[]/env_target[]` machinery.
@@ -106,14 +108,13 @@ volunteers.
 
 ## Concrete task list for approach A
 
-1. `include/emerg_synth.h`, `src/emerg_synth.c` — one public function
+1. `include/synth.h`, `src/synth.c` — one public function
    `struct _sample *_WM_synth_patch(uint16_t patchid);` returning a
    `_sample` chain compatible with the mixer (16‑bit signed, `SAMPLE_LOOP`
    set on sustained families, envelope in `env_rate[]/env_target[]`).
 2. Program → family table (~30 lines of static data).
 3. Wire fallback into [`_WM_load_sample`](src/sample.c#L117) — one `else if`.
-4. `--emergency` flag in `src/player/wildmidi.c` and matching library option.
-5. Auto‑enable the fallback when no cfg is discoverable (opt‑in via option,
-   not silent, so debugging stays honest).
-6. `test/` — one MIDI file rendered with `-o` to WAV, byte length asserted
+4. `--emergency` flag in `src/player/wildmidi.c` and matching library
+   sentinel `WM_EMERGENCY_CONFIG`.
+5. `test/` — one MIDI file rendered with `-o` to WAV, byte length asserted
    non‑zero; that's the "did anything come out" smoke test.

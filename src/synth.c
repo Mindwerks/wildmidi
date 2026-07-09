@@ -491,12 +491,27 @@ static struct _patch *alloc_patch(uint16_t patchid, uint8_t keep) {
     return p;
 }
 
+/* Undo whatever _WM_emergency_init_patches installed, so a partial-alloc
+   failure leaves _WM_patch[] in the same empty state WM_InitPatches() left it. */
+static void free_emergency_patches(void) {
+    uint16_t id;
+    for (id = 0; id < 128; id++) {
+        struct _patch *p = _WM_patch[id];
+        while (p) {
+            struct _patch *next = p->next;
+            free(p);
+            p = next;
+        }
+        _WM_patch[id] = NULL;
+    }
+}
+
 int _WM_emergency_init_patches(void) {
     uint16_t id;
 
     for (id = 0; id < 128; id++) {
         struct _patch *p = alloc_patch(id, 0);
-        if (!p) return -1;
+        if (!p) { free_emergency_patches(); return -1; }
         _WM_patch[id] = p;
     }
     /* Drum kit chains onto _WM_patch[note & 0x7F] because _find_matched_patch
@@ -506,7 +521,7 @@ int _WM_emergency_init_patches(void) {
         uint16_t drumid = 0x80u | id;
         struct _patch *p = alloc_patch(drumid, SAMPLE_ENVELOPE);
         struct _patch *head = _WM_patch[id];
-        if (!p) return -1;
+        if (!p) { free_emergency_patches(); return -1; }
         while (head->next) head = head->next;
         head->next = p;
     }
