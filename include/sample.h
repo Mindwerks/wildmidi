@@ -60,6 +60,8 @@ struct _sample {
     struct _sample *next;
 
     uint32_t note_off_decay;
+    uint16_t scale_frequency;
+    uint16_t scale_factor;
 };
 
 extern int _WM_fix_release;
