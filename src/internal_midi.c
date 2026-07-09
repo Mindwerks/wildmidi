@@ -672,9 +672,12 @@ static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
     }
     note_f += mdi->channel[ch].pitch_adjust;
     {
-        /* Apply GUS keyboard frequency scaling (Ultrasound SDK 13.4). */
+        /* Apply GUS keyboard frequency scaling (Ultrasound SDK 13.4).
+           int64 intermediate: guards against int32 overflow on corrupt
+           patch fields; the note_f clamp below then bounds the result. */
         int32_t pivot = (int32_t)nte->sample->scale_frequency * 100;
-        note_f = pivot + (note_f - pivot) * (int32_t)nte->sample->scale_factor / 1024;
+        int64_t scaled = (int64_t)(note_f - pivot) * (int32_t)nte->sample->scale_factor / 1024;
+        note_f = (int32_t)(pivot + scaled);
     }
     if (__builtin_expect((note_f < 0), 0)) {
         note_f = 0;
