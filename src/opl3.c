@@ -1230,7 +1230,7 @@ static void OPL3_MixRight(opl3_chip *chip)
     chip->mixbuff[3] = mix1;
 }
 
-inline void OPL3_Generate4Ch(opl3_chip *chip, int16_t *buf4)
+void OPL3_Generate4Ch(opl3_chip *chip, int16_t *buf4)
 {
     opl3_channel *channel;
     opl3_writebuf *writebuf;
