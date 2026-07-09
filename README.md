@@ -57,6 +57,7 @@ CHANGELOG
   errors instead of writing past the buffer.
 * Fix a possible double-free on library shutdown.
 * Fix player WAV writer not closing its output properly (0.4.6 bug)
+* Security hardening across the file parsers.
 * Assorted overflow guards.
 * Cmake build system fixes, other minor fixes/clean-ups.
 * The library is API/ABI compatible with 0.4.x versions.

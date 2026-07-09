@@ -162,6 +162,15 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_track_header_length[i] += (hmi_addr[0x59] << 16);
         hmi_track_header_length[i] += (hmi_addr[0x5a] << 24);
 
+        /* GHSA-f2xg-2rq9-xvhm: header length is file-controlled; bound it
+         * against the remaining buffer so the pointer advance below cannot
+         * walk off the file, and leave at least one byte for the VLQ read
+         * that follows. */
+        if (hmi_track_header_length[i] >= hmi_size - hmi_track_offset[i]) {
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
+            goto _hmi_end;
+        }
+
         hmi_addr += hmi_track_header_length[i];
         hmi_track_offset[i] += hmi_track_header_length[i];
 
@@ -172,6 +181,12 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
                 hmi_delta[i] = (hmi_delta[i] << 7) + (*hmi_addr & 0x7f);
                 hmi_addr++;
                 hmi_track_offset[i]++;
+                /* GHSA-f2xg-2rq9-xvhm: a header ending in VLQ continuation
+                 * bytes could otherwise walk past the buffer. */
+                if (hmi_track_offset[i] >= hmi_size) {
+                    _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
+                    goto _hmi_end;
+                }
             } while (*hmi_addr > 0x7f);
         }
         hmi_delta[i] = (hmi_delta[i] << 7) + (*hmi_addr & 0x7f);
@@ -307,7 +322,10 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
                     if ((hmi_running_event[i] & 0xf0) == 0x90) {
                         /* note on has extra data to specify how long the note is. */
                         if (*hmi_data > 127) {
-                            hmi_tmp = hmi_data[1];
+                            /* GHSA-f2xg-2rq9-xvhm: mask to the valid MIDI
+                             * note range so the note[] index below stays
+                             * inside the 128-per-track allocation. */
+                            hmi_tmp = hmi_data[1] & 0x7f;
                         } else {
                             hmi_tmp = *hmi_data;
                         }

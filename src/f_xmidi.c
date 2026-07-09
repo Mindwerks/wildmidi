@@ -104,6 +104,14 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
      at this stage unsure if remaining data in
      this section means anything
      */
+    /* GHSA-w64x-crjj-cccf: XDIR chunk length is file-controlled; if it is
+     * smaller than the 13 sub-header bytes we already consumed, the uint32
+     * subtraction below would underflow and the pointer add would walk ~4 GB
+     * past the buffer. */
+    if (xmi_tmpdata < 13 || xmi_tmpdata - 13 > xmi_size) {
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_XMI, NULL, 0);
+        return NULL;
+    }
     xmi_tmpdata -= 13;
     xmi_data += xmi_tmpdata;
     xmi_size -= xmi_tmpdata;
@@ -141,6 +149,13 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
     memset(xmi_notelen, 0, (sizeof(uint32_t) * 16 * 128));
 
     for (i = 0; i < xmi_formcnt; i++) {
+        /* FORM header = 4-byte tag + 4-byte length + 4-byte XMID tag = 12
+         * bytes. Guard against a truncated file before we consume them, and
+         * against a xmi_subformlen < 4 that would underflow below. */
+        if (xmi_size < 12) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
+            goto _xmi_end;
+        }
         if (memcmp(xmi_data,"FORM",4)) {
             _WM_GLOBAL_ERROR(WM_ERR_NOT_XMI, NULL, 0);
             goto _xmi_end;
@@ -158,12 +173,22 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
             _WM_GLOBAL_ERROR(WM_ERR_NOT_XMI, NULL, 0);
             goto _xmi_end;
         }
+        if (xmi_subformlen < 4 || xmi_subformlen - 4 > xmi_size - 4) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
+            goto _xmi_end;
+        }
         xmi_data += 4;
         xmi_size -= 4;
         xmi_subformlen -= 4;
 
         /* Process Subform */
         do {
+            /* Each subform chunk is at least a 4-byte tag + 4-byte length. */
+            if (xmi_size < 8 || xmi_subformlen < 8) {
+                _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
+                goto _xmi_end;
+            }
+
             if (!memcmp(xmi_data,"TIMB",4)) {
                 /* Holds patch information */
                 /* FIXME: May not be needed for playback as EVNT seems to */
@@ -174,6 +199,13 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_tmpdata |= *xmi_data++ << 16;
                 xmi_tmpdata |= *xmi_data++ << 8;
                 xmi_tmpdata |= *xmi_data++;
+                /* Bound the file-supplied length against the remaining buffer
+                 * and the enclosing subform, so the pointer add and the two
+                 * subtractions below cannot walk off / underflow. */
+                if (xmi_tmpdata > xmi_size - 8 || xmi_tmpdata > xmi_subformlen - 8) {
+                    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
+                    goto _xmi_end;
+                }
                 xmi_data += xmi_tmpdata;
                 xmi_size -= (8 + xmi_tmpdata);
                 xmi_subformlen -= (8 + xmi_tmpdata);
@@ -187,6 +219,10 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_tmpdata |= *xmi_data++ << 16;
                 xmi_tmpdata |= *xmi_data++ << 8;
                 xmi_tmpdata |= *xmi_data++;
+                if (xmi_tmpdata > xmi_size - 8 || xmi_tmpdata > xmi_subformlen - 8) {
+                    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
+                    goto _xmi_end;
+                }
                 xmi_data += xmi_tmpdata;
                 xmi_size -= (8 + xmi_tmpdata);
                 xmi_subformlen -= (8 + xmi_tmpdata);
@@ -201,6 +237,12 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_evntlen |= *xmi_data++ << 16;
                 xmi_evntlen |= *xmi_data++ << 8;
                 xmi_evntlen |= *xmi_data++;
+                /* EVNT payload must fit in the remaining buffer; otherwise
+                 * the inner event loop will read past the file. */
+                if (xmi_evntlen > xmi_size - 8 || xmi_evntlen > xmi_subformlen - 8) {
+                    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, NULL, 0);
+                    goto _xmi_end;
+                }
                 xmi_size -= 8;
                 xmi_subformlen -= 8;
 
@@ -282,7 +324,10 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                         if ((*xmi_data & 0xf0) == 0x90) {
                             /* Note on has extra data stating note length */
                             xmi_ch = *xmi_data & 0x0f;
-                            xmi_note = xmi_data[1];
+                            /* GHSA-w64x-crjj-cccf: mask to the valid MIDI
+                             * note range so the xmi_notelen[128*ch+note]
+                             * index below stays inside the 16*128 allocation. */
+                            xmi_note = xmi_data[1] & 0x7f;
                             xmi_data += setup_ret;
                             xmi_size -= setup_ret;
                             xmi_evntlen -= setup_ret;

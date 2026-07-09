@@ -105,6 +105,14 @@ _WM_ParseNewMus(const uint8_t *mus_data, uint32_t mus_size) {
         return NULL;
     }
 
+    /* GHSA-v6gx-9vh4-c8qx: mus_song_ofs is a file-controlled uint16 used as
+     * a raw index into mus_data. Bound it against mus_size with room for
+     * the 3-byte first event read below. */
+    if (mus_song_ofs > mus_size - 3) {
+        _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "file too short", 0);
+        return NULL;
+    }
+
     /* Instrument definition */
     mus_mid_instr = (uint16_t *) malloc(mus_no_instr * sizeof(uint16_t));
     for (mus_instr_cnt = 0; mus_instr_cnt < mus_no_instr; mus_instr_cnt++) {
