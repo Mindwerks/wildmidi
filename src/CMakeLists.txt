@@ -14,6 +14,8 @@ SET(wildmidi_library_SRCS
     f_midi.c
     f_hmi.c
     sample.c
+    synth.c
+    opl3.c
     sf2.c
     mus2mid.c
     xmi2mid.c
@@ -36,6 +38,9 @@ SET(wildmidi_library_HDRS
  ../include/internal_midi.h
  ../include/patches.h
  ../include/sample.h
+ ../include/synth.h
+ ../include/opl3.h
+ ../include/wf_rom.h
  ../include/sf2.h
  ../include/common.h
  ../include/filenames.h

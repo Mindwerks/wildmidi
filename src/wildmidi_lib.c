@@ -49,6 +49,7 @@
 #include "f_xmidi.h"
 #include "patches.h"
 #include "sample.h"
+#include "synth.h"
 #include "mus2mid.h"
 #include "xmi2mid.h"
 #include "hmp2mid.h"
@@ -1697,15 +1698,38 @@ static int _WM_Init(const struct _WM_VIO *callbacks,
     _WM_FreeBufferFile = callbacks->free_file;
 
     WM_InitPatches();
-#ifdef WILDMIDI_SF2
+    _WM_OP2_Unload(); /* a stale bank from a previous Init must not leak in */
+
+    /* OPL3 soundbank sentinel: skip file loading entirely and populate
+       _WM_patch[] with GM voices rendered by the Nuked OPL3 emulator. */
+    if (strcmp(config_file, WM_OPL3_CONFIG) == 0) {
+        if (_WM_opl3_init_patches() < 0) {
+            WM_FreePatches();
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
+            return (-1);
+        }
+        goto post_config_load;
+    }
     {
-        /* a soundfont can be given directly in place of a config file */
+        /* a soundfont or GENMIDI (.op2) FM bank can be given directly in
+           place of a config file */
         uint32_t cfg_size = 0;
         uint8_t *cfg_buffer = (uint8_t *) _WM_BufferFile(config_file, &cfg_size);
         if (cfg_buffer == NULL) {
             WM_FreePatches();
             return (-1);
         }
+        if (_WM_OP2_Magic(cfg_buffer, cfg_size)) {
+            int res = _WM_OP2_Load(cfg_buffer, cfg_size);
+            _WM_FreeBufferFile(cfg_buffer);
+            if (res < 0 || _WM_opl3_init_patches() < 0) {
+                _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(unable to load op2 bank)", 0);
+                WM_FreePatches();
+                return (-1);
+            }
+            goto post_config_load;
+        }
+#ifdef WILDMIDI_SF2
         if (_WM_SF2_Magic(cfg_buffer, cfg_size)) {
             int res = _WM_SF2_Load(cfg_buffer, cfg_size);
             _WM_FreeBufferFile(cfg_buffer);
@@ -1714,22 +1738,22 @@ static int _WM_Init(const struct _WM_VIO *callbacks,
                 WM_FreePatches();
                 return (-1);
             }
-        } else {
+        } else
+#endif
+        {
             _WM_FreeBufferFile(cfg_buffer);
             if (WM_LoadConfig(config_file) < 0) {
+#ifdef WILDMIDI_SF2
                 /* a `soundfont` line may have loaded state before a later
                    line failed; drop it so the next Init starts clean */
                 _WM_SF2_Unload();
+#endif
                 return (-1);
             }
         }
     }
-#else
-    if (WM_LoadConfig(config_file) == -1) {
-        return (-1);
-    }
-#endif
 
+post_config_load:
     if (mixer_options & 0x0FF0) {
         _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(invalid option)",
                 0);

@@ -57,7 +57,7 @@ endif
 
 
 # Objects
-LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o hmp2mid.o hmi2mid.o internal_midi.o patches.o sample.o sf2.o
+LIB_OBJ= wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o hmp2mid.o hmi2mid.o internal_midi.o patches.o sample.o sf2.o synth.o opl3.o
 PLAYER_OBJ= wm_tty.o msleep.o getopt_long.o out_none.o dosirq.o dosdma.o dossb.o out_dossb.o out_wave.o wildmidi.o
 
 # Build targets
