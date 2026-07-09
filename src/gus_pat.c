@@ -823,6 +823,15 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
                 gus_patch[gus_ptr+52], gus_patch[gus_ptr+53], gus_patch[gus_ptr+54]);
 #endif
         gus_sample->modes = gus_patch[gus_ptr + 55];
+        gus_sample->scale_frequency = gus_patch[gus_ptr + 56]
+                                    | (gus_patch[gus_ptr + 57] << 8);
+        gus_sample->scale_factor    = gus_patch[gus_ptr + 58]
+                                    | (gus_patch[gus_ptr + 59] << 8);
+        /* ponytail: some pre-1.10 patches leave both zero; treat as identity. */
+        if (gus_sample->scale_factor == 0 && gus_sample->scale_frequency == 0) {
+            gus_sample->scale_frequency = 60;
+            gus_sample->scale_factor = 1024;
+        }
         GUSPAT_START_DEBUG(); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_16BIT, "16bit "); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_UNSIGNED, "Unsigned "); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_LOOP, "Loop "); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_PINGPONG, "PingPong "); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_REVERSE, "Reverse "); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_SUSTAIN, "Sustain "); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_ENVELOPE, "Envelope "); GUSPAT_MODE_DEBUG(gus_patch[gus_ptr+55], SAMPLE_CLAMPED, "Clamped "); GUSPAT_END_DEBUG();
 
         if (gus_sample->loop_start > gus_sample->loop_end) {
