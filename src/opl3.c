@@ -1357,7 +1357,7 @@ inline void OPL3_Generate4Ch(opl3_chip *chip, int16_t *buf4)
         }
         else
         {
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) && ((__GNUC__ * 1000) + __GNUC_MINOR__) >= 3004) || defined(__clang__)
             shift = (uint8_t)__builtin_ctz(eg_timer_low);
 #else
             while (((eg_timer_low >> shift) & 1) == 0)
