@@ -33,7 +33,7 @@
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "sample.h"
-#include "emerg_synth.h"
+#include "synth.h"
 
 /*
  FIXME: Need to decide if this stuff needs to be broken up for different formats.

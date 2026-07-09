@@ -49,7 +49,7 @@
 #include "f_xmidi.h"
 #include "patches.h"
 #include "sample.h"
-#include "emerg_synth.h"
+#include "synth.h"
 #include "mus2mid.h"
 #include "xmi2mid.h"
 #ifdef WILDMIDI_SF2
