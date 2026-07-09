@@ -52,6 +52,7 @@
 #cmakedefine HAVE_POWF
 #cmakedefine HAVE_EXPF
 #cmakedefine HAVE_SQRTF
+#cmakedefine HAVE_SINF
 
 /* define this if you are running a bigendian system (motorola, sparc, etc) */
 #cmakedefine WORDS_BIGENDIAN 1

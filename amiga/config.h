@@ -1,4 +1,5 @@
 /* wildmidi config for amigaos variants */
+
 #define WILDMIDI_AMIGA 1
 
 #define WILDMIDI_CFG "wildmidi.cfg"
@@ -20,8 +21,8 @@
 /* #undef HAVE_EXPF */
 /* #undef HAVE_SQRTF */
 /* #undef HAVE_POWF */
+/* #undef HAVE_SINF */
 
 #define WILDMIDI_SF2 1
 
 #define AUDIODRV_AHI 1
-

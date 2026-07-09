@@ -207,6 +207,7 @@ ENDIF()
 check_symbol_exists(powf math.h HAVE_POWF)
 check_symbol_exists(expf math.h HAVE_EXPF)
 check_symbol_exists(sqrtf math.h HAVE_SQRTF)
+check_symbol_exists(sinf math.h HAVE_SINF)
 cmake_pop_check_state()
 
 # ######### General setup ##########

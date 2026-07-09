@@ -19,6 +19,7 @@
 /* #undef HAVE_EXPF */
 /* #undef HAVE_SQRTF */
 /* #undef HAVE_POWF */
+/* #undef HAVE_SINF */
 
 #define WILDMIDI_SF2 1
 

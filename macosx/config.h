@@ -24,9 +24,9 @@
 #define HAVE_EXPF 1
 #define HAVE_SQRTF 1
 #define HAVE_POWF 1
+#define HAVE_SINF 1
 
 #define WILDMIDI_SF2 1
 
 /* #undef AUDIODRV_OPENAL */
 #define AUDIODRV_COREAUDIO 1
-

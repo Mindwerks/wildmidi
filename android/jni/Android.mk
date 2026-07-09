@@ -22,6 +22,7 @@ LOCAL_SRC_FILES := \
 	src/reverb.c \
 	src/sample.c \
 	src/sf2.c \
+	src/synth.c \
 	src/wildmidi_lib.c \
 	src/wm_error.c \
 	src/xmi2mid.c

@@ -35,8 +35,18 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-
-extern uint16_t _WM_SampleRate;
+#ifndef HAVE_EXPF
+static float synth_expf(float x) {
+    return (float) exp(x);
+}
+#define expf synth_expf
+#endif
+#ifndef HAVE_SINF
+static float synth_sinf(float x) {
+    return (float) sin(x);
+}
+#define sinf synth_sinf
+#endif
 
 /* ------------------------------------------------------------------ */
 /* Envelopes                                                          */
@@ -160,15 +170,16 @@ static struct _sample *synth_tonal(uint16_t patchid) {
     const tonal_voice *v = &gm_voice[program >> 3];
     /* One fundamental period: loop covers exactly one cycle. All partials
        are integer multiples of the fundamental so the boundary is bit-exact. */
-    uint32_t period = _WM_SampleRate / 262u;
-    if (period < 32) period = 32;
-    uint32_t n = period;
+    const uint32_t period_ = _WM_SampleRate / 262u;
+    const uint32_t period = (period_ < 32) ? 32 : period_;
+    const uint32_t n = period;
     double root_hz = (double)_WM_SampleRate / (double)period;
     struct _sample *s;
     float *buf;
     uint32_t i;
     int k;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
 
@@ -212,17 +223,20 @@ static struct _sample *synth_kick(uint8_t note) {
     float f_end   = (note <= 36) ? 45.0f  : 60.0f + 3.5f * (float)note;
     float click   = (note <= 36) ? 1.0f   : 0.35f;
     double phase = 0.0;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
 
     for (i = 0; i < n; i++) {
         float t = (float)i / (float)n;
         float f = f_end + (f_start - f_end) * expf(-6.0f * t);
+        float body, amp, attack_click;
+
         phase += 2.0 * M_PI * (double)f / (double)_WM_SampleRate;
-        float body = sinf((float)phase);
-        float amp = expf(-4.5f * t);
-        float attack_click = (i < 30) ? click * (1.0f - (float)i / 30.0f) : 0.0f;
+        body = sinf((float)phase);
+        amp = expf(-4.5f * t);
+        attack_click = (i < 30) ? click * (1.0f - (float)i / 30.0f) : 0.0f;
         buf[i] = amp * body + attack_click;
     }
     normalise_and_write(s, n, buf, 30000.0f, 128);
@@ -239,19 +253,22 @@ static struct _sample *synth_snare(uint8_t note) {
     struct _sample *s;
     float *buf;
     uint32_t i;
-    rng_t r = { 0xC0FFEEu ^ ((uint32_t)note * 2654435761u) };
+    rng_t r;
     double phase = 0.0;
     float tone_freq = (note == 40 || note == 38) ? 180.0f : 220.0f;
     float lpf = 0.0f;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
 
+    r.s = 0xC0FFEEu ^ ((uint32_t)note * 2654435761u);
     for (i = 0; i < n; i++) {
         float t = (float)i / (float)n;
+        float body, x;
         phase += 2.0 * M_PI * (double)tone_freq / (double)_WM_SampleRate;
-        float body = sinf((float)phase) * expf(-6.0f * t);
-        float x = rng_bipolar(&r);
+        body = sinf((float)phase) * expf(-6.0f * t);
+        x = rng_bipolar(&r);
         lpf += 0.45f * (x - lpf);
         buf[i] = 0.55f * body + 0.9f * lpf * expf(-4.0f * t);
     }
@@ -269,18 +286,21 @@ static struct _sample *synth_hat(uint8_t note, int open) {
     struct _sample *s;
     float *buf;
     uint32_t i;
-    rng_t r = { 0xBADF00Du ^ ((uint32_t)note * 2654435761u) };
+    rng_t r;
     float lpf = 0.0f;
     float decay_k = open ? 4.0f : 25.0f;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
 
+    r.s = 0xBADF00Du ^ ((uint32_t)note * 2654435761u);
     for (i = 0; i < n; i++) {
         float t = (float)i / (float)n;
         float x = rng_bipolar(&r);
+        float hp;
         lpf += 0.15f * (x - lpf);
-        float hp = x - lpf;
+        hp = x - lpf;
         buf[i] = hp * expf(-decay_k * t);
     }
     normalise_and_write(s, n, buf, 22000.0f, 128);
@@ -297,24 +317,27 @@ static struct _sample *synth_cymbal(uint8_t note) {
     struct _sample *s;
     float *buf;
     uint32_t i;
-    rng_t r = { 0xCA55EEu ^ ((uint32_t)note * 2654435761u) };
+    rng_t r;
     const float ratios[3] = { 1.0f, 1.593f, 2.135f };
     const float base = (note == 51 || note == 53 || note == 59) ? 700.0f : 500.0f;
     double ph[3] = { 0.0, 0.0, 0.0 };
     float noise_decay = (note == 49 || note == 57) ? 2.5f : 4.5f;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
 
+    r.s = 0xCA55EEu ^ ((uint32_t)note * 2654435761u);
     for (i = 0; i < n; i++) {
         float t = (float)i / (float)n;
+        float x;
         int k;
         float partials = 0.0f;
         for (k = 0; k < 3; k++) {
             ph[k] += 2.0 * M_PI * (double)(base * ratios[k]) / (double)_WM_SampleRate;
             partials += sinf((float)ph[k]);
         }
-        float x = rng_bipolar(&r);
+        x = rng_bipolar(&r);
         buf[i] = 0.5f * partials * expf(-2.0f * t) + 0.7f * x * expf(-noise_decay * t);
     }
     normalise_and_write(s, n, buf, 26000.0f, 128);
@@ -333,7 +356,8 @@ static struct _sample *synth_bell(uint8_t note, float base_hz, float decay_s) {
     uint32_t i;
     double ph1 = 0.0, ph2 = 0.0;
     (void)note;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
 
@@ -359,7 +383,8 @@ static struct _sample *synth_click(uint8_t note, float freq, float decay_s) {
     uint32_t i;
     double phase = 0.0;
     (void)note;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
 
@@ -382,11 +407,13 @@ static struct _sample *synth_drum_generic(uint8_t note) {
     struct _sample *s;
     float *buf;
     uint32_t i;
-    rng_t r = { 0xDEADBEEFu ^ ((uint32_t)note * 2654435761u) };
+    rng_t r;
     float lpf = 0.0f;
-    if (!(s = alloc_sample(n))) return NULL;
+    s = alloc_sample(n);
+    if (!s) return NULL;
     buf = (float *)calloc(n, sizeof(float));
     if (!buf) { free(s->data); free(s); return NULL; }
+    r.s = 0xDEADBEEFu ^ ((uint32_t)note * 2654435761u);
     for (i = 0; i < n; i++) {
         float t = (float)i / (float)n;
         float x = rng_bipolar(&r);
