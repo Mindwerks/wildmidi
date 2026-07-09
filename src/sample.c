@@ -33,6 +33,7 @@
 #include "wildmidi_lib.h"
 #include "internal_midi.h"
 #include "sample.h"
+#include "emerg_synth.h"
 
 /*
  FIXME: Need to decide if this stuff needs to be broken up for different formats.
@@ -123,7 +124,12 @@ _WM_load_sample(struct _patch *sample_patch) {
     /* we only want to try loading the guspat once. */
     sample_patch->loaded = 1;
 
-    if ((guspat = _WM_load_gus_pat(sample_patch->filename, _WM_fix_release)) == NULL) {
+    if (sample_patch->filename == NULL) {
+        /* Emergency-soundbank mode: no file, fabricate a sample. */
+        if ((guspat = _WM_synth_patch(sample_patch->patchid)) == NULL) {
+            return (-1);
+        }
+    } else if ((guspat = _WM_load_gus_pat(sample_patch->filename, _WM_fix_release)) == NULL) {
         return (-1);
     }
 

@@ -264,6 +264,7 @@ static struct option const long_options[] = {
     { "textaslyric", 0, NULL, 'a' },
     { "playfrom", 1, NULL, 'i'},
     { "playto", 1, NULL, 'j'},
+    { "emergency", 0, NULL, 'E' },
     { NULL, 0, NULL, 0 }
 };
 
@@ -300,6 +301,7 @@ static void do_help(void) {
     printf("  -r N  --rate=N      Set sample rate to N samples per second (Hz)\n");
     printf("  -c P  --config=P    Point to your wildmidi.cfg config file name/path\n");
     printf("                      defaults to: %s\n", WILDMIDI_CFG);
+    printf("  -E    --emergency   Use built-in synthesised soundbank (no cfg/sf2 needed)\n");
     printf("  -m V  --mastervol=V Set the master volume (0..127), default is 100\n");
     printf("  -b    --reverb      Enable final output reverb engine\n\n");
 }
@@ -382,7 +384,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:E", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -494,6 +496,10 @@ int main(int argc, char **argv) {
             break;
         case 'j':
             play_to = (unsigned long int)(atof(optarg) * (double)rate);
+            break;
+        case 'E': /* Emergency built-in soundbank */
+            strncpy(config_file, "@emergency", sizeof(config_file));
+            config_file[sizeof(config_file) - 1] = 0;
             break;
         default:
             do_syntax();

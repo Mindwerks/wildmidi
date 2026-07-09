@@ -49,6 +49,7 @@
 #include "f_xmidi.h"
 #include "patches.h"
 #include "sample.h"
+#include "emerg_synth.h"
 #include "mus2mid.h"
 #include "xmi2mid.h"
 #ifdef WILDMIDI_SF2
@@ -1667,6 +1668,17 @@ static int _WM_Init(const struct _WM_VIO *callbacks,
     _WM_FreeBufferFile = callbacks->free_file;
 
     WM_InitPatches();
+
+    /* Emergency soundbank sentinel: skip file loading entirely and populate
+       _WM_patch[] with synthesised GM voices. */
+    if (strcmp(config_file, WM_EMERGENCY_CONFIG) == 0) {
+        if (_WM_emergency_init_patches() < 0) {
+            WM_FreePatches();
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
+            return (-1);
+        }
+        goto post_config_load;
+    }
 #ifdef WILDMIDI_SF2
     {
         /* a soundfont can be given directly in place of a config file */
@@ -1700,6 +1712,7 @@ static int _WM_Init(const struct _WM_VIO *callbacks,
     }
 #endif
 
+post_config_load:
     if (mixer_options & 0x0FF0) {
         _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(invalid option)",
                 0);
