@@ -16,6 +16,8 @@ jobs:
         cross: [i686-w64-mingw32, x86_64-w64-mingw32]
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Install MinGW-w64
         run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64 binutils-mingw-w64
       - name: Build
@@ -25,10 +27,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Set up DJGPP
         run: |
           sudo apt-get update && sudo apt-get install -y libfl2
-          curl -sL https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2 | sudo tar xj -C /opt
+          curl -sL https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2 -o /tmp/djgpp.tar.bz2
+          echo "8464f17017d6ab1b2bb2df4ed82357b5bf692e6e2b7fee37e315638f3d505f00  /tmp/djgpp.tar.bz2" | sha256sum -c -
+          sudo tar xj -C /opt -f /tmp/djgpp.tar.bz2
       - name: Build
         run: |
           export PATH=/opt/djgpp/i586-pc-msdosdjgpp/bin:/opt/djgpp/bin:$PATH
@@ -39,6 +45,8 @@ jobs:
     container: amigadev/crosstools:m68k-amigaos
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Build library
         # ponytail: library only; player links fail on cexp (clib2 libm gap). Upgrade path: fix Amiga reverb or clib2.
         run: make -C amiga libWildMidi.a AOS3=1 CROSS=m68k-amigaos
