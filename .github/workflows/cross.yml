@@ -50,3 +50,16 @@ jobs:
       - name: Build library
         # ponytail: library only; player links fail on cexp (clib2 libm gap). Upgrade path: fix Amiga reverb or clib2.
         run: make -C amiga libWildMidi.a AOS3=1 CROSS=m68k-amigaos
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build with NDK
+        run: |
+          ${ANDROID_NDK_LATEST_HOME}/ndk-build -C android \
+            NDK_PROJECT_PATH=. \
+            APP_BUILD_SCRIPT=jni/Android.mk \
+            NDK_APPLICATION_MK=jni/Application.mk
