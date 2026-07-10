@@ -42,6 +42,11 @@ CHANGELOG
 * SoundFont2 (SF2) rendering support via TinySoundFont, vendored under
   `src/tsf/`. Enabled by default (`WANT_SF2=ON`); pass either an `.sf2`
   file or a config with a `soundfont` directive to `WildMidi_Init`.
+* HMP and HMI to MIDI converters: WildMidi_ConvertToMidi and the player's
+  `-x/--tomidi` switch now convert HMP and HMI files in addition to XMI
+  and MUS (bug #181).  
+* Support for playing and converting compressed ("mangled") HMP files as
+  shipped by Gremlin Interactive games such as Fatal Racing / Whiplash.
 * Find and use a GUS patch with neareset patchid in case of missing patches:
   https://www.cpdl.org/wiki/images/f/f8/349_Jesu_meiner_Freuden_Freude.mid,
   for example, now plays well with alternative patches instead of producing

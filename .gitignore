@@ -9,6 +9,7 @@
 
 # build dirs
 build/
+cmake-build*/
 
 # stray in-source cmake configure (should always use -B build)
 CMakeCache.txt
