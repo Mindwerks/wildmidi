@@ -37,18 +37,25 @@ typedef signed __int64 int64_t;
 #define INT64_MAX   9223372036854775807i64
 #define INT64_MIN (-9223372036854775807i64-1i64)
 #define UINT64_MAX 18446744073709551615ui64
+#define INT64_C(c)  c ## i64
+#define UINT64_C(c) c ## ui64
 #elif defined(_LP64) || defined(__LP64__)
 typedef unsigned long uint64_t;
 typedef signed long int64_t;
 #define INT64_MAX   9223372036854775807L
 #define INT64_MIN (-9223372036854775807L-1L)
 #define UINT64_MAX 18446744073709551615UL
+#define INT64_C(c)  c ## L
+#define UINT64_C(c) c ## UL
 #else
 typedef unsigned long long uint64_t;
 typedef signed long long int64_t;
-#define INT64_MAX 9223372036854775807LL
+#define INT64_MAX   9223372036854775807LL
 #define INT64_MIN (-9223372036854775807LL-1LL)
 #define UINT64_MAX 18446744073709551615ULL
+#define INT64_C(c)  c ## LL
+#define UINT64_C(c) c ## ULL
+typedef int _wm_llong_test[(sizeof(long long) == 8) * 2 - 1];
 #endif /* int64_t */
 
 /* make sure of type sizes */
