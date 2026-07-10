@@ -36,6 +36,7 @@
 #include "internal_midi.h"
 #include "opl3.h"
 #include "synth.h"
+#include "synth_bank.h"
 
 /* Register offsets for op1 (modulator) and op2 (carrier) of OPL3 channel 0. */
 #define OP1 0x00
@@ -58,235 +59,9 @@ typedef struct {
     uint8_t fb;
 } fm_patch;
 
-/* All tonal patches keep EGT set (0x20 in chr) so the OPL envelope holds its
-   sustain level forever; note gating/decay is done by the WildMIDI mixer
-   envelope, and the held plateau gives us a clean loop region. AM/VIB stay
-   clear so the sustained tone is exactly periodic (loopable). Values are
-   family-based with per-program variation on multiplier/level/feedback. */
-static const fm_patch gm_fm[128] = {
-    /* 0-7 Piano */
-    {0x21,0x1a,0xf4,0x05,0, 0x21,0x00,0xf4,0x05,0, 0x0a}, /* 0 Acoustic Grand */
-    {0x21,0x18,0xf4,0x05,0, 0x21,0x00,0xf4,0x05,0, 0x0a}, /* 1 Bright Acoustic */
-    {0x21,0x16,0xf4,0x05,0, 0x21,0x00,0xf4,0x05,1, 0x0a}, /* 2 Electric Grand */
-    {0x23,0x1c,0xf4,0x05,0, 0x21,0x00,0xf4,0x05,0, 0x0a}, /* 3 Honky-tonk */
-    {0x21,0x1e,0xf4,0x05,1, 0x21,0x00,0xf4,0x05,0, 0x08}, /* 4 E.Piano 1 */
-    {0x22,0x1e,0xf4,0x05,1, 0x21,0x00,0xf4,0x05,0, 0x08}, /* 5 E.Piano 2 */
-    {0x24,0x1c,0xf4,0x05,0, 0x21,0x00,0xf4,0x05,0, 0x0c}, /* 6 Harpsichord */
-    {0x25,0x18,0xf4,0x05,0, 0x21,0x00,0xf4,0x05,0, 0x0c}, /* 7 Clavinet */
-    /* 8-15 Chromatic percussion */
-    {0x24,0x1d,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 8 Celesta */
-    {0x27,0x1d,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 9 Glockenspiel */
-    {0x24,0x1b,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 10 Music Box */
-    {0x27,0x1b,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 11 Vibraphone */
-    {0x25,0x1d,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 12 Marimba */
-    {0x27,0x19,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 13 Xylophone */
-    {0x24,0x17,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x0a}, /* 14 Tubular Bells */
-    {0x24,0x1d,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 15 Dulcimer */
-    /* 16-23 Organ (additive connection for drawbar character) */
-    {0x21,0x10,0xf0,0x0f,0, 0x21,0x00,0xf0,0x0f,0, 0x03}, /* 16 Drawbar */
-    {0x22,0x10,0xf0,0x0f,0, 0x21,0x00,0xf0,0x0f,0, 0x03}, /* 17 Percussive */
-    {0x21,0x0c,0xf0,0x0f,0, 0x21,0x00,0xf0,0x0f,0, 0x05}, /* 18 Rock */
-    {0x21,0x12,0xa0,0x0f,0, 0x21,0x00,0xa0,0x0f,0, 0x03}, /* 19 Church */
-    {0x22,0x12,0xa0,0x0f,0, 0x21,0x00,0xa0,0x0f,0, 0x03}, /* 20 Reed */
-    {0x21,0x14,0xc0,0x0f,0, 0x21,0x00,0xc0,0x0f,0, 0x03}, /* 21 Accordion */
-    {0x22,0x14,0xc0,0x0f,0, 0x21,0x00,0xc0,0x0f,0, 0x03}, /* 22 Harmonica */
-    {0x21,0x14,0xc0,0x0f,0, 0x22,0x00,0xc0,0x0f,0, 0x03}, /* 23 Tango Accordion */
-    /* 24-31 Guitar */
-    {0x23,0x18,0xf5,0x05,0, 0x21,0x00,0xf5,0x05,0, 0x0c}, /* 24 Nylon */
-    {0x23,0x16,0xf5,0x05,0, 0x21,0x00,0xf5,0x05,0, 0x0c}, /* 25 Steel */
-    {0x22,0x1a,0xf5,0x05,1, 0x21,0x00,0xf5,0x05,0, 0x0a}, /* 26 Jazz */
-    {0x22,0x18,0xf5,0x05,1, 0x21,0x00,0xf5,0x05,0, 0x0a}, /* 27 Clean */
-    {0x23,0x14,0xf5,0x05,0, 0x21,0x00,0xf5,0x05,0, 0x0e}, /* 28 Muted */
-    {0x21,0x10,0xf5,0x15,1, 0x21,0x00,0xf5,0x15,0, 0x0e}, /* 29 Overdriven */
-    {0x21,0x0c,0xf5,0x15,1, 0x21,0x00,0xf5,0x15,0, 0x0e}, /* 30 Distortion */
-    {0x25,0x16,0xf5,0x05,0, 0x21,0x00,0xf5,0x05,0, 0x0c}, /* 31 Harmonics */
-    /* 32-39 Bass (carrier at half multiplier for depth) */
-    {0x21,0x14,0xf5,0x05,0, 0x20,0x00,0xf5,0x05,0, 0x0a}, /* 32 Acoustic */
-    {0x21,0x12,0xf5,0x05,0, 0x20,0x00,0xf5,0x05,0, 0x0a}, /* 33 Finger */
-    {0x21,0x10,0xf5,0x05,0, 0x20,0x00,0xf5,0x05,0, 0x0c}, /* 34 Pick */
-    {0x21,0x16,0xf5,0x05,0, 0x20,0x00,0xf5,0x05,0, 0x08}, /* 35 Fretless */
-    {0x22,0x10,0xf5,0x05,1, 0x20,0x00,0xf5,0x05,0, 0x0c}, /* 36 Slap 1 */
-    {0x22,0x0e,0xf5,0x05,1, 0x20,0x00,0xf5,0x05,0, 0x0c}, /* 37 Slap 2 */
-    {0x21,0x0e,0xf5,0x05,1, 0x20,0x00,0xf5,0x05,1, 0x0c}, /* 38 Synth 1 */
-    {0x21,0x12,0xf5,0x05,1, 0x20,0x00,0xf5,0x05,1, 0x0a}, /* 39 Synth 2 */
-    /* 40-47 Strings */
-    {0x21,0x22,0x84,0x05,0, 0x21,0x00,0x84,0x05,0, 0x06}, /* 40 Violin */
-    {0x21,0x22,0x84,0x05,0, 0x21,0x00,0x84,0x05,0, 0x06}, /* 41 Viola */
-    {0x21,0x24,0x84,0x05,0, 0x21,0x00,0x84,0x05,0, 0x06}, /* 42 Cello */
-    {0x21,0x26,0x74,0x05,0, 0x21,0x00,0x74,0x05,0, 0x06}, /* 43 Contrabass */
-    {0x21,0x24,0x64,0x05,0, 0x21,0x00,0x64,0x05,0, 0x06}, /* 44 Tremolo */
-    {0x23,0x1e,0xf5,0x05,0, 0x21,0x00,0xf5,0x05,0, 0x08}, /* 45 Pizzicato */
-    {0x24,0x1a,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 46 Harp */
-    {0x21,0x1c,0xf7,0x05,0, 0x21,0x00,0xf7,0x05,0, 0x06}, /* 47 Timpani */
-    /* 48-55 Ensemble */
-    {0x21,0x24,0x74,0x05,0, 0x21,0x00,0x74,0x05,0, 0x04}, /* 48 String Ens 1 */
-    {0x21,0x26,0x64,0x05,0, 0x21,0x00,0x64,0x05,0, 0x04}, /* 49 String Ens 2 */
-    {0x21,0x26,0x54,0x05,1, 0x21,0x00,0x54,0x05,0, 0x04}, /* 50 Synth Strings 1 */
-    {0x21,0x28,0x54,0x05,1, 0x21,0x00,0x54,0x05,0, 0x04}, /* 51 Synth Strings 2 */
-    {0x21,0x2a,0x64,0x05,0, 0x21,0x00,0x64,0x05,0, 0x02}, /* 52 Choir Aahs */
-    {0x21,0x28,0x64,0x05,0, 0x21,0x00,0x64,0x05,0, 0x02}, /* 53 Voice Oohs */
-    {0x21,0x26,0x64,0x05,1, 0x21,0x00,0x64,0x05,0, 0x04}, /* 54 Synth Voice */
-    {0x21,0x1e,0x85,0x05,0, 0x21,0x00,0x85,0x05,0, 0x0a}, /* 55 Orchestra Hit */
-    /* 56-63 Brass */
-    {0x21,0x12,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x0e}, /* 56 Trumpet */
-    {0x21,0x14,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x0e}, /* 57 Trombone */
-    {0x21,0x16,0x76,0x05,0, 0x21,0x00,0x76,0x05,0, 0x0c}, /* 58 Tuba */
-    {0x21,0x10,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x0e}, /* 59 Muted Trumpet */
-    {0x21,0x16,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x0c}, /* 60 French Horn */
-    {0x21,0x12,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x0e}, /* 61 Brass Section */
-    {0x21,0x10,0x86,0x05,1, 0x21,0x00,0x86,0x05,0, 0x0e}, /* 62 Synth Brass 1 */
-    {0x21,0x12,0x86,0x05,1, 0x21,0x00,0x86,0x05,0, 0x0c}, /* 63 Synth Brass 2 */
-    /* 64-71 Reed */
-    {0x22,0x16,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x0a}, /* 64 Soprano Sax */
-    {0x22,0x18,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x0a}, /* 65 Alto Sax */
-    {0x22,0x1a,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x0a}, /* 66 Tenor Sax */
-    {0x22,0x1c,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x0a}, /* 67 Baritone Sax */
-    {0x23,0x16,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x08}, /* 68 Oboe */
-    {0x23,0x18,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x08}, /* 69 English Horn */
-    {0x22,0x1a,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x08}, /* 70 Bassoon */
-    {0x22,0x14,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x08}, /* 71 Clarinet */
-    /* 72-79 Pipe (gentle modulation, near-flute) */
-    {0x21,0x28,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x02}, /* 72 Piccolo */
-    {0x21,0x28,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x02}, /* 73 Flute */
-    {0x21,0x2a,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x02}, /* 74 Recorder */
-    {0x21,0x2a,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x04}, /* 75 Pan Flute */
-    {0x21,0x2c,0x76,0x05,0, 0x21,0x00,0x76,0x05,0, 0x04}, /* 76 Blown Bottle */
-    {0x22,0x2a,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x04}, /* 77 Shakuhachi */
-    {0x21,0x26,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x02}, /* 78 Whistle */
-    {0x21,0x28,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x02}, /* 79 Ocarina */
-    /* 80-87 Synth lead */
-    {0x21,0x10,0xf6,0x05,2, 0x21,0x00,0xf6,0x05,0, 0x0e}, /* 80 Square */
-    {0x21,0x10,0xf6,0x05,1, 0x21,0x00,0xf6,0x05,1, 0x0e}, /* 81 Sawtooth */
-    {0x21,0x1c,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x04}, /* 82 Calliope */
-    {0x21,0x18,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x06}, /* 83 Chiff */
-    {0x22,0x14,0xa6,0x05,1, 0x21,0x00,0xa6,0x05,0, 0x0a}, /* 84 Charang */
-    {0x21,0x1a,0x86,0x05,0, 0x21,0x00,0x86,0x05,0, 0x04}, /* 85 Voice */
-    {0x25,0x12,0xa6,0x05,1, 0x21,0x00,0xa6,0x05,0, 0x0c}, /* 86 Fifths */
-    {0x21,0x0e,0xa6,0x05,1, 0x21,0x00,0xa6,0x05,1, 0x0e}, /* 87 Bass+Lead */
-    /* 88-95 Synth pad (slow attack) */
-    {0x21,0x20,0x54,0x05,0, 0x21,0x00,0x54,0x05,0, 0x04}, /* 88 New Age */
-    {0x21,0x22,0x44,0x05,0, 0x21,0x00,0x44,0x05,0, 0x04}, /* 89 Warm */
-    {0x21,0x1e,0x54,0x05,1, 0x21,0x00,0x54,0x05,0, 0x06}, /* 90 Polysynth */
-    {0x21,0x24,0x44,0x05,0, 0x21,0x00,0x44,0x05,0, 0x02}, /* 91 Choir */
-    {0x21,0x22,0x44,0x05,0, 0x21,0x00,0x44,0x05,0, 0x04}, /* 92 Bowed */
-    {0x21,0x20,0x54,0x05,1, 0x21,0x00,0x54,0x05,0, 0x04}, /* 93 Metallic */
-    {0x21,0x24,0x44,0x05,0, 0x21,0x00,0x44,0x05,0, 0x02}, /* 94 Halo */
-    {0x21,0x22,0x54,0x05,1, 0x21,0x00,0x54,0x05,0, 0x04}, /* 95 Sweep */
-    /* 96-103 Synth FX */
-    {0x24,0x18,0x86,0x05,2, 0x21,0x00,0x86,0x05,1, 0x08}, /* 96 Rain */
-    {0x22,0x18,0x66,0x05,2, 0x21,0x00,0x66,0x05,0, 0x08}, /* 97 Soundtrack */
-    {0x26,0x16,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 98 Crystal */
-    {0x24,0x18,0x86,0x05,1, 0x21,0x00,0x86,0x05,0, 0x08}, /* 99 Atmosphere */
-    {0x21,0x16,0x76,0x05,2, 0x21,0x00,0x76,0x05,0, 0x0a}, /* 100 Brightness */
-    {0x25,0x1a,0x66,0x05,2, 0x21,0x00,0x66,0x05,1, 0x08}, /* 101 Goblins */
-    {0x24,0x18,0x76,0x05,1, 0x21,0x00,0x76,0x05,1, 0x0a}, /* 102 Echoes */
-    {0x26,0x18,0x86,0x05,2, 0x21,0x00,0x86,0x05,2, 0x0a}, /* 103 Sci-Fi */
-    /* 104-111 Ethnic */
-    {0x24,0x1c,0xf5,0x05,0, 0x21,0x00,0xf5,0x05,0, 0x0a}, /* 104 Sitar */
-    {0x25,0x1c,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x0a}, /* 105 Banjo */
-    {0x24,0x1a,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x0a}, /* 106 Shamisen */
-    {0x26,0x1a,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 107 Koto */
-    {0x27,0x1a,0xf6,0x05,0, 0x21,0x00,0xf6,0x05,0, 0x08}, /* 108 Kalimba */
-    {0x22,0x18,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x0a}, /* 109 Bagpipe */
-    {0x21,0x20,0x84,0x05,0, 0x21,0x00,0x84,0x05,0, 0x06}, /* 110 Fiddle */
-    {0x22,0x16,0x96,0x05,0, 0x21,0x00,0x96,0x05,0, 0x0a}, /* 111 Shanai */
-    /* 112-119 Percussive (sustain plateau lower: SL=3) */
-    {0x27,0x18,0xf6,0x35,0, 0x21,0x00,0xf6,0x35,0, 0x0c}, /* 112 Tinkle Bell */
-    {0x25,0x16,0xf6,0x35,0, 0x21,0x00,0xf6,0x35,0, 0x0c}, /* 113 Agogo */
-    {0x24,0x16,0xf7,0x35,0, 0x21,0x00,0xf7,0x35,0, 0x0a}, /* 114 Steel Drums */
-    {0x26,0x14,0xf7,0x35,0, 0x21,0x00,0xf7,0x35,0, 0x0c}, /* 115 Woodblock */
-    {0x21,0x16,0xf7,0x35,0, 0x21,0x00,0xf7,0x35,0, 0x0a}, /* 116 Taiko */
-    {0x22,0x16,0xf7,0x35,0, 0x21,0x00,0xf7,0x35,0, 0x0a}, /* 117 Melodic Tom */
-    {0x23,0x14,0xf7,0x35,1, 0x21,0x00,0xf7,0x35,0, 0x0c}, /* 118 Synth Drum */
-    {0x25,0x12,0x67,0x35,2, 0x21,0x00,0x67,0x35,1, 0x0c}, /* 119 Reverse Cymbal */
-    /* 120-127 Sound FX */
-    {0x27,0x1e,0x77,0x05,3, 0x21,0x00,0x77,0x05,2, 0x0e}, /* 120 Fret Noise */
-    {0x25,0x1e,0x87,0x05,2, 0x21,0x00,0x87,0x05,2, 0x0e}, /* 121 Breath Noise */
-    {0x21,0x22,0x55,0x05,2, 0x21,0x00,0x55,0x05,2, 0x0e}, /* 122 Seashore */
-    {0x27,0x14,0x97,0x05,3, 0x21,0x00,0x97,0x05,0, 0x0e}, /* 123 Bird Tweet */
-    {0x26,0x14,0xa7,0x05,2, 0x21,0x00,0xa7,0x05,0, 0x0e}, /* 124 Telephone */
-    {0x22,0x20,0x55,0x05,3, 0x21,0x00,0x55,0x05,2, 0x0e}, /* 125 Helicopter */
-    {0x21,0x22,0x45,0x05,3, 0x21,0x00,0x45,0x05,3, 0x0e}, /* 126 Applause */
-    {0x24,0x10,0xf7,0x05,0, 0x21,0x00,0xf7,0x05,0, 0x0e}  /* 127 Gunshot */
-};
-
-/* Per-family mixer ADSR (program >> 3): sustain (mixer fixed-point,
-   4194303 = 1.0), attack/decay/release seconds. */
+/* Mixer-envelope parameters: sustain in mixer fixed-point (4194303 = 1.0),
+   attack/decay/release in seconds. */
 typedef struct { int32_t sustain; float attack, decay, release; } mix_env;
-static const mix_env gm_env[16] = {
-    /* Piano       */ {1258291, 0.003f, 0.400f, 0.180f},
-    /* Chrom.perc  */ { 838860, 0.002f, 0.300f, 0.120f},
-    /* Organ       */ {4194303, 0.012f, 0.080f, 0.100f},
-    /* Guitar      */ {1677721, 0.003f, 0.500f, 0.180f},
-    /* Bass        */ {2097151, 0.004f, 0.400f, 0.160f},
-    /* Strings     */ {3355443, 0.060f, 0.200f, 0.250f},
-    /* Ensemble    */ {3355443, 0.050f, 0.200f, 0.300f},
-    /* Brass       */ {3145727, 0.030f, 0.150f, 0.150f},
-    /* Reed        */ {3355443, 0.025f, 0.150f, 0.120f},
-    /* Pipe        */ {3355443, 0.030f, 0.150f, 0.140f},
-    /* Synth Lead  */ {3355443, 0.008f, 0.100f, 0.100f},
-    /* Synth Pad   */ {3355443, 0.150f, 0.400f, 0.400f},
-    /* Synth FX    */ {2097151, 0.020f, 0.300f, 0.250f},
-    /* Ethnic      */ {1677721, 0.005f, 0.400f, 0.180f},
-    /* Percussive  */ { 838860, 0.002f, 0.300f, 0.120f},
-    /* SFX         */ {1677721, 0.005f, 0.400f, 0.200f}
-};
-
-/* ------------------------------------------------------------------ */
-/* Drum voices                                                        */
-/* ------------------------------------------------------------------ */
-
-/* One-shot drums: EGT clear so the OPL envelope decays on its own while the
-   key is held for the whole render. High feedback approximates noise. */
-static const fm_patch drum_fm[6] = {
-    /* kick   */ {0x00,0x08,0xf8,0x4f,0, 0x00,0x00,0xf6,0x4f,0, 0x0e},
-    /* tom    */ {0x01,0x0c,0xf7,0x4f,0, 0x00,0x00,0xf6,0x4f,0, 0x0a},
-    /* snare  */ {0x0f,0x08,0xf8,0x7f,6, 0x00,0x00,0xf7,0x6f,0, 0x0e},
-    /* hat    */ {0x0f,0x06,0xf9,0xff,6, 0x0b,0x00,0xf8,0xaf,5, 0x0e},
-    /* cymbal */ {0x0e,0x08,0xf6,0x5f,6, 0x0b,0x00,0xf5,0x4f,5, 0x0e},
-    /* bell   */ {0x07,0x10,0xf6,0x5f,0, 0x02,0x00,0xf5,0x5f,0, 0x08}
-};
-enum { D_KICK, D_TOM, D_SNARE, D_HAT, D_CYMBAL, D_BELL };
-
-/* GM percussion key -> preset, OPL pitch, render length. */
-typedef struct { uint8_t preset; uint16_t fnum; uint8_t block; uint16_t ms; } drum_voice;
-
-static drum_voice drum_for_key(uint8_t k) {
-    drum_voice d;
-    switch (k) {
-    case 35: case 36:                     /* kicks */
-        d.preset = D_KICK;   d.fnum = 290; d.block = 2; d.ms = 300; break;
-    case 41: case 43: case 45:            /* low/mid toms */
-    case 47: case 48: case 50:            /* high toms */
-        d.preset = D_TOM;    d.fnum = (uint16_t)(200 + (k - 41) * 40);
-        d.block = 3;         d.ms = 250; break;
-    case 38: case 40:                     /* snares */
-        d.preset = D_SNARE;  d.fnum = 300; d.block = 5; d.ms = 200; break;
-    case 37: case 39:                     /* side stick / clap */
-        d.preset = D_SNARE;  d.fnum = 350; d.block = 5; d.ms = 120; break;
-    case 42: case 44: case 54:            /* closed/pedal hat, tambourine */
-    case 69: case 70: case 82:            /* cabasa, maracas, shaker */
-        d.preset = D_HAT;    d.fnum = 600; d.block = 7; d.ms = 90;  break;
-    case 46: case 74:                     /* open hat, long guiro */
-        d.preset = D_HAT;    d.fnum = 600; d.block = 7; d.ms = 300; break;
-    case 49: case 51: case 52: case 53:   /* crash, ride, china */
-    case 55: case 57: case 59:            /* splash, crash2, ride2 */
-        d.preset = D_CYMBAL; d.fnum = 500; d.block = 6; d.ms = 600; break;
-    case 56: case 67: case 68:            /* cowbell, agogos */
-        d.preset = D_BELL;   d.fnum = 450; d.block = 5; d.ms = 200; break;
-    case 80: case 81:                     /* triangles */
-        d.preset = D_BELL;   d.fnum = 700; d.block = 7;
-        d.ms = (k == 81) ? 500 : 100; break;
-    case 60: case 61: case 62: case 63: case 64:   /* bongos, congas */
-    case 65: case 66: case 73: case 75:            /* timbales, guiro, claves */
-    case 76: case 77:                              /* wood blocks */
-        d.preset = D_TOM;    d.fnum = (uint16_t)(250 + (k - 60) * 20);
-        d.block = 4;         d.ms = 150; break;
-    default:
-        d.preset = D_TOM;    d.fnum = 344; d.block = 4; d.ms = 150; break;
-    }
-    return d;
-}
 
 /* ------------------------------------------------------------------ */
 /* GENMIDI (.op2) bank                                                */
@@ -406,6 +181,9 @@ static void opl_key_on(opl3_chip *c, uint8_t ch, uint16_t fnum, uint8_t block) {
 static void opl_boot(opl3_chip *c, const fm_voice *v1, const fm_voice *v2) {
     OPL3_Reset(c, _WM_SampleRate);
     OPL3_WriteReg(c, 0x105, 0x01);            /* OPL3 "NEW" mode */
+    /* NTS=1 (keyboard split point), as DMX programs it: KSR envelope rate
+       scaling then matches what GENMIDI banks were tuned against. */
+    OPL3_WriteReg(c, 0x08, 0x40);
     opl_program_voice(c, 0, v1->fm);
     opl_key_on(c, 0, v1->fnum, v1->block);
     if (v2) {
@@ -507,26 +285,12 @@ static void normalise_to(int16_t *d, uint32_t n, int32_t target, uint32_t tail_f
     }
 }
 
-/* Normalisation target that preserves the bank's instrument balance: full
-   scale attenuated by the carrier total level (0.75 dB per step, loudest
-   voice wins for doubled instruments). Chip output alone is too quiet and
-   drifts with FM depth, so normalise-then-attenuate beats a fixed gain. */
-static int32_t voice_norm_target(const fm_voice *v1, const fm_voice *v2) {
-    static const float frac[6] = { 1.0f, 0.891f, 0.794f, 0.708f, 0.631f, 0.562f };
-    uint8_t tl = v1->fm->car_lvl & 0x3F;
-    float att, t;
-    int steps;
-    if (v2) {
-        uint8_t tl2 = v2->fm->car_lvl & 0x3F;
-        if (tl2 < tl) tl = tl2;
-    }
-    att = 0.75f * (float)tl;
-    steps = (int)(att / 6.0f);
-    t = 31000.0f * frac[(int)(att - (float)steps * 6.0f)];
-    while (steps--) t *= 0.5f;
-    if (t < 400.0f) t = 400.0f;
-    return (int32_t)t;
-}
+/* Normalisation target. One fixed value for every voice: DMX (and thus the
+   banks made for it) never uses the carrier level byte for loudness — the
+   driver overwrites carrier TL from MIDI volume — so instrument balance
+   lives in the modulator level (timbre) alone, and the mixer's velocity /
+   channel-volume path plays the role DMX's SetVoiceVolume does. */
+#define SYNTH_NORM_TARGET 31000
 
 /* Drop leading dead air (slow OPL attacks sit below audibility for a long
    time); the sampled-OPL soundfonts we match against start loud. Keeps a
@@ -627,7 +391,7 @@ static struct _sample *render_tonal(opl3_chip *chip,
     /* Render hold + the 2 guard samples as genuine continuation so the
        interpolator reads real data at the loop seam. */
     opl_render(chip, s->data, hold + 2);
-    normalise_to(s->data, hold + 2, voice_norm_target(v1, v2), 0);
+    normalise_to(s->data, hold + 2, SYNTH_NORM_TARGET, 0);
     hold = trim_onset(s->data, hold);
 
     configure(s, hold, claimed_hz, 1);
@@ -662,7 +426,7 @@ static struct _sample *render_oneshot(opl3_chip *chip,
 
     opl_boot(chip, v1, v2);
     opl_render(chip, s->data, n);
-    normalise_to(s->data, n, voice_norm_target(v1, v2), 128);
+    normalise_to(s->data, n, SYNTH_NORM_TARGET, 128);
 
     configure(s, n, claimed_hz, 0);
     /* Hold the mixer envelope at peak so the sample's own baked-in decay is
@@ -675,10 +439,14 @@ static struct _sample *render_oneshot(opl3_chip *chip,
     return s;
 }
 
-/* Note-off release for a bank voice, from the carrier's release rate. */
+/* Note-off release for a bank voice, from the carrier's release rate.
+   opl_rate_seconds gives the exponential envelope's full 96 dB time; the
+   mixer ramp is linear and stays audible for most of its length, so scale
+   down to roughly the exponential's perceptual (-40 dB) point. */
 static float voice_release(const fm_patch *fm) {
-    float t = opl_rate_seconds(fm->car_sr & 0x0F);
-    if (t > 1.5f) t = 1.5f;
+    float t = opl_rate_seconds(fm->car_sr & 0x0F) * 0.35f;
+    if (t > 0.6f) t = 0.6f;
+    if (t < 0.03f) t = 0.03f;
     return t;
 }
 
@@ -694,6 +462,60 @@ static uint32_t voice_oneshot_len(const fm_patch *fm) {
     return (uint32_t)(t * (float)_WM_SampleRate);
 }
 
+
+/* Measure the true fundamental of a rendered buffer by autocorrelation
+   around the expected pitch. FM voices sound at a rational multiple of the
+   channel frequency (carrier MULT=0 plays an octave down, mod/carrier
+   multiplier GCDs lower it further), and banks bake this in as part of the
+   instrument's tuning. Searching lags over [0.45x .. 2.2x] of the expected
+   period catches those cases; the result is snapped to the nearest semitone
+   of the expected pitch to shed measurement noise. Returns the ratio
+   sounding_hz / expected_hz. */
+static double measure_pitch_ratio(const int16_t *d, uint32_t start,
+                                  uint32_t end, double expected_hz) {
+    double period = (double)_WM_SampleRate / expected_hz;
+    uint32_t min_lag = (uint32_t)(period * 0.45);
+    uint32_t max_lag = (uint32_t)(period * 2.2);
+    uint32_t span, lag, i, best_lag = 0;
+    int64_t best = 0;
+    int k, best_k = 0;
+    double ratio, cand, best_err = 1e9;
+
+    if (min_lag < 8) min_lag = 8;
+    if (end <= start + max_lag * 2) return 1.0;
+    span = end - start - max_lag;
+    if (span > 4096) span = 4096;
+
+    for (lag = min_lag; lag <= max_lag; lag++) {
+        int64_t s = 0;
+        for (i = 0; i < span; i += 2) {
+            s += (int32_t)d[start + i] * (int32_t)d[start + i + lag];
+        }
+        if (s > best) { best = s; best_lag = lag; }
+    }
+    if (!best_lag) return 1.0;
+    /* A dual-voice layer a whole octave below the winner leaves the true
+       period at twice the measured lag: a strictly better correlation there
+       means the composite repeats at 2x. Pure single-period tones correlate
+       equally at both, so require a real margin before folding down. */
+    if (start + span + best_lag * 2u <= end) {
+        int64_t s2 = 0;
+        for (i = 0; i < span; i += 2) {
+            s2 += (int32_t)d[start + i] * (int32_t)d[start + i + best_lag * 2];
+        }
+        if (s2 > best + best / 50) best_lag *= 2;
+    }
+    ratio = period / (double)best_lag;   /* sounding / expected */
+
+    /* snap to the nearest of 2^(k/12), k in [-14..14] */
+    for (k = -14; k <= 14; k++) {
+        double e;
+        cand = semitone_ratio(k);
+        e = ratio > cand ? ratio / cand : cand / ratio;
+        if (e < best_err) { best_err = e; best_k = k; }
+    }
+    return semitone_ratio(best_k);
+}
 
 /* Multi-sample roots: same fnum at three octaves so FM timbre stays put
    instead of being pitch-stretched across the whole keyboard. Boundaries at
@@ -721,7 +543,7 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
         double key_hz = note_hz(key);
         struct _sample *s;
 
-        if (op2_active && key >= 35 && key <= 81) {
+        if (key >= 35 && key <= 81) {
             /* GENMIDI percussion record: fixed note + voice note offsets. */
             const uint8_t *rec = op2_bank + (128 + (key - 35)) * OP2_RECSIZE;
             uint16_t flags = (uint16_t)(rec[0] | (rec[1] << 8));
@@ -731,33 +553,26 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
             int16_t off1, off2;
             op2_voice(rec + 4, &fm1, &off1);
             v1.fm = &fm1;
-            hz_to_fnum(fixed_hz * semitone_ratio(off1), &v1.fnum, &v1.block);
+            /* DMX ignores base_note_offset on fixed-pitch records, and
+               percussion records are fixed-pitch. */
+            hz_to_fnum(fixed_hz * ((flags & OP2_FLAG_FIXED)
+                                       ? 1.0 : semitone_ratio(off1)),
+                       &v1.fnum, &v1.block);
             if (flags & OP2_FLAG_DOUBLE) {
                 op2_voice(rec + 20, &fm2, &off2);
                 v2.fm = &fm2;
-                hz_to_fnum(fixed_hz * semitone_ratio(off2) * op2_fine_ratio(rec[2]),
+                hz_to_fnum(fixed_hz * ((flags & OP2_FLAG_FIXED)
+                                           ? 1.0 : semitone_ratio(off2))
+                               * op2_fine_ratio(rec[2]),
                            &v2.fnum, &v2.block);
             }
             s = render_oneshot(chip, &v1, (flags & OP2_FLAG_DOUBLE) ? &v2 : NULL,
                                voice_oneshot_len(&fm1), key_hz,
                                voice_release(&fm1));
         } else {
-            drum_voice d = drum_for_key(key);
-            fm_voice v1;
-            v1.fm = &drum_fm[d.preset];
-            v1.fnum = d.fnum;
-            v1.block = d.block;
-            s = render_oneshot(chip, &v1, NULL,
-                               (uint32_t)((uint64_t)_WM_SampleRate * d.ms / 1000u),
-                               key_hz, 0.08f);
-            if (s) {
-                /* Built-in drums bake shorter decays; match the mixer env. */
-                mix_env e;
-                e.sustain = 0;
-                e.attack = 0.001f;
-                e.decay = e.release = (float)d.ms / 1000.0f;
-                set_envelope(s, &e);
-            }
+            /* No GENMIDI record for this key; DMX skips it too. */
+            free(chip);
+            return NULL;
         }
         free(chip);
         if (!s) _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
@@ -775,31 +590,38 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
         int16_t off1 = 0, off2 = 0;
         int doubled = 0, oneshot;
         struct _sample *chain = NULL, *tail = NULL;
-        double roots[3], ratio;
+        double roots[3], ratio, pitch_corr = 1.0;
         int i;
 
-        if (op2_active) {
-            rec = op2_bank + program * OP2_RECSIZE;
-            flags = (uint16_t)(rec[0] | (rec[1] << 8));
-            op2_voice(rec + 4, &fm1, &off1);
-            if (flags & OP2_FLAG_DOUBLE) {
-                op2_voice(rec + 20, &fm2, &off2);
-                doubled = 1;
-            }
-            /* The .op2 voice carries its own attack in the render, so the
-               mixer env just gates, releasing at the carrier's own rate. */
-            op2_env.sustain = 4194303;
-            op2_env.attack = 0.001f;
-            op2_env.decay = 0.5f;
-            op2_env.release = voice_release(&fm1);
-            env = &op2_env;
-        } else {
-            fm1 = gm_fm[program];
-            env = &gm_env[program >> 3];
+        rec = op2_bank + program * OP2_RECSIZE;
+        flags = (uint16_t)(rec[0] | (rec[1] << 8));
+        op2_voice(rec + 4, &fm1, &off1);
+        if (flags & OP2_FLAG_DOUBLE) {
+            op2_voice(rec + 20, &fm2, &off2);
+            doubled = 1;
         }
+        /* The bank voice carries its own attack in the render, so the
+           mixer env just gates, releasing at the carrier's own rate. */
+        op2_env.sustain = 4194303;
+        op2_env.attack = 0.001f;
+        op2_env.decay = 0.5f;
+        op2_env.release = voice_release(&fm1);
+        env = &op2_env;
         v1.fm = &fm1;
         v2.fm = &fm2;
-        ratio = semitone_ratio(off1);
+        if (flags & OP2_FLAG_FIXED) {
+            /* Fixed-pitch melodic instrument (helicopter, applause): DMX
+               plays the record's fixed note for every key. Best wavetable
+               approximation: pin the pitch so middle C plays it exactly. */
+            ratio = note_hz(rec[3] & 0x7F) / note_hz(60);
+        } else {
+            /* base_note_offset is NOT applied to the sounding pitch: DMX
+               shifts its register writes by it, but the sampled-OPL
+               soundfonts we match play notes at written pitch (the offset
+               only survives inside voice 2's relative tuning below).
+               Applying it plays whole songs an octave off. */
+            ratio = 1.0;
+        }
 
         /* A voice is a natural one-shot only when its OPL envelope really
            reaches silence quickly: no held sustain (EGT clear, or sustain
@@ -829,9 +651,17 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
             v1.fnum = fnum;
             v1.block = tonal_blocks[i];
             if (doubled) {
-                /* Voice 2 keeps its offset/detune relative to voice 1. */
-                hz_to_fnum(base_hz * semitone_ratio(off2 - off1)
-                               * op2_fine_ratio(rec[2]),
+                /* Voice 2 keeps its offset/detune relative to voice 1
+                   (offsets are ignored entirely on fixed-pitch records).
+                   The relative offset is octave-reduced: the sampled-OPL
+                   soundfonts we match carry no sub-octave layer, and a
+                   full-octave drop would drag the perceived pitch down. */
+                int rel_off = off2 - off1;
+                double rel;
+                while (rel_off <= -12) rel_off += 12;
+                while (rel_off >= 12) rel_off -= 12;
+                rel = (flags & OP2_FLAG_FIXED) ? 1.0 : semitone_ratio(rel_off);
+                hz_to_fnum(base_hz * rel * op2_fine_ratio(rec[2]),
                            &v2.fnum, &v2.block);
             }
             s = oneshot
@@ -845,7 +675,27 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
                 _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                 return NULL;
             }
-            roots[i] = claimed;
+            {
+                /* Calibrate each octave render: where does this voice
+                   actually sound relative to the channel frequency?
+                   Operator KSL shifts the sideband balance per block, so
+                   the answer can differ between the three roots. Measure
+                   the late plateau, not the onset — layered components
+                   decay at different rates and only the steady-state
+                   balance is what a held note sounds like. */
+                uint32_t n0 = s->data_length >> 10;
+                uint32_t st = oneshot ? n0 / 6
+                                      : (n0 > 12000 ? n0 - 9000 : n0 / 3);
+                pitch_corr = measure_pitch_ratio(s->data, st,
+                                                 oneshot ? n0 / 2 : n0,
+                                                 base_hz);
+            }
+            /* Re-claim the root at the measured sounding pitch so written
+               notes play at written pitch regardless of how the FM voice
+               reaches its octave (carrier MULT, multiplier GCDs, ...). */
+            s->freq_root = (uint32_t)(claimed * pitch_corr * 1000.0);
+            s->inc_div = ((s->freq_root * 512u) / s->rate) * 2u;
+            roots[i] = claimed * pitch_corr;
             if (tail) tail->next = s; else chain = s;
             tail = s;
         }
@@ -893,6 +743,13 @@ static void free_all_patches(void) {
 int _WM_opl3_init_patches(void) {
     uint16_t id;
 
+    /* No external .op2 bank loaded: install the embedded DMXOPL bank
+       (MIT, see include/synth_bank.h) so --opl3 needs no data files. */
+    if (!op2_active) {
+        memcpy(op2_bank, synth_builtin_bank, sizeof(op2_bank));
+        op2_active = 1;
+    }
+
     for (id = 0; id < 128; id++) {
         struct _patch *p = alloc_patch(id, 0);
         if (!p) { free_all_patches(); return -1; }
@@ -901,7 +758,7 @@ int _WM_opl3_init_patches(void) {
     /* Drum kit chains onto _WM_patch[note & 0x7F] because _find_matched_patch
        keys off patchid&0x7F. keep=SAMPLE_ENVELOPE prevents _WM_load_sample
        from stripping envelope mode on drums (see sample.c). */
-    for (id = 27; id <= 87; id++) {
+    for (id = 35; id <= 81; id++) {   /* GENMIDI percussion key range */
         uint16_t drumid = 0x80u | id;
         struct _patch *p = alloc_patch(drumid, SAMPLE_ENVELOPE);
         struct _patch *head = _WM_patch[id];

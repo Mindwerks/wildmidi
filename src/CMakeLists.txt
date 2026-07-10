@@ -39,6 +39,7 @@ SET(wildmidi_library_HDRS
  ../include/patches.h
  ../include/sample.h
  ../include/synth.h
+ ../include/synth_bank.h
  ../include/opl3.h
  ../include/wf_rom.h
  ../include/sf2.h

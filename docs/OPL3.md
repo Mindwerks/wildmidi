@@ -46,11 +46,11 @@ The GENMIDI instrument data story, for the record:
 - The original DMX `GENMIDI` lump shipped with Doom is proprietary — we do
   not ship or embed it.
 - [DMXOPL](https://github.com/sneakernets/DMXOPL) is an MIT-licensed
-  replacement GM bank in the same format and is the recommended companion:
-  `wildmidi -c GENMIDI.op2`.
-- The built-in fallback table in `src/synth.c` is original WildMIDI work
-  (register values written by ear), so `--opl3` works with no data files at
-  all.
+  replacement GM bank in the same format. Its instrument data is **embedded**
+  in the library (`include/synth_bank.h`, with its MIT license text), so
+  `--opl3` works with no data files and sounds identical to
+  `wildmidi -c GENMIDI.op2` with the DMXOPL bank. Passing any other `.op2`
+  file replaces the embedded bank for that session.
 - Gervill's `EmergencySoundbank.java` (GPL-2-only) was deliberately never
   consulted.
 
