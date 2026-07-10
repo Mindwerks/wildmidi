@@ -384,7 +384,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:E", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:O", long_options,
                 &option_index);
         if (i == -1)
             break;
