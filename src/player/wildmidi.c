@@ -264,7 +264,7 @@ static struct option const long_options[] = {
     { "textaslyric", 0, NULL, 'a' },
     { "playfrom", 1, NULL, 'i'},
     { "playto", 1, NULL, 'j'},
-    { "opl3", 0, NULL, 'E' },
+    { "opl3", 0, NULL, 'O' },
     { NULL, 0, NULL, 0 }
 };
 
@@ -301,7 +301,7 @@ static void do_help(void) {
     printf("  -r N  --rate=N      Set sample rate to N samples per second (Hz)\n");
     printf("  -c P  --config=P    Point to your wildmidi.cfg config file name/path\n");
     printf("                      defaults to: %s\n", WILDMIDI_CFG);
-    printf("  -E    --opl3        Use built-in OPL3 FM synth (no cfg/sf2 needed)\n");
+    printf("  -O    --opl3        Use built-in OPL3 FM synth (no cfg/sf2 needed)\n");
     printf("  -m V  --mastervol=V Set the master volume (0..127), default is 100\n");
     printf("  -b    --reverb      Enable final output reverb engine\n\n");
 }
@@ -497,7 +497,7 @@ int main(int argc, char **argv) {
         case 'j':
             play_to = (unsigned long int)(atof(optarg) * (double)rate);
             break;
-        case 'E': /* OPL3 built-in FM synth */
+        case 'O': /* OPL3 built-in FM synth */
             strncpy(config_file, "@opl3", sizeof(config_file));
             config_file[sizeof(config_file) - 1] = 0;
             break;
