@@ -467,27 +467,53 @@ static struct _sample *render_oneshot(opl3_chip *chip,
     return s;
 }
 
-/* Note-off release for a bank voice, from the carrier's release rate.
-   opl_rate_seconds gives the exponential envelope's full 96 dB time; the
-   mixer ramp is linear and stays audible for most of its length, so scale
-   down to roughly the exponential's perceptual (-40 dB) point. */
-static float voice_release(const fm_patch *fm) {
+/* Note-off release for a bank instrument, from the carrier's release rate;
+   for doubled records the slower layer wins. opl_rate_seconds gives the
+   exponential envelope's full 96 dB time; the mixer ramp is linear and
+   stays audible for most of its length, so scale down to roughly the
+   exponential's perceptual (-40 dB) point. */
+static float voice_release(const fm_patch *fm, const fm_patch *fm2) {
     float t = opl_rate_seconds(fm->car_sr & 0x0F) * 0.35f;
+    if (fm2) {
+        float t2 = opl_rate_seconds(fm2->car_sr & 0x0F) * 0.35f;
+        if (t2 > t) t = t2;
+    }
     if (t > 0.6f) t = 0.6f;
     if (t < 0.03f) t = 0.03f;
     return t;
 }
 
-/* One-shot length for a decaying bank voice: attack window plus the slower
-   of the carrier's decay and release rates. */
-static uint32_t voice_oneshot_len(const fm_patch *fm) {
+/* One-shot length for a decaying bank instrument: attack window plus the
+   slower of the carrier's decay and release rates; for doubled records the
+   longer-lived layer sets the length. */
+static uint32_t voice_oneshot_len(const fm_patch *fm, const fm_patch *fm2) {
     uint8_t d = fm->car_ad & 0x0F;
     uint8_t r = fm->car_sr & 0x0F;
     float t = opl_rate_seconds(d < r ? d : r);
+    float t2;
+    if (fm2) {
+        uint8_t d2 = fm2->car_ad & 0x0F;
+        uint8_t r2 = fm2->car_sr & 0x0F;
+        float tb = opl_rate_seconds(d2 < r2 ? d2 : r2);
+        if (tb > t) t = tb;
+    }
     if (t > 1.5f) t = 1.5f;
     if (t < 0.15f) t = 0.15f;
-    t += opl_attack_seconds(fm->car_ad >> 4) + 0.1f;
+    t2 = opl_attack_seconds(fm->car_ad >> 4);
+    if (fm2) {
+        float a2 = opl_attack_seconds(fm2->car_ad >> 4);
+        if (a2 > t2) t2 = a2;
+    }
+    t += t2 + 0.1f;
     return (uint32_t)(t * (float)_WM_SampleRate);
+}
+
+/* Does this voice's OPL envelope genuinely reach silence quickly? (No held
+   sustain, or sustain parked at the -45 dB floor, plus a fast decay.) */
+static int voice_decays_out(const fm_patch *fm) {
+    uint8_t d = fm->car_ad & 0x0F, r = fm->car_sr & 0x0F;
+    return (!(fm->car_chr & 0x20) || (fm->car_sr >> 4) == 0x0F)
+           && opl_rate_seconds(d < r ? d : r) <= 0.8f;
 }
 
 
@@ -594,9 +620,12 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
                                * op2_fine_ratio(rec[2]),
                            &v2.fnum, &v2.block);
             }
-            s = render_oneshot(chip, &v1, (flags & OP2_FLAG_DOUBLE) ? &v2 : NULL,
-                               voice_oneshot_len(&fm1), key_hz,
-                               voice_release(&fm1), NULL);
+            {
+                const fm_patch *fmB = (flags & OP2_FLAG_DOUBLE) ? &fm2 : NULL;
+                s = render_oneshot(chip, &v1, fmB ? &v2 : NULL,
+                                   voice_oneshot_len(&fm1, fmB), key_hz,
+                                   voice_release(&fm1, fmB), NULL);
+            }
         } else {
             /* No GENMIDI record for this key; DMX skips it too. */
             free(chip);
@@ -633,7 +662,7 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
         op2_env.sustain = 4194303;
         op2_env.attack = 0.001f;
         op2_env.decay = 0.5f;
-        op2_env.release = voice_release(&fm1);
+        op2_env.release = voice_release(&fm1, doubled ? &fm2 : NULL);
         env = &op2_env;
         v1.fm = &fm1;
         v2.fm = &fm2;
@@ -651,18 +680,14 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
             ratio = 1.0;
         }
 
-        /* A voice is a natural one-shot only when its OPL envelope really
-           reaches silence quickly: no held sustain (EGT clear, or sustain
-           level at the -45 dB floor) and a fast carrier decay. Everything
-           else is looped and held while the key is down — matching how
-           sampled-OPL soundfonts loop long-ringing instruments and only
-           one-shot fast decayers (xylophone yes, vibraphone no). */
-        {
-            uint8_t d = fm1.car_ad & 0x0F, r = fm1.car_sr & 0x0F;
-            int decays_out = !(fm1.car_chr & 0x20) || (fm1.car_sr >> 4) == 0x0F;
-            oneshot = decays_out
-                      && opl_rate_seconds(d < r ? d : r) <= 0.8f;
-        }
+        /* An instrument is a natural one-shot only when its OPL envelope
+           really reaches silence quickly — for doubled records BOTH layers
+           must decay out, or a sustaining second voice would be cut short.
+           Everything else is looped and held while the key is down —
+           matching how sampled-OPL soundfonts loop long-ringing instruments
+           and only one-shot fast decayers (xylophone yes, vibraphone no). */
+        oneshot = voice_decays_out(&fm1)
+                  && (!doubled || voice_decays_out(&fm2));
         if (!oneshot) {
             fm1.mod_chr |= 0x20; fm1.mod_sr &= 0x0F;
             fm1.car_chr |= 0x20; fm1.car_sr &= 0x0F;
@@ -698,8 +723,10 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
                true periods with it. */
             s = oneshot
                 ? render_oneshot(chip, &v1, doubled ? &v2 : NULL,
-                                 voice_oneshot_len(&fm1), claimed,
-                                 voice_release(&fm1), &pitch_corr)
+                                 voice_oneshot_len(&fm1, doubled ? &fm2 : NULL),
+                                 claimed,
+                                 voice_release(&fm1, doubled ? &fm2 : NULL),
+                                 &pitch_corr)
                 : render_tonal(chip, &v1, doubled ? &v2 : NULL, env, claimed,
                                &pitch_corr);
             if (!s) {
