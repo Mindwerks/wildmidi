@@ -59,6 +59,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
     uint32_t setup_ret = 0;
     uint32_t xmi_delta = 0;
     uint32_t xmi_lowestdelta = 0;
+    uint8_t xmi_loop_forever = 0;
 
     uint32_t xmi_evnt_cnt = 0;
 
@@ -246,6 +247,9 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                 xmi_size -= 8;
                 xmi_subformlen -= 8;
 
+                /* Each EVNT chunk is an independent sequence */
+                xmi_loop_forever = 0;
+
                 do {
                     if (*xmi_data < 0x80) {
                         xmi_delta = 0;
@@ -316,6 +320,34 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                             /* Ignore tempo events */
                             setup_ret = 6;
                             goto _XMI_Next_Event;
+                        }
+                        if (((xmi_data[0] & 0xf0) == 0xb0) && (xmi_evntlen >= 3) && (xmi_size >= 3)) {
+                            /* AIL XMIDI FOR..NEXT loop controllers: 116 opens
+                             * a loop (value = iteration count, 0 = forever)
+                             * and 117 (value >= 64) branches back to it. An
+                             * infinite loop never plays past its end marker,
+                             * so treat that marker as the end of the song:
+                             * some files (TES: Arena) carry minutes of junk
+                             * events or delay padding after it which must
+                             * neither be played nor counted in the duration. */
+                            if ((xmi_data[1] == 116) && (xmi_data[2] == 0)) {
+                                xmi_loop_forever = 1;
+                            } else if ((xmi_data[1] == 117) && (xmi_data[2] >= 64) && xmi_loop_forever) {
+                                for (j = 0; j < (16*128); j++) {
+                                    if (xmi_notelen[j] == 0) continue;
+                                    xmi_ch = j / 128;
+                                    xmi_note = j - (xmi_ch * 128);
+                                    _WM_midi_setup_noteoff(xmi_mdi, xmi_ch, xmi_note, 0);
+                                    xmi_notelen[j] = 0;
+                                }
+                                _WM_midi_setup_endoftrack(xmi_mdi);
+                                xmi_data += xmi_evntlen;
+                                xmi_size -= xmi_evntlen;
+                                xmi_subformlen -= xmi_evntlen;
+                                xmi_evntlen = 0;
+                                xmi_lowestdelta = 0;
+                                break;
+                            }
                         }
                         if ((setup_ret = _WM_SetupMidiEvent(xmi_mdi,xmi_data, xmi_size, 0)) == 0) {
                             goto _xmi_end;

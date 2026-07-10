@@ -769,6 +769,7 @@ static int32_t ConvertFiletoList(struct xmi_ctx *ctx) {
     int32_t end = 0;
     int32_t tempo = 500000;
     int32_t tempo_set = 0;
+    int32_t loop_forever = 0;
     uint32_t status = 0;
     uint32_t file_size = getsrcsize(ctx);
 
@@ -794,8 +795,35 @@ static int32_t ConvertFiletoList(struct xmi_ctx *ctx) {
         /* 2 byte data */
         case MIDI_STATUS_NOTE_OFF:
         case MIDI_STATUS_AFTERTOUCH:
-        case MIDI_STATUS_CONTROLLER:
         case MIDI_STATUS_PITCH_WHEEL:
+            ConvertEvent(ctx, time, status, 2);
+            break;
+
+        case MIDI_STATUS_CONTROLLER:
+            /* AIL XMIDI FOR..NEXT loop controllers: 116 opens a loop
+             * (value = iteration count, 0 = forever) and 117 (value >= 64)
+             * branches back to it. An infinite loop never plays past its
+             * end marker, so treat that marker as the end of the track:
+             * some files (TES: Arena) carry minutes of junk events or
+             * delay padding after it. */
+            if (getsrcpos(ctx) + 2 <= file_size &&
+                ctx->src_ptr[0] == 116 && ctx->src_ptr[1] == 0) {
+                loop_forever = 1;
+            } else if (getsrcpos(ctx) + 2 <= file_size && loop_forever &&
+                       ctx->src_ptr[0] == 117 && ctx->src_ptr[1] >= 64) {
+                midi_event *ev;
+                /* pull note offs scheduled past the loop end back to it,
+                 * then close the track here */
+                for (ev = ctx->list; ev != NULL; ev = ev->next) {
+                    if (ev->time > time) ev->time = time;
+                }
+                CreateNewEvent(ctx, time);
+                ctx->current->status = 0xFF;
+                ctx->current->data[0] = 0x2F;
+                ctx->current->len = 0;
+                end = 1;
+                break;
+            }
             ConvertEvent(ctx, time, status, 2);
             break;
 
