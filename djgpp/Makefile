@@ -72,7 +72,7 @@ libWildMidi.a: $(LIB_OBJ)
 
 libWildMidi_dxe.a: wildmidi.dxe
 wildmidi.dxe: $(LIB_OBJ)
-	-$(DXE3GEN) -Y libWildMidi_dxe.a -o $@ -E _WildMidi_ -U  $^
+	-$(DXE3GEN) -Y libWildMidi_dxe.a -o $@ -E _WildMidi_ -U  $^ -lgcc
 
 wildmidi.exe: lib$(WM_LINK).a $(PLAYER_OBJ)
 	$(LD) -o $@ $(PLAYER_OBJ) $(LDFLAGS)
