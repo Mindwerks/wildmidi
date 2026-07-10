@@ -368,7 +368,7 @@ static int get_vlq(const uint8_t **pp, uint32_t *remaining, uint32_t *quant) {
     return (-1);
 }
 
-#define READ_INT32LE(b) ((uint32_t)((b)[0] | ((b)[1] << 8) | ((b)[2] << 16) | ((b)[3] << 24)))
+#define READ_INT32LE(b) ((uint32_t)(b)[0] | ((uint32_t)(b)[1] << 8) | ((uint32_t)(b)[2] << 16) | ((uint32_t)(b)[3] << 24))
 
 int _WM_hmp2midi(const uint8_t *in, uint32_t insize,
                  uint8_t **out, uint32_t *outsize) {
