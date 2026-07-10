@@ -580,10 +580,12 @@ static void configure(struct _sample *s, uint32_t n, double root_hz, int looped)
 
 /* Render one looped, sustained tonal sample. `claimed_hz` is the pitch
    reported to the mixer; it differs from the rendered pitch when a GENMIDI
-   voice carries a note offset. */
-static struct _sample *render_tonal(const fm_voice *v1, const fm_voice *v2,
+   voice carries a note offset. `chip` is caller-provided scratch: at ~20 KB+
+   an opl3_chip is too big for the stack on the small-stack targets (DJGPP,
+   OS/2, Amiga) this library still supports. */
+static struct _sample *render_tonal(opl3_chip *chip,
+                                    const fm_voice *v1, const fm_voice *v2,
                                     const mix_env *env, double claimed_hz) {
-    opl3_chip chip;
     double root_hz = opl_hz(v1->fnum, v1->block);
     double period, loop_target;
     uint32_t hold, hold_min;
@@ -621,10 +623,10 @@ static struct _sample *render_tonal(const fm_voice *v1, const fm_voice *v2,
     s = alloc_sample(hold);
     if (!s) return NULL;
 
-    opl_boot(&chip, v1, v2);
+    opl_boot(chip, v1, v2);
     /* Render hold + the 2 guard samples as genuine continuation so the
        interpolator reads real data at the loop seam. */
-    opl_render(&chip, s->data, hold + 2);
+    opl_render(chip, s->data, hold + 2);
     normalise_to(s->data, hold + 2, voice_norm_target(v1, v2), 0);
     hold = trim_onset(s->data, hold);
 
@@ -649,17 +651,17 @@ static struct _sample *render_tonal(const fm_voice *v1, const fm_voice *v2,
 
 /* Render a one-shot voice: key held for the whole buffer, the OPL envelope
    (EGT clear) decays naturally, tail faded to kill any residue. */
-static struct _sample *render_oneshot(const fm_voice *v1, const fm_voice *v2,
+static struct _sample *render_oneshot(opl3_chip *chip,
+                                      const fm_voice *v1, const fm_voice *v2,
                                       uint32_t n, double claimed_hz,
                                       float release) {
-    opl3_chip chip;
     struct _sample *s = alloc_sample(n);
     mix_env e;
 
     if (!s) return NULL;
 
-    opl_boot(&chip, v1, v2);
-    opl_render(&chip, s->data, n);
+    opl_boot(chip, v1, v2);
+    opl_render(chip, s->data, n);
     normalise_to(s->data, n, voice_norm_target(v1, v2), 128);
 
     configure(s, n, claimed_hz, 0);
@@ -706,6 +708,13 @@ static double op2_fine_ratio(uint8_t fine) {
 }
 
 struct _sample *_WM_synth_patch(uint16_t patchid) {
+    /* Chip state is ~20 KB+: heap scratch, one per patch, shared by all
+       renders below — never on the stack (DJGPP/OS2/Amiga budgets). */
+    opl3_chip *chip = (opl3_chip *)malloc(sizeof(opl3_chip));
+    if (!chip) {
+        _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+        return NULL;
+    }
     if (patchid & 0x80) {
         /* Drum one-shot. */
         uint8_t key = patchid & 0x7F;
@@ -729,7 +738,7 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
                 hz_to_fnum(fixed_hz * semitone_ratio(off2) * op2_fine_ratio(rec[2]),
                            &v2.fnum, &v2.block);
             }
-            s = render_oneshot(&v1, (flags & OP2_FLAG_DOUBLE) ? &v2 : NULL,
+            s = render_oneshot(chip, &v1, (flags & OP2_FLAG_DOUBLE) ? &v2 : NULL,
                                voice_oneshot_len(&fm1), key_hz,
                                voice_release(&fm1));
         } else {
@@ -738,7 +747,7 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
             v1.fm = &drum_fm[d.preset];
             v1.fnum = d.fnum;
             v1.block = d.block;
-            s = render_oneshot(&v1, NULL,
+            s = render_oneshot(chip, &v1, NULL,
                                (uint32_t)((uint64_t)_WM_SampleRate * d.ms / 1000u),
                                key_hz, 0.08f);
             if (s) {
@@ -750,6 +759,7 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
                 set_envelope(s, &e);
             }
         }
+        free(chip);
         if (!s) _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
         return s;
     } else {
@@ -825,11 +835,12 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
                            &v2.fnum, &v2.block);
             }
             s = oneshot
-                ? render_oneshot(&v1, doubled ? &v2 : NULL,
+                ? render_oneshot(chip, &v1, doubled ? &v2 : NULL,
                                  voice_oneshot_len(&fm1), claimed,
                                  voice_release(&fm1))
-                : render_tonal(&v1, doubled ? &v2 : NULL, env, claimed);
+                : render_tonal(chip, &v1, doubled ? &v2 : NULL, env, claimed);
             if (!s) {
+                free(chip);
                 free_sample_chain(chain);
                 _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                 return NULL;
@@ -848,6 +859,7 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
             s1->freq_low = b01;          s1->freq_high = b12;
             s2->freq_low = b12;          s2->freq_high = 0xFFFFFFFFu;
         }
+        free(chip);
         return chain;
     }
 }
