@@ -51,6 +51,8 @@
 #include "sample.h"
 #include "mus2mid.h"
 #include "xmi2mid.h"
+#include "hmp2mid.h"
+#include "hmi2mid.h"
 #ifdef WILDMIDI_SF2
 #include "sf2.h"
 #endif
@@ -1613,6 +1615,24 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (const uint8_t *in, uint32_t insize,
         return (-1);
     }
 
+    if (_WM_IsMangled(in, insize)) {
+        /* Gremlin games ship their HMP files compressed */
+        uint8_t *unmangled = NULL;
+        uint32_t unmangled_size = 0;
+        int ret;
+
+        if (_WM_Unmangle(in, insize, &unmangled, &unmangled_size) < 0) {
+            return (-1);
+        }
+        if (unmangled_size >= 12 && !memcmp(unmangled, "HMI-MIDISONG", 12)) {
+            ret = _WM_hmi2midi(unmangled, unmangled_size, out, outsize);
+        } else {
+            ret = _WM_hmp2midi(unmangled, unmangled_size, out, outsize);
+        }
+        free(unmangled);
+        return (ret);
+    }
+
     if (!memcmp(in, "FORM", 4)) {
         if (_WM_xmi2midi(in, insize, out, outsize,
                 _cvt_get_option(WM_CO_XMI_TYPE)) < 0) {
@@ -1622,6 +1642,16 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (const uint8_t *in, uint32_t insize,
     else if (!memcmp(in, "MUS", 3)) {
         if (_WM_mus2midi(in, insize, out, outsize,
                 _cvt_get_option(WM_CO_FREQUENCY)) < 0) {
+            return (-1);
+        }
+    }
+    else if (insize >= 12 && !memcmp(in, "HMI-MIDISONG", 12)) {
+        if (_WM_hmi2midi(in, insize, out, outsize) < 0) {
+            return (-1);
+        }
+    }
+    else if (insize >= 8 && !memcmp(in, "HMIMIDIP", 8)) {
+        if (_WM_hmp2midi(in, insize, out, outsize) < 0) {
             return (-1);
         }
     }
@@ -1805,11 +1835,44 @@ WM_SYMBOL int WildMidi_Close(midi * handle) {
     return (0);
 }
 
+/* Detects the file format and parses the buffer into an mdi.
+ * Requires size >= 18. */
+static midi *parse_midi_buffer(const uint8_t *mididata, uint32_t midisize) {
+    uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
+    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
+    midi * ret = NULL;
+
+    if (_WM_IsMangled(mididata, midisize)) {
+        /* Gremlin games ship their HMP files compressed */
+        uint8_t *unmangled = NULL;
+        uint32_t unmangled_size = 0;
+
+        if (_WM_Unmangle(mididata, midisize, &unmangled, &unmangled_size) == 0) {
+            if (unmangled_size >= 18 && memcmp(unmangled, "HMI-MIDISONG061595", 18) == 0) {
+                ret = (void *) _WM_ParseNewHmi(unmangled, unmangled_size);
+            } else {
+                ret = (void *) _WM_ParseNewHmp(unmangled, unmangled_size);
+            }
+            free(unmangled);
+        }
+    } else if (memcmp(mididata,"HMIMIDIP", 8) == 0) {
+        ret = (void *) _WM_ParseNewHmp(mididata, midisize);
+    } else if (memcmp(mididata, "HMI-MIDISONG061595", 18) == 0) {
+        ret = (void *) _WM_ParseNewHmi(mididata, midisize);
+    } else if (memcmp(mididata, mus_hdr, 4) == 0) {
+        ret = (void *) _WM_ParseNewMus(mididata, midisize);
+    } else if (memcmp(mididata, xmi_hdr, 4) == 0) {
+        ret = (void *) _WM_ParseNewXmi(mididata, midisize);
+    } else {
+        ret = (void *) _WM_ParseNewMidi(mididata, midisize);
+    }
+
+    return (ret);
+}
+
 WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
     uint8_t *mididata = NULL;
     uint32_t midisize = 0;
-    uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
-    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
     midi * ret = NULL;
 
     if (!WM_Initialized) {
@@ -1828,17 +1891,7 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
         _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
         return (NULL);
     }
-    if (memcmp(mididata,"HMIMIDIP", 8) == 0) {
-        ret = (void *) _WM_ParseNewHmp(mididata, midisize);
-    } else if (memcmp(mididata, "HMI-MIDISONG061595", 18) == 0) {
-        ret = (void *) _WM_ParseNewHmi(mididata, midisize);
-    } else if (memcmp(mididata, mus_hdr, 4) == 0) {
-        ret = (void *) _WM_ParseNewMus(mididata, midisize);
-    } else if (memcmp(mididata, xmi_hdr, 4) == 0) {
-        ret = (void *) _WM_ParseNewXmi(mididata, midisize);
-    } else {
-        ret = (void *) _WM_ParseNewMidi(mididata, midisize);
-    }
+    ret = parse_midi_buffer(mididata, midisize);
     _WM_FreeBufferFile(mididata);
 
     if (ret) {
@@ -1852,8 +1905,6 @@ WM_SYMBOL midi *WildMidi_Open(const char *midifile) {
 }
 
 WM_SYMBOL midi *WildMidi_OpenBuffer(const uint8_t *midibuffer, uint32_t size) {
-    uint8_t mus_hdr[] = { 'M', 'U', 'S', 0x1A };
-    uint8_t xmi_hdr[] = { 'F', 'O', 'R', 'M' };
     midi * ret = NULL;
 
     if (!WM_Initialized) {
@@ -1873,17 +1924,7 @@ WM_SYMBOL midi *WildMidi_OpenBuffer(const uint8_t *midibuffer, uint32_t size) {
         _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
         return (NULL);
     }
-    if (memcmp(midibuffer,"HMIMIDIP", 8) == 0) {
-        ret = (void *) _WM_ParseNewHmp(midibuffer, size);
-    } else if (memcmp(midibuffer, "HMI-MIDISONG061595", 18) == 0) {
-        ret = (void *) _WM_ParseNewHmi(midibuffer, size);
-    } else if (memcmp(midibuffer, mus_hdr, 4) == 0) {
-        ret = (void *) _WM_ParseNewMus(midibuffer, size);
-    } else if (memcmp(midibuffer, xmi_hdr, 4) == 0) {
-        ret = (void *) _WM_ParseNewXmi(midibuffer, size);
-    } else {
-        ret = (void *) _WM_ParseNewMidi(midibuffer, size);
-    }
+    ret = parse_midi_buffer(midibuffer, size);
 
     if (ret) {
         if (add_handle(ret) != 0) {

@@ -17,6 +17,8 @@ SET(wildmidi_library_SRCS
     sf2.c
     mus2mid.c
     xmi2mid.c
+    hmp2mid.c
+    hmi2mid.c
 )
 
 SET(wildmidi_library_HDRS
@@ -39,6 +41,8 @@ SET(wildmidi_library_HDRS
  ../include/filenames.h
  ../include/mus2mid.h
  ../include/xmi2mid.h
+ ../include/hmp2mid.h
+ ../include/hmi2mid.h
  ../include/wm_tty.h
  ../include/wildplay.h
  ../src/tsf/tsf.h

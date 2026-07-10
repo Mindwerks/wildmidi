@@ -24,6 +24,8 @@ LOCAL_SRC_FILES := \
 	src/sf2.c \
 	src/wildmidi_lib.c \
 	src/wm_error.c \
-	src/xmi2mid.c
+	src/xmi2mid.c \
+	src/hmp2mid.c \
+	src/hmi2mid.c
 
 include $(BUILD_SHARED_LIBRARY)
