@@ -1222,6 +1222,13 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
         left_mix = *tmp_buffer++;
         right_mix = *tmp_buffer++;
 
+        /* The packing below only keeps 16 bits: without a clamp, an
+           over-full mix wraps around into full-scale pops. */
+        if (left_mix > 32767) left_mix = 32767;
+        else if (left_mix < -32768) left_mix = -32768;
+        if (right_mix > 32767) right_mix = 32767;
+        else if (right_mix < -32768) right_mix = -32768;
+
         /*
          * ===================
          * Write to the buffer
@@ -1564,6 +1571,13 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
     for (i = 0; i < buffer_used; i += 4) {
         left_mix = *tmp_buffer++;
         right_mix = *tmp_buffer++;
+
+        /* The packing below only keeps 16 bits: without a clamp, an
+           over-full mix wraps around into full-scale pops. */
+        if (left_mix > 32767) left_mix = 32767;
+        else if (left_mix < -32768) left_mix = -32768;
+        if (right_mix > 32767) right_mix = 32767;
+        else if (right_mix < -32768) right_mix = -32768;
 
         /*
          * ===================
@@ -2284,6 +2298,13 @@ static int WM_GetOutput_SF2(midi * handle, int8_t *buffer, uint32_t size) {
     for (i = 0; i < buffer_used; i += 4) {
         left_mix = *tmp_buffer++;
         right_mix = *tmp_buffer++;
+
+        /* The packing below only keeps 16 bits: without a clamp, an
+           over-full mix wraps around into full-scale pops. */
+        if (left_mix > 32767) left_mix = 32767;
+        else if (left_mix < -32768) left_mix = -32768;
+        if (right_mix > 32767) right_mix = 32767;
+        else if (right_mix < -32768) right_mix = -32768;
 
         /*
          * ===================

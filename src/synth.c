@@ -42,6 +42,13 @@
 #define OP1 0x00
 #define OP2 0x03
 
+/* Samples rendered past the logical end: the mixer advances sample_pos by
+   up to ~2 <<10 units per tick BEFORE wrapping at loop_end (== data_length
+   here), so its interpolator can read a few samples beyond the end. GUS
+   patches have real data there; we must render some too or those reads land
+   past the allocation. */
+#define SYNTH_END_PAD 8u
+
 /* ------------------------------------------------------------------ */
 /* FM patch table                                                     */
 /* ------------------------------------------------------------------ */
@@ -296,7 +303,7 @@ static void normalise_to(int16_t *d, uint32_t n, int32_t target, uint32_t tail_f
    time); the sampled-OPL soundfonts we match against start loud. Keeps a
    few ms of ramp before the first sample above peak/8. Returns the new
    length; the two interpolation guard samples move along with the data. */
-static uint32_t trim_onset(int16_t *d, uint32_t n) {
+static uint32_t trim_onset(int16_t *d, uint32_t n, uint32_t total) {
     int32_t peak = 0, thresh;
     uint32_t i, onset = 0, back;
     for (i = 0; i < n; i++) {
@@ -312,7 +319,7 @@ static uint32_t trim_onset(int16_t *d, uint32_t n) {
     back = _WM_SampleRate / 333;   /* ~3 ms of natural ramp */
     onset = (onset > back) ? onset - back : 0;
     if (onset) {
-        memmove(d, d + onset, ((size_t)n + 2 - onset) * sizeof(int16_t));
+        memmove(d, d + onset, ((size_t)total + 2 - onset) * sizeof(int16_t));
     }
     return n - onset;
 }
@@ -342,6 +349,9 @@ static void configure(struct _sample *s, uint32_t n, double root_hz, int looped)
     s->next = NULL;
 }
 
+static double measure_pitch_ratio(const int16_t *d, uint32_t start,
+                                  uint32_t end, double expected_hz);
+
 /* Render one looped, sustained tonal sample. `claimed_hz` is the pitch
    reported to the mixer; it differs from the rendered pitch when a GENMIDI
    voice carries a note offset. `chip` is caller-provided scratch: at ~20 KB+
@@ -349,9 +359,10 @@ static void configure(struct _sample *s, uint32_t n, double root_hz, int looped)
    OS/2, Amiga) this library still supports. */
 static struct _sample *render_tonal(opl3_chip *chip,
                                     const fm_voice *v1, const fm_voice *v2,
-                                    const mix_env *env, double claimed_hz) {
+                                    const mix_env *env, double claimed_hz,
+                                    double *ratio_out) {
     double root_hz = opl_hz(v1->fnum, v1->block);
-    double period, loop_target;
+    double period, loop_target, corr;
     uint32_t hold, hold_min;
     uint32_t loop_len_fp, loop_len_ref;
     struct _sample *s;
@@ -384,23 +395,33 @@ static struct _sample *render_tonal(opl3_chip *chip,
     hold_min = _WM_SampleRate * 3u / 10u;        /* >= 300 ms into sustain */
     if (hold < hold_min) hold = hold_min;
 
-    s = alloc_sample(hold);
+    s = alloc_sample(hold + SYNTH_END_PAD);
     if (!s) return NULL;
 
     opl_boot(chip, v1, v2);
-    /* Render hold + the 2 guard samples as genuine continuation so the
-       interpolator reads real data at the loop seam. */
-    opl_render(chip, s->data, hold + 2);
-    normalise_to(s->data, hold + 2, SYNTH_NORM_TARGET, 0);
-    hold = trim_onset(s->data, hold);
+    /* Render hold + pad + guards as genuine continuation so interpolator
+       reads (including the mixer's pre-wrap overshoot) land on real data. */
+    opl_render(chip, s->data, hold + SYNTH_END_PAD + 2);
+    normalise_to(s->data, hold + SYNTH_END_PAD + 2, SYNTH_NORM_TARGET, 0);
+    hold = trim_onset(s->data, hold, hold + SYNTH_END_PAD);
 
     configure(s, hold, claimed_hz, 1);
 
-    /* Loop an integer number of fundamental periods (in the mixer's <<10
-       fixed point, so the fractional part of the period is preserved) taken
-       from the end of the hold region, past the OPL attack/decay. The count
-       is chosen to span ~loop_target seconds so any LFO cycle fits. */
-    period = (double)_WM_SampleRate / root_hz;
+    /* The voice may sound at a rational multiple of the channel frequency
+       (carrier MULT, FM sidebands): measure the true fundamental on the
+       plateau. Sizing the loop in theoretical periods when the true period
+       is 2x lands the seam 180 degrees out of phase — a pop per wrap. */
+    {
+        uint32_t st = (hold > 12000) ? hold - 9000 : hold / 3;
+        corr = measure_pitch_ratio(s->data, st, hold, root_hz);
+    }
+    if (ratio_out) *ratio_out = corr;
+
+    /* Loop an integer number of TRUE fundamental periods (in the mixer's
+       <<10 fixed point, so the fractional part of the period is preserved)
+       taken from the end of the hold region, past the OPL attack/decay. The
+       count is chosen to span ~loop_target seconds so any LFO cycle fits. */
+    period = (double)_WM_SampleRate / (root_hz * corr);
     loop_len_ref = (uint32_t)(loop_target * (double)_WM_SampleRate / period + 0.5);
     if (loop_len_ref == 0) loop_len_ref = 1;
     loop_len_fp = (uint32_t)(period * (double)loop_len_ref * 1024.0);
@@ -418,15 +439,22 @@ static struct _sample *render_tonal(opl3_chip *chip,
 static struct _sample *render_oneshot(opl3_chip *chip,
                                       const fm_voice *v1, const fm_voice *v2,
                                       uint32_t n, double claimed_hz,
-                                      float release) {
-    struct _sample *s = alloc_sample(n);
+                                      float release, double *ratio_out) {
+    struct _sample *s = alloc_sample(n + SYNTH_END_PAD);
     mix_env e;
 
     if (!s) return NULL;
 
     opl_boot(chip, v1, v2);
-    opl_render(chip, s->data, n);
-    normalise_to(s->data, n, SYNTH_NORM_TARGET, 128);
+    opl_render(chip, s->data, n + SYNTH_END_PAD + 2);
+    /* Fade covers the end pad too, so the mixer's pre-cutoff overshoot
+       reads faded real data instead of a step. */
+    normalise_to(s->data, n + SYNTH_END_PAD + 2, SYNTH_NORM_TARGET, 128);
+
+    if (ratio_out) {
+        *ratio_out = measure_pitch_ratio(s->data, n / 6, n / 2,
+                                         opl_hz(v1->fnum, v1->block));
+    }
 
     configure(s, n, claimed_hz, 0);
     /* Hold the mixer envelope at peak so the sample's own baked-in decay is
@@ -568,7 +596,7 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
             }
             s = render_oneshot(chip, &v1, (flags & OP2_FLAG_DOUBLE) ? &v2 : NULL,
                                voice_oneshot_len(&fm1), key_hz,
-                               voice_release(&fm1));
+                               voice_release(&fm1), NULL);
         } else {
             /* No GENMIDI record for this key; DMX skips it too. */
             free(chip);
@@ -664,31 +692,21 @@ struct _sample *_WM_synth_patch(uint16_t patchid) {
                 hz_to_fnum(base_hz * rel * op2_fine_ratio(rec[2]),
                            &v2.fnum, &v2.block);
             }
+            /* The renders measure their own true sounding pitch (per
+               block: operator KSL shifts the sideband balance) and hand
+               back sounding/expected; render_tonal also sizes its loop in
+               true periods with it. */
             s = oneshot
                 ? render_oneshot(chip, &v1, doubled ? &v2 : NULL,
                                  voice_oneshot_len(&fm1), claimed,
-                                 voice_release(&fm1))
-                : render_tonal(chip, &v1, doubled ? &v2 : NULL, env, claimed);
+                                 voice_release(&fm1), &pitch_corr)
+                : render_tonal(chip, &v1, doubled ? &v2 : NULL, env, claimed,
+                               &pitch_corr);
             if (!s) {
                 free(chip);
                 free_sample_chain(chain);
                 _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
                 return NULL;
-            }
-            {
-                /* Calibrate each octave render: where does this voice
-                   actually sound relative to the channel frequency?
-                   Operator KSL shifts the sideband balance per block, so
-                   the answer can differ between the three roots. Measure
-                   the late plateau, not the onset — layered components
-                   decay at different rates and only the steady-state
-                   balance is what a held note sounds like. */
-                uint32_t n0 = s->data_length >> 10;
-                uint32_t st = oneshot ? n0 / 6
-                                      : (n0 > 12000 ? n0 - 9000 : n0 / 3);
-                pitch_corr = measure_pitch_ratio(s->data, st,
-                                                 oneshot ? n0 / 2 : n0,
-                                                 base_hz);
             }
             /* Re-claim the root at the measured sounding pitch so written
                notes play at written pitch regardless of how the FM voice
