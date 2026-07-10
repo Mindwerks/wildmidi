@@ -1,0 +1,44 @@
+name: Build (cross)
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  mingw:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cross: [i686-w64-mingw32, x86_64-w64-mingw32]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MinGW-w64
+        run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64 binutils-mingw-w64
+      - name: Build
+        run: make -C mingw CROSS=${{ matrix.cross }} static shared
+
+  djgpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up DJGPP
+        run: |
+          sudo apt-get update && sudo apt-get install -y libfl2
+          curl -sL https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2 | sudo tar xj -C /opt
+      - name: Build
+        run: |
+          export PATH=/opt/djgpp/i586-pc-msdosdjgpp/bin:/opt/djgpp/bin:$PATH
+          make -C djgpp CROSS=i586-pc-msdosdjgpp USE_DXE=0
+
+  amiga-m68k:
+    runs-on: ubuntu-latest
+    container: amigadev/crosstools:m68k-amigaos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build library
+        # ponytail: library only; player links fail on cexp (clib2 libm gap). Upgrade path: fix Amiga reverb or clib2.
+        run: make -C amiga libWildMidi.a AOS3=1 CROSS=m68k-amigaos
