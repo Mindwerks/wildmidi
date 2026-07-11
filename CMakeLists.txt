@@ -120,7 +120,7 @@ ELSEIF (UNIX)
 ENDIF()
 
 # Compiler specific settings
-IF (CMAKE_COMPILER_IS_GNUCC OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
+IF (CMAKE_C_COMPILER_ID MATCHES "(Clang|^GNU$)")
     IF (NOT MSVC) # exclude clang-cl
         ADD_DEFINITIONS(
             -Wall -W
