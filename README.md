@@ -1,10 +1,12 @@
 WildMIDI is a simple software midi player which has a core softsynth
 library that can be used in other applications.
 
-The WildMIDI library uses Gravis Ultrasound patch files to convert MIDI
-files into audio which is then passed back to the calling application.
-The library API is designed so that it is easy to include WildMIDI into
-applications that wish to include MIDI file playback.
+The WildMIDI library converts MIDI files into audio which is then
+passed back to the calling application. Instruments can come from
+Gravis Ultrasound patch files, SoundFont2 (SF2) files, GENMIDI (OP2)
+FM banks, or the built-in OPL3 FM synthesizer. The library API is
+designed so that it is easy to include WildMIDI into applications
+that wish to include MIDI file playback.
 
 Version: 0.5.0
 Licenses: GPLv3+ and LGPLv3
@@ -12,16 +14,16 @@ Website: https://github.com/Mindwerks/wildmidi
 
 PLATFORMS:
 
-* Linux: Arch, Debian, Fedora, Ubuntu (player: ALSA, OSS,
+* Linux: Arch, Debian, Fedora, Ubuntu, etc (player: ALSA, OSS,
   or optionally OpenAL output.)
 * Windows: x86 and x64
-* OSX: x86, x64, and powerpc (player: CoreAudio output)
+* macOS: x86, x64, and powerpc (player: CoreAudio output.)
 * FreeBSD, Debian kFreeBSD (player: OSS output)
 * OpenBSD (player: sndio output)
 * NetBSD (player: netbsd output)
-* Hurd: Debian
+* GNU/Hurd (Debian)
 * DOS (player: sound blaster or compatibles output)
-* OS/2 (player: Dart output)
+* OS/2 (player: DART output.)
 * AmigaOS & variants like MorphOS, AROS (player: AHI output)
 
 BUILD FROM SOURCE:
@@ -38,27 +40,31 @@ Requirements:
 
 CHANGELOG
 
-0.5.0
-* SoundFont2 (SF2) rendering support via TinySoundFont, vendored under
-  `src/tsf/`. Enabled by default (`WANT_SF2=ON`); pass either an `.sf2`
-  file or a config with a `soundfont` directive to `WildMidi_Init`.
-* HMP and HMI to MIDI converters: WildMidi_ConvertToMidi and the player's
-  `-x/--tomidi` switch now convert HMP and HMI files in addition to XMI
-  and MUS (bug #181).
+0.5.0 (2026-07-11)
+* SoundFont2 (SF2) rendering support via TinySoundFont. Enabled by default,
+  cmake configuration: `WANT_SF2=ON`. Pass either an `.sf2` file, or a config
+  file with a `soundfont` directive to WildMidi_Init().
+* Built-in OPL3 FM softsynth using the Nuked OPL3 emulator. Pass `@opl3` to
+  WildMidi_Init(), or use the player's `-O/--opl3` switch to play MIDI files
+  without any patch, soundfont, or bank files. The GM voice bank is embedded
+  in the library.
+* GENMIDI (OP2) FM bank support: an `.op2` bank, such as the one shipped
+  with Doom, can be given to WildMidi_Init() in place of a config file, and
+  is rendered through the OPL3 emulator.
+* HMP and HMI to MIDI converters: WildMidi_ConvertToMidi() and the player's
+  `-x/--tomidi` switch now convert HMP and HMI files in addition to XMI and
+  MUS (bug #181).
 * Support for playing and converting compressed ("mangled") HMP files as
   shipped by Gremlin Interactive games such as Fatal Racing / Whiplash.
 * Fix XMI looping / wrong duration issues (bug #149.)
 * Fix GUS patch handling to obey scale frequency and scale factor (bug #264.)
 * Find and use a GUS patch with neareset patchid in case of missing patches:
-  https://www.cpdl.org/wiki/images/f/f8/349_Jesu_meiner_Freuden_Freude.mid,
-  for example, now plays well with alternative patches instead of producing
-  silence. (thanks to Yotam Medini, github pull request #254.)
+  349_Jesu_meiner_Freuden_Freude.mid, for e.g., now plays well with alternative
+  patches instead of producing silence. (thanks to Yotam Medini, PR #254)
 * Discard extraneous end-of-track events in Type 1 MIDI files: Fixes certain
-  midis from Rise of the Triad looping too soon. (thanks Clownacy, github pull
-  request #263.)
-* Fix infinite loop when looping an empty channel. (thanks Clownacy, github
-  pull request #263.)
-* Support spaces in config file using quoted strings.
+  midis from Rise of the Triad looping too soon. (thanks to Clownacy, PR #263)
+* Fix infinite loop when looping empty channels. (thanks to Clownacy, PR #263)
+* Support spaces in config files using quoted strings.
 * Hardened event-pool and mix-buffer growth against realloc failure across the
   Linear/Gauss/SF2 renderers; the event-setup helpers now propagate allocation
   errors instead of writing past the buffer.
@@ -69,7 +75,7 @@ CHANGELOG
 * Cmake build system fixes, other minor fixes/clean-ups.
 * The library is API/ABI compatible with 0.4.x versions.
 
-0.4.6
+0.4.6 (2024-04-11)
 * A lot of player cleanup and refactoring, thanks to initial work
   by Azamat H. Hackimov, with addition of several safeguards and
   minor fixes.
@@ -84,14 +90,14 @@ CHANGELOG
 * Other minor source clean-ups.
 * CMake project clean-ups. Cmake v3.4 or newer is now required.
 
-0.4.5
+0.4.5 (2023-01-14)
 * Fixed MUS drum channels 9 and 15 being swapped if the same file
   is played twice from the same memory buffer (bug #234).
 * Player: Fixed save MIDI reading wrong argv if there are no path
   seperators (bug #227).
 * Other code and build system clean-ups.
 
-0.4.4
+0.4.4 (2021-03-21)
 * Fixed integer overflow in MIDI parser sample count calculation
  (bug #200).
 * Fixed 8-bit ping pong GUS patch loaders (bug #207).
@@ -103,7 +109,7 @@ CHANGELOG
 * CMake project improvements (bugs: #214, #216, #217, #218); cmake
   version 3.1 or newer is now required.
 
-0.4.3
+0.4.3 (2018-11-24)
 * New API addition: WildMidi_InitVIO().  It is like WildMidi_Init(),
   but tells the library to use caller-provided functions for file IO.
   See wildmidi_lib.h or the man page WildMidi_InitVIO(3) for details.
@@ -124,7 +130,7 @@ CHANGELOG
 * Support for RISC OS, Nintendo Switch, and PS Vita.
 * Several clean-ups.
 
-0.4.2
+0.4.2 (2017-11-20)
 * Fixed CVE-2017-11661, CVE-2017-11662, CVE-2017-11663, CVE-2017-11664
   (bug #175).
 * Fixed CVE-2017-1000418 (bug #178).
@@ -136,7 +142,7 @@ CHANGELOG
 * Fixed a minor Windows unicode issue (PR #170).
 * A few other fixes / clean-ups.
 
-0.4.1
+0.4.1 (2017-03-17)
 * Fixed bug in handling of the "source" directive in config files.
 * Fixed a nasty bug in dBm_pan_volume. Other fixes and clean-ups.
 * Build system updates. Install a pkg-config file on supported platforms
@@ -147,7 +153,7 @@ CHANGELOG
 * Support for Nintendo Wii.
 * Support for AmigaOS and its variants like MorphOS and AROS.
 
-0.4.0
+0.4.0 (2016-06-16)
 * API change: The library now returns audio data in host-endian format,
   not little-endian.
 * API change: WildMidi_GetVersion() added to the API, along with new
@@ -174,16 +180,16 @@ CHANGELOG
 * Support for loading KAR (MIDI with Lyrics) and Type 2 MIDI files.
 * Build requires cmake-2.8.11 or newer now.
 
-0.3.9
+0.3.9 (2016-03-11)
 * Library: Fixed a segmentation fault with bad MIDI files.
 
-0.3.8
+0.3.8 (2015-01-27)
 * Library: Fixed a seek-to-0 bug in order to cure an issue of truncated
   start (bug #100, gnome/gstreamer bug #694811.)
 * Player, OpenAL: Reduced buffers from 8 to 4 so as to cure some output
   delay issues (bug #85.)
 
-0.3.7
+0.3.7 (2014-06-05)
 * Plug a memory leak in case of broken MIDIs.
 * Properly reset global state upon library shutdown.
 * Support for type-2 MIDI files.
@@ -194,7 +200,7 @@ CHANGELOG
 * Build: Add headers to project files. Use -fno-common flag.
 * Other small fixes/clean-ups.
 
-0.3.6
+0.3.6 (2014-04-05)
 * Fix some portability issues.
 * Fix a double-free issue during library shutdown when several midis
   were alive.
@@ -205,7 +211,7 @@ CHANGELOG
 * Handle cfg files with Mac line-endings.
 * Refuse loading suspiciously long files.
 
-0.3.5
+0.3.5 (2014-03-18)
 * Greatly reduced the heap usage (was a regression introduced in 0.2.3)
 * OpenAL support: Fixed audio output on big-endian systems. Fixed audio
   skips at song start.
@@ -216,7 +222,7 @@ CHANGELOG
   from 1994.
 * Build fixes for MSVC. Revised visibility attributes usage.
 
-0.3.4
+0.3.4 (2014-02-24)
 * OpenAL support: This gains us OSX and other platforms that OpenAL
   supports for sound output!
 * DOS (DJGPP) support: This goes a long way to helping other DOS
@@ -230,7 +236,7 @@ CHANGELOG
 * Support for Debian/kFreeBSD, Debian/Hurd, and other Debian archs.
 * Many bug fixes, code clean-ups, and cosmetic fixes.
 
-0.3.3
+0.3.3 (2014-02-11)
 * Default to hidden visibility and only export our API functions
 * Windows lean and mean to help compile times on Windows
 * CLI and XCode work now on OSX
