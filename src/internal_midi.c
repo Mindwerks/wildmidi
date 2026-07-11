@@ -1230,6 +1230,12 @@ void _WM_Release_Allowance(struct _mdi *mdi) {
 
     mdi->samples_to_mix = longest_release;
 
+    /* Keep the reported length in sync with the tail we are about to
+       render. Delta against what was already added so repeated end of
+       track events (looping, seeks) don't inflate the total. */
+    mdi->extra_info.approx_total_samples += longest_release - mdi->tail_allowance;
+    mdi->tail_allowance = longest_release;
+
     return;
 }
 
