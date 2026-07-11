@@ -1043,7 +1043,14 @@ void _WM_do_control_channel_notes_off(struct _mdi *mdi,
                 /* All Notes Off releases each note as if a note off was
                    received (normal release); only All Sound Off (CC 120)
                    silences immediately. */
-                _WM_do_note_off_extra(note_data);
+                if ((note_data->modes & SAMPLE_ENVELOPE)
+                    && (note_data->env == 0)) {
+                    /* defer release until the initial envelope step has
+                       completed, same as _WM_do_note_off */
+                    note_data->is_off = 1;
+                } else {
+                    _WM_do_note_off_extra(note_data);
+                }
             }
             note_data = note_data->next;
         } while (note_data);
