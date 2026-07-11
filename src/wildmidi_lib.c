@@ -972,7 +972,9 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
-                    mdi->samples_to_mix = event->samples_to_next;
+                    /* += : keep any release allowance set by the
+                       end-of-track event (_WM_Release_Allowance). */
+                    mdi->samples_to_mix += event->samples_to_next;
                     event++;
                     mdi->current_event = event;
                 }
@@ -1304,7 +1306,9 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
-                    mdi->samples_to_mix = event->samples_to_next;
+                    /* += : keep any release allowance set by the
+                       end-of-track event (_WM_Release_Allowance). */
+                    mdi->samples_to_mix += event->samples_to_next;
                     event++;
                     mdi->current_event = event;
                 }
@@ -2246,7 +2250,9 @@ static int WM_GetOutput_SF2(midi * handle, int8_t *buffer, uint32_t size) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
-                    mdi->samples_to_mix = event->samples_to_next;
+                    /* += : keep any release allowance set by the
+                       end-of-track event (_WM_Release_Allowance). */
+                    mdi->samples_to_mix += event->samples_to_next;
                     event++;
                     mdi->current_event = event;
                 }

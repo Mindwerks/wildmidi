@@ -593,17 +593,6 @@ void _WM_do_note_off_extra(struct _note *nte) {
 
     } else if (nte->hold) {
         nte->hold |= HOLD_OFF;
-#if 0
-    } else if (nte->modes & SAMPLE_SUSTAIN) {
-        if (nte->env < 3) {
-            nte->env = 3;
-            if (nte->env_level > nte->sample->env_target[3]) {
-                nte->env_inc = -nte->sample->env_rate[3];
-            } else {
-                nte->env_inc = nte->sample->env_rate[3];
-            }
-        }
-#endif
     } else if (nte->modes & SAMPLE_CLAMPED) {
         if (nte->env < 5) {
             nte->env = 5;
@@ -613,12 +602,16 @@ void _WM_do_note_off_extra(struct _note *nte) {
                 nte->env_inc = nte->sample->env_rate[5];
             }
         }
-    } else if (nte->env < 4) {
-        nte->env = 4;
-        if (nte->env_level > nte->sample->env_target[4]) {
-            nte->env_inc = -nte->sample->env_rate[4];
+    } else if (nte->env < 3) {
+        /* GUS/timidity release semantics: the envelope resumes at stage 3
+           on note off (stages 3-5 are the release phases). Entering at 4
+           skips the release entirely on patches that keep it in stage 3
+           (issue #229). */
+        nte->env = 3;
+        if (nte->env_level > nte->sample->env_target[3]) {
+            nte->env_inc = -nte->sample->env_rate[3];
         } else {
-            nte->env_inc = nte->sample->env_rate[4];
+            nte->env_inc = nte->sample->env_rate[3];
         }
     }
 }
@@ -1047,23 +1040,10 @@ void _WM_do_control_channel_notes_off(struct _mdi *mdi,
     if (note_data) {
         do {
             if ((note_data->noteid >> 8) == ch) {
-                if (!note_data->hold) {
-                    if (note_data->modes & SAMPLE_ENVELOPE) {
-                        if (note_data->env < 5) {
-                            if (note_data->env_level
-                                > note_data->sample->env_target[5]) {
-                                note_data->env_inc =
-                                -note_data->sample->env_rate[5];
-                            } else {
-                                note_data->env_inc =
-                                note_data->sample->env_rate[5];
-                            }
-                            note_data->env = 5;
-                        }
-                    }
-                } else {
-                    note_data->hold |= HOLD_OFF;
-                }
+                /* All Notes Off releases each note as if a note off was
+                   received (normal release); only All Sound Off (CC 120)
+                   silences immediately. */
+                _WM_do_note_off_extra(note_data);
             }
             note_data = note_data->next;
         } while (note_data);
@@ -1215,21 +1195,32 @@ void _WM_Release_Allowance(struct _mdi *mdi) {
     while (note != NULL) {
 
         if (note->modes & SAMPLE_ENVELOPE) {
-            /* ensure envelope isin a release state */
-            if (note->env < 4) {
-                note->env = 4;
+            /* ensure envelope is in a release state; release starts at
+               stage 3 (see _WM_do_note_off_extra) */
+            if (note->env < 3) {
+                note->env = 3;
             }
 
             /* make sure this is set */
             note->env_inc = -note->sample->env_rate[note->env];
 
             release = note->env_level / -note->env_inc;
+
+            /* a non-looping sample can't ring longer than its
+               remaining data */
+            if (!(note->modes & SAMPLE_LOOP) && note->sample_inc) {
+                uint32_t remaining = (note->sample->data_length
+                                      - note->sample_pos) / note->sample_inc;
+                if (remaining < release) release = remaining;
+            }
         } else {
             /* Sample release */
             if (note->modes & SAMPLE_LOOP) {
                 note->modes ^= SAMPLE_LOOP;
             }
-            release = note->sample->data_length - note->sample_pos;
+            /* data_length/sample_pos are 22.10 fixed point */
+            release = (note->sample->data_length - note->sample_pos)
+                      / (note->sample_inc ? note->sample_inc : 1024);
         }
 
         if (release > longest_release) longest_release = release;
