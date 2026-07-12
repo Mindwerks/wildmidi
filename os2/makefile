@@ -61,6 +61,10 @@ $(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
 .c: ../src;../src/player
 .c.obj:
 	wcc386 $(CFLAGS_LIB) $(INCLUDES) -fo=$^@ $<
+#silence unused function tsf_xx() warnings in sf2.c
+sf2.obj: sf2.c
+	wcc386 $(CFLAGS_LIB) -wcd=202 $(INCLUDES) -fo=$^@ $<
+
 # rules for player objs:
 getopt_long.obj: getopt_long.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
