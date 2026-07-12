@@ -9,7 +9,7 @@ wildmidi \- example player for libWildMidi
 .B /etc/wildmidi/wildmidi.cfg
 .PP
 .SH SYNOPSIS
-.B wildmidi [\-0abehlnstvO] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-P \fIplayback\-output\fB] [\-o \fIfile\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] [\-i \fIseconds\fB] [\-j \fIseconds\fB] \fImidifile ...
+.B wildmidi [\-0abehlnstvO] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-P \fIplayback\-output\fB] [\-o \fIfile\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] [\-x \fIfile\fB] [\-i \fIseconds\fB] [\-j \fIseconds\fB] \fImidifile ...
 .PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
@@ -85,8 +85,8 @@ Skips any silence at the start of playback.
 .IP "\fB\-v\fP | \fB\-\-version\fP"
 Display version and copyright information.
 .PP
-.IP "\fB\-x\fP | \fB\-\-tomidi\fP"
-Convert a MUS, XMI, HMP or HMI file to midi and save to file.
+.IP "\fB\-x\fP \fIfile\fP | \fB\-\-tomidi=\fIfile\fP"
+Convert a MUS, XMI, HMP or HMI file to midi and save it as \fIfile\fP.
 .PP
 .SH TEST OPTIONS
 These options are not designed for general use. Instead these options are designed to make it easier to listen to specific sound samples.
