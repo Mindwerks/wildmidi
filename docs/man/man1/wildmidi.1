@@ -1,4 +1,4 @@
-.TH wildmidi 1 "21 November 2020" "" "WildMidi Player"
+.TH wildmidi 1 "12 July 2026" "" "WildMidi Player"
 .SH NAME
 wildmidi \- example player for libWildMidi
 .PP
@@ -9,7 +9,7 @@ wildmidi \- example player for libWildMidi
 .B /etc/wildmidi/wildmidi.cfg
 .PP
 .SH SYNOPSIS
-.B wildmidi [\-bhlvwnst] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-P \fIplayback\-output\fB] [\-o \fIfile\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] \fImidifile ...
+.B wildmidi [\-0abehlnstvO] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-P \fIplayback\-output\fB] [\-o \fIfile\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] [\-x \fIfile\fB] [\-i \fIseconds\fB] [\-j \fIseconds\fB] \fImidifile ...
 .PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
@@ -19,11 +19,17 @@ This is a demonstration program to show the capabilities of libWildMidi.
 You can have more than one \fImidifile\fP on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
 .PP
 .SH OPTIONS
+.IP "\fB\-0\fP"
+When converting with \fB\-x\fP, save files detected as type 2 MIDI compatible as type 0 files.
+.PP
+.IP "\fB\-a\fP | \fB\-\-textaslyric\fP"
+Some files store their lyrics in text meta events. Read lyrics from there instead of lyric meta events.
+.PP
 .IP "\fB\-b\fP | \fB\-\-reverb\fP"
 Turns on an 8 point reverb engine that adds depth to the final mix.
 .P
 .IP "\fB\-c\fP \fIconfig\-file\fP | \fB\-\-config\fP \fIconfig\-file\fP"
-Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmidi/wildmidi.cfg
+Uses the configuration file stated by \fIconfig\-file\fP instead of /etc/wildmidi/wildmidi.cfg. \fIconfig\-file\fP may also be a SoundFont2 (.sf2) file, or a timidity.cfg style file using the \fBsoundfont\fP directive; the file type is detected by content, not extension.
 .PP
 .IP "\fB\-d\fP \fIaudiodev\fP | \fB\-\-device=\fIaudiodev\fP"
 Send audio to \fIaudiodev\fP instead of the default device.
@@ -31,6 +37,9 @@ Send audio to \fIaudiodev\fP instead of the default device.
   oss    : defaults to "/dev/dsp"
   netbsd : defaults to "/dev/audio"
   Other environments do not support this option.
+.PP
+.IP "\fB\-e\fP | \fB\-\-enhanced\fP"
+Use enhanced (Gauss) resampling for a richer sound at the cost of extra CPU usage.
 .PP
 .IP "\fB\-h\fP | \fB\-\-help\fP"
 Displays command line options.
@@ -42,6 +51,12 @@ Use frequency F Hz for playback (MUS).
 Convert XMI: 0 - No Conversion (default)
              1 - MT32 to GM
              2 - MT32 to GS
+.PP
+.IP "\fB\-i\fP \fIseconds\fP | \fB\-\-playfrom=\fIseconds\fP"
+Begin playback at \fIseconds\fP (fractions allowed) into the file.
+.PP
+.IP "\fB\-j\fP \fIseconds\fP | \fB\-\-playto=\fIseconds\fP"
+Stop playback at \fIseconds\fP (fractions allowed) into the file.
 .PP
 .IP "\fB\-l\fP | \fB\-\-log_vol\fP"
 Some MIDI files have been recorded on hardware that uses a volume curve, making them sound really badly mixed on other MIDI devices. Use this option to use volume curves.
@@ -55,6 +70,9 @@ Set \fIplayback\-output\fP as playback output. See \fB\--help\fP output for avai
 .IP "\fB\-o\fP \fIfile\fP | \fB\-\-wavout=\fIfile\fP"
 Records output to a signed 16 bit stereo format \fIwav file\fP. Implies: \fB\-P wave\fP
 .PP
+.IP "\fB\-O\fP | \fB\-\-opl3\fP"
+Use the built\-in OPL3 FM synthesizer. No configuration file, GUS patch set or SoundFont is needed.
+.PP
 .IP "\fB\-r\fP \fIsndrate\fP | \fB\-\-rate=\fIsndrate\fP"
 Set the audio output rate to \fIsndrate\fP. The default rate is 32072.
 .PP
@@ -67,8 +85,8 @@ Skips any silence at the start of playback.
 .IP "\fB\-v\fP | \fB\-\-version\fP"
 Display version and copyright information.
 .PP
-.IP "\fB\-x\fP | \fB\-\-tomidi\fP"
-Convert a MUS, XMI, HMP or HMI file to midi and save to file.
+.IP "\fB\-x\fP \fIfile\fP | \fB\-\-tomidi=\fIfile\fP"
+Convert a MUS, XMI, HMP or HMI file to midi and save it as \fIfile\fP.
 .PP
 .SH TEST OPTIONS
 These options are not designed for general use. Instead these options are designed to make it easier to listen to specific sound samples.
@@ -128,7 +146,7 @@ Chris Ison <chrisisonwildcode@gmail.com>
 Bret Curtis <psi29a@gmail.com>
 .PP
 .SH COPYRIGHT
-Copyright (C) WildMidi Developers 2001\-2024
+Copyright (C) WildMidi Developers 2001\-2026
 .PP
 This file is part of WildMIDI.
 .PP

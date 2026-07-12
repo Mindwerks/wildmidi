@@ -1,4 +1,4 @@
-.TH wildmidi.cfg 5 "10 March 2016" "" "WildMidi Config File"
+.TH wildmidi.cfg 5 "12 July 2026" "" "WildMidi Config File"
 .SH NAME
 wildmidi.cfg \- Config file for libWildMidi
 .PP
@@ -7,6 +7,8 @@ wildmidi.cfg \- Config file for libWildMidi
 .PP
 .SH DESCRIPTION
 Contains the patch configuration for libWildMidi and location of Gravis Ultrasound compatible patch files.
+.PP
+Instead of a patch configuration, the file given to libWildMidi may also be a SoundFont2 (.sf2) file, or a timidity.cfg style file that names one via the \fBsoundfont\fP directive. The file type is detected by content, not by extension.
 .PP
 .nf
 dir ~/guspats/
@@ -24,9 +26,7 @@ drumset 0
 .PP
 .SH SYNTAX
 .IP "\fBguspat_editor_author_cant_read_so_fix_release_time_for_me\fP"
-Some patch file editors switch the 4th and 5th envelopes around making the sound play much longer than intended in players that stuck to the Gravis Ultrasound patch standard. Including this option in the config enables a fix that detects this oversight, playing the sound samples as if they were correct.
-.IP
-NOTE: This is a global setting. If it is found to affect good patch samples it will be moved to a per patch setting in a future version.
+Some patch file editors switch the 4th and 5th envelopes around making the sound play much longer than intended in players that stuck to the Gravis Ultrasound patch standard. A fix that detects this oversight is applied automatically since WildMidi 0.4.3; this option is accepted for backwards compatibility and has no effect.
 .PP
 .IP "\fBauto_amp\fP"
 Forces WildMIDI to amplify samples to their maximum level ignoring the amp=% in the patch lines of the config.
@@ -39,6 +39,9 @@ Change the search path for config and patch files to \fIdir\-name\fP. This is sp
 .PP
 .IP "\fBsource\fP \fIinclude\-confg\fP"
 Include the settings from \fIinclude\-config\fP. Any patch already set will be over\-ridden by the included config file.
+.PP
+.IP "\fBsoundfont\fP \fIsf2\-file\fP"
+Render using the SoundFont2 file \fIsf2\-file\fP instead of Gravis Ultrasound patches. Relative paths are resolved against the config file directory, the same as \fBsource\fP. This allows an existing timidity.cfg that names a SoundFont to be used as\-is.
 .PP
 .IP "\fBbank\fP \fIN\fP"
 The patches following this setting belong to MIDI instrument bank \fIN\fP.
@@ -98,6 +101,12 @@ Set the room length for the reverb engine in meters. \fIfval\fP is a float value
 .IP
 Example: set room length to 40 meters \- \fBreverb_room_length 40\fP
 .PP
+.IP "\fBreverb_listener_posx\fP \fIfval\fP"
+Set the listener position across the room width for the reverb engine. \fIfval\fP is a float value in meters between 0.0 and \fBreverb_room_width\fP; values outside the room reset to the room centre. Default is half the room width.
+.PP
+.IP "\fBreverb_listener_posy\fP \fIfval\fP"
+Set the listener position along the room length for the reverb engine. \fIfval\fP is a float value in meters between 0.0 and \fBreverb_room_length\fP; values outside the room reset to 3/4 of the room length. Default is 3/4 of the room length.
+.PP
 
 .SH SEE ALSO
 .BR wildmidi (1)
@@ -108,7 +117,7 @@ Bret Curtis <psi29a@gmail.com>
 .PP
 .SH COPYRIGHT
 Copyright (C) Chris Ison  2001\-2010
-Copyright (C) Bret Curtis 2013\-2016
+Copyright (C) Bret Curtis 2013\-2026
 .PP
 This file is part of WildMIDI.
 .PP

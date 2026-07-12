@@ -106,6 +106,13 @@ struct _mdi_patches {
 #define FPBITS 10
 #define FPMASK ((1L<<FPBITS)-1L)
 
+/* GUS envelope level to linear amplitude: 2^((level - 1) * 6), i.e. dB-linear
+   over a 36 dB range, matching the GF1's exponential volume ramps and
+   timidity's vol_table. A linear mapping leaves releasing notes ~12 dB too
+   loud mid-decay. Filled in _WM_Init(). */
+static int32_t env_amp_table[1024];
+#define ENV_AMP(lvl) (env_amp_table[(lvl) >> 12])
+
 
 /* Gauss Interpolation code adapted from code supplied by Eric. A. Welsh */
 static double newt_coeffs[58][58];  /* for start/end of samples */
@@ -652,7 +659,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             return (-1);
                         }
                         _WM_reverb_listen_posy = (float) atof(line_tokens[1]);
-                        if ((_WM_reverb_listen_posy > _WM_reverb_room_width)
+                        if ((_WM_reverb_listen_posy > _WM_reverb_room_length)
                                 || (_WM_reverb_listen_posy < 0.0f)) {
                             _WM_DEBUG_MSG("%s: reverb_listen_posy set outside of room", config_file);
                             _WM_reverb_listen_posy = _WM_reverb_room_length * 0.75f;
@@ -972,7 +979,9 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
-                    mdi->samples_to_mix = event->samples_to_next;
+                    /* += : keep any release allowance set by the
+                       end-of-track event (_WM_Release_Allowance). */
+                    mdi->samples_to_mix += event->samples_to_next;
                     event++;
                     mdi->current_event = event;
                 }
@@ -1015,7 +1024,7 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
                      * ===================
                      */
                     data_pos = note_data->sample_pos >> FPBITS;
-                    premix = ((note_data->sample->data[data_pos] + (((note_data->sample->data[data_pos + 1] - note_data->sample->data[data_pos]) * (int32_t)(note_data->sample_pos & FPMASK)) / 1024)) * (note_data->env_level >> 12)) / 1024;
+                    premix = ((note_data->sample->data[data_pos] + (((note_data->sample->data[data_pos + 1] - note_data->sample->data[data_pos]) * (int32_t)(note_data->sample_pos & FPMASK)) / 1024)) * ENV_AMP(note_data->env_level)) / 1024;
 
                     left_mix += (premix * (int32_t)note_data->left_mix_volume) / 1024;
                     right_mix += (premix * (int32_t)note_data->right_mix_volume) / 1024;
@@ -1304,7 +1313,9 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
-                    mdi->samples_to_mix = event->samples_to_next;
+                    /* += : keep any release allowance set by the
+                       end-of-track event (_WM_Release_Allowance). */
+                    mdi->samples_to_mix += event->samples_to_next;
                     event++;
                     mdi->current_event = event;
                 }
@@ -1384,7 +1395,7 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
                         } while (gptr <= gend);
                     }
 
-                    premix = (int32_t)((y * (note_data->env_level >> 12)) / 1024);
+                    premix = (int32_t)((y * ENV_AMP(note_data->env_level)) / 1024);
 
                     left_mix += (premix * (int32_t)note_data->left_mix_volume) / 1024;
                     right_mix += (premix * (int32_t)note_data->right_mix_volume) / 1024;
@@ -1793,6 +1804,13 @@ post_config_load:
     gauss_lock = 0;
     _WM_patch_lock = 0;
     _WM_MasterVolume = 948;
+    {
+        int i;
+        for (i = 0; i < 1024; i++) {
+            env_amp_table[i] = (int32_t)(1024.0
+                * pow(2.0, ((double)i / 1023.0 - 1.0) * 6.0) + 0.5);
+        }
+    }
     WM_Initialized = 1;
 
     return (0);
@@ -2246,7 +2264,9 @@ static int WM_GetOutput_SF2(midi * handle, int8_t *buffer, uint32_t size) {
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
-                    mdi->samples_to_mix = event->samples_to_next;
+                    /* += : keep any release allowance set by the
+                       end-of-track event (_WM_Release_Allowance). */
+                    mdi->samples_to_mix += event->samples_to_next;
                     event++;
                     mdi->current_event = event;
                 }
