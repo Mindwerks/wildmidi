@@ -659,7 +659,7 @@ static int load_config(const char *config_file, const char *conf_dir) {
                             return (-1);
                         }
                         _WM_reverb_listen_posy = (float) atof(line_tokens[1]);
-                        if ((_WM_reverb_listen_posy > _WM_reverb_room_width)
+                        if ((_WM_reverb_listen_posy > _WM_reverb_room_length)
                                 || (_WM_reverb_listen_posy < 0.0f)) {
                             _WM_DEBUG_MSG("%s: reverb_listen_posy set outside of room", config_file);
                             _WM_reverb_listen_posy = _WM_reverb_room_length * 0.75f;
