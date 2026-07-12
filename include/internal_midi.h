@@ -133,7 +133,6 @@ struct _event {
 struct _mdi {
     int lock;
     uint32_t samples_to_mix;
-    uint32_t tail_allowance; /* release tail already counted in approx_total_samples */
     struct _event *events;
     struct _event *current_event;
     uint32_t event_count;

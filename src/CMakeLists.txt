@@ -82,6 +82,10 @@ TARGET_INCLUDE_DIRECTORIES(libwildmidi-static INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+# Consumers of the static archive need libm (pow/log10 etc.)
+IF (M_LIBRARY)
+    TARGET_LINK_LIBRARIES(libwildmidi-static INTERFACE ${M_LIBRARY})
+ENDIF()
 
 # If the static library was not requested, we do not add it to the "all" & "install" targets
 IF (WANT_STATIC)

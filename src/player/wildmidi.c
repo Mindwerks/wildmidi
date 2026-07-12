@@ -762,6 +762,7 @@ int main(int argc, char **argv) {
                 wm_info = WildMidi_GetInfo(midi_ptr);
                 perc_play = (wm_info->current_sample * 100)
                             / wm_info->approx_total_samples;
+                if (perc_play > 100) perc_play = 100;
                 pro_mins = wm_info->current_sample / (rate * 60);
                 pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
                 fprintf(stderr,
@@ -813,6 +814,7 @@ int main(int argc, char **argv) {
 
             perc_play = (wm_info->current_sample * 100)
                         / wm_info->approx_total_samples;
+            if (perc_play > 100) perc_play = 100;
             pro_mins = wm_info->current_sample / (rate * 60);
             pro_secs = (wm_info->current_sample % (rate * 60)) / rate;
             fprintf(stderr,

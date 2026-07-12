@@ -1237,11 +1237,11 @@ void _WM_Release_Allowance(struct _mdi *mdi) {
 
     mdi->samples_to_mix = longest_release;
 
-    /* Keep the reported length in sync with the tail we are about to
-       render. Delta against what was already added so repeated end of
-       track events (looping, seeks) don't inflate the total. */
-    mdi->extra_info.approx_total_samples += longest_release - mdi->tail_allowance;
-    mdi->tail_allowance = longest_release;
+    /* Don't retroactively grow approx_total_samples: current_sample is
+       already at (or very near) the parse-time total by the time EOT
+       fires, so extending would make the reported percentage regress.
+       samples_to_mix keeps the tail rendering (see the `+= samples_to_next`
+       in the GetOutput event loops); the player caps its display at 100. */
 
     return;
 }
