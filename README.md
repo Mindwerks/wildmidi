@@ -40,7 +40,7 @@ Requirements:
 
 CHANGELOG
 
-0.5.0 (2026-07-11)
+0.5.0 (2026-07-12)
 * SoundFont2 (SF2) rendering support via TinySoundFont. Enabled by default,
   cmake configuration: `WANT_SF2=ON`. Pass either an `.sf2` file, or a config
   file with a `soundfont` directive to WildMidi_Init().
@@ -72,6 +72,7 @@ CHANGELOG
 * Fix player WAV writer not closing its output properly (0.4.6 bug)
 * Security hardening across the file parsers.
 * Assorted overflow guards.
+* Added Zig bindings (thanks to Simon Hartcher, PR #260)
 * Cmake build system fixes, other minor fixes/clean-ups.
 * The library is API/ABI compatible with 0.4.x versions.
 
