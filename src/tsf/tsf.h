@@ -12,7 +12,7 @@
    [OPTIONAL] #define TSF_NO_STDIO to remove stdio dependency
    [OPTIONAL] #define TSF_MALLOC, TSF_REALLOC, and TSF_FREE to avoid stdlib.h
    [OPTIONAL] #define TSF_MEMCPY, TSF_MEMSET to avoid string.h
-   [OPTIONAL] #define TSF_POW, TSF_POWF, TSF_EXPF, TSF_LOG, TSF_TAN, TSF_LOG10, TSF_SQRT to avoid math.h
+   [OPTIONAL] #define TSF_POW, TSF_POWF, TSF_EXPF, TSF_LOG, TSF_TAN, TSF_LOG10, TSF_SQRTF to avoid math.h
 
    NOT YET IMPLEMENTED
      - Support for ChorusEffectsSend and ReverbEffectsSend generators
