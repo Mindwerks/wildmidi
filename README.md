@@ -66,6 +66,7 @@ CHANGELOG
 * Fix infinite loop when looping empty channels. (thanks to Clownacy, PR #263)
 * Fix certain notes ending too soon and excessive echo/reverb/sustain issues
   (bugs #229 and #230.)
+/ Fix certain midis having breaks (bug #158.)
 * Support spaces in config files using quoted strings.
 * Hardened event-pool and mix-buffer growth against realloc failure across the
   Linear/Gauss/SF2 renderers; the event-setup helpers now propagate allocation
@@ -254,4 +255,3 @@ CHANGELOG
 * Initial CMake support.
 * Process non-registered params. Fix issue of notes ending before
   attack envelope completed. (sf.net svn r149/r151.)
-
