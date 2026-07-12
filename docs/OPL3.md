@@ -19,7 +19,7 @@ soundfont is recognised in place of a config file.
 The FM chip emulator is **Nuked-OPL3-fast** by Tony Gies, a bit-exact
 performance fork of Nuked OPL3 by Alexey Khokholov (Nuke.YKT):
 
-- upstream: <https://github.com/tgies/Nuked-OPL3-fast> (version 1.8-fast.2,
+- upstream: <https://github.com/tgies/Nuked-OPL3-fast> (version 1.8-fast.3,
   tracking Nuked OPL3 1.8, commit cfedb09)
 
 Four files were imported verbatim, original copyright headers preserved:
