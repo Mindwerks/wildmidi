@@ -9,7 +9,7 @@ DEBUG = 0
 
 # DXE3 version of the library requires DJGPP-2.05 or newer.
 # Set to 0 if dont want to build / use a DXE3 version of the library.
-USE_DXE = 1
+USE_DXE = 0
 
 # The tools
 ifeq ($(CROSS),)
