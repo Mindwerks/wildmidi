@@ -67,7 +67,7 @@ typedef char tsf_char20[20]; /* no empty source. */
 #include "sf2.h"
 
 static tsf *WM_sf2 = NULL;
-static int WM_sf2_lock = 0;
+int _WM_sf2_lock = 0;
 
 int _WM_SF2_Magic(const uint8_t *data, uint32_t size) {
     return (size >= 12 && !memcmp(data, "RIFF", 4) && !memcmp(data + 8, "sfbk", 4));
@@ -82,22 +82,22 @@ int _WM_SF2_Load(const uint8_t *data, uint32_t size) {
     if (f == NULL) {
         return (-1);
     }
-    _WM_Lock(&WM_sf2_lock);
+    _WM_Lock(&_WM_sf2_lock);
     if (WM_sf2) {
         tsf_close(WM_sf2); /* a later soundfont line replaces an earlier one */
     }
     WM_sf2 = f;
-    _WM_Unlock(&WM_sf2_lock);
+    _WM_Unlock(&_WM_sf2_lock);
     return (0);
 }
 
 void _WM_SF2_Unload(void) {
-    _WM_Lock(&WM_sf2_lock);
+    _WM_Lock(&_WM_sf2_lock);
     if (WM_sf2) {
         tsf_close(WM_sf2);
         WM_sf2 = NULL;
     }
-    _WM_Unlock(&WM_sf2_lock);
+    _WM_Unlock(&_WM_sf2_lock);
 }
 
 int _WM_SF2_Active(void) {
@@ -113,9 +113,9 @@ static void WM_SF2_InitChannels(tsf *f) {
 
 void *_WM_SF2_NewSynth(uint16_t rate) {
     tsf *f;
-    _WM_Lock(&WM_sf2_lock);
+    _WM_Lock(&_WM_sf2_lock);
     f = WM_sf2 ? tsf_copy(WM_sf2) : NULL;
-    _WM_Unlock(&WM_sf2_lock);
+    _WM_Unlock(&_WM_sf2_lock);
     if (f == NULL) {
         return NULL;
     }
