@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: open-watcom/setup-watcom@v0
+      - uses: open-watcom/setup-watcom@7ef247f4cdd25d29b7757ae9908655d253d3e13c # v0
       - name: Build library and player
         run: |
           cd os2 && wmake
