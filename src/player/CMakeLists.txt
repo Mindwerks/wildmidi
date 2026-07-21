@@ -45,6 +45,9 @@ IF (WANT_PLAYER)
         ${AUDIO_LIBRARY}
         ${M_LIBRARY}
     )
+    if(MINGW OR CYGWIN)
+        TARGET_LINK_OPTIONS(wildmidi PRIVATE -static-libgcc)
+    ENDIF()
     LIST(APPEND wildmidi_install wildmidi)
 ENDIF()
 
@@ -68,6 +71,9 @@ IF (WANT_PLAYERSTATIC AND BUILD_SHARED_LIBS)
         ${AUDIO_LIBRARY}
         ${M_LIBRARY}
     )
+    if(MINGW OR CYGWIN)
+        TARGET_LINK_OPTIONS(wildmidi-static PRIVATE -static-libgcc)
+    ENDIF()
     LIST(APPEND wildmidi_install wildmidi-static)
 
     IF (RISCOS)

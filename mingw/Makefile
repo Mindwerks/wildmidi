@@ -28,7 +28,7 @@ PLAYER_STATIC=wildmidi-static.exe
 INCLUDE=-I. -I../include
 ARFLAGS=cr
 CFLAGS=$(INCLUDE) -Wall -W -fno-common
-LDFLAGS=
+LDFLAGS=-static-libgcc
 LDLIBS=
 ifeq ($(DEBUG),1)
 CFLAGS+=-g

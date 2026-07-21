@@ -140,6 +140,9 @@ IF (BUILD_SHARED_LIBS)
             COMPILE_DEFINITIONS WILDMIDI_BUILD
         )
     ENDIF()
+    if(MINGW OR CYGWIN)
+        TARGET_LINK_OPTIONS(libwildmidi PRIVATE -static-libgcc)
+    ENDIF()
     LIST(APPEND wildmidi_lib_install libwildmidi)
 ENDIF()
 
