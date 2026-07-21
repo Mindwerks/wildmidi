@@ -119,7 +119,7 @@ static void AMIGA_close (BPTR fd) {
 void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
     char *buffer_file = NULL;
     uint8_t *data;
-#ifdef __DJGPP__
+#if defined(__DJGPP__)
     int buffer_fd;
     struct ffblk f;
 #elif defined(_WIN32)
@@ -208,7 +208,7 @@ void *_WM_BufferFileImpl(const char *filename, uint32_t *size) {
         *size = 0xffffffff;
     else *size = wfd.nFileSizeLow;
 #elif defined(__OS2__) || defined(__EMX__)
-    if (DosFindFirst(buffer_file, &h, FILE_NORMAL, &fb, sizeof(fb), &cnt, FIL_STANDARD) != NO_ERROR) {
+    if (DosFindFirst((PCSZ)buffer_file, &h, FILE_NORMAL, &fb, sizeof(fb), &cnt, FIL_STANDARD) != NO_ERROR) {
         _WM_GLOBAL_ERROR(WM_ERR_STAT, filename, ENOENT);
         free(buffer_file);
         return NULL;

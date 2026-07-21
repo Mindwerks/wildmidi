@@ -47,7 +47,7 @@ void wm_resetty(void) {}
 #include <os2.h>
 #include <stdlib.h>
 int putch (int c) {
-    char ch = c;
+    unsigned char ch = c;
     VioWrtTTY(&ch, 1, 0);
     return c;
 }
