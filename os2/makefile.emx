@@ -1,15 +1,20 @@
-# Makefile for OS/2 using EMX environment.
+# Makefile for OS/2 using GCC/EMX KLIBC environment.
 # builds static wildmidi.a library and wildmidi.exe player
 
+ifeq ($(CROSS),)
 CC=gcc
-AS=as
 AR=ar
 RANLIB=ranlib
+else
+CC=$(CROSS)-gcc
+AR=$(CROSS)-ar
+RANLIB=$(CROSS)-ranlib
+endif
 LD=$(CC)
 
-INCLUDES=-I. -I../include/stdint -I../include
+INCLUDES=-I. -I../include
 CFLAGS = $(INCLUDES) -Wall -W -Zmt
-LDFLAGS = -Zmt
+LDFLAGS = -Zomf -Zmt
 ARFLAGS = cr
 
 ifeq ($(DEBUG),1)
