@@ -58,6 +58,7 @@ static const char *errors[WM_ERR_MAX+1] = {
     "Unable to convert",
     "Not a mus file",
     "Not an xmi file",
+    "Not a smaf file",
 
     "Invalid error code"
 };

@@ -65,6 +65,7 @@
 #define HAVE_SQRTF 1
 #define HAVE_POWF 1
 
+#define WILDMIDI_MAFM 1
 #define WILDMIDI_SF2 1
 
 /* Define our audio drivers */
