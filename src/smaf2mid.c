@@ -294,6 +294,449 @@ static int find_sequence(const uint8_t *in, uint32_t insize,
 
 /* ------------------------------------------------------------------------- */
 
+/* Decode a Mobile Standard (format 0x01/0x02) sequence into MIDI events.
+ * Returns 0 on success, -1 on allocation failure. */
+static int decode_mobile(struct smaf_ctx *ctx, const uint8_t *seq,
+                         uint32_t seqlen, uint32_t ms_dur, uint32_t ms_gate) {
+    uint8_t run_vel[MIDI_MAXCHANNELS];
+    uint8_t run_status = 0;
+    uint32_t p = 0, cur_ms = 0;
+    int i;
+
+    for (i = 0; i < MIDI_MAXCHANNELS; i++)
+        run_vel[i] = 64;
+
+    while (p < seqlen) {
+        uint32_t dur;
+        uint8_t s, ch;
+
+        /* A duration is a VLQ, whose bytes are always < 0x80 except for the
+         * "more" continuation bit.  A real 0xFF here is not a duration but the
+         * meta/NOP/End-Of-Sequence trailer that follows the last event
+         * (e.g. "ff 00 00  ff 2f 00"): stop rather than misread it as a huge
+         * delay. */
+        if (seq[p] == 0xff)
+            break;
+
+        dur = read_vlq(seq, &p, seqlen);
+        cur_ms += dur * ms_dur;
+        if (p >= seqlen) break;
+
+        /* emit any note-offs that fall due before this event */
+        flush_offs(ctx, cur_ms);
+
+        s = seq[p];
+        if (s & 0x80) {
+            p++;
+            run_status = s;
+        } else if (run_status) {
+            /* running status: reuse the previous status byte */
+            s = run_status;
+        } else {
+            p++;
+            continue;               /* no status established: stray data */
+        }
+        ch = s & 0x0f;
+
+        switch (s & 0xf0) {
+        case 0x80:                  /* note, reuse running velocity */
+        case 0x90: {                /* note, explicit velocity */
+            uint8_t note, vel;
+            uint32_t gate;
+            if (p >= seqlen) { p = seqlen; break; }
+            note = seq[p++];
+            if ((s & 0xf0) == 0x90) {
+                if (p >= seqlen) { p = seqlen; break; }
+                vel = seq[p++] & 0x7f;
+                run_vel[ch] = vel;
+            } else {
+                vel = run_vel[ch];
+            }
+            gate = read_vlq(seq, &p, seqlen);
+            if (gate == 0)
+                break;
+            write_event(ctx, cur_ms, 0x90 | ch, note & 0x7f, vel, 1);
+            if (schedule_off(ctx, cur_ms + gate * ms_gate, ch, note) < 0)
+                return -1;
+        } break;
+
+        case 0xa0:                  /* reserved: 2 data bytes */
+            p += 2;
+            break;
+
+        case 0xb0: {                /* control change */
+            uint8_t cc, val;
+            if (p + 1 >= seqlen) { p = seqlen; break; }
+            cc = seq[p++];
+            val = seq[p++];
+            switch (cc) {
+            case 0x00:              /* bank MSB - dropped (Yamaha internal) */
+            case 0x20:              /* bank LSB - dropped (Yamaha internal) */
+                break;
+            case 0x07:              /* volume */
+            case 0x0a:              /* pan */
+            case 0x0b:              /* expression */
+            case 0x01:              /* modulation */
+                write_event(ctx, cur_ms, 0xb0 | ch, cc, val & 0x7f, 1);
+                break;
+            default:
+                break;
+            }
+        } break;
+
+        case 0xc0: {                /* program change */
+            uint8_t pc;
+            if (p >= seqlen) { p = seqlen; break; }
+            pc = seq[p++];
+            write_event(ctx, cur_ms, 0xc0 | ch, pc & 0x7f, 0, 0);
+        } break;
+
+        case 0xd0:                  /* reserved: 1 data byte */
+            p += 1;
+            break;
+
+        case 0xe0: {                /* pitch bend: lsb, msb */
+            uint8_t lsb, msb;
+            if (p + 1 >= seqlen) { p = seqlen; break; }
+            lsb = seq[p++];
+            msb = seq[p++];
+            write_event(ctx, cur_ms, 0xe0 | ch, lsb & 0x7f, msb & 0x7f, 1);
+        } break;
+
+        case 0xf0:
+            run_status = 0;         /* system messages cancel running status */
+            if (s == 0xf0) {        /* exclusive: skip len bytes */
+                uint32_t len = read_vlq(seq, &p, seqlen);
+                if ((uint64_t)p + len > seqlen) { p = seqlen; break; }
+                p += len;
+            } else {                /* 0xff: meta */
+                uint8_t m;
+                if (p >= seqlen) { p = seqlen; break; }
+                m = seq[p++];
+                if (m == 0x00)
+                    break;          /* NOP */
+                if (m == 0x2f) {    /* end of sequence */
+                    p = seqlen;
+                    break;
+                }
+                if (p < seqlen) {
+                    uint8_t len = seq[p++];
+                    if ((uint32_t)p + len > seqlen) p = seqlen;
+                    else p += len;
+                }
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/* HandyPhone Standard (format_type 0x00)                                    */
+/*                                                                           */
+/* HandyPhone score data differs from Mobile Standard: it uses a 1-or-2 byte */
+/* VLQ, packs notes as channel/octave/note nibbles with no velocity, and     */
+/* splits a song across up to four MTR* tracks of four channels each.  Those  */
+/* tracks share one timeline, so we cannot stream each straight into the      */
+/* output the way decode_mobile() does (that requires monotonically          */
+/* increasing event times).  Instead every track is decoded into a shared    */
+/* list of absolute-timed MIDI events, which is then sorted and emitted.      */
+/* See docs/formats/SmafFileFormat.txt for the encoding.                     */
+
+/* One fully-formed MIDI channel event at an absolute time (in ms). */
+struct hp_event {
+    uint32_t at_ms;
+    uint32_t seq;               /* insertion order, for a stable sort */
+    uint8_t status, d1, d2;
+    uint8_t have_d2;
+};
+
+struct hp_events {
+    struct hp_event *ev;
+    uint32_t count, alloc;
+};
+
+static int hp_push(struct hp_events *e, uint32_t at_ms, uint8_t status,
+                   uint8_t d1, uint8_t d2, int have_d2) {
+    if (e->count == e->alloc) {
+        uint32_t na = e->alloc ? e->alloc * 2 : 256;
+        struct hp_event *n = (struct hp_event *)
+            realloc(e->ev, na * sizeof(struct hp_event));
+        if (!n) return -1;
+        e->ev = n;
+        e->alloc = na;
+    }
+    e->ev[e->count].at_ms = at_ms;
+    e->ev[e->count].seq = e->count;
+    e->ev[e->count].status = status;
+    e->ev[e->count].d1 = d1;
+    e->ev[e->count].d2 = d2;
+    e->ev[e->count].have_d2 = (uint8_t)(have_d2 != 0);
+    e->count++;
+    return 0;
+}
+
+/* Order by time, then by insertion order so a note-on never sorts after a
+ * note-off queued at the same millisecond. */
+static int hp_cmp(const void *a, const void *b) {
+    const struct hp_event *x = (const struct hp_event *)a;
+    const struct hp_event *y = (const struct hp_event *)b;
+    if (x->at_ms != y->at_ms) return x->at_ms < y->at_ms ? -1 : 1;
+    if (x->seq != y->seq)     return x->seq   < y->seq   ? -1 : 1;
+    return 0;
+}
+
+/* HandyPhone VLQ: one byte < 0x80 is the value; otherwise the value is
+ * (((b & 0x7F) + 1) << 7) | next.  Distinct from the Mobile-standard VLQ. */
+static uint32_t hp_read_vlq(const uint8_t *seq, uint32_t *pp, uint32_t end) {
+    uint32_t p = *pp;
+    uint8_t b;
+    uint32_t val;
+    if (p >= end) { *pp = end; return 0; }
+    b = seq[p++];
+    if (b & 0x80) {
+        if (p >= end) { *pp = end; return 0; }
+        val = (((uint32_t)(b & 0x7f) + 1) << 7) | seq[p++];
+    } else {
+        val = b;
+    }
+    *pp = p;
+    return val;
+}
+
+/* Map a HandyPhone note (octave/note nibbles) to a GM pitch, honouring the
+ * per-channel octave shift.  Mirrors vavi-sound MidiContext.retrievePitch:
+ * a +36 base, then the octave-shift offset. */
+static int hp_pitch(uint8_t octave, uint8_t note, uint8_t oct_shift) {
+    int pitch = (int)note + (int)octave * 12 + 36;
+    switch (oct_shift) {
+    case 1: pitch += 12; break;
+    case 2: pitch += 24; break;
+    case 3: pitch += 36; break;
+    case 4: pitch += 48; break;
+    case 0x81: pitch -= 12; break;
+    case 0x82: pitch -= 24; break;
+    case 0x83: pitch -= 36; break;
+    case 0x84: pitch -= 48; break;
+    default: break;
+    }
+    if (pitch < 0) pitch = 0;
+    if (pitch > 127) pitch = 127;
+    return pitch;
+}
+
+/* Default velocity for HandyPhone notes, which carry no velocity byte. */
+#define HP_NOTE_VELOCITY 100
+
+/* Decode one HandyPhone track's Mtsq into the shared event list.
+ *   base_ch  : MIDI channel for this track's SMAF channel 0 (0,4,8,12).
+ *   perc_mask: bit c set => SMAF channel c is a percussion channel and is
+ *              rerouted to MIDI channel 9 (its notes taken from the program). */
+static int decode_handyphone(struct hp_events *e, const uint8_t *seq,
+                             uint32_t seqlen, uint32_t ms_dur, uint32_t ms_gate,
+                             uint8_t base_ch, uint8_t perc_mask) {
+    uint32_t p = 0, cur_ms = 0;
+    uint8_t oct_shift[4] = { 0, 0, 0, 0 };
+    uint8_t program[4]   = { 0, 0, 0, 0 };
+
+    while (p < seqlen) {
+        uint32_t dur;
+        uint8_t e1;
+
+        dur = hp_read_vlq(seq, &p, seqlen);
+        cur_ms += dur * ms_dur;
+        if (p >= seqlen) break;
+
+        e1 = seq[p++];
+
+        if (e1 == 0xff) {                       /* meta / exclusive / NOP */
+            uint8_t e2;
+            if (p >= seqlen) break;
+            e2 = seq[p++];
+            if (e2 == 0x00) {                   /* NOP */
+                continue;
+            } else if (e2 == 0x2f || e2 == 0x51 || e2 == 0x58) {
+                uint8_t len;                    /* meta: length + payload */
+                if (p >= seqlen) break;
+                len = seq[p++];
+                if ((uint32_t)p + len > seqlen) { p = seqlen; break; }
+                p += len;                       /* dropped (GM tempo is fixed) */
+            } else if (e2 == 0xf0) {            /* exclusive: length + payload */
+                uint8_t len;
+                if (p >= seqlen) break;
+                len = seq[p++];
+                if ((uint32_t)p + len > seqlen) { p = seqlen; break; }
+                p += len;
+            }
+            /* other 0xff e2: no payload, ignore */
+        } else if (e1 == 0x00) {                /* control event */
+            uint8_t e2, ch, event, data;
+            if (p >= seqlen) break;
+            e2 = seq[p++];
+            if (e2 == 0x00) {                   /* 00 00 xx */
+                if (p >= seqlen) break;
+                if (seq[p++] == 0x00)           /* 00 00 00 = end of sequence */
+                    break;
+                continue;                       /* 00 00 nonzero: undefined */
+            }
+            ch    = (e2 & 0xc0) >> 6;
+            event = (e2 & 0x30) >> 4;
+            data  =  e2 & 0x0f;
+            if (event == 3) {                   /* long control: value byte */
+                uint8_t val, midi_ch;
+                if (p >= seqlen) break;
+                val = seq[p++];
+                midi_ch = (perc_mask & (1 << ch)) ? 9 : (base_ch + ch);
+                switch (data) {
+                case 0x0:                       /* program change */
+                    program[ch] = val & 0x7f;
+                    /* On a percussion channel the program byte selects the
+                     * drum-note pitch (used by the note handler), not a GM
+                     * patch: suppress the program-change event itself, matching
+                     * vavi-sound ProgramChangeMessage.getMidiEvents. */
+                    if (!(perc_mask & (1 << ch)))
+                        if (hp_push(e, cur_ms, 0xc0 | midi_ch, val & 0x7f, 0, 0) < 0)
+                            return -1;
+                    break;
+                case 0x1:                       /* bank select - dropped (GM) */
+                    break;
+                case 0x2:                       /* octave shift */
+                    oct_shift[ch] = val;
+                    break;
+                case 0x3:                       /* modulation */
+                    if (hp_push(e, cur_ms, 0xb0 | midi_ch, 0x01, val & 0x7f, 1) < 0)
+                        return -1;
+                    break;
+                case 0x4:                       /* pitch bend (7-bit -> 14) */
+                    if (hp_push(e, cur_ms, 0xe0 | midi_ch, 0x00, val & 0x7f, 1) < 0)
+                        return -1;
+                    break;
+                case 0x7:                       /* volume */
+                    if (hp_push(e, cur_ms, 0xb0 | midi_ch, 0x07, val & 0x7f, 1) < 0)
+                        return -1;
+                    break;
+                case 0xa:                       /* pan */
+                    if (hp_push(e, cur_ms, 0xb0 | midi_ch, 0x0a, val & 0x7f, 1) < 0)
+                        return -1;
+                    break;
+                case 0xb:                       /* expression */
+                    if (hp_push(e, cur_ms, 0xb0 | midi_ch, 0x0b, val & 0x7f, 1) < 0)
+                        return -1;
+                    break;
+                default:
+                    break;
+                }
+            }
+            /* event 0/1/2 are short expression/pitch-bend/modulation; the
+             * nibble is the value and there is no extra byte.  They are minor
+             * expressive controls and are dropped for the GM conversion. */
+        } else {                                /* note */
+            uint8_t ch = (e1 & 0xc0) >> 6;
+            uint8_t octave = (e1 & 0x30) >> 4;
+            uint8_t note = e1 & 0x0f;
+            uint32_t gate = hp_read_vlq(seq, &p, seqlen);
+            uint8_t midi_ch;
+            int pitch;
+            if (gate == 0)
+                continue;
+            if (perc_mask & (1 << ch)) {        /* percussion: pitch = program */
+                midi_ch = 9;
+                pitch = program[ch] & 0x7f;
+            } else {
+                midi_ch = base_ch + ch;
+                pitch = hp_pitch(octave, note, oct_shift[ch]);
+            }
+            if (hp_push(e, cur_ms, 0x90 | midi_ch,
+                        (uint8_t)pitch, HP_NOTE_VELOCITY, 1) < 0)
+                return -1;
+            if (hp_push(e, cur_ms + gate * ms_gate, 0x80 | midi_ch,
+                        (uint8_t)pitch, 0x40, 1) < 0)
+                return -1;
+        }
+    }
+    return 0;
+}
+
+/* Emit the sorted HandyPhone event list into ctx as MIDI delta events. */
+static void hp_emit(struct smaf_ctx *ctx, struct hp_events *e) {
+    uint32_t i;
+    qsort(e->ev, e->count, sizeof(struct hp_event), hp_cmp);
+    for (i = 0; i < e->count; i++) {
+        write_event(ctx, e->ev[i].at_ms, e->ev[i].status,
+                    e->ev[i].d1, e->ev[i].d2, e->ev[i].have_d2);
+    }
+}
+
+/* Walk every MTR* score track and, for each HandyPhone (format 0x00) track,
+ * decode its Mtsq into the shared event list.  Returns the number of tracks
+ * decoded, or -1 on allocation failure. */
+static int decode_all_handyphone(struct hp_events *e, const uint8_t *in,
+                                  uint32_t insize, uint32_t ms_dur,
+                                  uint32_t ms_gate) {
+    uint32_t pos = 8, end = insize;
+    int track_no = 0;
+
+    if (insize >= 8) {
+        uint32_t declared = BE32(in + 4);
+        if ((uint64_t)8 + declared <= insize)
+            end = 8 + declared;
+    }
+
+    while (pos + 8 <= end && track_no < 4) {
+        const uint8_t *c = in + pos;
+        uint32_t sz = BE32(c + 4);
+        uint32_t body = pos + 8;
+
+        if ((uint64_t)body + sz > insize)
+            sz = insize - body;
+
+        if (memcmp(c, "MTR", 3) == 0 && sz >= 6 && c[8] == 0x00) {
+            /* The 2-byte channel-status field packs a 4-bit value per channel
+             * (2 bytes -> 4 channels), whose low 2 bits are the channel "type":
+             * 0 NoCare, 1 Melody, 2 NoMelody, 3 Rhythm.  A Rhythm channel is
+             * percussion: its notes are rerouted to MIDI channel 9 with the
+             * program byte as the drum-note pitch (see decode_handyphone),
+             * matching vavi-sound. */
+            uint8_t perc_mask = 0;
+            uint32_t p, tend;
+            int i;
+
+            for (i = 0; i < 4; i++) {
+                uint8_t nib = (i < 2) ? ((c[12] >> (4 * (1 - i))) & 0x0f)
+                                      : ((c[13] >> (4 * (3 - i))) & 0x0f);
+                if ((nib & 0x03) == 3)  /* Rhythm */
+                    perc_mask |= (uint8_t)(1 << i);
+            }
+            p = body + 6;               /* header = 4 + 2-byte channel status */
+            tend = body + sz;
+            while (p + 8 <= tend) {
+                const uint8_t *s = in + p;
+                uint32_t ssz = BE32(s + 4);
+                uint32_t sbody = p + 8;
+                if ((uint64_t)sbody + ssz > insize)
+                    ssz = insize - sbody;
+                if (memcmp(s, "Mtsq", 4) == 0) {
+                    if (decode_handyphone(e, in + sbody, ssz, ms_dur, ms_gate,
+                                          (uint8_t)(track_no * 4), perc_mask) < 0)
+                        return -1;
+                    track_no++;
+                    break;
+                }
+                p = sbody + ssz;
+                if (ssz == 0) p++;
+            }
+        }
+        pos = body + sz;
+        if (sz == 0) pos++;
+    }
+    return track_no;
+}
+
+/* ------------------------------------------------------------------------- */
+
 int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
                   uint8_t **out, uint32_t *outsize) {
     struct smaf_ctx ctx;
@@ -301,12 +744,9 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
     uint32_t seqlen = 0;
     uint8_t tb_dur = 0x02, tb_gate = 0x02;
     uint32_t ms_dur, ms_gate;
-    uint32_t p, cur_ms;
     uint32_t track_size_pos, begin_track_pos, current_pos;
-    uint8_t run_vel[MIDI_MAXCHANNELS];
-    uint8_t run_status = 0;
     uint8_t fmt = 0x02;
-    int i, ret = -1;
+    int ret = -1;
 
     if (!out || !outsize) {
         _WM_GLOBAL_ERROR(WM_ERR_INVALID_ARG, "(NULL params)", 0);
@@ -325,11 +765,12 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
         return -1;
     }
 
-    /* Only Mobile Standard sequences (format 0x01/0x02) are supported.  The
-     * MA-7 "Compress" variant (0x03) and HandyPhone Standard (0x00) use
-     * different event encodings that are not yet implemented; decline them
-     * rather than emit a mangled conversion. */
-    if (fmt != 0x01 && fmt != 0x02) {
+    /* Supported score-track formats: Mobile Standard (0x01/0x02) and HandyPhone
+     * Standard (0x00).  The MA-7 "SEQU" variant (0x03) is a different,
+     * compressed encoding that has not been decoded (see
+     * docs/formats/SmafFileFormat.txt); decline it rather than emit a mangled
+     * conversion. */
+    if (fmt != 0x00 && fmt != 0x01 && fmt != 0x02) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(unsupported SMAF track format)", 0);
         return -1;
     }
@@ -348,9 +789,6 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
     ctx.dst_ptr = ctx.dst;
     ctx.dstsize = DST_CHUNK;
     ctx.dstrem = DST_CHUNK;
-
-    for (i = 0; i < MIDI_MAXCHANNELS; i++)
-        run_vel[i] = 64;
 
     /* MThd */
     write1(&ctx, 'M'); write1(&ctx, 'T'); write1(&ctx, 'h'); write1(&ctx, 'd');
@@ -374,149 +812,28 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
     write1(&ctx, (SMAF_TEMPO >> 8) & 0xff);
     write1(&ctx, SMAF_TEMPO & 0xff);
 
-    /* ---- decode the Mobile Standard sequence ---- */
-    p = 0;
-    cur_ms = 0;
-    while (p < seqlen) {
-        uint32_t dur;
-        uint8_t s, ch;
-
-        /* A duration is a VLQ, whose bytes are always < 0x80 except for the
-         * "more" continuation bit.  A real 0xFF here is not a duration but the
-         * meta/NOP/End-Of-Sequence trailer that follows the last event
-         * (e.g. "ff 00 00  ff 2f 00"): stop rather than misread it as a huge
-         * delay.  Seen in MA-7 (format 0x03) files. */
-        if (seq[p] == 0xff)
-            break;
-
-        dur = read_vlq(seq, &p, seqlen);
-        cur_ms += dur * ms_dur;
-        if (p >= seqlen) break;
-
-        /* emit any note-offs that fall due before this event */
-        flush_offs(&ctx, cur_ms);
-
-        s = seq[p];
-        if (s & 0x80) {
-            /* explicit status byte */
-            p++;
-            run_status = s;
-        } else if (run_status) {
-            /* running status: reuse the previous status byte, the current byte
-             * is the first data byte. */
-            s = run_status;
-        } else {
-            /* no status established yet: genuinely stray data */
-            p++;
-            continue;
+    /* ---- decode the sequence according to its format ---- */
+    if (fmt == 0x00) {
+        /* HandyPhone: merge every score track onto one timeline. */
+        struct hp_events hev;
+        int ntracks;
+        memset(&hev, 0, sizeof(hev));
+        ntracks = decode_all_handyphone(&hev, in, insize, ms_dur, ms_gate);
+        if (ntracks < 0) {
+            free(hev.ev);
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
+            goto _end;
         }
-        ch = s & 0x0f;
-
-        switch (s & 0xf0) {
-        case 0x80:                  /* note, reuse running velocity */
-        case 0x90: {                /* note, explicit velocity */
-            uint8_t note, vel;
-            uint32_t gate;
-            if (p >= seqlen) { p = seqlen; break; }
-            note = seq[p++];
-            if ((s & 0xf0) == 0x90) {
-                if (p >= seqlen) { p = seqlen; break; }
-                vel = seq[p++] & 0x7f;
-                run_vel[ch] = vel;
-            } else {
-                vel = run_vel[ch];
-            }
-            gate = read_vlq(seq, &p, seqlen);
-            if (gate == 0)
-                break;              /* zero-gate note: skip per spec */
-            write_event(&ctx, cur_ms, 0x90 | ch, note & 0x7f, vel, 1);
-            if (schedule_off(&ctx, cur_ms + gate * ms_gate, ch, note) < 0) {
-                _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
-                goto _end;
-            }
-        } break;
-
-        case 0xa0:                  /* reserved: 2 data bytes */
-            p += 2;
-            break;
-
-        case 0xb0: {                /* control change */
-            uint8_t cc, val;
-            if (p + 1 >= seqlen) { p = seqlen; break; }
-            cc = seq[p++];
-            val = seq[p++];
-            switch (cc) {
-            case 0x00:              /* bank MSB */
-            case 0x20:              /* bank LSB */
-                /* SMAF bank-select values (e.g. 0x7C) address Yamaha's own
-                 * internal/custom voice banks, NOT General MIDI banks.  A real
-                 * SMAF player uses them to bind the file's Mtsu voice table; a
-                 * GM synth given bank 0x7C finds no instrument and goes silent.
-                 * Since we target GM, drop bank-select entirely and let the
-                 * following Program Change pick the GM patch. */
-                break;
-            case 0x07:              /* volume */
-            case 0x0a:              /* pan */
-            case 0x0b:              /* expression */
-            case 0x01:              /* modulation */
-                write_event(&ctx, cur_ms, 0xb0 | ch, cc, val & 0x7f, 1);
-                break;
-            default:
-                break;              /* consume + ignore */
-            }
-        } break;
-
-        case 0xc0: {                /* program change */
-            uint8_t pc;
-            if (p >= seqlen) { p = seqlen; break; }
-            pc = seq[p++];
-            write_event(&ctx, cur_ms, 0xc0 | ch, pc & 0x7f, 0, 0);
-        } break;
-
-        case 0xd0:                  /* reserved: 1 data byte */
-            p += 1;
-            break;
-
-        case 0xe0: {                /* pitch bend: lsb, msb */
-            uint8_t lsb, msb;
-            if (p + 1 >= seqlen) { p = seqlen; break; }
-            lsb = seq[p++];
-            msb = seq[p++];
-            write_event(&ctx, cur_ms, 0xe0 | ch, lsb & 0x7f, msb & 0x7f, 1);
-        } break;
-
-        case 0xf0:
-            run_status = 0;         /* system messages cancel running status */
-            if (s == 0xf0) {        /* exclusive: skip len bytes */
-                uint32_t len = read_vlq(seq, &p, seqlen);
-                if ((uint64_t)p + len > seqlen) { p = seqlen; break; }
-                p += len;
-            } else {                /* 0xff: meta */
-                uint8_t m;
-                if (p >= seqlen) { p = seqlen; break; }
-                m = seq[p++];
-                if (m == 0x00)
-                    break;          /* NOP */
-                if (m == 0x2f) {    /* end of sequence */
-                    p = seqlen;
-                    break;
-                }
-                /* other meta: length byte + skip */
-                if (p < seqlen) {
-                    uint8_t len = seq[p++];
-                    if ((uint32_t)p + len > seqlen) p = seqlen;
-                    else p += len;
-                }
-            }
-            break;
-
-        default:
-            break;
+        hp_emit(&ctx, &hev);
+        free(hev.ev);
+    } else {
+        if (decode_mobile(&ctx, seq, seqlen, ms_dur, ms_gate) < 0) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
+            goto _end;
         }
+        /* flush any notes still held down */
+        flush_all_offs(&ctx);
     }
-
-    /* flush any notes still held down */
-    flush_all_offs(&ctx);
 
     /* End Of Track */
     write1(&ctx, 0x00);
