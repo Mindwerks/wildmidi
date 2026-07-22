@@ -25,6 +25,7 @@
 #define HAVE_SQRTF 1
 #define HAVE_POWF 1
 #endif
+#pragma warning(disable:4761) /* integral size mismatch in argument; conversion supplied (for MSVC6 and older.) */
 
 #define WILDMIDI_SF2 1
 
