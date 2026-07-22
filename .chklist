@@ -7,6 +7,7 @@ Edit files for version number (and possibly other changes) :
 - macosx/Makefile
 - mingw/config.h
 - msvc/config.h
+- win32wat/config.h
 
 Edit files for possibly other changes:
 - djgpp/Makefile
@@ -18,3 +19,4 @@ Edit files for possibly other changes:
 - macosx/Makefile (make sure to update dylib versions here..)
 - mingw/Makefile
 - msvc/Makefile*
+- wan32wat/makefile

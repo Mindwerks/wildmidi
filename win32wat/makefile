@@ -1,0 +1,92 @@
+# Makefile for Win32 x86 using Open Watcom compiler.
+#
+# wmake
+# - builds libWildMidi.dll and its import lib (libWildMidi.lib)
+#
+# wmake target=static
+# - builds the static library libWildMidi-static.lib
+
+!ifndef target
+target = dll
+!endif
+
+CFLAGS = -bt=nt -bm -fp5 -fpi87 -mf -oeatxh -w4 -ei -j -zp8 -zq
+# -5s  :  Pentium stack calling conventions.
+# -5r  :  Pentium register calling conventions.
+CFLAGS+= -5s
+DLLFLAGS=-bd -DDLL_EXPORT
+
+.SUFFIXES:
+.SUFFIXES: .obj .c
+
+DLLNAME=libWildMidi.dll
+EXPNAME=libWildMidi.exp
+LIBNAME=libWildMidi.lib
+LIBSTATIC=libWildMidi-static.lib
+PLAYER=wildmidi.exe
+PLAYER_STATIC=wildmidi-static.exe
+PLAYER_LIBS=winmm.lib
+
+CFLAGS_LIB= $(CFLAGS) -DWILDMIDI_BUILD
+CFLAGS_EXE= $(CFLAGS)
+!ifeq target static
+CFLAGS_LIB+= -DWILDMIDI_STATIC
+CFLAGS_EXE+= -DWILDMIDI_STATIC
+BLD_TARGET=$(LIBSTATIC) $(PLAYER_STATIC)
+!else
+CFLAGS_LIB+= $(DLLFLAGS)
+BLD_TARGET=$(DLLNAME) $(PLAYER)
+!endif
+INCPATH=-I"$(%WATCOM)/h/nt" -I"$(%WATCOM)/h"
+INCLUDES=$(INCPATH) -I. -I"../include"
+
+OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj hmp2mid.obj hmi2mid.obj internal_midi.obj patches.obj sample.obj sf2.obj synth.obj opl3.obj
+PLAYER_OBJ=wm_tty.obj msleep.obj getopt_long.obj out_none.obj out_wave.obj out_openal.obj out_win32mm.obj wildmidi.obj
+
+all: $(BLD_TARGET)
+
+# rely on symbol name, not ordinal: -irn switch of wlib is default, but -inn is not.
+$(DLLNAME): $(OBJ)
+	wlink NAM $@ OP q SYSTEM nt_dll INITINSTANCE TERMINSTANCE FIL {$(OBJ)} OPTION IMPF=$(EXPNAME)
+	wlib -q -b -n -c -pa -s -t -zld -ii -io -inn $(LIBNAME) +$(DLLNAME)
+
+$(LIBSTATIC): $(OBJ)
+	wlib -q -b -n -c -pa -s -t -zld -ii -io $@ $(OBJ)
+
+$(PLAYER): $(DLLNAME) $(PLAYER_OBJ)
+	wlink N $@ SYS NT OP q LIBR {$(LIBNAME) $(PLAYER_LIBS)} F {$(PLAYER_OBJ)}
+
+$(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
+	wlink N $@ SYS NT OP q LIBR {$(LIBSTATIC) $(PLAYER_LIBS)} F {$(PLAYER_OBJ)}
+
+# rules for library objs:
+.c: ../src;../src/player
+.c.obj:
+	wcc386 $(CFLAGS_LIB) $(INCLUDES) -fo=$^@ $<
+#silence unused function tsf_xx() warnings in sf2.c
+sf2.obj: sf2.c
+	wcc386 $(CFLAGS_LIB) -wcd=202 $(INCLUDES) -fo=$^@ $<
+
+# rules for player objs:
+getopt_long.obj: getopt_long.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+wm_tty.obj: wm_tty.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+wildmidi.obj: wildmidi.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+out_none.obj: out_none.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+out_wave.obj: out_wave.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+out_win32mm.obj: out_win32mm.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+out_openal.obj: out_openal.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+msleep.obj: msleep.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+
+distclean: clean .symbolic
+	rm -f $(DLLNAME) $(EXPNAME) $(LIBNAME) $(LIBSTATIC) $(PLAYER) $(PLAYER_STATIC)
+clean: .symbolic
+	rm -f *.obj
+	rm -f *.err
