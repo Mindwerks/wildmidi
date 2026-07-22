@@ -47,6 +47,7 @@
 #include "f_midi.h"
 #include "f_mus.h"
 #include "f_xmidi.h"
+#include "f_smaf.h"
 #include "patches.h"
 #include "sample.h"
 #include "synth.h"
@@ -54,6 +55,7 @@
 #include "xmi2mid.h"
 #include "hmp2mid.h"
 #include "hmi2mid.h"
+#include "smaf2mid.h"
 #ifdef WILDMIDI_SF2
 #include "sf2.h"
 #endif
@@ -1681,6 +1683,11 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (const uint8_t *in, uint32_t insize,
             return (-1);
         }
     }
+    else if (insize >= 8 && !memcmp(in, "MMMD", 4)) {
+        if (_WM_smaf2midi(in, insize, out, outsize) < 0) {
+            return (-1);
+        }
+    }
     else if (!memcmp(in, "MThd", 4)) {
         _WM_GLOBAL_ERROR(0, "Already a midi file", 0);
         return (-1);
@@ -1919,6 +1926,8 @@ static midi *parse_midi_buffer(const uint8_t *mididata, uint32_t midisize) {
         ret = (void *) _WM_ParseNewMus(mididata, midisize);
     } else if (memcmp(mididata, xmi_hdr, 4) == 0) {
         ret = (void *) _WM_ParseNewXmi(mididata, midisize);
+    } else if (memcmp(mididata, "MMMD", 4) == 0) {
+        ret = (void *) _WM_ParseNewSmaf(mididata, midisize);
     } else {
         ret = (void *) _WM_ParseNewMidi(mididata, midisize);
     }

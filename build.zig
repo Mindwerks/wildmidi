@@ -31,6 +31,7 @@ pub fn build(b: *std.Build) void {
         "src/f_hmp.c",
         "src/f_hmi.c",
         "src/f_midi.c",
+        "src/f_smaf.c",
         "src/sample.c",
         "src/synth.c",
         "src/opl3.c",
@@ -39,6 +40,7 @@ pub fn build(b: *std.Build) void {
         "src/xmi2mid.c",
         "src/hmp2mid.c",
         "src/hmi2mid.c",
+        "src/smaf2mid.c",
     };
 
     const defaultFlags = .{

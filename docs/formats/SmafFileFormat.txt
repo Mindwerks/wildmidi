@@ -1,0 +1,194 @@
+SMAF / MMF File Format
+(Incomplete - Under Construction)
+
+Document version 1
+Authored by the WildMIDI Developers
+
+Last Edited 22 July 2026
+
+Copyright (C) 2026 WildMidi Developers
+This document is licensed under the
+Creative Commons Attribution-ShareAlike 4.0 International License.
+To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/4.0/
+
+
+Introduction
+
+This document describes the SMAF format (Synthetic music Mobile Application
+Format, Yamaha; file extension .mmf) as used by the WildMIDI project.  It is not
+a complete description of the SMAF file format and only those parts that have
+been decyphered and are relevant to the WildMidi project are described here.
+Unfortunately we cannot answer questions about the format that are not described
+within this document.  If you feel there is an error in this document please feel
+free to report it as a bug at
+https://github.com/Mindwerks/wildmidi/issues/
+
+Tracking issue: https://github.com/Mindwerks/wildmidi/issues/118
+
+SMAF is a chunked (RIFF/IFF-style) container used by early-2000s feature phones
+for polyphonic ringtones, played on Yamaha MA-series synth chips.  It resembles
+Standard MIDI - a stream of timed note/control events - but may also embed its
+own instrument data (FM parameters, PCM/ADPCM samples), graphics and text.
+
+For WildMIDI the relevant part is the score-track SEQUENCE (the MIDI-like event
+stream), which is converted to a Standard MIDI File and handed to the existing
+synth.  Embedded PCM/ADPCM audio and custom FM voice banks are out of scope for
+a first pass.
+
+The layouts below were verified by decoding a corpus of 29 real .mmf files
+spanning the MA-3, MA-5, MA-6 and MA-7 generations; every score track in that
+corpus is "Mobile Standard" and decodes cleanly to end-of-sequence.  The
+HandyPhone Standard sequence encoding is documented from reference decoders only
+and is marked UNVERIFIED.
+
+NOTE: All multi-byte integers are BIG-ENDIAN.  All chunks have the form
+      { uint8_t id[4]; uint32_t size; uint8_t data[size]; }.  Unknown chunks
+      must be skipped by their declared size - this is what makes the format
+      forward-compatible.
+
+
+Description - Container
+
+// FILE
+{
+    uint8_t  text[4] = "MMMD";        // magic
+    uint32_t size;                    // = filesize - 8 (excludes the CRC trailer)
+
+    // one or more chunks follow, until the CRC trailer:
+    //   "CNTI"  ContentsInfo   (class / type / code-type / copy status ...)
+    //   "OPDA"  OptionalData   (title / artist / ... ; 2-uppercase-letter keys)
+    //   "MTR?"  ScoreTrack     (see below; '?' = format code byte)
+    //   "ATR?"  AudioTrack     (embedded PCM/ADPCM; e.g. "AspI"/"Atsq"/"Awa\x01")
+    //   "MSTR"  master track   (seen in some MA-3 files)
+
+    uint16_t crc;                     // last 2 bytes of file, CRC-16 over the file
+}
+
+The final 2 bytes of the file are a CRC-16.  WildMIDI does not need to validate
+it for read-only conversion.
+
+
+Description - Score Track
+
+// MTR? CHUNK   ('?' is a format-code byte: seen as 0x05, 0x06, 0x07 in the wild)
+{
+    uint8_t  id[4] = "MTR" <code>;
+    uint32_t size;
+
+    // ---- track header ----
+    uint8_t  format_type;      // 0x00 HandyPhone | 0x01,0x02 Mobile | 0x03 Mobile(MA-7)
+    uint8_t  sequence_type;    // 0x00 (single sequence) in all known samples
+    uint8_t  timebase_dur;     // duration  tick resolution code (see table)
+    uint8_t  timebase_gate;    // gate-time tick resolution code (see table)
+    uint8_t  channel_status[]; // width depends on format_type:
+                               //   0x00 -> 2 bytes, 0x01/0x02 -> 16, 0x03 -> 32
+                               //   (header total 6 / 20 / 36 bytes)
+
+    // ---- inner sub-chunks (in order) ----
+    //   "Mtsu"  Setup Data   (FM/PCM voice definitions)
+    //   "MspI"  Setup Info   (rare; 16 bytes in the MA-3 samples)
+    //   "Mtsq"  Sequence     (the event stream - see below)
+    //   "Mtsp"  Stream/PCM   (embedded PCM wave blocks)
+}
+
+Timebase code -> milliseconds per tick:
+
+    code   ms/tick
+    0x00     1
+    0x01     2
+    0x02     4          <- used by the entire sample corpus
+    0x03     5
+    0x10..0x13   mirror 0x00..0x03
+
+The score's tempo/division for the emitted Standard MIDI File is derived from
+timebase_dur (ticks -> ms), and note gate lengths from timebase_gate.
+
+
+Description - Sequence Data (Mtsq), Mobile Standard
+
+format_type 0x01 / 0x02 (the common MA-2/3/5/6 ringtone case; this is what
+WildMIDI converts).  format_type 0x03 (MA-7) is a related "Compress" variant
+whose note stream relies on an implicit note-on running status with no channel
+nibble and additional quirks not fully deciphered here; WildMIDI currently
+DECLINES 0x03 (and HandyPhone 0x00) rather than emit a mangled conversion.
+
+The sequence is a series of records:
+
+    [ duration ] [ event ]
+
+  duration : variable-length quantity, 7 bits per byte, high bit = "more".
+             Number of ticks to wait BEFORE the event.
+
+The event begins with a status byte 's'.  MIDI-style RUNNING STATUS applies: a
+byte < 0x80 in the status position reuses the previous status byte, and the
+current byte is the first data byte.  A system message (0xF0/0xFF) cancels
+running status.
+
+    s        event
+    -------  --------------------------------------------------------------
+    < 0x80   running status (reuse previous 's'); if none set yet, stray - skip
+    0x8n     Note (off-velocity): uint8 note; then GATE-TIME (VLQ).
+             velocity = this channel's running velocity.
+    0x9n     Note (on-velocity):  uint8 note; uint8 vel (sets running
+             velocity); then GATE-TIME (VLQ).
+    0xAn     reserved - 2 data bytes, ignore
+    0xBn     Control Change: uint8 cc; uint8 val.
+                 cc 0x00 Bank MSB    cc 0x20 Bank LSB
+                 cc 0x07 Volume      cc 0x0A Pan
+                 cc 0x0B Expression  cc 0x01 Modulation
+    0xCn     Program Change: uint8 pc
+    0xDn     reserved - 1 data byte, ignore
+    0xEn     Pitch Bend: uint8 lsb; uint8 msb   (14-bit)
+    0xF0     Exclusive: VLQ len; then len bytes (Yamaha id 0x43 ...,
+             optionally terminated by 0xF7).  Carries voice/mode setup.
+    0xFF     Meta: uint8 m;  m==0x00 NOP; m==0x2F End Of Sequence;
+             otherwise uint8 len followed by len bytes to skip.
+
+  'n' is the channel number (low nibble of the status byte, 0-15).
+
+Notes carry their OWN duration (the trailing gate-time), unlike Standard MIDI.
+To convert:  emit a MIDI Note On at the current tick, and schedule the matching
+Note Off gate-time ticks later (a small pending-note queue).  A 0x8n note reuses
+the channel's last 0x9n velocity (initial value 64).  A note with gate-time 0 is
+skipped.
+
+IMPORTANT - Bank Select must NOT be forwarded to a General MIDI synth.  SMAF
+bank-select values (commonly 0x7C) address Yamaha's own internal / custom voice
+banks (bound via the Mtsu setup chunk), not GM banks.  A GM synth handed bank
+0x7C finds no instrument and plays SILENCE.  When converting to GM, DROP the
+Bank MSB/LSB control changes entirely and let the Program Change select the GM
+patch.  (This bug manifested as faint or silent playback until fixed.)
+
+A duration VLQ never legitimately begins with 0xFF; a 0xFF where a duration is
+expected is the trailing NOP/End-Of-Sequence padding after the last event
+(e.g. "ff 00 00  ff 2f 00") and marks the end of useful data.
+
+
+Description - Sequence Data (Mtsq), HandyPhone Standard   (UNVERIFIED)
+
+format_type 0x00.  Not present in the sample corpus; documented from reference
+decoders only, and not yet exercised by WildMIDI.
+
+  duration uses a different VLQ:  if b < 0x80 -> b, else ((b & 0x7F)+1)<<7 | next.
+
+  A lead byte of 0xFF introduces NOP / exclusive / meta as above.
+  A lead byte of 0x00 introduces a control event whose second byte packs
+  channel (bits 6-7), class (bits 4-5) and data (bits 0-3).
+  Any other lead byte is a note packed as  c c o o n n n n  (channel / octave /
+  note nibbles) followed by a gate-time; MIDI pitch = note + octave*12 + 36.
+
+
+Description - Audio Track (ATR)   (out of scope)
+
+// ATR? CHUNK
+{
+    uint8_t  id[4] = "ATR" <code>;
+    uint32_t size;
+    uint8_t  format_type;
+    uint8_t  sequence_type;
+    // sub-chunks: "AspI" setup info, "Atsq" trigger sequence,
+    //             "Awa\x01" raw PCM / ADPCM wave data.
+}
+
+Audio tracks carry embedded PCM/ADPCM and are not converted by WildMIDI.
