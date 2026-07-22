@@ -1,4 +1,4 @@
-name: Build (OS/2)
+name: Build (Open Watcom)
 
 on:
   push:
@@ -21,4 +21,18 @@ jobs:
       - name: distclean
         run: |
           cd os2 && wmake distclean
+          cd ..
+
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: open-watcom/setup-watcom@v0
+      - name: Build library and player
+        run: |
+          cd win32wat && wmake
+          cd ..
+      - name: distclean
+        run: |
+          cd win32wat && wmake distclean
           cd ..
