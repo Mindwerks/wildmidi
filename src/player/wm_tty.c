@@ -46,7 +46,7 @@ void wm_resetty(void) {}
 #define INCL_VIO
 #include <os2.h>
 #include <stdlib.h>
-int putch (int c) {
+int putch (unsigned char c) {
     unsigned char ch = c;
     VioWrtTTY(&ch, 1, 0);
     return c;
