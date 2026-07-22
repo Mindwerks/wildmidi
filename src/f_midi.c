@@ -478,7 +478,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
     uint32_t divisions = 96;
     uint32_t tempo = 500000;
     float samples_per_tick = 0;
-    unsigned long int value = 0;
+    uint32_t value = 0;
     float value_f = 0;
     struct _event *event = mdi->events;
     uint32_t track_size = 0;
@@ -966,7 +966,7 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = 0x07;
 
             _WRITE_TEXT:
-            value = strlen(event->event_data.data.string);
+            value = (uint32_t) strlen(event->event_data.data.string);
             if (value > 0x0fffffff)
                 (*out)[out_ofs++] = (((value >> 28) &0x7f) | 0x80);
             if (value > 0x1fffff)
