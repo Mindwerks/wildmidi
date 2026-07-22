@@ -11,7 +11,7 @@ PLAYER  = wildmidi.exe
 LIBS_DLL=
 LIBS_PLY= $(IMPNAME) winmm.lib
 
-DLL_OBJ = wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj hmp2mid.obj hmi2mid.obj internal_midi.obj patches.obj sample.obj sf2.obj synth.obj opl3.obj
+DLL_OBJ = wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj f_smaf.obj mus2mid.obj xmi2mid.obj hmp2mid.obj hmi2mid.obj smaf2mid.obj internal_midi.obj patches.obj sample.obj sf2.obj synth.obj opl3.obj
 PLY_OBJ = wm_tty.obj msleep.obj getopt_long.obj out_none.obj out_wave.obj out_win32mm.obj wildmidi.obj
 # out_openal.obj
 
@@ -45,6 +45,8 @@ f_midi.obj: ..\src\f_midi.c
 	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?
 f_hmi.obj: ..\src\f_hmi.c
 	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?
+f_smaf.obj: ..\src\f_smaf.c
+	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?
 mus2mid.obj: ..\src\mus2mid.c
 	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?
 xmi2mid.obj: ..\src\xmi2mid.c
@@ -52,6 +54,8 @@ xmi2mid.obj: ..\src\xmi2mid.c
 hmp2mid.obj: ..\src\hmp2mid.c
 	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?
 hmi2mid.obj: ..\src\hmi2mid.c
+	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?
+smaf2mid.obj: ..\src\smaf2mid.c
 	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?
 internal_midi.obj: ..\src\internal_midi.c
 	$(CC) $(DLL_FLAGS) $(INCLUDES) -c -Fo$@ $?

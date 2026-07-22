@@ -11,6 +11,7 @@ pub fn build(b: *std.Build) void {
     });
 
     lib_mod.addIncludePath(b.path("include"));
+    lib_mod.addIncludePath(b.path("src"));
 
     const lib = b.addLibrary(.{
         .name = "wildmidi",
@@ -31,14 +32,20 @@ pub fn build(b: *std.Build) void {
         "src/f_hmp.c",
         "src/f_hmi.c",
         "src/f_midi.c",
+        "src/f_smaf.c",
         "src/sample.c",
         "src/synth.c",
         "src/opl3.c",
         "src/sf2.c",
+        "src/mafm.c",
+        "src/mafm/ma_fm_core.c",
+        "src/mafm/smaf_voice.c",
+        "src/mafm/yamaha_adpcm.c",
         "src/mus2mid.c",
         "src/xmi2mid.c",
         "src/hmp2mid.c",
         "src/hmi2mid.c",
+        "src/smaf2mid.c",
     };
 
     const defaultFlags = .{
@@ -62,6 +69,7 @@ pub fn build(b: *std.Build) void {
             .HAVE_INTTYPES_H = 1,
             .WORDS_BIGENDIAN = null,
             .WILDMIDI_AMIGA = null,
+            .WILDMIDI_MAFM = 1,
             .HAVE_SYS_SOUNDCARD_H = null,
             .AUDIODRV_ALSA = null,
             .AUDIODRV_OSS = null,

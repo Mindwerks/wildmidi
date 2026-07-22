@@ -163,6 +163,7 @@ struct _mdi {
     char *lyric;
 
     void *sf2_synth; /* per-mdi TinySoundFont instance, NULL unless a soundfont is loaded */
+    void *mafm_synth; /* per-mdi Yamaha FM instance, NULL unless a SMAF file carries custom voices */
 };
 
 

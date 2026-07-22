@@ -12,6 +12,7 @@ LOCAL_SRC_FILES := \
 	src/f_hmp.c \
 	src/f_midi.c \
 	src/f_mus.c \
+	src/f_smaf.c \
 	src/f_xmidi.c \
 	src/file_io.c \
 	src/gus_pat.c \
@@ -28,6 +29,7 @@ LOCAL_SRC_FILES := \
 	src/wm_error.c \
 	src/xmi2mid.c \
 	src/hmp2mid.c \
-	src/hmi2mid.c
+	src/hmi2mid.c \
+	src/smaf2mid.c
 
 include $(BUILD_SHARED_LIBRARY)

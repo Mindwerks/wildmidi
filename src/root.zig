@@ -17,6 +17,7 @@ pub const WildMidiError = error{
     UnableToConvert,
     NotAMusFile,
     NotAnXmiFile,
+    NotASmafFile,
     InvalidErrorCode,
 };
 
@@ -40,6 +41,7 @@ fn handleError(error_status: c_int) WildMidiError!void {
         wm_error.WM_ERR_CONVERT => error.UnableToConvert,
         wm_error.WM_ERR_NOT_MUS => error.NotAMusFile,
         wm_error.WM_ERR_NOT_XMI => error.NotAnXmiFile,
+        wm_error.WM_ERR_NOT_SMAF => error.NotASmafFile,
         else => error.InvalidErrorCode,
     };
 }
@@ -158,7 +160,7 @@ const logger = std.log.scoped(.wildmidi);
 const testing = std.testing;
 
 fn freepatsConfig(allocator: std.mem.Allocator) ![:0]u8 {
-    const freepats_path = testing.environ.getAlloc(allocator, "FREEPATS_PATH") catch {
+    const freepats_path = std.process.getEnvVarOwned(allocator, "FREEPATS_PATH") catch {
         return error.SkipZigTest;
     };
     defer allocator.free(freepats_path);

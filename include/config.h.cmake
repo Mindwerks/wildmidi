@@ -62,6 +62,9 @@
 /* define this to enable SoundFont2 support via TinySoundFont */
 #cmakedefine WILDMIDI_SF2 1
 
+/* define this to enable Yamaha MA-series FM synthesis for SMAF files */
+#cmakedefine WILDMIDI_MAFM 1
+
 /* Define if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H
 
