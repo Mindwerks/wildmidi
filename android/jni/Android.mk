@@ -2,9 +2,10 @@ LOCAL_PATH := $(call my-dir)/../..
 include $(CLEAR_VARS)
 
 LOCAL_MODULE     := WildMidi
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/android/jni $(LOCAL_PATH)/include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/android/jni $(LOCAL_PATH)/include $(LOCAL_PATH)/src
 LOCAL_ARM_MODE   := arm
 LOCAL_CFLAGS     += -DWILDMIDI_BUILD
+LOCAL_CFLAGS     += -DWILDMIDI_MAFM
 LOCAL_CFLAGS     += -fvisibility=hidden -DSYM_VISIBILITY
 
 LOCAL_SRC_FILES := \
@@ -12,6 +13,7 @@ LOCAL_SRC_FILES := \
 	src/f_hmp.c \
 	src/f_midi.c \
 	src/f_mus.c \
+	src/f_smaf.c \
 	src/f_xmidi.c \
 	src/file_io.c \
 	src/gus_pat.c \
@@ -22,12 +24,17 @@ LOCAL_SRC_FILES := \
 	src/reverb.c \
 	src/sample.c \
 	src/sf2.c \
+	src/mafm.c \
+	src/mafm/ma_fm_core.c \
+	src/mafm/smaf_voice.c \
+	src/mafm/yamaha_adpcm.c \
 	src/synth.c \
 	src/opl3.c \
 	src/wildmidi_lib.c \
 	src/wm_error.c \
 	src/xmi2mid.c \
 	src/hmp2mid.c \
-	src/hmi2mid.c
+	src/hmi2mid.c \
+	src/smaf2mid.c
 
 include $(BUILD_SHARED_LIBRARY)

@@ -27,7 +27,7 @@ PLAYER=wildmidi.exe
 PLAYER_STATIC=wildmidi_static.exe
 PLAYER_LIBS=mmpm2.lib
 
-CFLAGS_LIB= $(CFLAGS) -DWILDMIDI_BUILD
+CFLAGS_LIB= $(CFLAGS) -DWILDMIDI_BUILD -DWILDMIDI_MAFM
 CFLAGS_EXE= $(CFLAGS)
 !ifeq target static
 BLD_TARGET=$(LIBSTATIC) $(PLAYER_STATIC)
@@ -36,9 +36,9 @@ CFLAGS_LIB+= $(DLLFLAGS)
 BLD_TARGET=$(DLLNAME) $(PLAYER)
 !endif
 INCPATH=-I"$(%WATCOM)/h/os2" -I"$(%WATCOM)/h"
-INCLUDES=$(INCPATH) -I. -I"../include"
+INCLUDES=$(INCPATH) -I. -I"../include" -I"../src"
 
-OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj hmp2mid.obj hmi2mid.obj internal_midi.obj patches.obj sample.obj sf2.obj synth.obj opl3.obj
+OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj f_smaf.obj mus2mid.obj xmi2mid.obj hmp2mid.obj hmi2mid.obj smaf2mid.obj internal_midi.obj patches.obj sample.obj sf2.obj mafm.obj ma_fm_core.obj smaf_voice.obj yamaha_adpcm.obj synth.obj opl3.obj
 PLAYER_OBJ=wm_tty.obj msleep.obj getopt_long.obj out_none.obj out_wave.obj out_dart.obj wildmidi.obj
 
 all: $(BLD_TARGET)
@@ -58,7 +58,7 @@ $(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
 	wlink N $@ SYS OS2V2 OP q LIBR {$(LIBSTATIC) $(PLAYER_LIBS)} F {$(PLAYER_OBJ)}
 
 # rules for library objs:
-.c: ../src;../src/player
+.c: ../src;../src/player;../src/mafm
 .c.obj:
 	wcc386 $(CFLAGS_LIB) $(INCLUDES) -fo=$^@ $<
 #silence unused function tsf_xx() warnings in sf2.c

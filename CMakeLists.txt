@@ -69,6 +69,7 @@ OPTION(WANT_OPENAL "Include OpenAL (Cross Platform) support" OFF)
 OPTION(WANT_DEVTEST "Build WildMIDI DevTest file to check files" OFF)
 
 OPTION(WANT_SF2 "SoundFont2 (SF2) support via TinySoundFont" ON)
+OPTION(WANT_MAFM "Yamaha MA-series FM synthesis for SMAF files" ON)
 
 CMAKE_DEPENDENT_OPTION(WANT_MP_BUILD "Build with Multiple Processes (/MP)" OFF "WIN32;MSVC" OFF)
 CMAKE_DEPENDENT_OPTION(WANT_OSX_DEPLOYMENT "OSX Deployment" OFF "APPLE" OFF)
@@ -210,13 +211,17 @@ check_symbol_exists(sqrtf math.h HAVE_SQRTF)
 cmake_pop_check_state()
 
 # ######### General setup ##########
-INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include")
+INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/src")
 IF (NOT HAVE_STDINT_H) # AND NOT HAVE_INTTYPES_H
     INCLUDE_DIRECTORIES(BEFORE "${PROJECT_SOURCE_DIR}/include/stdint")
 ENDIF()
 
 IF (WANT_SF2)
     SET(WILDMIDI_SF2 1)
+ENDIF()
+
+IF (WANT_MAFM)
+    SET(WILDMIDI_MAFM 1)
 ENDIF()
 
 IF (AMIGA OR AROS)

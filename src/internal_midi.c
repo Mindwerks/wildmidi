@@ -43,6 +43,9 @@
 #ifdef WILDMIDI_SF2
 #include "sf2.h"
 #endif
+#ifdef WILDMIDI_MAFM
+#include "mafm.h"
+#endif
 
 #ifndef SIZE_MAX
 #define SIZE_MAX ((size_t) (-1))
@@ -2046,6 +2049,9 @@ void _WM_freeMDI(struct _mdi *mdi) {
     free(mdi->mix_buffer);
 #ifdef WILDMIDI_SF2
     _WM_SF2_FreeSynth(mdi->sf2_synth);
+#endif
+#ifdef WILDMIDI_MAFM
+    _WM_MAFM_FreeSynth(mdi->mafm_synth);
 #endif
     if (mdi->tmp_info) {
         free(mdi->tmp_info->copyright);

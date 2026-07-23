@@ -47,6 +47,7 @@
 #include "f_midi.h"
 #include "f_mus.h"
 #include "f_xmidi.h"
+#include "f_smaf.h"
 #include "patches.h"
 #include "sample.h"
 #include "synth.h"
@@ -54,8 +55,12 @@
 #include "xmi2mid.h"
 #include "hmp2mid.h"
 #include "hmi2mid.h"
+#include "smaf2mid.h"
 #ifdef WILDMIDI_SF2
 #include "sf2.h"
+#endif
+#ifdef WILDMIDI_MAFM
+#include "mafm.h"
 #endif
 
 /*
@@ -1681,6 +1686,11 @@ WM_SYMBOL int WildMidi_ConvertBufferToMidi (const uint8_t *in, uint32_t insize,
             return (-1);
         }
     }
+    else if (insize >= 8 && !memcmp(in, "MMMD", 4)) {
+        if (_WM_smaf2midi(in, insize, out, outsize) < 0) {
+            return (-1);
+        }
+    }
     else if (!memcmp(in, "MThd", 4)) {
         _WM_GLOBAL_ERROR(0, "Already a midi file", 0);
         return (-1);
@@ -1919,6 +1929,8 @@ static midi *parse_midi_buffer(const uint8_t *mididata, uint32_t midisize) {
         ret = (void *) _WM_ParseNewMus(mididata, midisize);
     } else if (memcmp(mididata, xmi_hdr, 4) == 0) {
         ret = (void *) _WM_ParseNewXmi(mididata, midisize);
+    } else if (memcmp(mididata, "MMMD", 4) == 0) {
+        ret = (void *) _WM_ParseNewSmaf(mididata, midisize);
     } else {
         ret = (void *) _WM_ParseNewMidi(mididata, midisize);
     }
@@ -2040,6 +2052,11 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
             _WM_SF2_Reset(mdi->sf2_synth);
         }
 #endif
+#ifdef WILDMIDI_MAFM
+        if (mdi->mafm_synth) {
+            _WM_MAFM_Reset(mdi->mafm_synth);
+        }
+#endif
     }
 
     if ((mdi->extra_info.current_sample + mdi->samples_to_mix) > *sample_pos) {
@@ -2153,6 +2170,9 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
 #ifdef WILDMIDI_SF2
         if (mdi->sf2_synth) _WM_SF2_Reset(mdi->sf2_synth);
 #endif
+#ifdef WILDMIDI_MAFM
+        if (mdi->mafm_synth) _WM_MAFM_Reset(mdi->mafm_synth);
+#endif
 
     } else if (nextsong == 1) {
         /* goto start of next song */
@@ -2187,11 +2207,17 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
 #ifdef WILDMIDI_SF2
         if (mdi->sf2_synth) _WM_SF2_Reset(mdi->sf2_synth);
 #endif
+#ifdef WILDMIDI_MAFM
+        if (mdi->mafm_synth) _WM_MAFM_Reset(mdi->mafm_synth);
+#endif
     }
 
     while (event != event_new) {
 #ifdef WILDMIDI_SF2
         if (mdi->sf2_synth) _WM_SF2_Event(mdi->sf2_synth, mdi, event);
+#endif
+#ifdef WILDMIDI_MAFM
+        if (mdi->mafm_synth) _WM_MAFM_Event(mdi->mafm_synth, mdi, event);
 #endif
         event->do_event(mdi, &event->event_data);
         mdi->extra_info.current_sample += event->samples_to_next;
@@ -2349,6 +2375,130 @@ static int WM_GetOutput_SF2(midi * handle, int8_t *buffer, uint32_t size) {
 }
 #endif /* WILDMIDI_SF2 */
 
+#ifdef WILDMIDI_MAFM
+/* Yamaha FM output path.  Structurally identical to WM_GetOutput_SF2: the
+ * event list keeps channel/meta state in sync while the FM synth generates the
+ * sound and renders PCM into the mix buffer. */
+static int WM_GetOutput_MAFM(midi * handle, int8_t *buffer, uint32_t size) {
+    uint32_t buffer_used = 0;
+    uint32_t i;
+    struct _mdi *mdi = (struct _mdi *) handle;
+    uint32_t real_samples_to_mix = 0;
+    int32_t left_mix, right_mix;
+    struct _event *event;
+    int32_t *tmp_buffer;
+    int32_t *out_buffer;
+    int end_encountered;
+
+    _WM_Lock(&mdi->lock);
+    event = mdi->current_event;
+
+    memset(buffer, 0, size);
+
+    if ( (size / 2) > mdi->mix_buffer_size) {
+        uint32_t new_size = ((size / 2) <= (mdi->mix_buffer_size * 2))
+            ? mdi->mix_buffer_size + MEM_CHUNK : size / 2;
+        int32_t *new_buf = (int32_t *) realloc(mdi->mix_buffer, new_size * sizeof(int32_t));
+        if (new_buf == NULL) {
+            _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, errno);
+            _WM_Unlock(&mdi->lock);
+            return (-1);
+        }
+        mdi->mix_buffer = new_buf;
+        mdi->mix_buffer_size = new_size;
+    }
+
+    tmp_buffer = mdi->mix_buffer;
+
+    memset(tmp_buffer, 0, ((size / 2) * sizeof(int32_t)));
+    out_buffer = tmp_buffer;
+
+    do {
+        if (__builtin_expect((!mdi->samples_to_mix), 0)) {
+            end_encountered = 0;
+            while ((!mdi->samples_to_mix) && (event->do_event)) {
+                _WM_MAFM_Event(mdi->mafm_synth, mdi, event);
+                event->do_event(mdi, &event->event_data);
+                if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack) && !end_encountered) {
+                    end_encountered = 1;
+                    _WM_MAFM_Reset(mdi->mafm_synth);
+                    _WM_ResetToStart(mdi);
+                    event = mdi->current_event;
+                } else {
+                    mdi->samples_to_mix += event->samples_to_next;
+                    event++;
+                    mdi->current_event = event;
+                }
+            }
+
+            if (__builtin_expect((!mdi->samples_to_mix), 0)) {
+                if (mdi->extra_info.current_sample >= mdi->extra_info.approx_total_samples) {
+                    if ((!_WM_MAFM_ActiveVoices(mdi->mafm_synth))
+                        || ((mdi->extra_info.current_sample - mdi->extra_info.approx_total_samples)
+                             > ((uint32_t)_WM_SampleRate * 10))) {
+                        break;
+                    }
+                    mdi->samples_to_mix = size >> 2;
+                } else if ((mdi->extra_info.approx_total_samples
+                             - mdi->extra_info.current_sample) > (size >> 2)) {
+                    mdi->samples_to_mix = size >> 2;
+                } else {
+                    mdi->samples_to_mix = mdi->extra_info.approx_total_samples
+                                           - mdi->extra_info.current_sample;
+                }
+            }
+        }
+        if (__builtin_expect((mdi->samples_to_mix > (size >> 2)), 1)) {
+            real_samples_to_mix = size >> 2;
+        } else {
+            real_samples_to_mix = mdi->samples_to_mix;
+            if (real_samples_to_mix == 0) {
+                continue;
+            }
+        }
+
+        _WM_MAFM_Render(mdi->mafm_synth, tmp_buffer, real_samples_to_mix);
+        tmp_buffer += real_samples_to_mix * 2;
+
+        buffer_used += real_samples_to_mix * 4;
+        size -= (real_samples_to_mix << 2);
+        mdi->extra_info.current_sample += real_samples_to_mix;
+        mdi->samples_to_mix -= real_samples_to_mix;
+    } while (size);
+
+    tmp_buffer = out_buffer;
+
+    if (mdi->extra_info.mixer_options & WM_MO_REVERB) {
+        _WM_do_reverb(mdi->reverb, tmp_buffer, (buffer_used / 2));
+    }
+
+    for (i = 0; i < buffer_used; i += 4) {
+        left_mix = *tmp_buffer++;
+        right_mix = *tmp_buffer++;
+
+        if (left_mix > 32767) left_mix = 32767;
+        else if (left_mix < -32768) left_mix = -32768;
+        if (right_mix > 32767) right_mix = 32767;
+        else if (right_mix < -32768) right_mix = -32768;
+
+#ifdef WORDS_BIGENDIAN
+        (*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
+        (*buffer++) = left_mix & 0xff;
+        (*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+        (*buffer++) = right_mix & 0xff;
+#else
+        (*buffer++) = left_mix & 0xff;
+        (*buffer++) = ((left_mix >> 8) & 0x7f) | ((left_mix >> 24) & 0x80);
+        (*buffer++) = right_mix & 0xff;
+        (*buffer++) = ((right_mix >> 8) & 0x7f) | ((right_mix >> 24) & 0x80);
+#endif
+    }
+
+    _WM_Unlock(&mdi->lock);
+    return (buffer_used);
+}
+#endif /* WILDMIDI_MAFM */
+
 WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
     if (__builtin_expect((!WM_Initialized), 0)) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_INIT, NULL, 0);
@@ -2370,6 +2520,11 @@ WM_SYMBOL int WildMidi_GetOutput(midi * handle, int8_t *buffer, uint32_t size) {
         return (-1);
     }
 
+#ifdef WILDMIDI_MAFM
+    if (((struct _mdi *) handle)->mafm_synth) {
+        return (WM_GetOutput_MAFM(handle, buffer, size));
+    }
+#endif
 #ifdef WILDMIDI_SF2
     if (((struct _mdi *) handle)->sf2_synth) {
         return (WM_GetOutput_SF2(handle, buffer, size));
