@@ -50,7 +50,7 @@ PLAYER_OBJ=wm_tty.o msleep.o getopt_long.o out_none.o out_wave.o out_dart.o wild
 all: $(LIB_DLL) $(IMPLIB_A) $(IMPLIB_OMF) $(LIBSTATIC) $(PLAYER)
 
 $(LIB_DLL): $(OBJ) $(DEFNAME)
-	$(LD) $(LDFLAGS_DLL) -o $(LIB_DLL) $(DEFNAME) $(OBJ) $(LIBS)
+	$(LD) $(LDFLAGS_DLL) -o $@ $(DEFNAME) $(OBJ) $(LIBS)
 $(IMPLIB_A): $(LIB_DLL)
 	$(EMXIMP) -o $@ $(LIB_DLL)
 $(IMPLIB_OMF): $(IMPLIB_A)
@@ -58,9 +58,8 @@ $(IMPLIB_OMF): $(IMPLIB_A)
 $(LIBSTATIC): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
 	$(RANLIB) $@
-
-$(PLAYER): $(LIBSTATIC) $(PLAYER_OBJ)
-	$(LD) -o $@ $(PLAYER_OBJ) $(PLAYER_LIBS) $(LDFLAGS)
+$(PLAYER): $(LIB_DLL) $(PLAYER_OBJ)
+	$(LD) $(LDFLAGS) -o $@ $(PLAYER_OBJ) $(PLAYER_LIBS)
 
 # rules for library objs:
 %.o: ../src/%.c
