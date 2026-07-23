@@ -1,20 +1,26 @@
 # Makefile for OS/2 using GCC/EMX KLIBC environment.
-# builds static wildmidi.a library and wildmidi.exe player
+# builds wildmidi.dll, its import libraries, static wildmidi.a,
+# and wildmidi.exe player
 
 ifeq ($(CROSS),)
 CC=gcc
 AR=ar
 RANLIB=ranlib
+EMXIMP=emximp
+EMXOMF=emxomf
 else
 CC=$(CROSS)-gcc
 AR=$(CROSS)-ar
 RANLIB=$(CROSS)-ranlib
+EMXIMP=emximp
+EMXOMF=emxomf
 endif
 LD=$(CC)
 
 INCLUDES=-I. -I../include
 CFLAGS = $(INCLUDES) -Wall -W -Zmt
 LDFLAGS = -Zomf -Zmt
+LDFLAGS_DLL = -Zdll -Zomf -Zmt
 ARFLAGS = cr
 
 ifeq ($(DEBUG),1)
@@ -22,10 +28,16 @@ CFLAGS += -g
 else
 CFLAGS += -O2 -ffast-math
 LDFLAGS+= -s
+LDFLAGS_DLL+= -s
 endif
 
-LIBSTATIC=wildmidi.a
-PLAYER_STATIC=wildmidi.exe
+LIB_DLL   = wildmidi.dll
+IMPLIB_A  = wildmidi_dll.a
+IMPLIB_OMF= wildmidi.lib
+DEFNAME   = wildmidi.def
+LIBSTATIC = wildmidi.a
+LIBS      =
+PLAYER    = wildmidi.exe
 PLAYER_LIBS=-L. -lwildmidi
 PLAYER_LIBS+=-lmmpm2
 
@@ -35,13 +47,19 @@ CFLAGS_EXE= $(CFLAGS)
 OBJ=wm_error.o file_io.o lock.o wildmidi_lib.o reverb.o gus_pat.o f_xmidi.o f_mus.o f_hmp.o f_midi.o f_hmi.o mus2mid.o xmi2mid.o hmp2mid.o hmi2mid.o internal_midi.o patches.o sample.o sf2.o synth.o opl3.o
 PLAYER_OBJ=wm_tty.o msleep.o getopt_long.o out_none.o out_wave.o out_dart.o wildmidi.o
 
-all: $(LIBSTATIC) $(PLAYER_STATIC)
+all: $(LIB_DLL) $(IMPLIB_A) $(IMPLIB_OMF) $(LIBSTATIC) $(PLAYER)
 
+$(LIB_DLL): $(OBJ) $(DEFNAME)
+	$(LD) $(LDFLAGS_DLL) -o $(LIB_DLL) $(DEFNAME) $(OBJ) $(LIBS)
+$(IMPLIB_A): $(LIB_DLL)
+	$(EMXIMP) -o $@ $(LIB_DLL)
+$(IMPLIB_OMF): $(IMPLIB_A)
+	$(EMXOMF) -o $@ $<
 $(LIBSTATIC): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
-	-$(RANLIB) $@
+	$(RANLIB) $@
 
-$(PLAYER_STATIC): $(LIBSTATIC) $(PLAYER_OBJ)
+$(PLAYER): $(LIBSTATIC) $(PLAYER_OBJ)
 	$(LD) -o $@ $(PLAYER_OBJ) $(PLAYER_LIBS) $(LDFLAGS)
 
 # rules for library objs:
@@ -64,6 +82,6 @@ wildmidi.o: ../src/player/wildmidi.c
 	$(CC) -c $(CFLAGS_EXE) -o $@ $<
 
 clean:
-	-del *.o
+	$(RM) *.o
 distclean: clean
-	-del $(LIBSTATIC) $(PLAYER_STATIC)
+	$(RM) $(LIB_DLL) $(IMPLIB_A) $(IMPLIB_OMF) $(LIBSTATIC) $(PLAYER)

@@ -12,6 +12,7 @@ Edit files for version number (and possibly other changes) :
 Edit files for possibly other changes:
 - djgpp/Makefile
 - os2/makefile*
+- os2/wildmidi.def (make sure to update version, and add any new exports here..)
 - amiga/Makefile*
 - amiga/*.cfg
 - android/*

@@ -1,0 +1,25 @@
+LIBRARY WILDMIDI INITINSTANCE TERMINSTANCE
+DATA MULTIPLE NONSHARED
+DESCRIPTION "libWildMidi 0.5.0"
+EXPORTS
+  _WildMidi_GetVersion
+  _WildMidi_Init
+  _WildMidi_Shutdown
+  _WildMidi_InitVIO
+  _WildMidi_Open
+  _WildMidi_OpenBuffer
+  _WildMidi_Close
+  _WildMidi_GetOutput
+  _WildMidi_GetError
+  _WildMidi_ClearError
+  _WildMidi_MasterVolume
+  _WildMidi_FastSeek
+  _WildMidi_SongSeek
+  _WildMidi_SetOption
+  _WildMidi_GetInfo
+  _WildMidi_GetString
+  _WildMidi_GetLyric
+  _WildMidi_SetCvtOption
+  _WildMidi_GetMidiOutput
+  _WildMidi_ConvertToMidi
+  _WildMidi_ConvertBufferToMidi

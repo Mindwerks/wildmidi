@@ -32,7 +32,9 @@ Requirements:
 * cmake
 * GCC or clang / Xcode / VisualStudio / MinGW or MinGW-w64
 * DOS port: DJGPP / GNU make
-* OS/2 port: OpenWatcom (tested with version 1.9 and newer)
+* OS/2 port: OpenWatcom (tested with version 1.9 and newer), or
+  EMX/GCC KLIBC environment (build tested under linux using
+  cross-os2emx toolchain at https://github.com/komh/cross-os2emx)
 * Nintendo 3DS port: devkitARM
 * Nintendo Wii port: devkitPPC
 * Nintendo Switch port: devkitA64
