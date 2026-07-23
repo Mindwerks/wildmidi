@@ -11,7 +11,7 @@ Edit files for version number (and possibly other changes) :
 
 Edit files for possibly other changes:
 - djgpp/Makefile
-- os2/makefile
+- os2/makefile*
 - amiga/Makefile*
 - amiga/*.cfg
 - android/*
@@ -19,4 +19,4 @@ Edit files for possibly other changes:
 - macosx/Makefile (make sure to update dylib versions here..)
 - mingw/Makefile
 - msvc/Makefile*
-- wan32wat/makefile
+- win32wat/makefile

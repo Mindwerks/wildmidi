@@ -1,9 +1,9 @@
 # Makefile for OS/2 using Open Watcom compiler.
 #
-# wmake
+# wmake -f makefile.wat
 # - builds wildmidi.dll and its import lib (wildmidi.lib)
 #
-# wmake target=static
+# wmake -f makefile.wat target=static
 # - builds the static library wildmidi_static.lib
 
 !ifndef target

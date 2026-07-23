@@ -16,11 +16,11 @@ jobs:
       - uses: open-watcom/setup-watcom@v0
       - name: Build library and player
         run: |
-          cd os2 && wmake
+          cd os2 && wmake -f makefile.wat
           cd ..
       - name: distclean
         run: |
-          cd os2 && wmake distclean
+          cd os2 && wmake -f makefile.wat distclean
           cd ..
 
   windows:
