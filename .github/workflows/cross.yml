@@ -63,3 +63,20 @@ jobs:
             NDK_PROJECT_PATH=. \
             APP_BUILD_SCRIPT=jni/Android.mk \
             NDK_APPLICATION_MK=jni/Application.mk
+
+  os2-emx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup cross-os2emx
+        uses: komh/setup-cross-os2emx@v1
+        with:
+          platform: linux-x64
+      - name: Build
+        run: |
+          make -C os2 -f makefile.emx CROSS=i686-pc-os2-emx
+      - name: distclean
+        run: |
+          make -C os2 -f makefile.emx distclean
