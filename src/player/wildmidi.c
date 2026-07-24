@@ -265,6 +265,7 @@ static struct option const long_options[] = {
     { "playfrom", 1, NULL, 'i'},
     { "playto", 1, NULL, 'j'},
     { "opl3", 0, NULL, 'O' },
+    { "loop", 0, NULL, 'L' },
     { NULL, 0, NULL, 0 }
 };
 
@@ -303,7 +304,8 @@ static void do_help(void) {
     printf("                      defaults to: %s\n", WILDMIDI_CFG);
     printf("  -O    --opl3        Use built-in OPL3 FM synth (no cfg/sf2 needed)\n");
     printf("  -m V  --mastervol=V Set the master volume (0..127), default is 100\n");
-    printf("  -b    --reverb      Enable final output reverb engine\n\n");
+    printf("  -b    --reverb      Enable final output reverb engine\n");
+    printf("  -L    --loop        Loop the file at end-of-track\n\n");
 }
 
 static void do_available_outputs(void) {
@@ -384,7 +386,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:O", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:OL", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -423,6 +425,9 @@ int main(int argc, char **argv) {
             break;
         case 'b': /* Reverb */
             mixer_options |= WM_MO_REVERB;
+            break;
+        case 'L': /* Loop the file */
+            mixer_options |= WM_MO_LOOP;
             break;
         case 'm': /* Master Volume */
             master_volume = (uint8_t) atoi(optarg);
@@ -628,7 +633,7 @@ int main(int argc, char **argv) {
         modes[0] = (mixer_options & WM_MO_LOG_VOLUME)? 'l' : ' ';
         modes[1] = (mixer_options & WM_MO_REVERB)? 'r' : ' ';
         modes[2] = (mixer_options & WM_MO_ENHANCED_RESAMPLING)? 'e' : ' ';
-        modes[3] = ' ';
+        modes[3] = (mixer_options & WM_MO_LOOP)? 'L' : ' ';
         modes[4] = '\0';
 
         printf("\r\n[Approx %2um %2us Total]\r\n", apr_mins, apr_secs);
