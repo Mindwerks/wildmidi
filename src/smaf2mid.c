@@ -173,7 +173,13 @@ static uint32_t timebase_ms(uint8_t code) {
 /* Write a channel-voice event at absolute time at_ms, emitting the delta. */
 static void write_event(struct smaf_ctx *ctx, uint32_t at_ms,
                         uint8_t status, uint8_t d1, uint8_t d2, int have_d2) {
-    uint32_t delta = at_ms - ctx->last_event_ms;
+    uint32_t delta;
+    /* A malformed file can wrap cur_ms (durations and gate times are
+     * attacker-controlled VLQs), putting an event before the previous one.
+     * The unsigned subtraction would then yield a delta near UINT32_MAX -
+     * about 46 days of silence at 1 tick == 1 ms.  Clamp instead. */
+    if (at_ms < ctx->last_event_ms) at_ms = ctx->last_event_ms;
+    delta = at_ms - ctx->last_event_ms;
     write_varlen(ctx, delta);
     write1(ctx, status);
     write1(ctx, d1);
@@ -552,6 +558,16 @@ static int hp_pitch(uint8_t octave, uint8_t note, uint8_t oct_shift) {
 /* Default velocity for HandyPhone notes, which carry no velocity byte. */
 #define HP_NOTE_VELOCITY 100
 
+/* Map a track's SMAF channel to a MIDI channel for a MELODIC voice.
+ * MIDI channel 9 is the GM rhythm channel, so a melodic voice landing there
+ * (track 2 channel 1 with base_ch 8, for instance) would be rendered as drums
+ * and would also collide with the percussion reroute target.  Skip over 9;
+ * four tracks of four channels still fit in the remaining 15 channels. */
+static uint8_t hp_melodic_channel(uint8_t base_ch, uint8_t ch) {
+    uint8_t c = (uint8_t)(base_ch + ch);
+    return (uint8_t)((c >= 9) ? ((c + 1) & 0x0f) : c);
+}
+
 /* Decode one HandyPhone track's Mtsq into the shared event list.
  *   base_ch  : MIDI channel for this track's SMAF channel 0 (0,4,8,12).
  *   perc_mask: bit c set => SMAF channel c is a percussion channel and is
@@ -610,7 +626,8 @@ static int decode_handyphone(struct hp_events *e, const uint8_t *seq,
                 uint8_t val, midi_ch;
                 if (p >= seqlen) break;
                 val = seq[p++];
-                midi_ch = (perc_mask & (1 << ch)) ? 9 : (base_ch + ch);
+                midi_ch = (perc_mask & (1 << ch))
+                        ? 9 : hp_melodic_channel(base_ch, ch);
                 switch (data) {
                 case 0x0:                       /* program change */
                     program[ch] = val & 0x7f;
@@ -671,7 +688,7 @@ static int decode_handyphone(struct hp_events *e, const uint8_t *seq,
                 midi_ch = 9;
                 pitch = program[ch] & 0x7f;
             } else {
-                midi_ch = base_ch + ch;
+                midi_ch = hp_melodic_channel(base_ch, ch);
                 pitch = hp_pitch(octave, note, oct_shift[ch]);
             }
             if (hp_push(e, cur_ms, 0x90 | midi_ch,
