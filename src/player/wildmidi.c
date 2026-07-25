@@ -40,6 +40,7 @@
 
 #include "wildplay.h"
 #include "filenames.h"
+#include "playlist.h"
 #include "wm_tty.h"
 
 /* available outputs */
@@ -266,6 +267,7 @@ static struct option const long_options[] = {
     { "playto", 1, NULL, 'j'},
     { "opl3", 0, NULL, 'O' },
     { "loop", 0, NULL, 'L' },
+    { "shuffle", 0, NULL, 'S' },
     { NULL, 0, NULL, 0 }
 };
 
@@ -305,7 +307,12 @@ static void do_help(void) {
     printf("  -O    --opl3        Use built-in OPL3 FM synth (no cfg/sf2 needed)\n");
     printf("  -m V  --mastervol=V Set the master volume (0..127), default is 100\n");
     printf("  -b    --reverb      Enable final output reverb engine\n");
-    printf("  -L    --loop        Loop the file at end-of-track\n\n");
+    printf("Playlist Options:\n");
+    printf("  -L    --loop        Loop a single file at end-of-track, or repeat\n");
+    printf("                      the playlist when more than one file is given\n");
+    printf("  -S    --shuffle     Play the files in random order\n\n");
+    printf("A filename may also be a directory, which is searched recursively\n");
+    printf("for playable files.\n\n");
 }
 
 static void do_available_outputs(void) {
@@ -330,7 +337,7 @@ static void do_version(void) {
 }
 
 static void do_syntax(void) {
-    printf("Usage: wildmidi [options] filename.mid\n\n");
+    printf("Usage: wildmidi [options] <filename.mid|directory> ...\n\n");
 }
 
 static char config_file[1024];
@@ -376,6 +383,13 @@ int main(int argc, char **argv) {
     unsigned long int play_from = 0;
     unsigned long int play_to = 0;
 
+    playlist pl = { NULL, 0, 0 };
+    unsigned int pl_index = 0;
+    int want_loop = 0;
+    int want_shuffle = 0;
+    int played_any = 0;
+    int from_directory = 0;
+
     memset(lyrics,' ',MAX_LYRIC_CHAR);
     memset(display_lyrics,' ',MAX_DISPLAY_LYRICS);
 
@@ -386,7 +400,7 @@ int main(int argc, char **argv) {
 
     do_version();
     while (1) {
-        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:OL", long_options,
+        i = getopt_long(argc, argv, "0vho:tx:g:P:f:lr:c:m:btak:p:ed:nsi:j:OLS", long_options,
                 &option_index);
         if (i == -1)
             break;
@@ -426,8 +440,11 @@ int main(int argc, char **argv) {
         case 'b': /* Reverb */
             mixer_options |= WM_MO_REVERB;
             break;
-        case 'L': /* Loop the file */
-            mixer_options |= WM_MO_LOOP;
+        case 'L': /* Loop a single file, or repeat the playlist */
+            want_loop = 1;
+            break;
+        case 'S': /* Shuffle the playlist */
+            want_shuffle = 1;
             break;
         case 'm': /* Master Volume */
             master_volume = (uint8_t) atoi(optarg);
@@ -547,6 +564,37 @@ int main(int argc, char **argv) {
         return (0);
     }
 
+    /* Build the playlist, expanding any directory into the files under it. */
+    if (!test_midi) {
+        for (i = optind; i < argc; i++) {
+            /* An unusable argument is not fatal as long as something else
+             * on the command line gave us files to play.  */
+            if (playlist_add(&pl, argv[i]) == PLAYLIST_ADD_DIR)
+                from_directory = 1;
+        }
+
+        if (pl.count == 0) {
+            fprintf(stderr, "ERROR: No files to play\r\n");
+            playlist_free(&pl);
+            do_syntax();
+            return (1);
+        }
+
+        if (want_shuffle) {
+            playlist_seed_random();
+            playlist_shuffle(&pl);
+        }
+
+        /* With a single named file -L loops it at end-of-track, which the
+         * library does for us.  Anything that came from a directory is a
+         * playlist and repeats here instead, even when it holds one file,
+         * or we would never reach the next file. */
+        if (want_loop && pl.count == 1 && !from_directory)
+            mixer_options |= WM_MO_LOOP;
+    } else if (want_loop) {
+        mixer_options |= WM_MO_LOOP;
+    }
+
     if (!config_file[0]) {
         strncpy(config_file, WILDMIDI_CFG, sizeof(config_file));
         config_file[sizeof(config_file) - 1] = 0;
@@ -591,22 +639,23 @@ int main(int argc, char **argv) {
 
     WildMidi_MasterVolume(master_volume);
 
-    while (optind < argc || test_midi) {
+    while (pl_index < pl.count || test_midi) {
         WildMidi_ClearError();
         if (!test_midi) {
-            const char *real_file = FIND_LAST_DIRSEP(argv[optind]);
+            const char *real_file = FIND_LAST_DIRSEP(pl.files[pl_index]);
 
-            if (!real_file) real_file = argv[optind];
+            if (!real_file) real_file = pl.files[pl_index];
             else real_file++;
             printf("\rPlaying %s ", real_file);
 
-            midi_ptr = WildMidi_Open(argv[optind]);
-            optind++;
+            midi_ptr = WildMidi_Open(pl.files[pl_index]);
+            pl_index++;
             if (midi_ptr == NULL) {
                 ret_err = WildMidi_GetError();
                 printf(" Skipping: %s\r\n",ret_err);
-                continue;
+                goto NEXTFILE;
             }
+            played_any = 1;
         } else {
             if (test_count == midi_test_max) {
                 break;
@@ -745,8 +794,10 @@ int main(int argc, char **argv) {
                         fprintf(stderr, "%s\r\n",ret_err);
                         WildMidi_ClearError();
                     } else {
-                        char *real_file = FIND_LAST_DIRSEP(argv[optind-1]);
-                        if (!real_file) real_file = argv[optind-1];
+                        char *cur_file = test_midi ? (char *)"testmidi" :
+                                                     pl.files[pl_index-1];
+                        char *real_file = FIND_LAST_DIRSEP(cur_file);
+                        if (!real_file) real_file = cur_file;
                         else real_file++;
                         mk_midifile_name(real_file);
                         printf("\rWriting %s: %u bytes.\r\n", midi_file, getmidisize);
@@ -840,6 +891,20 @@ int main(int argc, char **argv) {
         }
         memset(output_buffer, 0, 16384);
         available_outputs[playback_id]->send_out(output_buffer, 16384);
+
+        NEXTFILE:
+        /* -L with more than one file repeats the whole playlist.  Give up if
+         * a full pass played nothing, so a list of bad files cannot spin. */
+        if (want_loop && !test_midi && pl_index >= pl.count) {
+            if (!played_any) {
+                fprintf(stderr, "Nothing in the playlist could be played.\r\n");
+                break;
+            }
+            played_any = 0;
+            pl_index = 0;
+            if (want_shuffle)
+                playlist_shuffle(&pl);
+        }
     }
 
 end1:
@@ -850,6 +915,7 @@ end1:
 end2:
     available_outputs[playback_id]->close_out();
     free(output_buffer);
+    playlist_free(&pl);
     if (WildMidi_Shutdown() == -1) {
         ret_err = WildMidi_GetError();
         fprintf(stderr, "OOPS: failure shutting down libWildMidi\r\n%s\r\n", ret_err);

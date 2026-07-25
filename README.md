@@ -42,6 +42,15 @@ Requirements:
 
 CHANGELOG
 
+0.5.1 (unreleased)
+* Player: playlist support. A filename given to the player may now be a
+  directory, which is searched recursively for files to play (bug #215.)
+* Player: new `-S/--shuffle` switch plays the files in random order.
+* Player: new `-L/--loop` switch repeats playback at the end. With a single
+  file the file itself is looped at end-of-track; with several files, or a
+  directory, the whole playlist is repeated instead, reshuffling each pass
+  when combined with `-S`.
+
 0.5.0 (2026-07-24)
 * SoundFont2 (SF2) rendering support via TinySoundFont. Enabled by default,
   cmake configuration: `WANT_SF2=ON`. Pass either an `.sf2` file, or a config
