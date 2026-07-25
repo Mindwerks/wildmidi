@@ -1,0 +1,190 @@
+MFi (MLD) File Format
+(Incomplete - Under Construction)
+
+Document version 1
+Authored by the WildMIDI Developers
+
+Last Edited 22 July 2026
+
+Copyright (C) 2026 WildMidi Developers
+This document is licensed under the
+Creative Commons Attribution-ShareAlike 4.0 International License.
+To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/4.0/
+
+
+Introduction
+
+This document describes the MFi format (Melody For i-mode, NTT DoCoMo; file
+extension .mld) as relevant to the WildMIDI project.  It is not a complete
+description of the format and only those parts that have been deciphered and are
+useful to WildMidi are described here.  If you feel there is an error in this
+document please feel free to report it as a bug at
+https://github.com/Mindwerks/wildmidi/issues/
+
+  ***********************************************************************
+  *  IMPORTANT: MFi is NOT SMAF.  Despite both being early-2000s        *
+  *  Japanese feature-phone ringtone formats, MFi is a SEPARATE format  *
+  *  from NTT DoCoMo (not Yamaha), with a different container magic      *
+  *  ("melo", not "MMMD"), different chunks, and a different event       *
+  *  encoding.  It derives from Faith Inc.'s CMIDI / PMD lineage.  See   *
+  *  docs/formats/SmafFileFormat.txt for the (unrelated) SMAF format.    *
+  ***********************************************************************
+
+MFi is a chunked container used by NTT DoCoMo i-mode phones (mova / FOMA) for
+polyphonic ringtones and short music clips.  Like SMAF and Standard MIDI it is a
+stream of timed note/control events; it can also carry ADPCM audio and metadata.
+Format versions run up to MFi 5; only a v2-era description was ever semi-public.
+For WildMIDI the relevant part is the note/control event stream, which would be
+converted to a Standard MIDI File and handed to the existing synth.
+
+STATUS: not yet implemented in WildMIDI.  The layout below was verified by
+hexdumping a corpus of 15,000+ real .mld files (the archive.org "ungoodmld"
+DoCoMo i-Melody collection) and cross-checked against the vavi-sound reference
+decoder (package vavi.sound.mfi), which is the same reference project WildMIDI's
+SMAF decoder is based on.  Header parsing and the note/tempo events are solid;
+the full extended-event (0xB#/0xE#/...) set is documented from the reference
+decoder.
+
+NOTE: All multi-byte integers are BIG-ENDIAN.  Chunks have the form
+      { uint8_t id[4]; uint16_t size; uint8_t data[size]; }  -  note the chunk
+      length is 16-bit here, NOT the 32-bit length SMAF uses, EXCEPT for the two
+      top-level file/track chunks (see below).
+
+
+Description - Container
+
+// FILE
+{
+    uint8_t  text[4] = "melo";        // magic: 6D 65 6C 6F
+    uint32_t size;                    // MFi data length (excludes "melo"+this)
+
+    // ---- file header ----
+    uint16_t header_length;           // = 3 + total length of header sub-chunks
+    uint8_t  major_type;              // 0x01 ring tone | 0x02 music
+    uint8_t  minor_type;              // ring tone: 0x01 all / 0x02 part
+                                      // music:     0x00 fixed
+    uint8_t  tracks_count;            // number of "trac" chunks (max 4)
+
+    // ---- header sub-chunks (id[4] + uint16 len + data), in file order ----
+    //   "sorc"  source / non-redistributable id     (1 byte seen: 0x00)
+    //   "prot"  data management / protection         (e.g. "MLDC")
+    //   "date"  creation date                        (8 ASCII: "YYYYMMDD")
+    //   "titl"  title                                (text; Shift-JIS)
+    //   "note"  note-message length info             (2 bytes: 0x0001)
+    //   "vers"  format version                       (4 ASCII: e.g. "0400")
+    //   others (optional): "copy" copyright, "auth" author, "code" charset,
+    //                      "supt" support info, "exst" ext-status length,
+    //                      "ainf" audio info, "thrd" 3D-audio info
+    //
+    // ---- one or more track chunks ----
+    //   "trac"  track / event stream (see below)
+}
+
+Example header (from a real file, bytes shown in hex):
+    6D 65 6C 6F  00 00 47 9C  00 3E  02 01 04
+    |__melo____| |__size____| |hdrl| |M||m||tc|   -> music, minor 1, 4 tracks
+    73 6F 72 63 00 01 00                            "sorc" len 1  = 00
+    70 72 6F 74 00 04 4D 4C 44 43                   "prot" len 4  = "MLDC"
+    64 61 74 65 00 08 32 30 30 36 30 39 32 30       "date" len 8  = "20060920"
+    74 69 74 6C 00 04 ..                            "titl" len 4
+    6E 6F 74 65 00 02 00 01                          "note" len 2  = 00 01
+    76 65 72 73 00 04 30 34 30 30                   "vers" len 4  = "0400"
+    74 72 61 63 00 00 22 1C ..                      "trac" len 0x221C, events..
+
+Note: the top-level "melo" file chunk and each "trac" track chunk use a 32-bit
+length; the header SUB-chunks (sorc/prot/date/...) use a 16-bit length.
+
+
+Description - Track (trac) event stream
+
+A track chunk is a stream of events.  Each event begins with a one-byte DELTA
+time (ticks to wait before the event), then a status byte, then status-dependent
+data:
+
+    [ delta:uint8 ] [ status:uint8 ] [ data ... ]
+
+Timing:  1 delta tick = 60 / Tempo / Timebase seconds.  Tempo and Timebase come
+from a tempo event (see 0xFF 0xC#).  Because delta is a single byte (0-255),
+long waits are emitted as a run of events (often NOPs) with accumulated deltas.
+
+The status byte selects the event.  A status with the high bits clear is a NOTE;
+0xFF introduces the large extended/meta group:
+
+  ---- NOTE ----  (status high nibble 0x0..0xB, i.e. status < 0xFF and not a
+                   reserved control; in practice the top 2 bits are the voice)
+    status : bits 7-6 = voice (0-3), bits 5-0 = note (0-63)
+    then   : uint8 gateTime               (0-255 ticks; note has its OWN length)
+    then   : uint8 velEnc  (OPTIONAL - present for the 4-byte note form)
+                velocity = (velEnc & 0xFC) >> 2      (0-63; double it for MIDI)
+                shift    =  velEnc & 0x03            (octave adjust)
+                    0 -> +0    1 -> +12    2 -> -24    3 -> -12  (semitones)
+    MIDI channel = voice + 4 * track_number   (4 voices per track, up to 4
+                                               tracks -> up to 16 MIDI channels)
+    There is NO note-off event: schedule the Note Off gateTime ticks after the
+    Note On (a pending-note queue, as with SMAF).  gateTime is capped at 255;
+    longer notes are encoded as chained note events (the reference splits a long
+    note into 255-tick segments).
+
+  ---- 0xFF : EXTENDED / META ----  read the next byte 'x':
+
+    0xB#  Sound-source control (channel-independent):
+            0xB0 master volume      0xB1 master balance
+            0xBA channel config     0xBC tempo (relative)
+            0xBD master vol (rel)    0xBE stop & mute
+            0xBF sound-source reset
+    0xC#  TEMPO / timebase.  x low nibble selects the timebase, the following
+          byte is the tempo value:
+            timebase code -> value:
+              0xC0=6   0xC1=12  0xC2=24  0xC3=48  0xC4=96  0xC5=192  0xC6=384
+              0xC8=15  0xC9=30  0xCA=60  0xCB=120 0xCC=240 0xCD=480  0xCE=960
+              (0xC7 / 0xCF reserved)
+            e.g. "FF C3 B6" = timebase 48, tempo 182.
+    0xD#  Performance management:
+            0xD0 cue point           0xDC NOP2
+            0xDD loop point          0xDE NOP        0xDF End Of Track
+    0xE#  Per-channel sound-source control (each takes a value byte):
+            0xE0 tone (program) change   0xE1 tone-bank change
+            0xE2 volume                  0xE3 pan pot
+            0xE4 pitch bend              0xE5 channel assign
+            0xE6 volume (relative)       0xE7 pitch-bend range
+            0xE8 fine pitch-bend A       0xE9 fine pitch-bend B
+            0xEA modulation depth
+    0xF#  Extended information:
+            0xF2 karaoke text            0xF3 karaoke
+            0xFE non-registered message
+            0xFF expansion info.  Payload: uint16 length; uint8 id; data...
+                 id high nibble 0x0 low nibble 0x1 = DoCoMo; 0xF = overseas
+                 extension.  If id == 0xFF a second id byte follows.
+
+  As with SMAF, DROP tone-bank changes (0xE1) when converting to General MIDI:
+  MFi bank values address DoCoMo/Faith internal voice banks, not GM banks.
+
+
+Example event decoding (from the same real file, after the header):
+    00 FF D0 00     delta 0, cue point
+    00 FF B0 7F     delta 0, master volume 0x7F
+    00 FF BA 49     delta 0, channel configuration 0x49
+    00 FF C3 B6     delta 0, tempo: timebase 48, tempo 0xB6 (182)
+    00 FF E2 3F     delta 0, ch volume 0x3F
+    00 FF E3 20     delta 0, ch pan 0x20
+    00 FF E0 11     delta 0, tone (program) change 0x11
+    0C 60 FC        delta 12, NOTE voice 1 note 0x20, gate 0xFC (252)  [3-byte]
+
+
+Audio / ADPCM
+
+MFi files may carry ADPCM audio (advertised by the "ainf" header sub-chunk and
+delivered in dedicated audio messages).  As with SMAF's embedded PCM, this is
+out of scope for a MIDI-conversion first pass.
+
+
+References
+
+  vavi-sound (Java reference decoder; MFi under vavi/sound/mfi/, same project
+    WildMIDI's SMAF decoder is based on):
+        https://github.com/umjammer/vavi-sound
+  Test corpus - 15,000+ real .mld files (archive.org "ungoodmld"):
+        https://archive.org/details/ungoodmld
+  Legacy Portable Computing wiki (format overview / heritage):
+        https://lpcwiki.miraheze.org/wiki/Ringtone_file_formats
