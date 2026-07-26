@@ -385,12 +385,23 @@ while [ $# -gt 0 ]; do
         --strict)  STRICT=1; ARGS_FOR_DOCKER="$ARGS_FOR_DOCKER --strict" ;;
         --keep)    KEEP=1;   ARGS_FOR_DOCKER="$ARGS_FOR_DOCKER --keep" ;;
         -h|--help)
-            sed -n '3,33p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '3,35p' "$0" | sed 's/^# \{0,1\}//'
             exit 0 ;;
         -*) printf 'unknown option: %s\n' "$1" >&2; exit 2 ;;
         *)  WANTED="$WANTED $1"; ARGS_FOR_DOCKER="$ARGS_FOR_DOCKER $1" ;;
     esac
     shift
+done
+
+# Reject job names we do not have.  Without this a typo simply matches nothing
+# and the run ends with "All available jobs passed", which is the one answer a
+# checking tool must never give when it has checked nothing.
+for _w in $WANTED; do
+    if ! echo "$JOB_LIST" | grep -q "^$_w:"; then
+        printf 'unknown job: %s\n' "$_w" >&2
+        printf 'run "%s --list" to see the job names.\n' "$0" >&2
+        exit 2
+    fi
 done
 
 # In --docker mode, hand off to the container for everything except the amiga

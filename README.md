@@ -42,12 +42,13 @@ Requirements:
 
 TESTING YOUR CHANGES:
 
-Besides cmake, six hand-maintained makefiles (mingw/, djgpp/, amiga/,
+Besides cmake, eight hand-maintained makefiles (amiga/Makefile,
+amiga/Makefile.vbcc, djgpp/Makefile, macosx/Makefile, mingw/Makefile,
 os2/makefile.emx, os2/makefile.wat, win32wat/makefile) each keep their own list
 of objects, so a change that builds fine under cmake can still break them.
 ci-local.sh runs the GitHub CI jobs locally to catch that before you push:
 
-```
+```sh
 ./ci-local.sh --docker              compile jobs, in a container
 ./ci-local.sh --all                 those plus the BSD VMs
 ./ci-local.sh --docker native       run only named jobs
