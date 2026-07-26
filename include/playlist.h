@@ -33,11 +33,18 @@ typedef struct {
 /* Adds an entry to the playlist.  If path names a directory it is scanned
  * recursively and every file with a known midi-ish extension is added,
  * otherwise path is added as-is without looking at its name.
+ *
  * Returns PLAYLIST_ADD_FILE or PLAYLIST_ADD_DIR on success, so the caller
  * can tell a directory apart from a plain file even when the directory
- * held a single entry, and PLAYLIST_ADD_ERROR on failure (out of memory,
- * or an unreadable directory).  Failing to add one entry leaves earlier
- * entries intact.  */
+ * held a single entry.
+ *
+ * PLAYLIST_ADD_ERROR means this argument gave us nothing -- an unreadable
+ * directory, say -- but whatever was collected before it is still good, so
+ * the caller may carry on with the remaining arguments.  PLAYLIST_ADD_FATAL
+ * means the playlist itself cannot be trusted (out of memory part-way
+ * through a tree) and building should stop.  Entries added before either
+ * failure remain valid and must still be freed.  */
+#define PLAYLIST_ADD_FATAL (-2)
 #define PLAYLIST_ADD_ERROR (-1)
 #define PLAYLIST_ADD_FILE  0
 #define PLAYLIST_ADD_DIR   1

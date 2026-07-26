@@ -567,9 +567,15 @@ int main(int argc, char **argv) {
     /* Build the playlist, expanding any directory into the files under it. */
     if (!test_midi) {
         for (i = optind; i < argc; i++) {
-            /* An unusable argument is not fatal as long as something else
-             * on the command line gave us files to play.  */
-            if (playlist_add(&pl, argv[i]) == PLAYLIST_ADD_DIR)
+            /* An unusable argument is not fatal as long as something else on
+             * the command line gave us files to play, but running out of
+             * memory means we can no longer trust what we collected. */
+            res = playlist_add(&pl, argv[i]);
+            if (res == PLAYLIST_ADD_FATAL) {
+                playlist_free(&pl);
+                return (1);
+            }
+            if (res == PLAYLIST_ADD_DIR)
                 from_directory = 1;
         }
 

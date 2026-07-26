@@ -18,7 +18,7 @@ This is a demonstration program to show the capabilities of libWildMidi.
 .PP
 You can have more than one \fImidifile\fP on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
 .PP
-\fImidifile\fP may also be a directory, provided that it is not a symlink. Directories are searched recursively and every file whose name ends in .mid, .midi, .rmi, .kar, .mus, .xmi, .hmp or .hmi is added to the playlist. A file named directly on the command line is always played regardless of its name, since libWildMidi detects the format from the file contents. Use \fB\-S\fP to play the resulting playlist in random order, and \fB\-L\fP to repeat it once it ends.
+\fImidifile\fP may also be a directory, including a symlink to one. Directories are searched recursively and every file whose name ends in .mid, .midi, .rmi, .kar, .mus, .xmi, .hmp or .hmi is added to the playlist. Symlinked subdirectories found during that search are not followed, so that a link pointing back into its own parent cannot cause the same files to be added over and over. A file named directly on the command line is always played regardless of its name, since libWildMidi detects the format from the file contents. Use \fB\-S\fP to play the resulting playlist in random order, and \fB\-L\fP to repeat it once it ends.
 .PP
 .SH OPTIONS
 .IP "\fB\-0\fP"

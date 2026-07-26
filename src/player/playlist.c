@@ -162,8 +162,15 @@ static int is_dot_entry(const char *name) {
 #endif
 
 #ifdef PLAYLIST_HAVE_DIRSCAN
-/* Recursively adds the playable files under dir.  Returns 0 on success,
- * -1 if dir itself could not be read. */
+/* Results of a directory walk.  A subdirectory we cannot read is worth a
+ * message but not worth abandoning the rest of the tree for; running out of
+ * memory is, since carrying on would silently hand back a short playlist. */
+#define SCAN_OK        0
+#define SCAN_UNREADABLE (-1)
+#define SCAN_FATAL      (-2)
+
+/* Recursively adds the playable files under dir.  Returns one of the SCAN_
+ * codes above. */
 static int scan_directory(playlist *pl, const char *dir);
 #endif
 
@@ -192,11 +199,11 @@ static int is_walkable_directory(const char *path) {
 static int scan_directory(playlist *pl, const char *dir) {
     DIR *dh = opendir(dir);
     struct dirent *ent;
-    int ret = 0;
+    int ret = SCAN_OK;
 
     if (dh == NULL) {
         fprintf(stderr, "ERROR: cannot read directory %s\r\n", dir);
-        return (-1);
+        return (SCAN_UNREADABLE);
     }
 
     while ((ent = readdir(dh)) != NULL) {
@@ -207,20 +214,20 @@ static int scan_directory(playlist *pl, const char *dir) {
         full = join_path(dir, ent->d_name);
         if (full == NULL) {
             fprintf(stderr, "ERROR: out of memory building playlist\r\n");
-            ret = -1;
+            ret = SCAN_FATAL;
             break;
         }
 
         if (is_walkable_directory(full)) {
             /* An unreadable subdirectory is not fatal: keep collecting the
-             * rest of the tree.  */
-            scan_directory(pl, full);
+             * rest of the tree.  Anything worse aborts the whole walk.  */
+            if (scan_directory(pl, full) == SCAN_FATAL) ret = SCAN_FATAL;
         } else if (has_midi_extension(ent->d_name)) {
-            if (playlist_append(pl, full) < 0) ret = -1;
+            if (playlist_append(pl, full) < 0) ret = SCAN_FATAL;
         }
 
         free(full);
-        if (ret < 0) break;
+        if (ret == SCAN_FATAL) break;
     }
 
     closedir(dh);
@@ -239,18 +246,18 @@ static int scan_directory(playlist *pl, const char *dir) {
     WIN32_FIND_DATAA fd;
     HANDLE h;
     char *pattern = join_path(dir, "*");
-    int ret = 0;
+    int ret = SCAN_OK;
 
     if (pattern == NULL) {
         fprintf(stderr, "ERROR: out of memory building playlist\r\n");
-        return (-1);
+        return (SCAN_FATAL);
     }
 
     h = FindFirstFileA(pattern, &fd);
     free(pattern);
     if (h == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "ERROR: cannot read directory %s\r\n", dir);
-        return (-1);
+        return (SCAN_UNREADABLE);
     }
 
     do {
@@ -261,18 +268,18 @@ static int scan_directory(playlist *pl, const char *dir) {
         full = join_path(dir, fd.cFileName);
         if (full == NULL) {
             fprintf(stderr, "ERROR: out of memory building playlist\r\n");
-            ret = -1;
+            ret = SCAN_FATAL;
             break;
         }
 
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            scan_directory(pl, full);
+            if (scan_directory(pl, full) == SCAN_FATAL) ret = SCAN_FATAL;
         } else if (has_midi_extension(fd.cFileName)) {
-            if (playlist_append(pl, full) < 0) ret = -1;
+            if (playlist_append(pl, full) < 0) ret = SCAN_FATAL;
         }
 
         free(full);
-        if (ret < 0) break;
+        if (ret == SCAN_FATAL) break;
     } while (FindNextFileA(h, &fd));
 
     FindClose(h);
@@ -293,18 +300,18 @@ static int scan_directory(playlist *pl, const char *dir) {
     HDIR h = HDIR_CREATE;
     ULONG cnt = 1;
     char *pattern = join_path(dir, "*");
-    int ret = 0;
+    int ret = SCAN_OK;
 
     if (pattern == NULL) {
         fprintf(stderr, "ERROR: out of memory building playlist\r\n");
-        return (-1);
+        return (SCAN_FATAL);
     }
 
     if (DosFindFirst((PCSZ)pattern, &h, FILE_NORMAL | FILE_DIRECTORY,
                      &fb, sizeof(fb), &cnt, FIL_STANDARD) != NO_ERROR) {
         free(pattern);
         fprintf(stderr, "ERROR: cannot read directory %s\r\n", dir);
-        return (-1);
+        return (SCAN_UNREADABLE);
     }
     free(pattern);
 
@@ -316,18 +323,18 @@ static int scan_directory(playlist *pl, const char *dir) {
         full = join_path(dir, fb.achName);
         if (full == NULL) {
             fprintf(stderr, "ERROR: out of memory building playlist\r\n");
-            ret = -1;
+            ret = SCAN_FATAL;
             break;
         }
 
         if (fb.attrFile & FILE_DIRECTORY) {
-            scan_directory(pl, full);
+            if (scan_directory(pl, full) == SCAN_FATAL) ret = SCAN_FATAL;
         } else if (has_midi_extension(fb.achName)) {
-            if (playlist_append(pl, full) < 0) ret = -1;
+            if (playlist_append(pl, full) < 0) ret = SCAN_FATAL;
         }
 
         free(full);
-        if (ret < 0) break;
+        if (ret == SCAN_FATAL) break;
         cnt = 1;
     } while (DosFindNext(h, &fb, sizeof(fb), &cnt) == NO_ERROR);
 
@@ -357,25 +364,25 @@ static int path_is_directory(const char *path) {
 static int scan_directory(playlist *pl, const char *dir) {
     BPTR lock = Lock((const STRPTR) dir, ACCESS_READ);
     struct FileInfoBlock *fib;
-    int ret = 0;
+    int ret = SCAN_OK;
 
     if (!lock) {
         fprintf(stderr, "ERROR: cannot read directory %s\r\n", dir);
-        return (-1);
+        return (SCAN_UNREADABLE);
     }
 
     fib = (struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL);
     if (fib == NULL) {
         UnLock(lock);
         fprintf(stderr, "ERROR: out of memory building playlist\r\n");
-        return (-1);
+        return (SCAN_FATAL);
     }
 
     if (!Examine(lock, fib)) {
         FreeDosObject(DOS_FIB, fib);
         UnLock(lock);
         fprintf(stderr, "ERROR: cannot read directory %s\r\n", dir);
-        return (-1);
+        return (SCAN_UNREADABLE);
     }
 
     while (ExNext(lock, fib)) {
@@ -383,18 +390,18 @@ static int scan_directory(playlist *pl, const char *dir) {
 
         if (full == NULL) {
             fprintf(stderr, "ERROR: out of memory building playlist\r\n");
-            ret = -1;
+            ret = SCAN_FATAL;
             break;
         }
 
         if (fib->fib_DirEntryType > 0) {
-            scan_directory(pl, full);
+            if (scan_directory(pl, full) == SCAN_FATAL) ret = SCAN_FATAL;
         } else if (has_midi_extension((const char *) fib->fib_FileName)) {
-            if (playlist_append(pl, full) < 0) ret = -1;
+            if (playlist_append(pl, full) < 0) ret = SCAN_FATAL;
         }
 
         free(full);
-        if (ret < 0) break;
+        if (ret == SCAN_FATAL) break;
     }
 
     FreeDosObject(DOS_FIB, fib);
@@ -407,13 +414,17 @@ static int scan_directory(playlist *pl, const char *dir) {
 int playlist_add(playlist *pl, const char *path) {
 #ifdef PLAYLIST_HAVE_DIRSCAN
     if (path_is_directory(path)) {
-        if (scan_directory(pl, path) < 0)
-            return PLAYLIST_ADD_ERROR;
-        return PLAYLIST_ADD_DIR;
+        /* A tree we could only read part of still gives us something to
+         * play; only a fatal failure means the playlist cannot be trusted. */
+        switch (scan_directory(pl, path)) {
+        case SCAN_FATAL:      return PLAYLIST_ADD_FATAL;
+        case SCAN_UNREADABLE: return PLAYLIST_ADD_ERROR;
+        default:              return PLAYLIST_ADD_DIR;
+        }
     }
 #endif
     if (playlist_append(pl, path) < 0)
-        return PLAYLIST_ADD_ERROR;
+        return PLAYLIST_ADD_FATAL;
     return PLAYLIST_ADD_FILE;
 }
 

@@ -40,6 +40,35 @@ Requirements:
 * Nintendo Switch port: devkitA64
 * PSVita port: Vitasdk
 
+TESTING YOUR CHANGES:
+
+Besides cmake, six hand-maintained makefiles (mingw/, djgpp/, amiga/,
+os2/makefile.emx, os2/makefile.wat, win32wat/makefile) each keep their own list
+of objects, so a change that builds fine under cmake can still break them.
+ci-local.sh runs the GitHub CI jobs locally to catch that before you push:
+
+```
+./ci-local.sh --docker              compile jobs, in a container
+./ci-local.sh --all                 those plus the BSD VMs
+./ci-local.sh --docker native       run only named jobs
+./ci-local.sh --list                show all job names
+```
+
+The first run builds a ~5GB image from .ci/Dockerfile with every toolchain the
+workflows use, then caches it. Exits 0 on success, 1 on failure with the failing
+job and a log tail; full logs in .ci-local/. Without --docker it uses whatever
+is installed on the host and reports the rest as SKIP.
+
+--qemu (implied by --all) additionally boots FreeBSD, OpenBSD and NetBSD under
+qemu/kvm, the same way the bsd.yml workflow does, all three at once. It needs
+qemu, mtools, rsync, sfdisk, OVMF firmware (for OpenBSD) and access to
+/dev/kvm, which is why it is opt-in. The first run per OS installs cmake in
+the guest and saves the result, so later runs take about half a minute for all
+three; pass --refresh to .ci/bsd-vm.sh to rebuild those cached images.
+
+This does not replace CI: the macOS and Windows jobs need runners a Linux host
+cannot provide.
+
 CHANGELOG
 
 0.5.1 (unreleased)
@@ -50,6 +79,8 @@ CHANGELOG
   file the file itself is looped at end-of-track; with several files, or a
   directory, the whole playlist is repeated instead, reshuffling each pass
   when combined with `-S`.
+* Added `ci-local.sh` to run the GitHub CI jobs locally before pushing,
+  including the BSD builds under qemu.
 
 0.5.0 (2026-07-24)
 * SoundFont2 (SF2) rendering support via TinySoundFont. Enabled by default,
