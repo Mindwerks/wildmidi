@@ -131,9 +131,13 @@ static uint32_t getdstpos(struct smaf_ctx *ctx) {
 }
 
 static void seekdst(struct smaf_ctx *ctx, uint32_t pos) {
-    ctx->dst_ptr = ctx->dst + pos;
+    /* Grow first: resize_dst() reallocs, so dst_ptr must only be derived from
+     * ctx->dst once the buffer is final.  Setting it up front would also form
+     * an out-of-bounds pointer whenever pos is past the current end - which is
+     * exactly the case that needs the growth. */
     while (ctx->dstsize < pos)
         if (resize_dst(ctx)) { ctx->oom = 1; return; }
+    ctx->dst_ptr = ctx->dst + pos;
     ctx->dstrem = ctx->dstsize - pos;
 }
 
