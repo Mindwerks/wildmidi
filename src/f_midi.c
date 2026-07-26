@@ -579,6 +579,14 @@ _WM_Event2Midi(struct _mdi *mdi, uint8_t **out, uint32_t *outsize) {
             (*out)[out_ofs++] = 0;
             (*out)[out_ofs++] = event->event_data.data.value & 0xff;
             break;
+        case ev_control_channel_modulation:
+            if (running_event != (0xb0 | event->event_data.channel)) {
+                (*out)[out_ofs++] = 0xb0 | event->event_data.channel;
+                running_event = (*out)[out_ofs - 1];
+            }
+            (*out)[out_ofs++] = 1;
+            (*out)[out_ofs++] = event->event_data.data.value & 0xff;
+            break;
         case ev_control_data_entry_course:
             /* DEBUG */
             /* fprintf(stderr,"Control Data Entry Course: %u %.4x\r\n",event->event_data.channel, event->event_data.data); */

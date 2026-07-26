@@ -79,6 +79,9 @@ CHANGELOG
 * Yamaha MA-series FM synthesis for SMAF: a file carrying a custom FM voice
   bank plays with its own instruments and embedded ADPCM percussion instead
   of a General MIDI approximation. `WANT_MAFM=ON`; see `docs/SMAF_FM.md`.
+* Modulation wheel (CC 1) support, previously parsed but discarded: GUS
+  patches gain a 5Hz vibrato LFO, while SF2 voices and the MA FM synth
+  route the wheel to their vibrato LFO depth (bug #143.)
 * Player: playlist support. A filename given to the player may now be a
   directory, which is searched recursively for files to play (bug #215.)
 * Player: new `-S/--shuffle` switch plays the files in random order.

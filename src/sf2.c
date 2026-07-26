@@ -172,6 +172,9 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
         if (!mdi->channel[ch].isdrum) /* drum kits select via patch, not bank */
             tsf_channel_midi_control(f, ch, 0, val & 0x7F);
         break;
+    case ev_control_channel_modulation:
+        tsf_channel_midi_control(f, ch, 1, val & 0x7F);
+        break;
     case ev_control_data_entry_course:
         tsf_channel_midi_control(f, ch, 6, val & 0x7F);
         break;
