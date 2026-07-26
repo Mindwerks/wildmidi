@@ -19,6 +19,7 @@ SET(wildmidi_executable_SRCS
     out_wave.c
     out_win32mm.c
     wm_tty.c
+    playlist.c
     wildmidi.c
 )
 

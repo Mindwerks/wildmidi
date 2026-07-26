@@ -6,10 +6,20 @@
 *.dxe
 *.a
 *.exe
+*.lib
+*.exp
 
 # build dirs
 build/
 cmake-build*/
+
+# ci-local.sh working files
+build-ci-*/
+.ci-local/
+
+# ndk-build output
+android/libs/
+android/obj/
 
 # stray in-source cmake configure (should always use -B build)
 CMakeCache.txt

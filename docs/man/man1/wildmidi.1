@@ -9,7 +9,7 @@ wildmidi \- example player for libWildMidi
 .B /etc/wildmidi/wildmidi.cfg
 .PP
 .SH SYNOPSIS
-.B wildmidi [\-0abehlnstvO] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-P \fIplayback\-output\fB] [\-o \fIfile\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] [\-x \fIfile\fB] [\-i \fIseconds\fB] [\-j \fIseconds\fB] \fImidifile ...
+.B wildmidi [\-0abehlnstvLOS] [\-c \fIconfig\-file\fB] [\-d \fIaudiodev\fB] [\-m \fIvolume\-level\fB] [\-P \fIplayback\-output\fB] [\-o \fIfile\fB] [\-f \fIfrequency\-Hz(MUS)\fB] [\-r \fIsample-rate\fB] [\-g \fIconvert-xmi-type\fB] [\-x \fIfile\fB] [\-i \fIseconds\fB] [\-j \fIseconds\fB] \fImidifile ...
 .PP
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
@@ -17,6 +17,8 @@ This is a demonstration program to show the capabilities of libWildMidi.
 \fImidifile\fP can be a MIDI type file in the HMI, HMP, MIDI, MUS or XMI formats and is processed by libWildMidi and the resulting audio is output by the player.
 .PP
 You can have more than one \fImidifile\fP on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
+.PP
+\fImidifile\fP may also be a directory, including a symlink to one. Directories are searched recursively and every file whose name ends in .mid, .midi, .rmi, .kar, .mus, .xmi, .hmp or .hmi is added to the playlist. Symlinked subdirectories found during that search are not followed, so that a link pointing back into its own parent cannot cause the same files to be added over and over. A file named directly on the command line is always played regardless of its name, since libWildMidi detects the format from the file contents. Use \fB\-S\fP to play the resulting playlist in random order, and \fB\-L\fP to repeat it once it ends.
 .PP
 .SH OPTIONS
 .IP "\fB\-0\fP"
@@ -58,6 +60,9 @@ Begin playback at \fIseconds\fP (fractions allowed) into the file.
 .IP "\fB\-j\fP \fIseconds\fP | \fB\-\-playto=\fIseconds\fP"
 Stop playback at \fIseconds\fP (fractions allowed) into the file.
 .PP
+.IP "\fB\-L\fP | \fB\-\-loop\fP"
+Repeat playback when the end is reached. With a single \fImidifile\fP the file itself is looped at end\-of\-track. With more than one file to play, whether given directly or found by searching a directory, the whole playlist is repeated instead, and each file plays through once per pass. When combined with \fB\-S\fP the playlist is shuffled again at the start of every pass.
+.PP
 .IP "\fB\-l\fP | \fB\-\-log_vol\fP"
 Some MIDI files have been recorded on hardware that uses a volume curve, making them sound really badly mixed on other MIDI devices. Use this option to use volume curves.
 .PP
@@ -75,6 +80,9 @@ Use the built\-in OPL3 FM synthesizer. No configuration file, GUS patch set or S
 .PP
 .IP "\fB\-r\fP \fIsndrate\fP | \fB\-\-rate=\fIsndrate\fP"
 Set the audio output rate to \fIsndrate\fP. The default rate is 32072.
+.PP
+.IP "\fB\-S\fP | \fB\-\-shuffle\fP"
+Play the files in random order. Combine with \fB\-L\fP to keep shuffling and repeating indefinitely, for example: \fBwildmidi \-S \-L ~/midi\fP
 .PP
 .IP "\fB\-n\fP | \fB\-\-roundtempo\fP"
 Round tempo to nearest whole number.
@@ -121,7 +129,7 @@ Turns volume curves on and off.
 Turns the final mix reverb on and off.
 .PP
 .IP \fBn\fP
-Play the next midi on the command line.
+Skip to the next midi in the playlist.
 .PP
 .IP \fBm\fP
 Save the currently playing file to a midi file. NOTE: This saves to the current directory.

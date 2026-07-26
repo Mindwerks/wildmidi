@@ -41,7 +41,7 @@ INCPATH=-I"$(%WATCOM)/h/nt" -I"$(%WATCOM)/h"
 INCLUDES=$(INCPATH) -I. -I"../include"
 
 OBJ=wm_error.obj file_io.obj lock.obj wildmidi_lib.obj reverb.obj gus_pat.obj f_xmidi.obj f_mus.obj f_hmp.obj f_midi.obj f_hmi.obj mus2mid.obj xmi2mid.obj hmp2mid.obj hmi2mid.obj internal_midi.obj patches.obj sample.obj sf2.obj synth.obj opl3.obj
-PLAYER_OBJ=wm_tty.obj msleep.obj getopt_long.obj out_none.obj out_wave.obj out_openal.obj out_win32mm.obj wildmidi.obj
+PLAYER_OBJ=wm_tty.obj playlist.obj msleep.obj getopt_long.obj out_none.obj out_wave.obj out_openal.obj out_win32mm.obj wildmidi.obj
 
 all: $(BLD_TARGET)
 
@@ -71,6 +71,8 @@ sf2.obj: sf2.c
 getopt_long.obj: getopt_long.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 wm_tty.obj: wm_tty.c
+	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
+playlist.obj: playlist.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
 wildmidi.obj: wildmidi.c
 	wcc386 $(CFLAGS_EXE) $(INCLUDES) -fo=$^@ $<
