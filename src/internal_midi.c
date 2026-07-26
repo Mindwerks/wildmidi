@@ -656,7 +656,10 @@ void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data) {
     }
 }
 
-static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
+/* cents_adjust is an extra detune applied on top of the channel pitch bend,
+   used by the vibrato LFO. Pass 0 for the unmodulated increment. */
+static inline uint32_t get_inc_detune(struct _mdi *mdi, struct _note *nte,
+                                      int32_t cents_adjust) {
     int ch = nte->noteid >> 8;
     int32_t note_f;
     uint32_t freq;
@@ -666,7 +669,7 @@ static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
     } else {
         note_f = (nte->noteid & 0x7f) * 100;
     }
-    note_f += mdi->channel[ch].pitch_adjust;
+    note_f += mdi->channel[ch].pitch_adjust + cents_adjust;
     {
         /* Apply GUS keyboard frequency scaling (Ultrasound SDK 13.4).
            int64 intermediate: guards against int32 overflow on corrupt
@@ -683,6 +686,102 @@ static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
     freq = _WM_freq_table[(note_f % 1200)] >> (10 - (note_f / 1200));
     return (((freq / ((_WM_SampleRate * 100) / 1024)) * 1024
              / nte->sample->inc_div));
+}
+
+static inline uint32_t get_inc(struct _mdi *mdi, struct _note *nte) {
+    return get_inc_detune(mdi, nte, 0);
+}
+
+/*
+ * Vibrato depth for a channel, in cents at full LFO travel. Zero means the
+ * note needs no LFO processing at all, which is the common case.
+ */
+static inline int32_t get_vib_depth(struct _mdi *mdi, uint8_t ch) {
+    int32_t depth;
+
+    if (mdi->channel[ch].modulation == 0)
+        return 0;
+
+    depth = ((int32_t)mdi->channel[ch].modulation
+             * mdi->channel[ch].mod_depth_range) / 127;
+
+    if (depth > VIB_DEPTH_MAX)
+        depth = VIB_DEPTH_MAX;
+    return depth;
+}
+
+/*
+ * Set up (or tear down) the LFO on a single note. Called when CC1 changes and
+ * at note-on. Resets LFO phase so vibrato always starts from centre pitch.
+ */
+static void set_note_vibrato(struct _mdi *mdi, struct _note *nte) {
+    uint8_t ch = nte->noteid >> 8;
+    int32_t depth = get_vib_depth(mdi, ch);
+
+    nte->vib_depth = depth;
+    /* Phase 0 is the centre of the triangle, so sample_inc is the plain
+       unmodulated increment either way; the LFO takes over from the next
+       block onwards. */
+    nte->vib_phase = 0;
+    nte->sample_inc = get_inc(mdi, nte);
+
+    if (depth == 0) {
+        nte->vib_inc = 0;
+        return;
+    }
+
+    /* phase advance per VIB_BLOCK samples for a VIB_RATE_HZ cycle, rounded
+       to nearest so the LFO rate stays accurate at any sample rate */
+    nte->vib_inc = (uint16_t)((((uint32_t)VIB_RATE_HZ * VIB_BLOCK
+                                * (VIB_PHASE_MASK + 1))
+                               + (_WM_SampleRate / 2)) / _WM_SampleRate);
+    if (nte->vib_inc == 0)
+        nte->vib_inc = 1;
+}
+
+/*
+ * Advance one note's LFO by a block and recompute its sample_inc.
+ * Triangle wave: cheap, and matches the GUS/TiMidity heritage.
+ */
+void _WM_update_note_vibrato_at_phase(struct _mdi *mdi, struct _note *nte) {
+    int32_t tri;
+    int32_t cents;
+
+    /* map phase to a symmetric bipolar triangle in [-32768, +32768] */
+    tri = (int32_t)nte->vib_phase;
+    if (tri < 16384) {
+        tri = tri * 2;                    /* rise 0 -> +32768 */
+    } else if (tri < 49152) {
+        tri = 65536 - (tri * 2);          /* fall +32768 -> -32768 */
+    } else {
+        tri = (tri * 2) - 131072;         /* rise -32768 -> 0 */
+    }
+
+    cents = (nte->vib_depth * tri) / 32768;
+    nte->sample_inc = get_inc_detune(mdi, nte, cents);
+}
+
+/*
+ * Advance the LFO one block, then apply it.
+ */
+void _WM_update_note_vibrato(struct _mdi *mdi, struct _note *nte) {
+    nte->vib_phase = (uint16_t)((nte->vib_phase + nte->vib_inc)
+                                & VIB_PHASE_MASK);
+    _WM_update_note_vibrato_at_phase(mdi, nte);
+}
+
+/*
+ * Re-evaluate vibrato for every active note on a channel.
+ */
+static void set_channel_vibrato(struct _mdi *mdi, uint8_t ch) {
+    struct _note *note_data = mdi->note;
+
+    while (note_data) {
+        if ((note_data->noteid >> 8) == ch) {
+            set_note_vibrato(mdi, note_data);
+        }
+        note_data = note_data->next;
+    }
 }
 
 void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
@@ -766,7 +865,8 @@ void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data) {
     nte->patch = patch;
     nte->sample = sample;
     nte->sample_pos = 0;
-    nte->sample_inc = get_inc(mdi, nte);
+    /* sets base_inc, sample_inc and any vibrato state for this channel */
+    set_note_vibrato(mdi, nte);
     nte->velocity = velocity;
     nte->env = 0;
     nte->env_inc = nte->sample->env_rate[0];
@@ -807,6 +907,21 @@ void _WM_do_control_bank_select(struct _mdi *mdi, struct _event_data *data) {
     mdi->channel[ch].bank = data->data.value;
 }
 
+void _WM_do_control_channel_modulation(struct _mdi *mdi,
+                                       struct _event_data *data) {
+    uint8_t ch = data->channel;
+    MIDI_EVENT_DEBUG(_WM_FUNCTION,ch, data->data.value);
+
+    if (mdi->channel[ch].modulation == data->data.value)
+        return;
+
+    mdi->channel[ch].modulation = data->data.value;
+
+    /* Reset the LFO phase so vibrato starts from centre pitch instead of
+       jumping mid-cycle, as TiMidity++ does in update_modulation_wheel(). */
+    set_channel_vibrato(mdi, ch);
+}
+
 void _WM_do_control_data_entry_course(struct _mdi *mdi,
                                          struct _event_data *data) {
     uint8_t ch = data->channel;
@@ -819,6 +934,12 @@ void _WM_do_control_data_entry_course(struct _mdi *mdi,
         mdi->channel[ch].pitch_range = data->data.value * 100 + data_tmp;
     /*  printf("Data Entry Course: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
     /*  printf("Data Entry Course: data %li\n\r",data->data.value);*/
+    } else if ((mdi->channel[ch].reg_non == 0)
+        && (mdi->channel[ch].reg_data == 0x0005)) { /* Modulation Depth Range */
+        /* GM2/SF2: MSB is in semitones, so 1 unit == 100 cents of vibrato
+           depth at full wheel. */
+        mdi->channel[ch].mod_depth_range = (int16_t)(data->data.value * 100);
+        set_channel_vibrato(mdi, ch);
     }
 }
 
@@ -869,6 +990,13 @@ void _WM_do_control_data_entry_fine(struct _mdi *mdi,
         mdi->channel[ch].pitch_range = (data_tmp * 100) + data->data.value;
     /*  printf("Data Entry Fine: pitch_range: %i\n\r",mdi->channel[ch].pitch_range);*/
     /*  printf("Data Entry Fine: data: %li\n\r", data->data.value);*/
+    } else if ((mdi->channel[ch].reg_non == 0)
+      && (mdi->channel[ch].reg_data == 0x0005)) { /* Modulation Depth Range */
+        /* LSB refines the semitone MSB in 128ths, i.e. ~0.78 cents per unit */
+        data_tmp = (mdi->channel[ch].mod_depth_range / 100) * 100;
+        mdi->channel[ch].mod_depth_range =
+            (int16_t)(data_tmp + ((data->data.value * 100) / 128));
+        set_channel_vibrato(mdi, ch);
     }
 }
 
@@ -1028,6 +1156,9 @@ void _WM_do_control_channel_controllers_off(struct _mdi *mdi,
     mdi->channel[ch].pitch = 0;
     mdi->channel[ch].pitch_adjust = 0;
     mdi->channel[ch].hold = 0;
+    mdi->channel[ch].modulation = 0;
+    mdi->channel[ch].mod_depth_range = VIB_DEPTH_DEFAULT;
+    set_channel_vibrato(mdi, ch);
 
     _WM_AdjustChannelVolumes(mdi, ch);
 }
@@ -1121,7 +1252,14 @@ void _WM_do_pitch(struct _mdi *mdi, struct _event_data *data) {
     if (note_data) {
         do {
             if ((note_data->noteid >> 8) == ch) {
-                note_data->sample_inc = get_inc(mdi, note_data);
+                if (note_data->vib_depth == 0) {
+                    note_data->sample_inc = get_inc(mdi, note_data);
+                } else {
+                    /* Re-apply the bend at the LFO's current phase so the
+                       bend lands immediately rather than at the next block,
+                       without disturbing the vibrato cycle. */
+                    _WM_update_note_vibrato_at_phase(mdi, note_data);
+                }
             }
             note_data = note_data->next;
         } while (note_data);
@@ -1168,6 +1306,8 @@ void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
         mdi->channel[i].pitch_range = 200;
         mdi->channel[i].reg_data = 0xFFFF;
         mdi->channel[i].isdrum = 0;
+        mdi->channel[i].modulation = 0;
+        mdi->channel[i].mod_depth_range = VIB_DEPTH_DEFAULT;
     }
     /* I would not expect notes to be active when this event
      triggers but we'll adjust active notes as well just in case */
@@ -1571,6 +1711,10 @@ static int midi_setup_control(struct _mdi *mdi, uint8_t channel,
             ev = ev_control_bank_select;
             tmp_event = _WM_do_control_bank_select;
             mdi->channel[channel].bank = setting;
+            break;
+        case 1:
+            ev = ev_control_channel_modulation;
+            tmp_event = _WM_do_control_channel_modulation;
             break;
         case 6:
             ev = ev_control_data_entry_course;

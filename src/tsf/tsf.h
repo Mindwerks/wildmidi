@@ -501,12 +501,20 @@ struct tsf_voice
 	struct tsf_voice_envelope ampenv, modenv;
 	struct tsf_voice_lowpass lowpass;
 	struct tsf_voice_lfo modlfo, viblfo;
+	/* WildMIDI: extra vib-LFO-to-pitch depth in cents contributed by the CC1
+	   modulation wheel. Kept per voice so the shared region data stays
+	   read-only; see SF2.01 section 8.4.4. */
+	float vibLfoToPitchCC;
 };
 
 struct tsf_channel
 {
 	unsigned short presetIndex, bank, pitchWheel, midiPan, midiVolume, midiExpression, midiRPN, midiData : 14, sustain : 1;
 	float panOffset, gainDB, pitchRange, tuning;
+	/* WildMIDI: CC1 modulation wheel (0-127) and its depth range in cents at
+	   full wheel (RPN 5, default 50 per SF2.01 section 8.4.4). */
+	unsigned char midiModulation;
+	float modDepthRange;
 };
 
 struct tsf_channels
@@ -1275,7 +1283,9 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	// Cache some values, to give them at least some chance of ending up in registers.
 	TSF_BOOL updateModEnv = (region->modEnvToPitch || region->modEnvToFilterFc);
 	TSF_BOOL updateModLFO = (v->modlfo.delta && (region->modLfoToPitch || region->modLfoToFilterFc || region->modLfoToVolume));
-	TSF_BOOL updateVibLFO = (v->viblfo.delta && (region->vibLfoToPitch));
+	/* WildMIDI: vibLfoToPitchCC (CC1) also drives the vib LFO */
+	float vibLfoToPitchTotal = (float)region->vibLfoToPitch + v->vibLfoToPitchCC;
+	TSF_BOOL updateVibLFO = (v->viblfo.delta && (vibLfoToPitchTotal != 0.0f));
 	TSF_BOOL isLooping    = (v->loopStart < v->loopEnd);
 	unsigned int tmpLoopStart = v->loopStart, tmpLoopEnd = v->loopEnd;
 	double tmpSampleEndDbl = (double)region->end, tmpLoopEndDbl = (double)tmpLoopEnd + 1.0;
@@ -1285,7 +1295,7 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	TSF_BOOL dynamicLowpass = (region->modLfoToFilterFc || region->modEnvToFilterFc);
 	float tmpSampleRate = f->outSampleRate, tmpInitialFilterFc, tmpModLfoToFilterFc, tmpModEnvToFilterFc;
 
-	TSF_BOOL dynamicPitchRatio = (region->modLfoToPitch || region->modEnvToPitch || region->vibLfoToPitch);
+	TSF_BOOL dynamicPitchRatio = (region->modLfoToPitch || region->modEnvToPitch || vibLfoToPitchTotal != 0.0f);
 	double pitchRatio;
 	float tmpModLfoToPitch, tmpVibLfoToPitch, tmpModEnvToPitch;
 
@@ -1295,7 +1305,7 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	if (dynamicLowpass) tmpInitialFilterFc = (float)region->initialFilterFc, tmpModLfoToFilterFc = (float)region->modLfoToFilterFc, tmpModEnvToFilterFc = (float)region->modEnvToFilterFc;
 	else tmpInitialFilterFc = 0, tmpModLfoToFilterFc = 0, tmpModEnvToFilterFc = 0;
 
-	if (dynamicPitchRatio) pitchRatio = 0, tmpModLfoToPitch = (float)region->modLfoToPitch, tmpVibLfoToPitch = (float)region->vibLfoToPitch, tmpModEnvToPitch = (float)region->modEnvToPitch;
+	if (dynamicPitchRatio) pitchRatio = 0, tmpModLfoToPitch = (float)region->modLfoToPitch, tmpVibLfoToPitch = vibLfoToPitchTotal, tmpModEnvToPitch = (float)region->modEnvToPitch;
 	else pitchRatio = tsf_timecents2Secsd(v->pitchInputTimecents) * v->pitchOutputFactor, tmpModLfoToPitch = 0, tmpVibLfoToPitch = 0, tmpModEnvToPitch = 0;
 
 	if (dynamicGain) tmpModLfoToVolume = (float)region->modLfoToVolume * 0.1f;
@@ -1797,6 +1807,8 @@ static void tsf_channel_setup_voice(tsf* f, struct tsf_voice* v)
 	float newpan = v->region->pan + c->panOffset;
 	v->playingChannel = f->channels->activeChannel;
 	v->noteGainDB += c->gainDB;
+	/* WildMIDI: CC1 vibrato depth for this channel (SF2.01 8.4.4) */
+	v->vibLfoToPitchCC = c->modDepthRange * c->midiModulation / 127.0f;
 	tsf_voice_calcpitchratio(v, (c->pitchWheel == 8192 ? c->tuning : ((c->pitchWheel / 16383.0f * c->pitchRange * 2.0f) - c->pitchRange + c->tuning)), f->outSampleRate);
 	if      (newpan <= -0.5f) { v->panFactorLeft = 1.0f; v->panFactorRight = 0.0f; }
 	else if (newpan >=  0.5f) { v->panFactorLeft = 0.0f; v->panFactorRight = 1.0f; }
@@ -1835,8 +1847,22 @@ static struct tsf_channel* tsf_channel_init(tsf* f, int channel)
 		c->gainDB = 0.0f;
 		c->pitchRange = 2.0f;
 		c->tuning = 0.0f;
+		c->midiModulation = 0;
+		c->modDepthRange = 50.0f; /* WildMIDI: SF2.01 8.4.4 default */
 	}
 	return &f->channels->channels[channel];
+}
+
+/* WildMIDI: push a CC1 / RPN 5 change onto the channel's sounding voices.
+   The vib LFO itself keeps running; only its pitch depth changes, so a wheel
+   move mid-note takes effect without restarting the note. */
+static void tsf_channel_apply_modulation(tsf* f, int channel, struct tsf_channel* c)
+{
+	struct tsf_voice *v, *vEnd;
+	float depth = c->modDepthRange * c->midiModulation / 127.0f;
+	for (v = f->voices, vEnd = v ? v + f->voiceNum : TSF_NULL; v != vEnd; v++)
+		if (v->playingPreset != -1 && v->playingChannel == channel)
+			v->vibLfoToPitchCC = depth;
 }
 
 static void tsf_channel_applypitch(tsf* f, int channel, struct tsf_channel* c)
@@ -2051,6 +2077,10 @@ TSFDEF int tsf_channel_midi_control(tsf* f, int channel, int controller, int con
 		case 100 /*RPN_LSB*/         : c->midiRPN = (unsigned short)(((c->midiRPN == 0xFFFF ? 0 : c->midiRPN) & 0x3F80) |  control_value); return 1;
 		case  98 /*NRPN_LSB*/        : c->midiRPN = 0xFFFF; return 1;
 		case  99 /*NRPN_MSB*/        : c->midiRPN = 0xFFFF; return 1;
+		case   1 /*MODULATION_MSB*/  : /* WildMIDI: CC1 -> vib LFO pitch depth */
+			c->midiModulation = (unsigned char)control_value;
+			tsf_channel_apply_modulation(f, channel, c);
+			return 1;
 		case  64 /*SUSTAIN*/         : tsf_channel_set_sustain(f, channel, (int)(control_value >= 64)); return 1;
 		case 120 /*ALL_SOUND_OFF*/   : tsf_channel_sounds_off_all(f, channel); return 1;
 		case 123 /*ALL_NOTES_OFF*/   : tsf_channel_note_off_all(f, channel);   return 1;
@@ -2060,6 +2090,9 @@ TSFDEF int tsf_channel_midi_control(tsf* f, int channel, int controller, int con
 			c->bank = 0;
 			c->midiRPN = 0xFFFF;
 			c->midiData = 0;
+			c->midiModulation = 0; /* WildMIDI */
+			c->modDepthRange = 50.0f;
+			tsf_channel_apply_modulation(f, channel, c);
 			tsf_channel_set_volume(f, channel, 1.0f);
 			tsf_channel_set_pan(f, channel, 0.5f);
 			tsf_channel_set_pitchrange(f, channel, 2.0f);
@@ -2078,6 +2111,11 @@ TCMC_SET_DATA:
 	if      (c->midiRPN == 0) tsf_channel_set_pitchrange(f, channel, (c->midiData >> 7) + 0.01f * (c->midiData & 0x7F));
 	else if (c->midiRPN == 1) tsf_channel_set_tuning(f, channel, (int)c->tuning + ((float)c->midiData - 8192.0f) / 8192.0f); //fine tune
 	else if (c->midiRPN == 2 && controller == 6) tsf_channel_set_tuning(f, channel, ((float)control_value - 64.0f) + (c->tuning - (int)c->tuning)); //coarse tune
+	else if (c->midiRPN == 5) /* WildMIDI: modulation depth range, MSB in semitones */
+	{
+		c->modDepthRange = (c->midiData >> 7) * 100.0f + (c->midiData & 0x7F) * (100.0f / 128.0f);
+		tsf_channel_apply_modulation(f, channel, c);
+	}
 	return 1;
 }
 

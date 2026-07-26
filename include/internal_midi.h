@@ -24,6 +24,26 @@
 #ifndef __INTERNAL_MIDI_H
 #define __INTERNAL_MIDI_H
 
+/*
+ * Vibrato LFO (CC1 modulation wheel).
+ *
+ * GUS patches carry no usable LFO rate, so - like TiMidity++ does when an
+ * instrument has no intrinsic vibrato - we run a fixed 5Hz triangle LFO and
+ * scale its depth by the wheel position. Depth at full wheel defaults to
+ * 50 cents, matching the SF2.01 s8.4.4 default CC1->vibLfoToPitch modulator
+ * that FluidSynth installs, and is settable via RPN 5.
+ *
+ * The LFO is updated once per VIB_BLOCK output samples rather than per sample:
+ * at 5Hz a 64 sample block is ~1.5ms of phase error at 44.1kHz, inaudible,
+ * and it keeps the mixer inner loop cheap on slow targets (DOS, Amiga).
+ */
+#define VIB_RATE_HZ      5
+#define VIB_BLOCK        64
+#define VIB_PHASE_BITS   16
+#define VIB_PHASE_MASK   0xFFFF
+#define VIB_DEPTH_DEFAULT 50   /* cents at full wheel */
+#define VIB_DEPTH_MAX    600   /* clamp, same ceiling as TiMidity++ */
+
 struct _channel {
     uint8_t bank;
     struct _patch *patch;
@@ -41,6 +61,8 @@ struct _channel {
     uint16_t reg_data;
     uint8_t reg_non;
     uint8_t isdrum;
+    uint8_t modulation;      /* CC1 modulation wheel, 0-127 */
+    int16_t mod_depth_range; /* RPN 5, vibrato depth at full wheel, in cents */
 };
 
 struct _event_data {
@@ -70,6 +92,11 @@ struct _note {
     uint32_t right_mix_volume;
     uint8_t is_off;
     uint8_t ignore_chan_events;
+    /* Vibrato LFO. When vib_depth is zero the mixers skip all LFO work and
+       sample_inc stays the plain unmodulated increment. */
+    int32_t vib_depth;    /* pitch swing at full LFO travel, in cents */
+    uint16_t vib_phase;   /* 0..VIB_PHASE_MASK, wraps freely */
+    uint16_t vib_inc;     /* phase advance per LFO update block */
 };
 
 struct _mdi;
@@ -81,6 +108,7 @@ enum _event_type {
     ev_note_on,
     ev_aftertouch,
     ev_control_bank_select,
+    ev_control_channel_modulation,
     ev_control_data_entry_course,
     ev_control_channel_volume,
     ev_control_channel_balance,
@@ -160,6 +188,10 @@ struct _mdi {
 
     uint8_t is_type2;
 
+    /* counts output samples toward the next vibrato LFO update; kept on the
+       mdi so LFO phase stays continuous across output buffer boundaries */
+    uint32_t vib_block_count;
+
     char *lyric;
 
     void *sf2_synth; /* per-mdi TinySoundFont instance, NULL unless a soundfont is loaded */
@@ -180,6 +212,13 @@ extern void _WM_do_note_off(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_note_on(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_aftertouch(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_control_bank_select(struct _mdi *mdi, struct _event_data *data);
+extern void _WM_do_control_channel_modulation(struct _mdi *mdi, struct _event_data *data);
+/* Advances a note's vibrato LFO one VIB_BLOCK and updates its sample_inc.
+   Only call when nte->vib_depth is non-zero. */
+extern void _WM_update_note_vibrato(struct _mdi *mdi, struct _note *nte);
+/* As above but without advancing the LFO, for re-applying a pitch bend at the
+   current phase. Only call when nte->vib_depth is non-zero. */
+extern void _WM_update_note_vibrato_at_phase(struct _mdi *mdi, struct _note *nte);
 extern void _WM_do_control_data_entry_course(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_control_channel_volume(struct _mdi *mdi, struct _event_data *data);
 extern void _WM_do_control_channel_balance(struct _mdi *mdi, struct _event_data *data);

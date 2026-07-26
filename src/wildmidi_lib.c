@@ -1027,6 +1027,20 @@ static int WM_GetOutput_Linear(midi * handle, int8_t *buffer, uint32_t size) {
             note_data = mdi->note;
             left_mix = right_mix = 0;
             RESAMPLE_DEBUGI("SAMPLES_TO_MIX",count);
+
+            /* Vibrato LFO tick. Runs once per VIB_BLOCK samples and only
+               touches notes that actually have modulation applied. */
+            if (__builtin_expect((++mdi->vib_block_count >= VIB_BLOCK), 0)) {
+                struct _note *vib_note = mdi->note;
+                mdi->vib_block_count = 0;
+                while (vib_note) {
+                    if (vib_note->vib_depth) {
+                        _WM_update_note_vibrato(mdi, vib_note);
+                    }
+                    vib_note = vib_note->next;
+                }
+            }
+
             if (__builtin_expect((note_data != NULL), 1)) {
                 RESAMPLE_DEBUGS("Processing Notes");
                 while (note_data) {
@@ -1366,6 +1380,20 @@ static int WM_GetOutput_Gauss(midi * handle, int8_t *buffer, uint32_t size) {
         do {
             note_data = mdi->note;
             left_mix = right_mix = 0;
+
+            /* Vibrato LFO tick. Runs once per VIB_BLOCK samples and only
+               touches notes that actually have modulation applied. */
+            if (__builtin_expect((++mdi->vib_block_count >= VIB_BLOCK), 0)) {
+                struct _note *vib_note = mdi->note;
+                mdi->vib_block_count = 0;
+                while (vib_note) {
+                    if (vib_note->vib_depth) {
+                        _WM_update_note_vibrato(mdi, vib_note);
+                    }
+                    vib_note = vib_note->next;
+                }
+            }
+
             if (__builtin_expect((note_data != NULL), 1)) {
                 while (note_data) {
                     /*

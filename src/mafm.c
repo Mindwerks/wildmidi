@@ -56,6 +56,8 @@ typedef char mafm_char20[20]; /* no empty source. */
 #define MAFM_MAX_WAVES  32      /* decoded ADPCM waves kept from one file */
 #define MAFM_PCM_POOL   16      /* simultaneously sounding sampled voices */
 #define MAFM_MAX_TRIGS  1024    /* scheduled ATR wave hits */
+#define MAFM_VIB_RATE_HZ 5      /* CC1 vibrato LFO rate */
+#define MAFM_VIB_BLOCK   64     /* frames between vibrato LFO updates */
 
 /* One entry in the file's custom voice bank. */
 struct mafm_bank_entry {
@@ -111,6 +113,8 @@ struct mafm_synth {
     float   chan_expression[16];     /* CC 0x0B; multiplied with volume */
     int     chan_pitch[16];          /* 14-bit pitch wheel, centred 0x2000 */
     uint8_t chan_pan[16];            /* 0..127 pan CC, 64 = centre; 0xff = unset */
+    uint8_t chan_modulation[16];     /* CC 1 mod wheel, drives a 5Hz pitch LFO */
+    double  vib_phase;               /* shared vibrato LFO phase, 0..1 */
     double  lim_env;                 /* soft peak-limiter state, in mix units */
 
     struct mafm_voice voices[MAFM_POLYPHONY];
@@ -584,6 +588,21 @@ void _WM_MAFM_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     case ev_control_bank_select:
         s->chan_bank[ch] = val & 0x7F;
         break;
+    case ev_control_channel_modulation: {
+        /* Depth is applied per render block in _WM_MAFM_Render; on release of
+         * the wheel restore the sounding voices to their unmodulated pitch,
+         * since the render loop then stops touching them. */
+        int i;
+        s->chan_modulation[ch] = val & 0x7F;
+        if (s->chan_modulation[ch] == 0) {
+            for (i = 0; i < MAFM_POLYPHONY; i++) {
+                struct mafm_voice *v = &s->voices[i];
+                if (_WM_MAFM_VoiceActive(v) && v->channel == ch)
+                    _WM_MAFM_VoiceSetPitch(v,
+                        mafm_note_hz(v->note, s->chan_pitch[ch]));
+            }
+        }
+    } break;
     case ev_pitch: {
         int i;
         s->chan_pitch[ch] = val & 0x3FFF;
@@ -661,6 +680,32 @@ void _WM_MAFM_Render(void *synth, int32_t *out, uint32_t frames) {
     }
     for (f = 0; f < frames; f++) {
         double l = 0.0, r = 0.0, pcm, peak, gain;
+
+        /* CC1 vibrato: advance a shared 5Hz triangle LFO and retune any voice
+         * whose channel has the mod wheel up.  Depth matches the other
+         * backends (50 cents at full wheel, SF2.01 8.4.4).  Updated once per
+         * MAFM_VIB_BLOCK frames to keep the inner mixing loop cheap. */
+        if ((s->cursor % MAFM_VIB_BLOCK) == 0) {
+            double tri;
+            s->vib_phase += (double)MAFM_VIB_RATE_HZ * MAFM_VIB_BLOCK / s->rate;
+            s->vib_phase -= floor(s->vib_phase);
+            /* unit triangle in [-1, 1] */
+            tri = (s->vib_phase < 0.5)
+                    ? (4.0 * s->vib_phase - 1.0)
+                    : (3.0 - 4.0 * s->vib_phase);
+            for (i = 0; i < MAFM_POLYPHONY; i++) {
+                struct mafm_voice *v = &s->voices[i];
+                if (!_WM_MAFM_VoiceActive(v)) continue;
+                if (s->chan_modulation[v->channel]) {
+                    double cents = 50.0 * s->chan_modulation[v->channel] / 127.0
+                                   * tri;
+                    _WM_MAFM_VoiceSetPitch(v,
+                        mafm_note_hz(v->note, s->chan_pitch[v->channel])
+                            * pow(2.0, cents / 1200.0));
+                }
+            }
+        }
+
         for (i = 0; i < MAFM_POLYPHONY; i++) {
             struct mafm_voice *v = &s->voices[i];
             if (_WM_MAFM_VoiceActive(v)) {
