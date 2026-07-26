@@ -456,7 +456,9 @@ void _WM_MAFM_Reset(void *synth) {
         s->chan_expression[i] = 1.0f;
         s->chan_pitch[i] = 0x2000;
         s->chan_pan[i] = 0xff;       /* sentinel: use patch pan_default */
+        s->chan_modulation[i] = 0;
     }
+    s->vib_phase = 0.0;
 }
 
 int _WM_MAFM_ActiveVoices(void *synth) {
@@ -565,6 +567,18 @@ static void mafm_note_off(struct mafm_synth *s, int ch, int note) {
     }
 }
 
+/* Restore a channel's sounding voices to their unmodulated pitch.  Needed
+ * whenever vibrato stops, because the render loop then stops retuning them
+ * and would otherwise leave the last LFO offset frozen in. */
+static void mafm_clear_vibrato(struct mafm_synth *s, uint8_t ch) {
+    int i;
+    for (i = 0; i < MAFM_POLYPHONY; i++) {
+        struct mafm_voice *v = &s->voices[i];
+        if (_WM_MAFM_VoiceActive(v) && v->channel == ch)
+            _WM_MAFM_VoiceSetPitch(v, mafm_note_hz(v->note, s->chan_pitch[ch]));
+    }
+}
+
 void _WM_MAFM_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     struct mafm_synth *s = (struct mafm_synth *) synth;
     uint8_t ch = event->event_data.channel;
@@ -588,19 +602,23 @@ void _WM_MAFM_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     case ev_control_bank_select:
         s->chan_bank[ch] = val & 0x7F;
         break;
-    case ev_control_channel_modulation: {
-        /* Depth is applied per render block in _WM_MAFM_Render; on release of
-         * the wheel restore the sounding voices to their unmodulated pitch,
-         * since the render loop then stops touching them. */
-        int i;
+    case ev_control_channel_modulation:
         s->chan_modulation[ch] = val & 0x7F;
-        if (s->chan_modulation[ch] == 0) {
-            for (i = 0; i < MAFM_POLYPHONY; i++) {
-                struct mafm_voice *v = &s->voices[i];
-                if (_WM_MAFM_VoiceActive(v) && v->channel == ch)
-                    _WM_MAFM_VoiceSetPitch(v,
-                        mafm_note_hz(v->note, s->chan_pitch[ch]));
-            }
+        if (s->chan_modulation[ch] == 0)
+            mafm_clear_vibrato(s, ch);
+        break;
+    case ev_control_channel_controllers_off:
+        s->chan_modulation[ch] = 0;
+        mafm_clear_vibrato(s, ch);
+        break;
+    case ev_sysex_gm_reset:
+    case ev_sysex_roland_reset:
+    case ev_sysex_yamaha_reset: {
+        /* A GM/GS/XG reset clears the wheel on every channel. */
+        int i;
+        for (i = 0; i < 16; i++) {
+            s->chan_modulation[i] = 0;
+            mafm_clear_vibrato(s, (uint8_t)i);
         }
     } break;
     case ev_pitch: {

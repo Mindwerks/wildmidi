@@ -2113,7 +2113,10 @@ TCMC_SET_DATA:
 	else if (c->midiRPN == 2 && controller == 6) tsf_channel_set_tuning(f, channel, ((float)control_value - 64.0f) + (c->tuning - (int)c->tuning)); //coarse tune
 	else if (c->midiRPN == 5) /* WildMIDI: modulation depth range, MSB in semitones */
 	{
-		c->modDepthRange = (c->midiData >> 7) * 100.0f + (c->midiData & 0x7F) * (100.0f / 128.0f);
+		/* Clamped to the same 600 cent ceiling the GUS path applies in
+		   get_vib_depth(), so a bogus RPN 5 cannot detune by octaves. */
+		float depth = (c->midiData >> 7) * 100.0f + (c->midiData & 0x7F) * (100.0f / 128.0f);
+		c->modDepthRange = (depth > 600.0f ? 600.0f : depth);
 		tsf_channel_apply_modulation(f, channel, c);
 	}
 	return 1;
