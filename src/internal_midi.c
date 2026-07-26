@@ -1308,6 +1308,9 @@ void _WM_do_sysex_gm_reset(struct _mdi *mdi, struct _event_data *data) {
         mdi->channel[i].isdrum = 0;
         mdi->channel[i].modulation = 0;
         mdi->channel[i].mod_depth_range = VIB_DEPTH_DEFAULT;
+        /* Clear vibrato on any sounding note too, the same way CC 121 does;
+           otherwise a note held across the reset keeps modulating. */
+        set_channel_vibrato(mdi, (uint8_t)i);
     }
     /* I would not expect notes to be active when this event
      triggers but we'll adjust active notes as well just in case */
