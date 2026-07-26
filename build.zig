@@ -4,6 +4,12 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Yamaha MA-series FM synthesis for SMAF files.  On by default, but
+    // consumers can opt out with -Dmafm=false (mirrors the WANT_MAFM CMake
+    // option); the mafm sources then compile to their empty stubs.
+    const want_mafm = b.option(bool, "mafm", "Enable Yamaha MA FM synthesis for SMAF files") orelse true;
+    const mafm_define: ?i64 = if (want_mafm) 1 else null;
+
     const lib_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
@@ -31,14 +37,20 @@ pub fn build(b: *std.Build) void {
         "src/f_hmp.c",
         "src/f_hmi.c",
         "src/f_midi.c",
+        "src/f_smaf.c",
         "src/sample.c",
         "src/synth.c",
         "src/opl3.c",
         "src/sf2.c",
+        "src/mafm.c",
+        "src/mafm/ma_fm_core.c",
+        "src/mafm/smaf_voice.c",
+        "src/mafm/yamaha_adpcm.c",
         "src/mus2mid.c",
         "src/xmi2mid.c",
         "src/hmp2mid.c",
         "src/hmi2mid.c",
+        "src/smaf2mid.c",
     };
 
     const defaultFlags = .{
@@ -62,6 +74,7 @@ pub fn build(b: *std.Build) void {
             .HAVE_INTTYPES_H = 1,
             .WORDS_BIGENDIAN = null,
             .WILDMIDI_AMIGA = null,
+            .WILDMIDI_MAFM = mafm_define,
             .HAVE_SYS_SOUNDCARD_H = null,
             .AUDIODRV_ALSA = null,
             .AUDIODRV_OSS = null,

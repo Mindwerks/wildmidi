@@ -27,6 +27,7 @@
 #endif
 #pragma warning(disable:4761) /* integral size mismatch in argument; conversion supplied (for MSVC6 and older.) */
 
+#define WILDMIDI_MAFM 1
 #define WILDMIDI_SF2 1
 
 /* #undef AUDIODRV_OPENAL */

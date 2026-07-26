@@ -1,0 +1,33 @@
+WildMIDI — third-party attributions
+===================================
+
+This product includes software developed by third parties, retained under
+their original licenses.  This NOTICE file is provided in satisfaction of the
+attribution requirements of those licenses.
+
+--------------------------------------------------------------------------------
+Yamaha MA-series FM / ADPCM synthesis (src/mafm/)
+--------------------------------------------------------------------------------
+
+The files under src/mafm/ are ported to C from the akustikrausch
+"yamaha-smaf-player" project:
+
+    https://github.com/akustikrausch/yamaha-smaf-player
+    Copyright (c) Andreas Wendorf (Akustikrausch)
+    Licensed under the Apache License, Version 2.0.
+
+The C translation preserves the original algorithms.  Each ported file retains
+its "SPDX-License-Identifier: Apache-2.0" header.  A copy of the Apache License,
+Version 2.0 is available at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Ported so far:
+    src/mafm/yamaha_adpcm.{c,h}   -- 4-bit Yamaha (OPNA-B) ADPCM codec
+    src/mafm/smaf_voice.{c,h}     -- VM35 / VMA voice-exclusive -> FM patch decode
+    src/mafm/ma_fm_core.{c,h}     -- FM DSP: operators, envelopes, 2/4-op voices
+
+The WildMIDI-side wrapper (src/mafm.c, include/mafm.h) that drives this synth is
+original WildMIDI code under the project's usual GPL/LGPL, not Apache-2.0.
+
+See docs/SMAF_FM.md for the design and the porting plan.

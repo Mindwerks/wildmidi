@@ -71,7 +71,7 @@
  * the command line bypass this: the library sniffs content, not names, so a
  * deliberately named file still plays.  */
 static const char *const midi_extensions[] = {
-    "mid", "midi", "rmi", "kar", "mus", "xmi", "hmp", "hmi", NULL
+    "mid", "midi", "rmi", "kar", "mus", "xmi", "hmp", "hmi", "mmf", NULL
 };
 
 static int has_midi_extension(const char *name) {

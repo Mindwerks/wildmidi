@@ -20,6 +20,7 @@
 /* #undef HAVE_SQRTF */
 /* #undef HAVE_POWF */
 
+#define WILDMIDI_MAFM 1
 #define WILDMIDI_SF2 1
 
 /* #undef AUDIODRV_OPENAL */

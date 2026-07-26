@@ -13,14 +13,20 @@ SET(wildmidi_library_SRCS
     f_hmp.c
     f_midi.c
     f_hmi.c
+    f_smaf.c
     sample.c
     synth.c
     opl3.c
     sf2.c
+    mafm.c
+    mafm/ma_fm_core.c
+    mafm/smaf_voice.c
+    mafm/yamaha_adpcm.c
     mus2mid.c
     xmi2mid.c
     hmp2mid.c
     hmi2mid.c
+    smaf2mid.c
 )
 
 SET(wildmidi_library_HDRS
@@ -35,6 +41,7 @@ SET(wildmidi_library_HDRS
  ../include/f_hmp.h
  ../include/f_midi.h
  ../include/f_hmi.h
+ ../include/f_smaf.h
  ../include/internal_midi.h
  ../include/patches.h
  ../include/sample.h
@@ -49,6 +56,7 @@ SET(wildmidi_library_HDRS
  ../include/xmi2mid.h
  ../include/hmp2mid.h
  ../include/hmi2mid.h
+ ../include/smaf2mid.h
  ../include/wm_tty.h
  ../include/wildplay.h
  ../src/tsf/tsf.h

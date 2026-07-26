@@ -14,11 +14,11 @@ wildmidi \- example player for libWildMidi
 .SH DESCRIPTION
 This is a demonstration program to show the capabilities of libWildMidi.
 .PP
-\fImidifile\fP can be a MIDI type file in the HMI, HMP, MIDI, MUS or XMI formats and is processed by libWildMidi and the resulting audio is output by the player.
+\fImidifile\fP can be a MIDI type file in the HMI, HMP, MIDI, MUS, SMAF or XMI formats and is processed by libWildMidi and the resulting audio is output by the player.
 .PP
 You can have more than one \fImidifile\fP on the command line and \fBwildmidi\fP will pass them to libWildMidi for processing, one after the other. You can also use wildcards, for example: \fBwildmidi *.mid\fP
 .PP
-\fImidifile\fP may also be a directory, including a symlink to one. Directories are searched recursively and every file whose name ends in .mid, .midi, .rmi, .kar, .mus, .xmi, .hmp or .hmi is added to the playlist. Symlinked subdirectories found during that search are not followed, so that a link pointing back into its own parent cannot cause the same files to be added over and over. A file named directly on the command line is always played regardless of its name, since libWildMidi detects the format from the file contents. Use \fB\-S\fP to play the resulting playlist in random order, and \fB\-L\fP to repeat it once it ends.
+\fImidifile\fP may also be a directory, including a symlink to one. Directories are searched recursively and every file whose name ends in .mid, .midi, .rmi, .kar, .mus, .xmi, .hmp, .hmi or .mmf is added to the playlist. Symlinked subdirectories found during that search are not followed, so that a link pointing back into its own parent cannot cause the same files to be added over and over. A file named directly on the command line is always played regardless of its name, since libWildMidi detects the format from the file contents. Use \fB\-S\fP to play the resulting playlist in random order, and \fB\-L\fP to repeat it once it ends.
 .PP
 .SH OPTIONS
 .IP "\fB\-0\fP"
@@ -94,7 +94,7 @@ Skips any silence at the start of playback.
 Display version and copyright information.
 .PP
 .IP "\fB\-x\fP \fIfile\fP | \fB\-\-tomidi=\fIfile\fP"
-Convert a MUS, XMI, HMP or HMI file to midi and save it as \fIfile\fP.
+Convert a MUS, XMI, HMP, HMI or SMAF file to midi and save it as \fIfile\fP.
 .PP
 .SH TEST OPTIONS
 These options are not designed for general use. Instead these options are designed to make it easier to listen to specific sound samples.
