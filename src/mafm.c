@@ -66,6 +66,7 @@ struct mafm_bank_entry {
     int is_pcm;                      /* PCM (sampled) voice; play the wave */
     int wave_id;                     /* pcm.wave_id if is_pcm */
     int drum_note;                   /* fixed pitch for drums; 0 = melodic */
+    struct mafm_pcm_params pcm;      /* env + loop; valid when is_pcm */
     struct mafm_voice_patch patch;
 };
 
@@ -76,17 +77,31 @@ struct mafm_wave {
     int fs;                          /* native sample rate (Hz) */
 };
 
+/* PCM voice envelope phase, one-off ADSR modelled on the FM operator EG in
+ * ma_fm_core.c.  IDLE = slot free; the others are the classic four stages. */
+enum mafm_pcm_eg { MAFM_PCM_EG_IDLE = 0, MAFM_PCM_EG_ATTACK,
+                   MAFM_PCM_EG_DECAY, MAFM_PCM_EG_SUSTAIN, MAFM_PCM_EG_RELEASE };
+
 /* A sampled voice playing back a wave. */
 struct mafm_pcm_voice {
     const int16_t *pcm;
-    uint32_t len;
+    uint32_t len;                    /* decoded sample count */
+    uint32_t loop_pt;                /* loop start, clamped to len */
+    uint32_t end_pt;                 /* loop/end point, clamped to len */
     double pos;                      /* fractional read position (samples) */
-    double step;                     /* native_fs / output_rate */
-    float  gain;
+    double step;                     /* native_fs / output_rate * pitch ratio */
+    float  gain;                     /* volume * expression * velocity^2 */
     float  pan_l, pan_r;             /* per-slot L/R gains from chan_pan CC */
     int    channel;                  /* -1 for ATR one-shots (no owner ch) */
     int    note;
     int    active;
+    int    do_loop;                  /* RM flag: loop between loop_pt and end_pt */
+    /* Envelope, applied as an extra gain multiplier per sample. */
+    double env_level;                /* current amp, 0..1 */
+    double atk_step, dec_step, sus_step, rel_step;
+    double sus_level;
+    uint8_t env_phase;               /* enum mafm_pcm_eg */
+    uint8_t sustaining;              /* SR!=0 means sustain phase bleeds too */
 };
 
 /* One scheduled ATR wave trigger. */
@@ -155,6 +170,7 @@ static void mafm_parse_mtsu(struct mafm_synth *s, const uint8_t *body,
                 e->is_pcm = pv.is_pcm;
                 e->wave_id = pv.pcm.wave_id;
                 e->drum_note = pv.key.drum_note;
+                e->pcm = pv.pcm;
                 e->patch = pv.patch;
             }
             p += hdr + len;
@@ -598,14 +614,70 @@ int _WM_MAFM_ActiveVoices(void *synth) {
     return n;
 }
 
+/* Chip envelope-rate (0..15) to a per-sample linear increment.  Same shape as
+ * the FM operator EG in ma_fm_core.c: rate 0 = never advances (attack floors
+ * to instant, decay/release fall to a slow ~20s glide so the slot always
+ * retires), rate 15 = ~1ms, rate 1 = ~4s.  Reused for AR/DR/SR/RR. */
+static double pcm_rate_to_step(uint8_t rate, double sample_rate, int attack) {
+    double fast, slow, t, samples;
+    if (rate == 0) return attack ? 0.0 : (1.0 / (sample_rate * 20.0));
+    if (rate > 15) rate = 15;
+    fast = attack ? 0.0008 : 0.004;              /* rate 15 sweep time (sec) */
+    slow = attack ? 0.35   : 4.0;                /* rate 1  sweep time (sec) */
+    t = slow * pow(fast / slow, ((double) rate - 1.0) / 14.0);
+    samples = t * sample_rate;
+    if (samples < 1.0) samples = 1.0;
+    return 1.0 / samples;
+}
+
+/* One envelope step, mirroring the FM operator EG. */
+static double pcm_env_advance(struct mafm_pcm_voice *pv) {
+    switch (pv->env_phase) {
+    case MAFM_PCM_EG_IDLE:
+        return 0.0;
+    case MAFM_PCM_EG_ATTACK:
+        pv->env_level += (pv->atk_step <= 0.0 ? 1.0 : pv->atk_step);
+        if (pv->env_level >= 1.0) {
+            pv->env_level = 1.0;
+            pv->env_phase = MAFM_PCM_EG_DECAY;
+        }
+        break;
+    case MAFM_PCM_EG_DECAY:
+        pv->env_level -= pv->dec_step;
+        if (pv->env_level <= pv->sus_level) {
+            pv->env_level = pv->sus_level;
+            pv->env_phase = pv->sustaining ? MAFM_PCM_EG_SUSTAIN
+                                           : MAFM_PCM_EG_RELEASE;
+        }
+        break;
+    case MAFM_PCM_EG_SUSTAIN:
+        pv->env_level -= pv->sus_step;
+        if (pv->env_level <= 0.0) {
+            pv->env_level = 0.0;
+            pv->env_phase = MAFM_PCM_EG_IDLE;
+        }
+        break;
+    case MAFM_PCM_EG_RELEASE:
+        pv->env_level -= pv->rel_step;
+        if (pv->env_level <= 0.0) {
+            pv->env_level = 0.0;
+            pv->env_phase = MAFM_PCM_EG_IDLE;
+        }
+        break;
+    }
+    return pv->env_level;
+}
+
 /* Start a sampled wave playing on a free PCM slot.  channel < 0 marks an
- * "ownerless" trigger (ATR drums, phrases) which are one-shot at centre pan;
- * channel >= 0 attaches the slot to a MIDI channel so pan tracks the channel's
- * pan CC and note-off can find and release its own trigger.  base_note is the
- * MIDI note at which the wave plays at its native rate: a fixed value for
- * drums (the voice's drum_note) and 60 for melodic voices (standard root). */
+ * "ownerless" trigger (ATR drums, phrases) which are one-shot at centre pan
+ * with no envelope; channel >= 0 attaches the slot to a MIDI channel so pan
+ * tracks the channel's pan CC and note-off can find and release its own
+ * trigger.  base_note is the MIDI note at which the wave plays at its native
+ * rate (drums fix it to the played note; melodic voices use 60).  params is
+ * the voice's env + loop config, or NULL for an unenvelope one-shot. */
 static void mafm_start_pcm_full(struct mafm_synth *s, int wave, float gain,
-                                int channel, int note, int base_note) {
+                                int channel, int note, int base_note,
+                                const struct mafm_pcm_params *params) {
     struct mafm_wave *w;
     struct mafm_pcm_voice *pv = NULL;
     int i;
@@ -649,12 +721,63 @@ static void mafm_start_pcm_full(struct mafm_synth *s, int wave, float gain,
         pv->pan_l = 1.0f - pan;
         pv->pan_r = 1.0f + pan;
     }
+    /* Loop region.  end_pt = 0 means "play the whole wave" per the parser;
+     * loop_pt/end_pt are sample indices from the SMAF PCM header, clamped to
+     * the actual decoded length.  do_loop drives the wrap in the tick loop. */
+    pv->loop_pt = 0;
+    pv->end_pt = w->len;
+    pv->do_loop = 0;
+    if (params && params->end_pt > 0 && (uint32_t) params->end_pt <= w->len) {
+        pv->end_pt = (uint32_t) params->end_pt;
+        if ((uint32_t) params->loop_pt < pv->end_pt) {
+            pv->loop_pt = (uint32_t) params->loop_pt;
+        }
+        pv->do_loop = params->loop;
+    }
+    /* Envelope.  Without params (ATR one-shots) leave the EG idle and the
+     * sample plays at its raw gain, matching the pre-envelope behaviour.
+     * With params, initialise ADSR from the voice's TL/AR/DR/SL/SR/RR fields
+     * and enter the attack phase.  TL folds into the base gain (steady-state
+     * attenuation, 6-bit: 0 = full, 63 = silent) so the envelope value itself
+     * stays in [0..1] and the ADSR maths matches the FM operator's.
+     *
+     * Skip the envelope entirely when every field is zero (the memset state
+     * the streaming special case leaves behind, and MA-7 sampled forms whose
+     * env has not been reverse-engineered).  Otherwise those slots would
+     * attack instantly, hit the RR=0 "slow ~20s glide" floor and fade out
+     * long before their wave finishes. */
+    if (params && (params->env.ar || params->env.dr || params->env.sr ||
+                   params->env.rr || params->env.sl || params->env.tl ||
+                   params->env.eg_type)) {
+        const struct mafm_op_patch *e = &params->env;
+        double tl_gain;
+        pv->atk_step = pcm_rate_to_step(e->ar, s->rate, 1);
+        pv->dec_step = pcm_rate_to_step(e->dr, s->rate, 0);
+        pv->sus_step = pcm_rate_to_step(e->sr, s->rate, 0);
+        pv->rel_step = pcm_rate_to_step(e->rr, s->rate, 0);
+        pv->sus_level = 1.0 - ((double) e->sl / 15.0);   /* sl 0 top, 15 low */
+        pv->sustaining = e->eg_type;
+        pv->env_phase = MAFM_PCM_EG_ATTACK;
+        pv->env_level = 0.0;
+        /* -0.75 dB per TL step matches the FM engine's tl_to_gain(). */
+        tl_gain = (e->tl >= 63) ? 0.0 : pow(10.0, (-0.75 * (double) e->tl) / 20.0);
+        pv->gain *= (float) tl_gain;
+    } else {
+        pv->atk_step = 0.0;
+        pv->dec_step = 0.0;
+        pv->sus_step = 0.0;
+        pv->rel_step = 0.0;
+        pv->sus_level = 1.0;
+        pv->sustaining = 0;
+        pv->env_phase = MAFM_PCM_EG_IDLE;
+        pv->env_level = 1.0;                     /* pass-through gain */
+    }
     pv->active = 1;
 }
 
 static void mafm_start_pcm(struct mafm_synth *s, int wave) {
     /* ATR triggers are ownerless one-shots; note = base_note keeps ratio = 1. */
-    mafm_start_pcm_full(s, wave, 1.0f, -1, 0, 0);
+    mafm_start_pcm_full(s, wave, 1.0f, -1, 0, 0, NULL);
 }
 
 /* Advance the ATR trigger schedule and render one PCM sample, summed into
@@ -669,12 +792,34 @@ static void mafm_pcm_tick(struct mafm_synth *s, double *l, double *r) {
     }
     for (i = 0; i < MAFM_PCM_POOL; i++) {
         struct mafm_pcm_voice *pv = &s->pcm[i];
-        double x;
+        double x, env;
         uint32_t idx;
         if (!pv->active) continue;
         idx = (uint32_t) pv->pos;
-        if (idx >= pv->len) { pv->active = 0; continue; }
-        x = (double) pv->pcm[idx] / 32768.0 * pv->gain;
+        /* End of the region: either wrap for looped voices or retire. */
+        if (idx >= pv->end_pt) {
+            if (pv->do_loop && pv->end_pt > pv->loop_pt) {
+                double span = (double)(pv->end_pt - pv->loop_pt);
+                double over = pv->pos - (double) pv->end_pt;
+                if (span > 0.0) over = fmod(over, span);
+                pv->pos = (double) pv->loop_pt + over;
+                idx = (uint32_t) pv->pos;
+                if (idx >= pv->end_pt) { pv->active = 0; continue; }
+            } else {
+                pv->active = 0;
+                continue;
+            }
+        }
+        env = (pv->env_phase == MAFM_PCM_EG_IDLE) ? pv->env_level
+                                                  : pcm_env_advance(pv);
+        /* An envelope-driven slot retires when the envelope decays to zero,
+         * even if the wave still has samples left (a plucked note that has
+         * long finished releasing must free its slot). */
+        if (pv->env_phase == MAFM_PCM_EG_IDLE && env <= 0.0) {
+            pv->active = 0;
+            continue;
+        }
+        x = (double) pv->pcm[idx] / 32768.0 * pv->gain * env;
         *l += x * pv->pan_l;
         *r += x * pv->pan_r;
         pv->pos += pv->step;
@@ -713,7 +858,8 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
              * every wavetable synth WildMIDI already ships uses. */
             int drum_note = s->bank[bank_idx].drum_note;
             int base = drum_note ? note : 60;
-            mafm_start_pcm_full(s, wid, g, ch, note, base);
+            mafm_start_pcm_full(s, wid, g, ch, note, base,
+                                &s->bank[bank_idx].pcm);
             return;
         }
         /* Wave not loaded.  Yamaha MA chips carry a ROM sample bank that PCM
@@ -759,6 +905,19 @@ static void mafm_note_off(struct mafm_synth *s, int ch, int note) {
         struct mafm_voice *v = &s->voices[i];
         if (_WM_MAFM_VoiceActive(v) && v->channel == ch && v->note == note) {
             _WM_MAFM_VoiceNoteOff(v);
+            return;
+        }
+    }
+    /* No FM match: try the PCM pool.  Envelope-driven PCM voices transition
+     * to their release phase and fade over RR; slots without an envelope
+     * (ATR one-shots) ignore note-off and ring out naturally, which is what
+     * a drum hit should do. */
+    for (i = 0; i < MAFM_PCM_POOL; i++) {
+        struct mafm_pcm_voice *pv = &s->pcm[i];
+        if (pv->active && pv->channel == ch && pv->note == note &&
+            pv->env_phase != MAFM_PCM_EG_IDLE &&
+            pv->env_phase != MAFM_PCM_EG_RELEASE) {
+            pv->env_phase = MAFM_PCM_EG_RELEASE;
             return;
         }
     }
