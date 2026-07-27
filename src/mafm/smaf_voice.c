@@ -152,6 +152,55 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
     if (!p || n < 5) return;
     if (p[0] != 0x43) return;   /* not a Yamaha maker id */
 
+    /* MA-7 form: 43 79 08 7F 21 [bank msb][bank lsb][pc][drum note][type][rsv]
+     * then 3 global bytes and TEN bytes per operator.
+     *
+     * MA-7 stores the operator block in the chip's own layout instead of the
+     * packed VM35 one.  Yamaha's middleware converts VM35 -> native with a
+     * fixed shuffle (M7_EmuSmw7.dll, the routine at 0x10183980):
+     *
+     *     native[0..4] = vm35[0..4]      native[5] = 0
+     *     native[6]    = vm35[6]         native[7] = native[8] = 0
+     *     native[9]    = vm35[5]
+     *
+     * so undoing it recovers a VM35 operator and the existing decoder can do
+     * the rest.  Confirmed by round-tripping all four voices in the corpus
+     * back through that routine: every operator byte reproduces exactly, and
+     * the three bytes it zeroes are zero in all of them. */
+    if (n >= 14 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21) {
+        const uint8_t *body = p + 11;
+        uint32_t bn = n - 11;
+        uint8_t vm35[3 + 7 * 4];
+        int alg, ops, i;
+
+        out->key.bank_msb = p[5];
+        out->key.bank_lsb = p[6];
+        out->key.pc = p[7];
+        out->key.drum_note = p[8];
+        if (p[9] != 0) {            /* PCM (sampled) voice, not FM */
+            out->is_pcm = 1;
+            return;
+        }
+        if (bn < 3) return;
+        alg = body[2] & 0x07;
+        ops = op_count_from_alg(alg);
+        if (bn < (uint32_t)(3 + 10 * ops)) return;
+
+        vm35[0] = body[0];
+        vm35[1] = body[1];
+        vm35[2] = body[2];
+        for (i = 0; i < ops; i++) {
+            const uint8_t *o = body + 3 + 10 * i;
+            uint8_t *v = vm35 + 3 + 7 * i;
+            v[0] = o[0]; v[1] = o[1]; v[2] = o[2]; v[3] = o[3]; v[4] = o[4];
+            v[5] = o[9];            /* MULTI / DT */
+            v[6] = o[6];            /* WS / FB    */
+        }
+        apply_vm35_body(vm35, (uint32_t)(3 + 7 * ops), ops, &out->patch);
+        out->valid = 1;
+        return;
+    }
+
     /* MA-3 / MA-5 long form: 43 79 06|07 7F 01 [bank...] body */
     if (n >= 11 && p[1] == 0x79 && (p[2] == 0x06 || p[2] == 0x07) &&
         p[3] == 0x7f && p[4] == 0x01) {
