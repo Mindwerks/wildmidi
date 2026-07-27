@@ -75,7 +75,7 @@ CHANGELOG
 0.5.1 (unreleased)
 * Support for playing and converting Yamaha SMAF (`.mmf`) ringtone files:
   the HandyPhone (MA-1/MA-2) and Mobile Standard (MA-3/MA-5) score formats.
-  The MA-7 "SEQU" format is not supported.
+  The MA-7 "SEQU" also supported.
 * Yamaha MA-series FM synthesis for SMAF: a file carrying a custom FM voice
   bank plays with its own instruments and embedded ADPCM percussion instead
   of a General MIDI approximation. `WANT_MAFM=ON`; see `docs/SMAF_FM.md`.
