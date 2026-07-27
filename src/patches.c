@@ -81,6 +81,14 @@ _WM_get_patch_data(struct _mdi *mdi, uint16_t patchid) {
 
     _WM_Lock(&_WM_patch_lock);
     search_patch = _find_nearest_patch(patchid);
+    if (search_patch == NULL && (patchid & 0xff00) != 0) {
+        /* Nothing at all in the requested bank: fall back to bank 0 rather
+         * than play silence, as a hardware synth does for an unknown bank.
+         * SMAF needs this - its scores select Yamaha's own voice banks (0x7c
+         * and friends), which no GUS/SF2 patch set defines, so without the
+         * fallback every SMAF file that has no custom FM voices is mute. */
+        search_patch = _find_nearest_patch(patchid & 0x00ff);
+    }
     _WM_Unlock(&_WM_patch_lock);
     return (search_patch);
 }

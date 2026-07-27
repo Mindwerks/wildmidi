@@ -152,6 +152,66 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
     if (!p || n < 5) return;
     if (p[0] != 0x43) return;   /* not a Yamaha maker id */
 
+    /* MA-7 form: 43 79 08 7F 21 [bank msb][bank lsb][pc][?][?][form] body
+     *
+     * p[10] selects the body layout.  Only form 0x00 is decoded here: 3 global
+     * bytes then TEN bytes per operator, the chip's own layout rather than the
+     * packed VM35 one the older chips use.  Yamaha's middleware converts
+     * VM35 -> native with a fixed shuffle (M7_EmuSmw7.dll, routine 0x10183980):
+     *
+     *     native[0..4] = vm35[0..4]      native[5] = 0
+     *     native[6]    = vm35[6]         native[7] = native[8] = 0
+     *     native[9]    = vm35[5]
+     *
+     * so undoing it recovers a VM35 operator and the existing decoder does the
+     * rest.  Confirmed by round-tripping corpus voices back through that
+     * routine: every operator byte reproduces exactly.  (Bytes 5/7/8 carry
+     * MA-7-only parameters that VM35 cannot express - zero in voices that were
+     * authored as VM35, non-zero otherwise - and are ignored either way.)
+     *
+     * Form 0x02 is the same FM voice with a 16-byte trailer after the
+     * operators (rate/level pairs that this engine does not model), so it
+     * shares the code.  Forms 0x01, 0x03 and 0x07 are SAMPLED voices, not FM -
+     * their bodies start with a PCM sample rate and most of them sit in the
+     * drum bank - so they are declined here; playing them needs the sampled
+     * voice support tracked in docs/formats/SMAF_TODO.md. */
+    if (n >= 14 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
+        (p[10] == 0x00 || p[10] == 0x02)) {
+        const uint8_t *body = p + 11;
+        uint32_t bn = n - 11;
+        uint8_t vm35[3 + 7 * 4];
+        uint32_t want;
+        int alg, ops, i;
+
+        if (bn > 0 && p[n - 1] == 0xf7)
+            bn--;                   /* drop the terminator if it is included */
+        if (bn < 3) return;
+        alg = body[2] & 0x07;
+        ops = op_count_from_alg(alg);
+        /* exact fit only: anything else is a form we have not established */
+        want = (uint32_t)(3 + 10 * ops) + (p[10] == 0x02 ? 16u : 0u);
+        if (bn != want) return;
+
+        out->key.bank_msb = p[5];
+        out->key.bank_lsb = p[6];
+        out->key.pc = p[7];
+        out->key.drum_note = p[8];
+
+        vm35[0] = body[0];
+        vm35[1] = body[1];
+        vm35[2] = body[2];
+        for (i = 0; i < ops; i++) {
+            const uint8_t *o = body + 3 + 10 * i;
+            uint8_t *v = vm35 + 3 + 7 * i;
+            v[0] = o[0]; v[1] = o[1]; v[2] = o[2]; v[3] = o[3]; v[4] = o[4];
+            v[5] = o[9];            /* MULTI / DT */
+            v[6] = o[6];            /* WS / FB    */
+        }
+        apply_vm35_body(vm35, (uint32_t)(3 + 7 * ops), ops, &out->patch);
+        out->valid = 1;
+        return;
+    }
+
     /* MA-3 / MA-5 long form: 43 79 06|07 7F 01 [bank...] body */
     if (n >= 11 && p[1] == 0x79 && (p[2] == 0x06 || p[2] == 0x07) &&
         p[3] == 0x7f && p[4] == 0x01) {

@@ -316,9 +316,25 @@ static int find_sequence(const uint8_t *in, uint32_t insize,
 /* ------------------------------------------------------------------------- */
 
 /* Decode a Mobile Standard (format 0x01/0x02) sequence into MIDI events.
+ *
+ * With sequ != 0, decode the MA-7 "SEQU" variant (format 0x03) instead.  SEQU
+ * is the same record stream; only the status byte is packed differently, to
+ * address 32 channels instead of 16:
+ *
+ *      bit 7    : channel bank  (0 -> channels 0-15, 1 -> channels 16-31)
+ *      bits 6-4 : event type    (the low 3 bits of the MIDI status nibble,
+ *                                i.e. type n means MIDI status 0x8+n)
+ *      bits 3-0 : channel, low nibble
+ *
+ * so 0x1n is a note-with-velocity (MIDI 0x9n), 0x3n a control change (0xBn),
+ * 0x4n a program change (0xCn), 0x6n a pitch bend (0xEn), and so on.  0xF0 and
+ * 0xFF keep their literal Mobile meaning.  Because ordinary status bytes are
+ * below 0x80 there is no running status in SEQU: every event carries one.
+ *
  * Returns 0 on success, -1 on allocation failure. */
 static int decode_mobile(struct smaf_ctx *ctx, const uint8_t *seq,
-                         uint32_t seqlen, uint32_t ms_dur, uint32_t ms_gate) {
+                         uint32_t seqlen, uint32_t ms_dur, uint32_t ms_gate,
+                         int sequ) {
     uint8_t run_vel[MIDI_MAXCHANNELS];
     uint8_t run_status = 0;
     uint32_t p = 0, cur_ms = 0;
@@ -347,7 +363,17 @@ static int decode_mobile(struct smaf_ctx *ctx, const uint8_t *seq,
         flush_offs(ctx, cur_ms);
 
         s = seq[p];
-        if (s & 0x80) {
+        if (sequ) {
+            p++;
+            if (s != 0xf0 && s != 0xff) {
+                /* ponytail: fold the 32 SEQU channels onto MIDI's 16.  Every
+                 * MA-7 file seen so far plays only on channels 0-15 and leaves
+                 * 16-31 at their setup defaults, so the fold never collides;
+                 * carrying the upper bank properly would need a second MIDI
+                 * port, which the converter has no way to express. */
+                s = (uint8_t)(0x80 | (((s >> 4) & 7) << 4) | (s & 0x0f));
+            }
+        } else if (s & 0x80) {
             p++;
             run_status = s;
         } else if (run_status) {
@@ -811,12 +837,9 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
         return -1;
     }
 
-    /* Supported score-track formats: Mobile Standard (0x01/0x02) and HandyPhone
-     * Standard (0x00).  The MA-7 "SEQU" variant (0x03) is a different,
-     * compressed encoding that has not been decoded (see
-     * docs/formats/SmafFileFormat.txt); decline it rather than emit a mangled
-     * conversion. */
-    if (fmt != 0x00 && fmt != 0x01 && fmt != 0x02) {
+    /* Supported score-track formats: Mobile Standard (0x01/0x02), HandyPhone
+     * Standard (0x00) and MA-7 SEQU (0x03). */
+    if (fmt > 0x03) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(unsupported SMAF track format)", 0);
         return -1;
     }
@@ -873,7 +896,8 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
         hp_emit(&ctx, &hev);
         free(hev.ev);
     } else {
-        if (decode_mobile(&ctx, seq, seqlen, ms_dur, ms_gate) < 0) {
+        if (decode_mobile(&ctx, seq, seqlen, ms_dur, ms_gate,
+                          fmt == 0x03) < 0) {
             _WM_GLOBAL_ERROR(WM_ERR_MEM, NULL, 0);
             goto _end;
         }
