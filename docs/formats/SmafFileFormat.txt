@@ -44,10 +44,14 @@ to the GM conversion.
 The Mobile Standard layout below was verified by decoding a corpus of real .mmf
 files from the MA-2/MA-3/MA-5/MA-6 generations, cross-checked against the
 vavi-sound reference decoder (identical note output).  The MA-7 "SEQU" format
-(format_type 0x03) is a different, compressed encoding that is NOT decoded -
-WildMIDI declines it; see its section below for reverse-engineering notes.  The
-HandyPhone Standard encoding (format_type 0x00) IS decoded (verified against
-real MA-1/MA-2 .mmf files); see its section below.
+(format_type 0x03) turned out to be the same encoding with a 32-channel status
+byte, and is decoded too; see its section below.  The HandyPhone Standard
+encoding (format_type 0x00) IS decoded (verified against real MA-1/MA-2 .mmf
+files); see its section below.
+
+Note that no other open-source SMAF implementation reads MA-7 correctly, so
+there is nothing to cross-check the SEQU section against - see the "Prior art"
+note at the end of that section.
 
 NOTE: All multi-byte integers are BIG-ENDIAN.  All chunks have the form
       { uint8_t id[4]; uint32_t size; uint8_t data[size]; }.  Unknown chunks
@@ -118,14 +122,14 @@ The score-track format_type byte selects the sequence encoding:
     0x00  HandyPhone Standard      (MA-1/MA-2, 4-channel; SUPPORTED, see below)
     0x01  Mobile Standard          (Huffman-compressed; see note below)
     0x02  Mobile Standard          (uncompressed; the common MA-2/3/5/6 case)
-    0x03  SEQU                      (the MA-7 format; NOT supported - declined)
+    0x03  SEQU                     (the MA-7 format; SUPPORTED, see below)
 
-WildMIDI converts 0x00 and 0x02.  0x01 is the Huffman-compressed variant of
-Mobile Standard; the converter treats it like 0x02 and will only work if the
+WildMIDI converts 0x00, 0x02 and 0x03.  0x01 is the Huffman-compressed variant
+of Mobile Standard; the converter treats it like 0x02 and will only work if the
 body is not actually compressed (decompression is not implemented).  0x03
-(SEQU / MA-7) is declined - see the SEQU section below for the (incomplete)
-reverse-engineering notes.  0x00 (HandyPhone) uses a different, simpler encoding
-(see its section below) and is decoded by decode_handyphone().
+(SEQU / MA-7) is Mobile Standard with a 32-channel status byte and shares the
+same decoder.  0x00 (HandyPhone) uses a different, simpler encoding (see its
+section below) and is decoded by decode_handyphone().
 
 
 MA-chip support summary
@@ -138,20 +142,46 @@ optional FM engine, the VOICE/instrument form.
     MA-1 / MA-2   HandyPhone (0x00)            decoded, tested on real files
     MA-2 / 3 / 5  Mobile uncompressed (0x02)   decoded, tested on real files
     (any)         Mobile compressed (0x01)     only if not actually Huffman'd
-    MA-7          SEQU (0x03)                   NOT supported (see SEQU section)
+    MA-7          SEQU (0x03)                  decoded, tested on real files
 
   FM voice-exclusives (Mtsu; decoded by src/mafm/smaf_voice.c, played by the FM
   engine when WANT_MAFM is on):
-    MA-1 / MA-2   VMA form         "43 03 ..."          decoded, tested
+    MA-1 / MA-2   VMA form         "43 03 ..."           decoded, tested
     MA-3          VM35 packed      "43 79 06 7F 01 ..."  decoded, UNTESTED
     MA-5          VM35 direct      "43 79 07 ..." /
                                    "43 05 01 ..."        decoded, UNTESTED
     MA-3 / MA-5   PCM (sampled)    "43 79 .. type!=0"    parsed, not yet played
+    MA-7          ?                "43 79 08 7F 21 ..."  NOT decoded (see below)
 
   Net: MA-1 and MA-2 are fully supported and verified (score + FM voices + ATR
   ADPCM drums).  MA-3 / MA-5 score plays; their FM voice forms are implemented
-  but not yet exercised (need MA-3/5 sample files).  MA-7 is unsupported (its
-  SEQU score format was never reverse-engineered).
+  but not yet exercised (need MA-3/5 sample files).  MA-7 score plays; its FM
+  voice form is not decoded, so MA-7 falls back to the GM wavetable.
+
+  MA-7 voice-exclusive (unsolved).  MA-7 Mtsu voices look like this:
+
+      43 79 08 7F 21 | 7c 02 0a 00 | 00 | <24-byte body> | F7
+      \-- id ------/   \- key ---/  type
+                       bankMSB bankLSB pc drumNote
+
+  i.e. the same maker id / bank / program / drum-note / voice-type key layout
+  as the MA-3 and MA-5 forms (which use "43 79 06|07 7F 01"), only with model
+  byte 0x08 and sub-id 0x21, and a 24-byte body where MA-5's VM35 body is 17
+  (3 global + 7 per operator, 2 operators).  The extra 7 bytes were not placed:
+  the four voices in the corpus differ in only 7 byte positions, which is not
+  enough to separate "4 global + 8 per op + 4 trailing" from "3 global + 8 per
+  op + 5 trailing", and the two readings disagree about which bytes are MULTI
+  and DT.  Guessing produces a plausible-looking but wrong patch, so
+  _WM_MAFM_ParseVoiceExclusive() does not accept the form and MA-7 files get no
+  mafm_synth.
+
+  Also seen in MA-7 Mtsu, undecoded: "43 79 08 7F 22 00" (the end-of-setup
+  marker, matching MA-5's "43 79 07 7F 07 00") and two 38-byte per-channel
+  parameter tables "43 79 08 7F 26 ..." and "43 79 08 7F 27 ...".
+
+  To finish this, the reference is the MCP-MA7 player's DLLs (an InstallShield
+  package; the bundled PDF is only a user manual and carries no format detail),
+  or an MA-7 file set large enough to vary more of the body.
 
 
 Description - Sequence Data (Mtsq), Mobile Standard  (format_type 0x01 / 0x02)
@@ -208,99 +238,114 @@ expected is the trailing NOP/End-Of-Sequence padding after the last event
 (e.g. "ff 00 00  ff 2f 00") and marks the end of useful data.
 
 
-Description - Sequence Data (Mtsq), SEQU  (format_type 0x03, "MA-7")  NOT SUPPORTED
+Description - Sequence Data (Mtsq), SEQU  (format_type 0x03, "MA-7")
 
   ***********************************************************************
-  *  STATUS: NOT DECODED.  WildMIDI DECLINES format 0x03.               *
-  *  This section records what reverse-engineering DID and did NOT      *
-  *  establish, so a future attempt can start ahead.  Do not trust it   *
-  *  as a working spec - it is deliberately incomplete and partly       *
-  *  wrong (the parts known to be wrong are marked).                    *
+  *  STATUS: SUPPORTED.  Decoded by decode_mobile(..., sequ=1) in         *
+  *  src/smaf2mid.c.  Verified byte-exact (parse consumes the whole      *
+  *  Mtsq and lands on its End-Of-Sequence) on the MA-7 files in the     *
+  *  libsmaf corpus, AB00221GM7.MMF and AB03957GM7.MMF.                  *
   ***********************************************************************
 
-MA-7 (YMU786, 2005) is the last SMAF generation.  Its score track uses a
-distinct sequence encoding that vavi-sound calls "SEQU" (the 4th value of its
-FormatType enum: 0=HandyPhone, 1=Mobile-compressed, 2=Mobile-uncompressed,
-3=SEQU).  The score-track header carries a 32-byte channel-status field (vs 16
-for Mobile), which is the reliable way to recognise it alongside format_type
-0x03 and the MTR id trailing byte 0x07.
+SEQU is NOT a compressed or otherwise novel encoding - earlier notes here were
+wrong about that.  It is Mobile Standard with ONE change: the status byte is
+repacked so it can address 32 channels instead of 16.
 
-Why it is undocumented:  SEQU is a COMPRESSED / packed format and no public
-byte-level specification exists.  Checked and found lacking: the LPC wiki
-(Yamaha_SMAF and Yamaha_SMAF/MA-7 pages - chip/phone info only), the ltva1
-MA-7 hardware research page (FM operator internals, not the file format), the
-KDDI au ezfactory archive (device catalog), and Yamaha's own references.  The
-real encoder lives in the proprietary "MA-7 author tool" / "MCP MA-7" DLLs.
+MA-7 (YMU786, 2005) doubles the channel count, so the status byte can no longer
+spend its top bit on the MIDI "this is a status byte" flag.  Instead:
 
-Reference decoders do NOT handle these files correctly either:
-  - vavi-sound's readSEQU emits hundreds of "gateTime == 0" warnings and, on a
-    known 914-note song, produced only 94 notes over 46 s (the true song is
-    ~37 s with 914 notes).  Its readSEQU note formula is
-    note = (e1 & 15) + ((e1>>4 & 3) + 3) * 12 with NO velocity byte - which does
-    NOT reproduce the reference output.
-  - akustikrausch's C++ player routes 0x03 through its Mobile decoder, whose
-    "if (status < 0x80) continue;" silently drops the SEQU note bytes.
+    bit 7    : channel bank    0 -> channels 0-15,  1 -> channels 16-31
+    bits 6-4 : event type      the low 3 bits of the MIDI status nibble,
+                               i.e. type n means MIDI status 0x8+n
+    bits 3-0 : channel, low nibble
 
-What reverse-engineering (against a matched .mmf / .mid / .mp3 triplet where the
-.mid is the authoring tool's own output - the oracle) DID establish:
+Everything else - the [duration VLQ][event] record framing, the VLQ, the
+timebase math, the note gate-times, the payload of each event type - is exactly
+Mobile Standard.  So the status byte maps straight onto MIDI:
 
-  Container / framing (solid):
-    - Records are still [duration VLQ][event], duration-first, same VLQ as
-      Mobile Standard.  Timebase math is identical (durationTimeBase and
-      gateTimeBase from the header; 0x02 = 4 ms/tick).
-    - Leading 0xff 0x00 (NOP) and 0xf0 ... 0xf7 (exclusive) parse normally.
-    - The song's whole SETUP block (first ~105 events: per-channel control
-      changes, then a per-channel setup byte, then the first melody notes)
-      parses with clean byte boundaries under the tentative status scheme below,
-      and the first melody NOTE PITCHES AND VELOCITIES matched the reference
-      exactly (e.g. ch0 note 29 vel 105; the ch2/ch3 four-note chords; the ch1
-      line 69 -> 72 -> 74).  So the note-event field order below is close for
-      the "sparse" sections.
+    SEQU    MIDI    event
+    ------  ------  -----------------------------------------------------
+    0x0n    0x8n    Note, reuse running velocity : [note][gate VLQ]
+    0x1n    0x9n    Note, set velocity           : [note][vel][gate VLQ]
+    0x2n    0xAn    reserved - 2 data bytes, ignore
+    0x3n    0xBn    Control Change               : [cc][val]
+    0x4n    0xCn    Program Change               : [pc]
+    0x5n    0xDn    reserved - 1 data byte, ignore
+    0x6n    0xEn    Pitch Bend                   : [lsb][msb]
+    0x7n     -      not used
+    0xF0            Exclusive - literal, as in Mobile Standard
+    0xFF            Meta      - literal, as in Mobile Standard
 
-  Tentative status scheme (works for the sparse intro, WRONG in dense sections):
-      status byte = (type_nibble << 4) | channel_nibble, channels 0-9 observed
-        0x0n  note, reuse running velocity : [note][gate VLQ]
-        0x1n  note, set velocity           : [note][vel][gate VLQ]
-        0x3n  control change               : [cc][val]  (cc = MIDI controller:
-                00 bankMSB, 20 bankLSB, 07 vol, 0a pan, 5a/5b/5d fx, ...)
-        0x4n  per-channel setup            : [value]     (see "programs" below)
+0xF0 and 0xFF keep their literal Mobile meaning and are recognised before the
+bit-7 channel-bank rule (a "type 7" status would otherwise collide with them).
 
-  KNOWN-WRONG / UNSOLVED (why 0x03 is declined):
-    1. Program numbers do NOT match.  Decoding 0x4n as MIDI program change gives
-       ch0=1 where the reference has ch0=38 (no constant offset; e.g. ref
-       {0:38,1:54,2:5,3:48,4:55,5:81,6:11,7:11,8:81}).  Notably our decoded
-       values pair up the same way the reference does (ch6==ch7, ch5==ch8),
-       suggesting 0x4n carries a SMAF voice/bank index that must be resolved
-       through the Mtsu setup (voice) chunk, not a GM program - i.e. not
-       directly convertible without modelling the voice bank.
-    2. The dominant dense-section record is a 4-byte group led by 0x61
-       (0x61 appears ~520 times in one 7940-byte Mtsq; 0x02 ~507 times):
-           61 XX YY 0Z   with 0Z small (00-04)
-       Its field layout was NOT determined.  Splitting it as
-       [status][d1][d2][dur] and treating d2 as the note yields a smooth-looking
-       line (e.g. 65,67,69,70,69,66,65,61,52,...) that nevertheless matches NO
-       reference channel by absolute pitch OR by interval - so that split is
-       wrong.  Whatever 0x61 encodes, it is the main melodic/rhythmic payload
-       of the busy sections and must be decoded for a usable result.
-    3. Drum channel (ch9) notes decode to wrong pitches (e.g. 20, 17 where the
-       reference has 38, 39) - likely a drum note-map and/or a different record
-       layout on the rhythm channel.
+There is NO running status in SEQU.  It cannot exist: ordinary status bytes are
+below 0x80, so a status byte and a data byte are not distinguishable by their
+high bit.  Every event carries its own status byte, and the parse only closes
+if that is true - which it is, on every sample file.
 
-  Net effect if force-decoded with the tentative scheme: ~1000+ notes over
-  ~375 s for a song that is really ~914 notes over ~37 s - i.e. far too many
-  notes stretched ~8x too long, which sounds like large gaps between notes.
-  Hence: declined, not shipped.
+The bit-7 rule is what the old notes had missed, and it is directly visible in
+any MA-7 file: the opening per-channel control-change sweep runs
+0x30,0x31,...,0x3f and then continues 0xb0,0xb1,...,0xbf - one CC for each of
+the 32 channels, the second sixteen carrying bit 7.
 
-  Short expression / modulation tables that appear in vavi's readSEQU control
-  path (kept here for reference; part of the 0x00-led control events vavi
-  documents but which did not reproduce this file):
-    expr: 00 00 1f 27 2f 37 3f 47 4f 57 5f 67 6f 77 7f 7f
-    mod:  00 00 08 10 18 20 28 30 38 40 48 50 60 70 7f 7f
+It also explains the two records the old notes could not crack:
+  - the "mystery 4-byte 0x61 XX YY 0Z group", ~520 of them in one file, is just
+    pitch bend on channel 1 ([status][lsb][msb]) followed by the next record's
+    duration byte.  It is dense because MA-7 content uses pitch bend for
+    vibrato and for detuning doubled voices.
+  - the frequent "0x02" is a note-with-running-velocity on channel 2.
 
-  For a future attempt: the matched .mmf/.mid oracle approach is the right one -
-  align the byte stream to the authoring tool's .mid note list and solve the
-  0x61 record and the 0x4n->voice mapping first, ideally with more than one
-  MA-7 sample to cross-check.
+Cross-checks that the decode is right, beyond the byte-exact parse:
+  - AB03957GM7's decoded notes use exactly 8 pitch classes, {C#,D,D#,E,F#,G#,
+    A,B} - E major plus one passing tone.  A misaligned field or a wrong
+    bit-packing smears the pitch-class histogram; a clean diatonic set does not
+    happen by accident.
+  - Both files decode to 8 active channels (0-3 and 10-13), with ch10-13 a
+    unison/octave doubling of ch0-3, and the only pitch bends in the corpus sit
+    on exactly those doubled channels at slightly sharp/flat values (msb 0x41 /
+    0x3e).  That is a detuned chorus layer, which is what MA-7's extra channels
+    were for.
+  - Program changes land on Mtsu voice numbers: the score selects programs
+    10-13 and the Mtsu setup chunk defines voices 0x0a-0x0d.  (The old note
+    that "program numbers do not match" was comparing them to GM programs;
+    they are voice-bank indices, exactly as in MA-3/MA-5.)
+  - Lengths come out at 44.5 s and 41.4 s for 601 and 568 notes.
+
+Channels 16-31:  MIDI has 16, so the converter folds them (ch & 0x0f).  Every
+MA-7 file seen so far leaves 16-31 at their setup defaults and plays only on
+0-15, so the fold does not collide in practice.  Carrying the upper bank
+faithfully would need a second MIDI port, which the converter cannot express.
+
+OPEN QUESTION - octave offset.  The decoded note values are raw linear semitone
+numbers (confirmed: note bytes appear with low nibbles 0xC-0xF, which rules out
+the HandyPhone-style octave|semitone nibble packing, and the pitch-class
+histogram is diatonic).  What is NOT confirmed is whether MA-7 applies a
+constant transpose on top.  The two sample songs sit at notes 64-99, roughly an
+octave above the note distribution of the Mobile-format corpus (which centres on
+60-83), but part of that is the deliberate +12 doubling layer, and two songs is
+not a sample.  WildMIDI passes the note through unchanged, as Mobile Standard
+does.  If more MA-7 files turn up and they too sit an octave high, revisit this.
+
+PRIOR ART - none of it reads MA-7.  Checked while writing this section:
+  - umjammer/vavi-sound (Java) has a readSEQU(), and but80/smaf825 (Go) has a
+    CreateEventSEQU().  They are the same routine, and it is NOT a SEQU
+    decoder: it is the HandyPhone reader (4 channels via e1>>6, octave|semitone
+    note packing, 0x00-led 6-bit control events, no velocity byte).  Run on a
+    real format_type 0x03 file it emits garbage.  smaf825 at least knows this -
+    it defines ScoreTrackFormatType_SEQU = -1 and its IsSupported() returns
+    false, so a real MA-7 file never reaches the routine at all.
+  - akustikrausch/yamaha-smaf-player (C++) sets "mobile = (formatType != 0x00)"
+    and sends 0x03 through its Mobile decoder, whose "if (status < 0x80)
+    continue" drops every SEQU event, since SEQU status bytes are below 0x80.
+  - antanas-vasiliauskas/smaf-converter wraps vavi-sound and inherits its
+    behaviour.
+  - ltva1's MA-7 hardware page is chip research, not a file-format spec, and is
+    explicitly unfinished on the data layout.
+  - Yamaha's own MCP-MA7 player is a Windows binary; the PDF that ships with it
+    is a user manual with no format detail.
+So the decode above was derived from the files themselves, not from a
+reference, and the corroboration for it is the evidence listed above.
 
 
 Description - Sequence Data (Mtsq), HandyPhone Standard   (format_type 0x00)
