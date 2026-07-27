@@ -474,6 +474,13 @@ int _WM_MAFM_HasCustomVoices(const uint8_t *smaf, uint32_t size) {
     if (tmp->bank_count == 0) {
         mafm_build_mtsp_waves(tmp, smaf, size);
     }
+    /* Also for audio-only files (CNTI + ATR, no MTR): ATR waves + Atsq
+     * triggers ARE the file's content, so MAFM has to engage even though
+     * no voice bank exists.  smaf2mid emits a placeholder score for these;
+     * without engaging MAFM the placeholder plays as silence. */
+    if (tmp->bank_count == 0 && tmp->wave_count == 0) {
+        mafm_build_waves(tmp, smaf, size);
+    }
     has = tmp->bank_count > 0 || tmp->wave_count > 0;
     free(tmp);
     return has;
@@ -607,10 +614,18 @@ int _WM_MAFM_ActiveVoices(void *synth) {
         if (_WM_MAFM_VoiceActive(&s->voices[i])) n++;
     for (i = 0; i < MAFM_PCM_POOL; i++)
         if (s->pcm[i].active) n++;
-    /* Note: pending triggers are NOT counted as active.  They fire while the
-     * song's event list is still playing; using them to hold the synth alive
-     * past the end-of-track could spin forever if the cursor never reaches a
-     * late trigger.  A currently-sounding sample (above) is what rings out. */
+    /* Count a pending ATR wave trigger as active if it's due within a bounded
+     * window ahead of the current sample cursor.  This keeps audio-only files
+     * (whose smaf2mid placeholder is a short 3 s MIDI) alive long enough for
+     * their ATR-scheduled triggers to fire - without which wildmidi_lib's
+     * "past total_samples + no active voices -> break" logic would end
+     * playback before the wave hit.  The cap prevents a malformed schedule
+     * with a far-future trigger from spinning the synth forever. */
+    if (s->trig_next < s->trig_count) {
+        uint32_t next_at = s->trigs[s->trig_next].at_sample;
+        uint32_t window = (uint32_t)(s->rate * 15.0);   /* 15 s ahead */
+        if (next_at >= s->cursor && next_at - s->cursor <= window) n++;
+    }
     return n;
 }
 

@@ -249,6 +249,29 @@ static void flush_all_offs(struct smaf_ctx *ctx) {
 
 /* ------------------------------------------------------------------------- */
 
+/* True if the container has an ATR audio track (a top-level "ATR*" chunk).
+ * Used to keep audio-only SMAF files (CNTI + ATR, no MTR) from being rejected
+ * as "not a SMAF file"; those play through MAFM's ATR wave-trigger path with
+ * a minimal placeholder MIDI standing in for the score.  See the audio-only
+ * emit block near the bottom of _WM_smaf2midi. */
+static int has_audio_track(const uint8_t *in, uint32_t insize) {
+    uint32_t pos = 8, end = insize;
+    if (insize >= 8) {
+        uint32_t declared = BE32(in + 4);
+        if ((uint64_t) 8 + declared <= insize) end = 8 + declared;
+    }
+    while (pos + 8 <= end) {
+        const uint8_t *c = in + pos;
+        uint32_t sz = BE32(c + 4);
+        uint32_t body = pos + 8;
+        if ((uint64_t) body + sz > insize) sz = insize - body;
+        if (memcmp(c, "ATR", 3) == 0) return 1;
+        pos = body + sz;
+        if (sz == 0) pos++;
+    }
+    return 0;
+}
+
 /* Locate the first score track (MTR*) and its Mtsq sequence chunk.
  * Returns 0 on success and fills *seq / *seqlen / *tb_dur / *tb_gate. */
 static int find_sequence(const uint8_t *in, uint32_t insize,
@@ -833,13 +856,37 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
     }
 
     if (find_sequence(in, insize, &seq, &seqlen, &tb_dur, &tb_gate, &fmt) < 0) {
-        _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(no score track)", 0);
-        return -1;
+        /* No score track.  If the file at least has an ATR audio track
+         * (Panasonic G60 system sounds, LG chocolate ringtone system sounds,
+         * etc. - 83 such files in the libsmaf corpus), let it through with a
+         * placeholder score.  MAFM's ATR wave-trigger path then plays the
+         * audio and wildmidi_lib ends playback via its "no active voices"
+         * check once the last wave finishes.  Files with neither MTR nor
+         * ATR are still rejected. */
+        if (!has_audio_track(in, insize)) {
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(no score track)", 0);
+            return -1;
+        }
+        seq = NULL;
+        seqlen = 0;
+        tb_dur = 0x02;              /* placeholder; not used for audio-only */
+        tb_gate = 0x02;
+        fmt = 0xff;                 /* sentinel: audio-only */
     }
 
-    /* Supported score-track formats: Mobile Standard (0x01/0x02), HandyPhone
-     * Standard (0x00) and MA-7 SEQU (0x03). */
-    if (fmt > 0x03) {
+    /* Supported score-track formats: Mobile Standard (0x02), HandyPhone
+     * Standard (0x00), MA-7 SEQU (0x03), and the audio-only sentinel 0xff.
+     * Mobile-Standard Huffman (0x01) is rejected explicitly: all four such
+     * files in the libsmaf corpus start with a 16-bit BE length prefix
+     * followed by a Huffman bitstream, and the decompressor is not
+     * implemented.  Silently falling through to the 0x02 parser produces
+     * garbage or silence; a clean error is more useful. */
+    if (fmt == 0x01) {
+        _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF,
+                         "(Huffman-compressed Mobile Standard not implemented)", 0);
+        return -1;
+    }
+    if (fmt < 0xff && fmt > 0x03) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(unsupported SMAF track format)", 0);
         return -1;
     }
@@ -882,7 +929,15 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
     write1(&ctx, SMAF_TEMPO & 0xff);
 
     /* ---- decode the sequence according to its format ---- */
-    if (fmt == 0x00) {
+    if (fmt == 0xff) {
+        /* Audio-only file: no score to decode.  The End Of Track marker below
+         * receives a large delta so the wildmidi_lib clock has time for
+         * MAFM's ATR-driven wave triggers to fire; wildmidi_lib's "no active
+         * MAFM voices" check (with its built-in 10 s overrun window) ends
+         * playback once the last wave has decayed.  All 83 audio-only files
+         * in the libsmaf corpus are under 5 s of ATR content. */
+        /* (nothing to emit here; the EOT-delta patch below handles it) */
+    } else if (fmt == 0x00) {
         /* HandyPhone: merge every score track onto one timeline. */
         struct hp_events hev;
         int ntracks;
@@ -905,8 +960,14 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
         flush_all_offs(&ctx);
     }
 
-    /* End Of Track */
-    write1(&ctx, 0x00);
+    /* End Of Track.  Audio-only files carry a 3 s delta here (see the
+     * fmt == 0xff branch above) so wildmidi_lib's clock runs long enough
+     * for MAFM's ATR wave triggers to fire; every other case emits it
+     * at delta 0 right after the last note-off. */
+    if (fmt == 0xff)
+        write_varlen(&ctx, (uint32_t) SMAF_DIVISION * 3);
+    else
+        write1(&ctx, 0x00);
     write1(&ctx, 0xff);
     write1(&ctx, 0x2f);
     write1(&ctx, 0x00);
