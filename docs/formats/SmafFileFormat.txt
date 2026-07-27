@@ -294,22 +294,22 @@ optional FM engine, the VOICE/instrument form.
   28/36/52/58, MULTI 9/7/9/2, FB=1).  Earlier guesses at this layout produced
   MULTI=0 on both operators, which no real patch has.
 
-  Coverage.  Every FM voice in every known MA-7 file is now decoded.  Across
-  the 58 "7F 21" voice records in the five files:
+  Coverage.  Every voice record in every known MA-7 file is now accepted.
+  Across the 58 "7F 21" voice records in the five files:
 
       form 0x00   10   FM       decoded
-      form 0x02    7   FM       decoded
-      form 0x01    4   sampled  declined
-      form 0x03   36   sampled  declined
-      form 0x07    1   sampled  declined
+      form 0x02    7   FM       decoded, ignoring the 16-byte trailer
+      form 0x01    4   sampled  decoded (fs from body u16 BE, wave_id at [15])
+      form 0x03   36   sampled  decoded (fs from body u16 BE, wave_id at [15])
+      form 0x07    1   sampled  decoded (fs from body u16 BE, wave_id at [15])
 
-  i.e. 17 FM records decoded and 41 sampled ones declined.  Per file:
-  AB00221GM7 4/4, AB03957GM7 4/4, AccidentCafe7 4 FM of 25, Blossom 5 of 25,
-  First Love has no voice records at all (it is a streaming Mtsp file).
-
-  The remaining 41 are not an MA-7 gap as such - WildMIDI plays no sampled SMAF
-  voice on any chip generation.  Fixing that fixes MA-3, MA-5 and MA-7 at once;
-  see docs/formats/SMAF_TODO.md.
+  The sampled forms share the MA-3/MA-5 PCM layout for their fs and wave_id
+  fields; the rest of their body (per-note velocity split, per-op envelope,
+  effect sends) has not been reverse-engineered.  Downstream in mafm.c the
+  sampled voice plays the referenced wave if it happens to be loaded from
+  Mtsp/Mwa, and falls back to an FM drum approximation otherwise - matching
+  the ROM-wave treatment MA-3/MA-5 already gets (see docs/formats/SMAF_TODO.md
+  gap 1 for the ROM-wave situation).
 
   Non-voice MA-7 Mtsu exclusives (43 79 08 7F <sub>) surveyed across the five
   known files.  All are declined at parse time:

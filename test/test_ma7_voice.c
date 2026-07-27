@@ -95,10 +95,17 @@ int main(void) {
     assert(v.patch.ops[2].multi == 5  && v.patch.ops[2].tl == 22);
     assert(v.patch.ops[3].multi == 1  && v.patch.ops[3].tl == 6);
 
-    /* Forms 0x01/0x03/0x07 are sampled voices, not FM: decline them rather
-     * than decode the bytes as operators. */
+    /* Forms 0x01/0x03/0x07 are sampled voices, not FM.  Accept them as PCM
+     * voices with fs from the body's leading u16 BE and wave_id/loop from
+     * body[15] (matches the MA-3/5 sampled layout).  Downstream, mafm.c
+     * plays the wave if loaded and falls back to a DrumApprox FM voice
+     * otherwise, so the note is audible either way instead of dropped. */
     _WM_MAFM_ParseVoiceExclusive(ma7_form03, (uint32_t)sizeof(ma7_form03), &v);
-    assert(!v.valid);
+    assert(v.valid);
+    assert(v.is_pcm);
+    assert(v.pcm.fs == 0x3e94);         /* 16020 Hz from body[0..1] BE     */
+    assert(v.pcm.wave_id == 110);       /* body[15] = 0x6e, high bit clear */
+    assert(!v.pcm.loop);
 
     printf("ma7_voice ok\n");
     return 0;

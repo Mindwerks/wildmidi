@@ -65,6 +65,7 @@ struct mafm_bank_entry {
     int pc;                          /* program number */
     int is_pcm;                      /* PCM (sampled) voice; play the wave */
     int wave_id;                     /* pcm.wave_id if is_pcm */
+    int drum_note;                   /* fixed pitch for drums; 0 = melodic */
     struct mafm_voice_patch patch;
 };
 
@@ -82,6 +83,9 @@ struct mafm_pcm_voice {
     double pos;                      /* fractional read position (samples) */
     double step;                     /* native_fs / output_rate */
     float  gain;
+    float  pan_l, pan_r;             /* per-slot L/R gains from chan_pan CC */
+    int    channel;                  /* -1 for ATR one-shots (no owner ch) */
+    int    note;
     int    active;
 };
 
@@ -150,6 +154,7 @@ static void mafm_parse_mtsu(struct mafm_synth *s, const uint8_t *body,
                 e->pc = pv.key.pc;
                 e->is_pcm = pv.is_pcm;
                 e->wave_id = pv.pcm.wave_id;
+                e->drum_note = pv.key.drum_note;
                 e->patch = pv.patch;
             }
             p += hdr + len;
@@ -538,6 +543,12 @@ void *_WM_MAFM_NewSynth(const uint8_t *smaf, uint32_t size, uint16_t rate) {
             e->pc = 0;
             e->is_pcm = 1;
             e->wave_id = firstwave;
+            /* Non-zero drum_note = "fixed pitch, play the wave at its native
+             * rate regardless of the incoming note".  The streaming files
+             * trigger with note 0; without this, the melodic-voice pitch
+             * shift below would resample the wave down 5 octaves and drag the
+             * playback to a crawl (16000 Hz -> ~500 Hz). */
+            e->drum_note = 1;
         }
     }
     return s;
@@ -587,14 +598,18 @@ int _WM_MAFM_ActiveVoices(void *synth) {
     return n;
 }
 
-/* Start a sampled wave playing on a free PCM slot with the given output gain.
- * Drums / ATR triggers use gain = 1.0 (one-shot at full level); note-driven
- * PCM voices pass the same volume x expression x velocity mix the FM path
- * uses so soft passages stay soft. */
-static void mafm_start_pcm_gain(struct mafm_synth *s, int wave, float gain) {
+/* Start a sampled wave playing on a free PCM slot.  channel < 0 marks an
+ * "ownerless" trigger (ATR drums, phrases) which are one-shot at centre pan;
+ * channel >= 0 attaches the slot to a MIDI channel so pan tracks the channel's
+ * pan CC and note-off can find and release its own trigger.  base_note is the
+ * MIDI note at which the wave plays at its native rate: a fixed value for
+ * drums (the voice's drum_note) and 60 for melodic voices (standard root). */
+static void mafm_start_pcm_full(struct mafm_synth *s, int wave, float gain,
+                                int channel, int note, int base_note) {
     struct mafm_wave *w;
     struct mafm_pcm_voice *pv = NULL;
     int i;
+    float pan;
     if (wave < 0 || wave >= s->wave_count) return;
     w = &s->waves[wave];
     if (!w->pcm || w->len == 0) return;
@@ -604,18 +619,47 @@ static void mafm_start_pcm_gain(struct mafm_synth *s, int wave, float gain) {
     pv->pcm = w->pcm;
     pv->len = w->len;
     pv->pos = 0.0;
-    pv->step = (double) w->fs / s->rate;
+    /* Pitch step.  For a drum voice base_note == the played note (so the ratio
+     * is 1.0 and pitch bend is ignored - drums never pitch-bend).  For a
+     * melodic voice base_note is a fixed root and the played note plus the
+     * channel's pitch wheel shift determines the resample ratio. */
+    {
+        double bend_semitones = 0.0;
+        double ratio;
+        if (channel >= 0 && base_note != note) {
+            bend_semitones = ((double)(s->chan_pitch[channel] - 0x2000) / 8192.0) * 2.0;
+        }
+        ratio = pow(2.0, ((double)(note - base_note) + bend_semitones) / 12.0);
+        pv->step = (double) w->fs / s->rate * ratio;
+    }
     pv->gain = gain;
+    pv->channel = channel;
+    pv->note = note;
+    /* Pan.  channel < 0 stays centred; channel >= 0 tracks its chan_pan CC.
+     * PCM voices carry no per-patch pan_default field, so unlike FM voices
+     * an unset chan_pan (0xff sentinel) just means centre. */
+    if (channel < 0) {
+        pv->pan_l = 1.0f;
+        pv->pan_r = 1.0f;
+    } else {
+        uint8_t cp = s->chan_pan[channel];
+        pan = (cp == 0xff) ? 0.0f : (((float) cp - 64.0f) / 64.0f);
+        if      (pan < -1.0f) pan = -1.0f;
+        else if (pan >  1.0f) pan =  1.0f;
+        pv->pan_l = 1.0f - pan;
+        pv->pan_r = 1.0f + pan;
+    }
     pv->active = 1;
 }
 
 static void mafm_start_pcm(struct mafm_synth *s, int wave) {
-    mafm_start_pcm_gain(s, wave, 1.0f);
+    /* ATR triggers are ownerless one-shots; note = base_note keeps ratio = 1. */
+    mafm_start_pcm_full(s, wave, 1.0f, -1, 0, 0);
 }
 
-/* Advance the ATR trigger schedule and render one PCM sample (summed mono). */
-static double mafm_pcm_tick(struct mafm_synth *s) {
-    double mix = 0.0;
+/* Advance the ATR trigger schedule and render one PCM sample, summed into
+ * *l and *r with each slot's own pan (ownerless ATR triggers stay centred). */
+static void mafm_pcm_tick(struct mafm_synth *s, double *l, double *r) {
     int i;
     /* fire any triggers whose time has arrived */
     while (s->trig_next < s->trig_count &&
@@ -625,15 +669,17 @@ static double mafm_pcm_tick(struct mafm_synth *s) {
     }
     for (i = 0; i < MAFM_PCM_POOL; i++) {
         struct mafm_pcm_voice *pv = &s->pcm[i];
+        double x;
         uint32_t idx;
         if (!pv->active) continue;
         idx = (uint32_t) pv->pos;
         if (idx >= pv->len) { pv->active = 0; continue; }
-        mix += (double) pv->pcm[idx] / 32768.0 * pv->gain;
+        x = (double) pv->pcm[idx] / 32768.0 * pv->gain;
+        *l += x * pv->pan_l;
+        *r += x * pv->pan_r;
         pv->pos += pv->step;
     }
     s->cursor++;
-    return mix;
 }
 
 static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
@@ -651,13 +697,34 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
      * carry; for now they play at concert pitch, which is more useful than
      * the silence they used to. */
     if (bank_idx >= 0 && s->bank[bank_idx].is_pcm) {
-        /* Same default-velocity trick the FM branch uses just below:
-         * SMAF's HandyPhone score carries no velocity byte, so the converter
-         * emits vel=0 to mean "no explicit velocity", which we treat as 100. */
-        float pv = (vel ? (float) vel : 100.0f) / 127.0f;
-        float g = s->chan_volume[ch] * s->chan_expression[ch] * pv * pv;
-        mafm_start_pcm_gain(s, s->bank[bank_idx].wave_id, g);
-        return;
+        int wid = s->bank[bank_idx].wave_id;
+        int have_wave = (wid >= 0 && wid < s->wave_count &&
+                         s->waves[wid].pcm && s->waves[wid].len);
+        if (have_wave) {
+            /* Same default-velocity trick the FM branch uses just below:
+             * SMAF's HandyPhone score carries no velocity byte, so the
+             * converter emits vel=0 to mean "no explicit velocity", which we
+             * treat as 100. */
+            float pv = (vel ? (float) vel : 100.0f) / 127.0f;
+            float g = s->chan_volume[ch] * s->chan_expression[ch] * pv * pv;
+            /* Fixed pitch for drums (drum_note != 0) means playing the wave
+             * at native rate regardless of the incoming note.  A melodic PCM
+             * voice takes root note 60, matching the "root=middle C" default
+             * every wavetable synth WildMIDI already ships uses. */
+            int drum_note = s->bank[bank_idx].drum_note;
+            int base = drum_note ? note : 60;
+            mafm_start_pcm_full(s, wid, g, ch, note, base);
+            return;
+        }
+        /* Wave not loaded.  Yamaha MA chips carry a ROM sample bank that PCM
+         * voices reference by wave_id; the corpus audit shows 361 of 415
+         * MA-3/5 files with PCM voices point exclusively at ROM waves 0..~25
+         * that no file provides.  Rather than silence those notes, fall back
+         * to the FM drum approximation - a synthetic kick/snare beats a
+         * missing hit for percussion tracks.  See docs/formats/SMAF_TODO.md
+         * for the ROM-wave gap. */
+        _WM_MAFM_DrumApprox(note, &patch);
+        /* fall through to the FM code path below with the approx patch */
     }
     /* Apply the patch's own basic-octave transpose (BO field): a voice can
      * declare it plays an octave up/down from the incoming MIDI note. */
@@ -827,7 +894,7 @@ void _WM_MAFM_Render(void *synth, int32_t *out, uint32_t frames) {
         else { pan_l[i] = 1.0f; pan_r[i] = 1.0f; }
     }
     for (f = 0; f < frames; f++) {
-        double l = 0.0, r = 0.0, pcm, peak, gain;
+        double l = 0.0, r = 0.0, peak, gain;
 
         /* CC1 vibrato: advance a shared 5Hz triangle LFO and retune any voice
          * whose channel has the mod wheel up.  Depth matches the other
@@ -862,18 +929,22 @@ void _WM_MAFM_Render(void *synth, int32_t *out, uint32_t frames) {
                 r += x * pan_r[i];
             }
         }
-        /* ATR sampled drums/phrases play alongside the FM voices, on the
-         * synth's own sample clock (advanced once per output frame).  PCM
-         * triggers have no per-voice channel; keep them centred. */
-        pcm = mafm_pcm_tick(s);
-        /* Match the reference mixer: 0.32 headroom * int16 range = ~10485 per
-         * voice at centre pan (per channel).  With the (1-pan)/(1+pan) pan
-         * law above, each channel receives voice_sum * 0.32 at centre, up to
-         * voice_sum * 0.64 when hard-panned toward it -- constant total
-         * energy across the pan field.  The soft limiter below catches
-         * dense-passage overshoot without squashing sparse notes. */
-        l = l * 10500.0 + pcm * 20000.0;
-        r = r * 10500.0 + pcm * 20000.0;
+        /* ATR sampled drums/phrases and note-driven PCM voices play alongside
+         * the FM voices, on the synth's own sample clock (advanced once per
+         * output frame).  ATR triggers are centre-panned; note-driven PCM
+         * voices carry each slot's own L/R gains from its channel's pan CC. */
+        {
+            double pcm_l = 0.0, pcm_r = 0.0;
+            mafm_pcm_tick(s, &pcm_l, &pcm_r);
+            /* Match the reference mixer: 0.32 headroom * int16 range = ~10485
+             * per voice at centre pan.  With the (1-pan)/(1+pan) pan law
+             * above, each channel receives voice_sum * 0.32 at centre, up to
+             * voice_sum * 0.64 when hard-panned toward it - constant total
+             * energy across the pan field.  The soft limiter below catches
+             * dense-passage overshoot without squashing sparse notes. */
+            l = l * 10500.0 + pcm_l * 20000.0;
+            r = r * 10500.0 + pcm_r * 20000.0;
+        }
         peak = fabs(l) > fabs(r) ? fabs(l) : fabs(r);
         if (peak > s->lim_env) s->lim_env = peak;
         else s->lim_env *= LIM_RELEASE;

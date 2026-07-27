@@ -171,10 +171,8 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
      *
      * Form 0x02 is the same FM voice with a 16-byte trailer after the
      * operators (rate/level pairs that this engine does not model), so it
-     * shares the code.  Forms 0x01, 0x03 and 0x07 are SAMPLED voices, not FM -
-     * their bodies start with a PCM sample rate and most of them sit in the
-     * drum bank - so they are declined here; playing them needs the sampled
-     * voice support tracked in docs/formats/SMAF_TODO.md. */
+     * shares the code.  Forms 0x01, 0x03 and 0x07 are SAMPLED voices, not FM;
+     * they get parsed by the block further down. */
     if (n >= 14 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
         (p[10] == 0x00 || p[10] == 0x02)) {
         const uint8_t *body = p + 11;
@@ -208,6 +206,42 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
             v[6] = o[6];            /* WS / FB    */
         }
         apply_vm35_body(vm35, (uint32_t)(3 + 7 * ops), ops, &out->patch);
+        out->valid = 1;
+        return;
+    }
+
+    /* MA-7 SAMPLED forms: 43 79 08 7F 21 [bank..][pc][?][?] form=0x01/03/07
+     *
+     * Their bodies open with an unmistakable u16 BE sample rate (the 4-file
+     * corpus survey shows 41/41 fall in 2618..16500 Hz; drum-bank distribution
+     * matches sampled-percussion norms and body[15] cleanly splits into a
+     * loop bit + 0..127 wave id).  So the fields are recognisable even though
+     * the full body layout has not been reverse-engineered.  Accept them as
+     * PCM voices; downstream, mafm_note_on() plays the wave if it happens to
+     * be loaded (from Mtsp/Mwa) and falls back to a DrumApprox FM voice
+     * otherwise, matching the ROM-wave treatment MA-3/5 already gets.  This
+     * still leaves the MA-7-specific fields (per-note velocity split, effect
+     * sends, etc.) on the table; see docs/formats/SMAF_TODO.md. */
+    if (n >= 27 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
+        (p[10] == 0x01 || p[10] == 0x03 || p[10] == 0x07)) {
+        const uint8_t *b = p + 11;              /* body starts here */
+        uint32_t bn = n - 11;
+        int fs;
+        if (bn > 0 && p[n - 1] == 0xf7) bn--;   /* drop the terminator */
+        if (bn < 16) return;                    /* need through b[15]        */
+        fs = ((int)b[0] << 8) | b[1];
+        if (fs < 2000 || fs > 48000) return;    /* not the layout we expect  */
+
+        out->key.bank_msb = p[5];
+        out->key.bank_lsb = p[6];
+        out->key.pc = p[7];
+        out->key.drum_note = p[8];
+        out->is_pcm = 1;
+        out->pcm.fs = fs;
+        out->pcm.wave_id = b[15] & 0x7f;
+        out->pcm.loop    = (b[15] & 0x80) != 0;
+        out->pcm.loop_pt = 0;                   /* not established           */
+        out->pcm.end_pt  = 0;
         out->valid = 1;
         return;
     }
