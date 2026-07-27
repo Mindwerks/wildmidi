@@ -73,6 +73,17 @@ Description - Container
     //   "ATR?"  AudioTrack     (embedded PCM/ADPCM; e.g. "AspI"/"Atsq"/"Awa\x01")
     //   "MSTR"  master track   (seen in some MA-3 files)
 
+    // Yamaha's own MCP-MA7 middleware (M7_EmuSmw7.dll) maps chunk ids to
+    // these internal type codes; this is the authoritative list, and it names
+    // three chunks the sample corpus does not contain (Mthv/Mhvs/Mhsc, the
+    // "HV" speech-synthesis track):
+    //   MMMD 0x00   CNTI 0x01   OPDA 0x02
+    //   MspI 0x30   Mtsu 0x31   Mtsq 0x32   Mtsp 0x33   Mthv 0x35
+    //   Mhvs 0x36   Mhsc 0x38
+    //   AspI 0x40   Atsu 0x41   Atsq 0x42
+    // Its score-track walker keeps MspI/Mtsu/Mtsq/Mtsp/Mthv and treats only
+    // Mtsq as mandatory - a track without one is rejected.
+
     uint16_t crc;                     // last 2 bytes of file, CRC-16 over the file
 }
 
@@ -147,16 +158,53 @@ optional FM engine, the VOICE/instrument form.
   FM voice-exclusives (Mtsu; decoded by src/mafm/smaf_voice.c, played by the FM
   engine when WANT_MAFM is on):
     MA-1 / MA-2   VMA form         "43 03 ..."           decoded, tested
-    MA-3          VM35 packed      "43 79 06 7F 01 ..."  decoded, UNTESTED
+    MA-3          VM35 packed      "43 79 06 7F 01 ..."  decoded, layout
+                                                         confirmed vs Yamaha
     MA-5          VM35 direct      "43 79 07 ..." /
-                                   "43 05 01 ..."        decoded, UNTESTED
+                                   "43 05 01 ..."        decoded, layout
+                                                         confirmed vs Yamaha
     MA-3 / MA-5   PCM (sampled)    "43 79 .. type!=0"    parsed, not yet played
     MA-7          ?                "43 79 08 7F 21 ..."  NOT decoded (see below)
 
   Net: MA-1 and MA-2 are fully supported and verified (score + FM voices + ATR
   ADPCM drums).  MA-3 / MA-5 score plays; their FM voice forms are implemented
-  but not yet exercised (need MA-3/5 sample files).  MA-7 score plays; its FM
-  voice form is not decoded, so MA-7 falls back to the GM wavetable.
+  and the byte layout now matches Yamaha's own decoder (see below), though no
+  MA-3/5 file has been listened to end to end.  MA-7 score plays; its FM voice
+  form is not decoded, so MA-7 falls back to the GM wavetable.
+
+  VM35 layout confirmed against Yamaha's MCP-MA7 player
+  ----------------------------------------------------
+  The MA-7 player ships a middleware DLL (M7_EmuSmw7.dll) whose voice-format
+  converter takes a source voice and emits a chip register block.  Read with
+  Ghidra, it confirms - independently of the sample corpus - the VM35 body
+  layout that src/mafm/smaf_voice.c implements:
+
+    - 3 global bytes, then 7 bytes per operator.  The converter reads operator
+      i's last byte at offsets 0x0b, 0x12, 0x19, 0x20 from its record base:
+      a stride of exactly 7, four operators maximum.
+    - The algorithm is the low 3 bits of global byte 2 (it tests
+      "in_EAX[4] & 7", where in_EAX[4] is that byte).
+    - Operator count comes from the algorithm: alg <= 1 means 2 operators,
+      otherwise 4.  The 2-operator path explicitly bails out if the algorithm
+      is > 1, which is the same rule as op_count_from_alg().
+    - Operator byte 6 is the wave selector via ">> 3" (it indexes a wave table
+      with "op[6] >> 3"), matching  o->wave = (op[6] >> 3) & 0x1f  and
+      o->fb = op[6] & 0x07.
+    - Its two record sizes differ by exactly 14 bytes (20 vs 34), i.e. two
+      more 7-byte operators over a common 6-byte prefix.
+
+  Two other details in the same DLL confirm parts of this document that had
+  been derived from sample files alone:
+
+    - The HandyPhone Mtsu voice scan looks for "FF F0 <len> 43 03", which is
+      the "43 03" VMA form decoded by _WM_MAFM_ParseVoiceExclusive().
+    - The HandyPhone duration VLQ really is the odd 1-or-2 byte form
+      documented below: the DLL computes  ((b & 0x7F) + 1) * 0x80 + next  for
+      the 2-byte case, byte for byte what decode_handyphone() does.
+
+  The same DLL also yields the authoritative chunk-id table (see the container
+  section); it recognises Mthv / Mhvs / Mhsc, which the sample corpus does not
+  contain.
 
   MA-7 voice-exclusive (unsolved).  MA-7 Mtsu voices look like this:
 
@@ -179,9 +227,43 @@ optional FM engine, the VOICE/instrument form.
   marker, matching MA-5's "43 79 07 7F 07 00") and two 38-byte per-channel
   parameter tables "43 79 08 7F 26 ..." and "43 79 08 7F 27 ...".
 
-  To finish this, the reference is the MCP-MA7 player's DLLs (an InstallShield
-  package; the bundled PDF is only a user manual and carries no format detail),
-  or an MA-7 file set large enough to vary more of the body.
+  Reverse-engineering Yamaha's MCP-MA7 player (Ver.1.6.2) did NOT close this.
+  What was tried, so the next attempt does not repeat it:
+
+    - The InstallShield package unpacks with "unshield x data1.cab" and yields
+      M7_EmuSmw7.dll (the SMAF middleware + synth, 9.8 MB), M7_EmuHw.dll (the
+      YMU786 register-level emulator) and SMAFMMS7EMU.dll (the SmafMms_* API
+      the GUI calls).  All are stripped 32-bit PE, no debug strings.
+    - M7_EmuSmw7.dll contains SEVEN near-identical copies of the middleware
+      (functions repeat at roughly 0x6f000 intervals).  They are the same
+      build, not one per MA generation - every copy checks the same model
+      byte - so only one copy needs reading.
+    - Its voice-format converter (FUN_100345f0 in the first copy) confirmed
+      the VM35 layout above, but the byte layout it consumes is reached with
+      an internal format tag, not the file's sub-id: its "0x21" tag means
+      "VM35, 4 operators" and is unrelated to the 0x21 in "43 79 08 7F 21".
+    - The MA-7 Mtsu exclusive dispatch itself was NOT found.  The DLL contains
+      no "43 79" maker-id template in .rdata, no 16-bit 0x4379/0x7943 compare,
+      and no function holding both 0x43 and 0x79 as immediates on a voice
+      path (the 0x43/0x79 immediates that do exist are MIDI CC 67/121
+      handlers, plus one Standard-MIDI-File path that recognises the MA-3
+      exclusive "43 79 06 7C 02").  Nothing statically imports M7_EmuHw.dll or
+      M7_EmuSmw7.dll either - they are LoadLibrary'd - so the call graph
+      dead-ends at indirect dispatch and cannot be walked from the exports.
+
+  The two approaches most likely to finish it:
+    1. Dynamic, and probably decisive: the chip emulator exports
+       Hw_WriteReg(addr, data).  Run the player (Wine, or emulate the DLL with
+       Unicorn) and log the register writes while it loads AB00221GM7.MMF,
+       then diff those against the writes for an MA-5 file whose voice layout
+       is already known.  That maps body bytes to register fields directly.
+    2. Static, cheaper to start: SMAFMMS7EMU.dll is only 614 KB and is the
+       layer that reads the .mmf and hands setup data to the middleware.  The
+       Mtsu -> "write exclusive" hand-off most likely lives there rather than
+       in the 9.8 MB DLL.
+
+  Failing that, an MA-7 file set large enough to vary more of the body would
+  also settle it: the whole corpus has only four distinct voices.
 
 
 Description - Sequence Data (Mtsq), Mobile Standard  (format_type 0x01 / 0x02)
