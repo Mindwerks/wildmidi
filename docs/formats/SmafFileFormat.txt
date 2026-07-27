@@ -311,9 +311,29 @@ optional FM engine, the VOICE/instrument form.
   voice on any chip generation.  Fixing that fixes MA-3, MA-5 and MA-7 at once;
   see docs/formats/SMAF_TODO.md.
 
-  Also in MA-7 Mtsu, still undecoded because nothing needs them: sub-ids 0x22
-  (end-of-setup, matching MA-5's "43 79 07 7F 07 00"), 0x23, 0x26, 0x27 and
-  0x28 - the last two being 38-byte per-channel parameter tables.
+  Non-voice MA-7 Mtsu exclusives (43 79 08 7F <sub>) surveyed across the five
+  known files.  All are declined at parse time:
+
+      sub    length     what it appears to be
+      0x22   7 bytes    end-of-setup marker (analogue of MA-5 "43 79 07 7F 07 00");
+                        payload is a 1-byte flag: 0x00, 0x08 or 0x18 seen
+      0x23   445..1465  ALTERNATE WAVE DELIVERY.  Where Mtsp/Mwa is missing but the
+                        file has 20+ sampled voice records (Blossom, other Demo
+                        files), the wave data itself is shipped as 43 79 08 7F 23
+                        exclusives inside Mtsu.  Bodies are high-entropy and open
+                        with runs of 0x80 nibbles, matching Yamaha ADPCM silence.
+                        Layout not established - a header, then ADPCM data.  If a
+                        future pass decodes this, most of MA-7's sampled voices
+                        will play (currently only the ~10% that use Mtsp/Mwa do).
+      0x26   38 bytes   per-channel effect config; first byte 0x02
+      0x27   38 or 230  per-channel effect config; first byte 0x41
+      0x28   38 bytes   per-channel effect config; first byte 0x03
+
+  0x26/0x27/0x28 would map to reverb-send / chorus-send / brightness-style
+  parameters, none of which WildMIDI's wavetable can act on today (see
+  docs/SYNTH_TODO.md); decoding them without the synth engine to receive them
+  would be a no-op.  0x23 is the most valuable next target - it is what
+  Blossom and the other dense MA-7 demos use in place of Mtsp.
 
   Notes from the reverse-engineering, for anyone extending this
   ----------------------------------------------------------

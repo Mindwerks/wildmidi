@@ -208,7 +208,8 @@ static int mafm_wave_rate(uint8_t fmt2) {
     }
 }
 
-/* Decode one Awa wave body ([formatByte][fmt2][adpcm...]) into the bank. */
+/* Decode one Awa (ATR) wave body ([formatByte][fmt2][adpcm...]) into the bank.
+ * fmt2 holds an ATR-style 4-bit rate class - mafm_wave_rate() maps it to Hz. */
 static void mafm_add_wave(struct mafm_synth *s, int number,
                           const uint8_t *body, uint32_t sz) {
     struct mafm_wave *w;
@@ -225,6 +226,37 @@ static void mafm_add_wave(struct mafm_synth *s, int number,
     if (!w->pcm) return;
     w->len = _WM_MAFM_AdpcmDecodeAll(adpcm, alen, 0 /* low-nibble-first */, w->pcm);
     w->fs = mafm_wave_rate(body[1]);
+    if (number + 1 > s->wave_count) s->wave_count = number + 1;
+}
+
+/* Decode one Mwa (Mtsp / score track) wave body into the bank.  Same Yamaha
+ * ADPCM as Awa, but with a 3-byte header carrying an explicit u16 BE sample
+ * rate instead of Awa's 4-bit class code:
+ *
+ *     [formatByte][rateHi][rateLo][adpcm...]
+ *
+ * The corpus rates that occur are 8000, 11025, 12000, 15000, 16000, 22050,
+ * 22000, 24000; refuse anything outside a sane range so a stray body cannot
+ * pin the resampler at 0 or run wildly fast. */
+static void mafm_add_wave_mwa(struct mafm_synth *s, int number,
+                              const uint8_t *body, uint32_t sz) {
+    struct mafm_wave *w;
+    const uint8_t *adpcm;
+    uint32_t alen;
+    int fs;
+    if (s->wave_count >= MAFM_MAX_WAVES || number < 0 || number >= MAFM_MAX_WAVES)
+        return;
+    if (sz < 3) return;
+    fs = ((int)body[1] << 8) | body[2];
+    if (fs < 4000 || fs > 48000) return;
+    adpcm = body + 3;
+    alen = sz - 3;
+    w = &s->waves[number];
+    if (w->pcm) return;              /* already have this wave number */
+    w->pcm = (int16_t *) calloc((size_t)alen, 2 * sizeof(int16_t));
+    if (!w->pcm) return;
+    w->len = _WM_MAFM_AdpcmDecodeAll(adpcm, alen, 0 /* low-nibble-first */, w->pcm);
+    w->fs = fs;
     if (number + 1 > s->wave_count) s->wave_count = number + 1;
 }
 
@@ -353,6 +385,57 @@ static void mafm_build_waves(struct mafm_synth *s, const uint8_t *in,
     }
 }
 
+/* Scan every MTR score track for its Mtsp chunk, and pull each Mwa* wave out
+ * of it into the bank.  Mtsp lives inside the score track alongside Mtsu and
+ * Mtsq; the score's format byte controls the header width (mirrors the walker
+ * in mafm_build_bank).  Called after mafm_build_waves() so Awa keeps priority
+ * for a given wave number if both provide it. */
+static void mafm_build_mtsp_waves(struct mafm_synth *s, const uint8_t *in,
+                                  uint32_t insize) {
+    uint32_t pos = 8, end = insize;
+    if (insize >= 8) {
+        uint32_t declared = MAFM_BE32(in + 4);
+        if ((uint64_t)8 + declared <= insize) end = 8 + declared;
+    }
+    while (pos + 8 <= end) {
+        const uint8_t *c = in + pos;
+        uint32_t sz = MAFM_BE32(c + 4);
+        uint32_t body = pos + 8;
+        if ((uint64_t)body + sz > insize) sz = insize - body;
+
+        if (memcmp(c, "MTR", 3) == 0 && sz >= 1) {
+            uint8_t fmt = c[8];
+            uint8_t chlen = (fmt == 0x00) ? 2 : (fmt == 0x03) ? 32 : 16;
+            uint32_t hdr = 4 + chlen;
+            uint32_t q = body + hdr, tend = body + sz;
+            while (q + 8 <= tend) {
+                const uint8_t *sc = in + q;
+                uint32_t ssz = MAFM_BE32(sc + 4);
+                uint32_t sbody = q + 8;
+                if ((uint64_t)sbody + ssz > insize) ssz = insize - sbody;
+                if (memcmp(sc, "Mtsp", 4) == 0) {
+                    /* Mtsp is a container: each inner chunk is Mwa<n>. */
+                    uint32_t r = sbody, rend = sbody + ssz;
+                    while (r + 8 <= rend) {
+                        const uint8_t *ic = in + r;
+                        uint32_t isz = MAFM_BE32(ic + 4);
+                        uint32_t ibody = r + 8;
+                        if ((uint64_t)ibody + isz > insize) isz = insize - ibody;
+                        if (memcmp(ic, "Mwa", 3) == 0)
+                            mafm_add_wave_mwa(s, ic[3], in + ibody, isz);
+                        r = ibody + isz;
+                        if (isz == 0) r++;
+                    }
+                }
+                q = sbody + ssz;
+                if (ssz == 0) q++;
+            }
+        }
+        pos = body + sz;
+        if (sz == 0) pos++;
+    }
+}
+
 /* ------------------------------------------------------------------------- */
 
 int _WM_MAFM_HasCustomVoices(const uint8_t *smaf, uint32_t size) {
@@ -362,7 +445,15 @@ int _WM_MAFM_HasCustomVoices(const uint8_t *smaf, uint32_t size) {
     tmp = (struct mafm_synth *) calloc(1, sizeof(*tmp));
     if (!tmp) return 0;
     mafm_build_bank(tmp, smaf, size);
-    has = tmp->bank_count > 0;
+    /* Also engage MAFM when the file has only Mtsp waves and no Mtsu voice
+     * definitions - the streaming-audio case (see the special bank entry
+     * synthesised at the bottom of _WM_MAFM_NewSynth).  Without this the plain
+     * GM path handles those files and their single-note trigger plays
+     * whatever GM patch bank 0x7d resolves to instead of the actual audio. */
+    if (tmp->bank_count == 0) {
+        mafm_build_mtsp_waves(tmp, smaf, size);
+    }
+    has = tmp->bank_count > 0 || tmp->wave_count > 0;
     free(tmp);
     return has;
 }
@@ -428,6 +519,27 @@ void *_WM_MAFM_NewSynth(const uint8_t *smaf, uint32_t size, uint16_t rate) {
         _WM_MAFM_VoiceInit(&s->voices[i], s->rate);
     mafm_build_bank(s, smaf, size);
     mafm_build_waves(s, smaf, size);
+    mafm_build_mtsp_waves(s, smaf, size);
+
+    /* Streaming-audio special case: some MA-7 files ship an entire song as
+     * one Mwa wave in Mtsp, then trigger it with a single note-on on the
+     * drum bank (0x7d) with no matching Mtsu voice-exclusive - the chip's own
+     * "bank 0x7d + wave loaded" implicit binding.  If we loaded Mtsp waves
+     * but no voice-exclusive claimed them, synthesise a bank entry so that
+     * lone note-on plays the wave instead of falling back to a GM patch. */
+    if (s->bank_count == 0 && s->wave_count > 0) {
+        int firstwave = -1;
+        for (i = 0; i < s->wave_count; i++)
+            if (s->waves[i].pcm) { firstwave = i; break; }
+        if (firstwave >= 0 && MAFM_MAX_BANK > 0) {
+            struct mafm_bank_entry *e = &s->bank[s->bank_count++];
+            memset(e, 0, sizeof(*e));
+            e->bank = 0;                 /* any bank (matched wildly, see select) */
+            e->pc = 0;
+            e->is_pcm = 1;
+            e->wave_id = firstwave;
+        }
+    }
     return s;
 }
 
@@ -475,8 +587,11 @@ int _WM_MAFM_ActiveVoices(void *synth) {
     return n;
 }
 
-/* Start a sampled wave playing on a free PCM slot (drums are one-shot). */
-static void mafm_start_pcm(struct mafm_synth *s, int wave) {
+/* Start a sampled wave playing on a free PCM slot with the given output gain.
+ * Drums / ATR triggers use gain = 1.0 (one-shot at full level); note-driven
+ * PCM voices pass the same volume x expression x velocity mix the FM path
+ * uses so soft passages stay soft. */
+static void mafm_start_pcm_gain(struct mafm_synth *s, int wave, float gain) {
     struct mafm_wave *w;
     struct mafm_pcm_voice *pv = NULL;
     int i;
@@ -490,8 +605,12 @@ static void mafm_start_pcm(struct mafm_synth *s, int wave) {
     pv->len = w->len;
     pv->pos = 0.0;
     pv->step = (double) w->fs / s->rate;
-    pv->gain = 1.0f;
+    pv->gain = gain;
     pv->active = 1;
+}
+
+static void mafm_start_pcm(struct mafm_synth *s, int wave) {
+    mafm_start_pcm_gain(s, wave, 1.0f);
 }
 
 /* Advance the ATR trigger schedule and render one PCM sample (summed mono). */
@@ -524,11 +643,22 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
     int bank_idx = mafm_select_patch(s, ch, is_drum, note, &patch);
     int sounding_note;
     float vel01, vel_curve;
-    /* Matched voice is PCM (a sampled instrument, not FM).  We don't yet play
-     * PCM voice-exclusives (see docs/SMAF_FM.md, "Still open" list); play
-     * silence instead of falling back to the generic FM approximation, which
-     * would be an obviously-wrong voice for the file's own sound design. */
-    if (bank_idx >= 0 && s->bank[bank_idx].is_pcm) return;
+    /* Matched voice is a sampled instrument.  Play its wave one-shot at the
+     * native rate: SMAF sampled voices are overwhelmingly drums (the audit in
+     * docs/formats/SMAF_TODO.md gap 1 puts them at 2537 records vs 2355 FM),
+     * where fixed-pitch playback is the intended behaviour.  A future pass
+     * can add pitch shift for the melodic sampled voices some MA-7 files
+     * carry; for now they play at concert pitch, which is more useful than
+     * the silence they used to. */
+    if (bank_idx >= 0 && s->bank[bank_idx].is_pcm) {
+        /* Same default-velocity trick the FM branch uses just below:
+         * SMAF's HandyPhone score carries no velocity byte, so the converter
+         * emits vel=0 to mean "no explicit velocity", which we treat as 100. */
+        float pv = (vel ? (float) vel : 100.0f) / 127.0f;
+        float g = s->chan_volume[ch] * s->chan_expression[ch] * pv * pv;
+        mafm_start_pcm_gain(s, s->bank[bank_idx].wave_id, g);
+        return;
+    }
     /* Apply the patch's own basic-octave transpose (BO field): a voice can
      * declare it plays an octave up/down from the incoming MIDI note. */
     sounding_note = note + patch.note_shift;
