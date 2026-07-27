@@ -236,6 +236,9 @@ static int scan_directory(playlist *pl, const char *dir) {
 
 #elif defined(_WIN32)
 
+#ifndef INVALID_FILE_ATTRIBUTES
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
 static int path_is_directory(const char *path) {
     DWORD attr = GetFileAttributesA(path);
     if (attr == INVALID_FILE_ATTRIBUTES) return 0;
