@@ -164,15 +164,18 @@ optional FM engine, the VOICE/instrument form.
                                    "43 05 01 ..."        decoded, layout
                                                          confirmed vs Yamaha
     MA-3 / MA-5   PCM (sampled)    "43 79 .. type!=0"    parsed, not yet played
-    MA-7          native ops       "43 79 08 7F 21 ..."  decoded, layout
-                                                         confirmed vs Yamaha
+    MA-7          native ops       "43 79 08 7F 21 ..."  FM forms 0x00/0x02
+                                    (p[10] = 0x00, 0x02)  decoded, layout
+                                                          confirmed vs Yamaha
+    MA-7          sampled          (p[10] = 0x01/03/07)   parsed as sampled,
+                                                          not yet played
 
   Net: MA-1 and MA-2 are fully supported and verified (score + FM voices + ATR
   ADPCM drums).  MA-3 / MA-5 score plays; their FM voice forms are implemented
   and the byte layout now matches Yamaha's own decoder (see below), though no
-  MA-3/5 file has been listened to end to end.  MA-7 score plays and its FM
-  voices are decoded too, so MA-7 files now play on the FM engine rather than
-  falling back to the GM wavetable.
+  MA-3/5 file has been listened to end to end.  MA-7 score plays and all its FM
+  voices are decoded, so MA-7 files play on the FM engine.  What no generation
+  has is SAMPLED (PCM) voice playback - see docs/formats/SMAF_TODO.md.
 
   VM35 layout confirmed against Yamaha's MCP-MA7 player
   ----------------------------------------------------
@@ -245,36 +248,41 @@ optional FM engine, the VOICE/instrument form.
   split limits.  They are NOT a voice-type byte; an earlier reading of this
   document said so and was wrong.
 
-  p[10] selects the BODY LAYOUT, and several forms exist:
+  p[10] selects the BODY LAYOUT.  It is effectively the voice type: two of the
+  forms are FM, the rest are SAMPLED (PCM) voices.
 
-      p[10]  body len   layout
-      0x00   23 or 43   3 global + 10 bytes/operator   <- decoded
-      0x01   17         3 global +  7 bytes/operator   (plain VM35)
-      0x02   59         not established
-      0x03   33         not established
-      0x07   42         not established
+      p[10]  body       kind      layout
+      0x00   23 or 43   FM        3 global + 10 bytes/operator
+      0x02   59         FM        3 global + 10 bytes/operator + 16-byte tail
+      0x01   17         sampled   -
+      0x03   33         sampled   -
+      0x07   42         sampled   -
 
-  Form 0x00 is the one WildMIDI decodes.  Its body is 3 global bytes then TEN
-  bytes per operator: the globals are unchanged from VM35, so the algorithm is
-  still  global[2] & 7  and still picks 2 or 4 operators, giving 3 + 20 = 23 or
-  3 + 40 = 43 body bytes.  Both sizes occur in the corpus and both fit exactly.
+  WildMIDI decodes the two FM forms and declines the sampled ones.
 
-  The reason for ten is that MA-7 stores the operator block in the CHIP's own
-  layout instead of the packed VM35 one.  Yamaha's middleware converts VM35 ->
-  native with a fixed shuffle (M7_EmuSmw7.dll, routine at 0x10183980):
+  Both FM forms use the SAME body rule: 3 global bytes, the algorithm is still
+  global[2] & 7, it still picks 2 or 4 operators, and each operator is TEN
+  bytes.  Form 0x02 simply appends a 16-byte trailer of rate/level pairs that
+  this engine does not model; it is skipped.  Every form 0x00 body in the
+  corpus is exactly 3 + 10*ops (23 for 2 operators, 43 for 4) and every form
+  0x02 body is exactly 3 + 10*ops + 16 = 59, with the algorithm always giving
+  4 operators.
 
-      native[0..4] = vm35[0..4]        (SR/KSR, RR/DR, AR/SL, TL/KSL, EAM..)
-      native[5]    = 0
-      native[6]    = vm35[6]           (WS / FB)
-      native[7]    = 0
-      native[8]    = 0
-      native[9]    = vm35[5]           (MULTI / DT)
+  That the other three forms are sampled rather than FM is clear from the data:
+  their bodies open with a 16-bit PCM sample rate, and most of them sit in the
+  drum bank (0x7D), which is where sampled percussion lives.
 
-  Undo that and the existing VM35 decoder handles the rest, which is what
-  _WM_MAFM_ParseVoiceExclusive() does.  Native bytes 5, 7 and 8 are MA-7-only
-  parameters with no VM35 equivalent: they are zero in voices that were
-  authored as VM35 and converted, and carry real data otherwise.  WildMIDI
-  ignores them either way, so those voices lose whatever those fields do.
+      form   bodies whose first u16 is a plausible rate   round hundreds
+      0x01   4/4    (10500, 13000, 13500, 16000)          4/4
+      0x03   36/36  (2618 .. 9320, incl. 6000/8000/9000)  26/36
+      0x07   1/1    (5250)                                0/1
+      0x00   1/10   -                                     0/10   <- not rates
+      0x02   0/7    (all start 0x0079, an FM global)      0/7    <- not rates
+
+  24 of the 36 form 0x03 records and 2 of the 4 form 0x01 records are drum-bank
+  voices.  Their exact layouts are not established, and playing them needs the
+  sampled-voice support that WildMIDI lacks for every MA generation - see
+  docs/formats/SMAF_TODO.md, gaps 1 and 2.
 
   How it was verified.  The mapping was read out of Yamaha's converter and then
   round-tripped through it under Unicorn: take a corpus voice's native operator
@@ -286,10 +294,22 @@ optional FM engine, the VOICE/instrument form.
   28/36/52/58, MULTI 9/7/9/2, FB=1).  Earlier guesses at this layout produced
   MULTI=0 on both operators, which no real patch has.
 
-  The decoder requires p[10] == 0 AND an exact 3 + 10*ops body, so the other
-  forms are declined rather than guessed at; a file mixing forms simply loses
-  the voices it cannot decode and falls back to GM for those.  Of the 54
-  "7F 21" voice records across the five known MA-7 files, 6 are form 0x00.
+  Coverage.  Every FM voice in every known MA-7 file is now decoded.  Across
+  the 58 "7F 21" voice records in the five files:
+
+      form 0x00   10   FM       decoded
+      form 0x02    7   FM       decoded
+      form 0x01    4   sampled  declined
+      form 0x03   36   sampled  declined
+      form 0x07    1   sampled  declined
+
+  i.e. 17 FM records decoded and 41 sampled ones declined.  Per file:
+  AB00221GM7 4/4, AB03957GM7 4/4, AccidentCafe7 4 FM of 25, Blossom 5 of 25,
+  First Love has no voice records at all (it is a streaming Mtsp file).
+
+  The remaining 41 are not an MA-7 gap as such - WildMIDI plays no sampled SMAF
+  voice on any chip generation.  Fixing that fixes MA-3, MA-5 and MA-7 at once;
+  see docs/formats/SMAF_TODO.md.
 
   Also in MA-7 Mtsu, still undecoded because nothing needs them: sub-ids 0x22
   (end-of-setup, matching MA-5's "43 79 07 7F 07 00"), 0x23, 0x26, 0x27 and

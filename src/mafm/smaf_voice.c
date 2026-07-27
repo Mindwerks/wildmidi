@@ -169,14 +169,18 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
      * MA-7-only parameters that VM35 cannot express - zero in voices that were
      * authored as VM35, non-zero otherwise - and are ignored either way.)
      *
-     * Forms 0x01 (3 + 7/op, i.e. plain VM35), 0x02, 0x03 and 0x07 also occur
-     * in the wild; their layouts are not established, so they are declined
-     * rather than guessed at.  See docs/formats/SmafFileFormat.txt. */
+     * Form 0x02 is the same FM voice with a 16-byte trailer after the
+     * operators (rate/level pairs that this engine does not model), so it
+     * shares the code.  Forms 0x01, 0x03 and 0x07 are SAMPLED voices, not FM -
+     * their bodies start with a PCM sample rate and most of them sit in the
+     * drum bank - so they are declined here; playing them needs the sampled
+     * voice support tracked in docs/formats/SMAF_TODO.md. */
     if (n >= 14 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
-        p[10] == 0x00) {
+        (p[10] == 0x00 || p[10] == 0x02)) {
         const uint8_t *body = p + 11;
         uint32_t bn = n - 11;
         uint8_t vm35[3 + 7 * 4];
+        uint32_t want;
         int alg, ops, i;
 
         if (bn > 0 && p[n - 1] == 0xf7)
@@ -184,8 +188,9 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
         if (bn < 3) return;
         alg = body[2] & 0x07;
         ops = op_count_from_alg(alg);
-        /* exact fit only: a body that is not 3 + 10*ops is some other form */
-        if (bn != (uint32_t)(3 + 10 * ops)) return;
+        /* exact fit only: anything else is a form we have not established */
+        want = (uint32_t)(3 + 10 * ops) + (p[10] == 0x02 ? 16u : 0u);
+        if (bn != want) return;
 
         out->key.bank_msb = p[5];
         out->key.bank_lsb = p[6];
