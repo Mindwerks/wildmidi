@@ -152,39 +152,45 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
     if (!p || n < 5) return;
     if (p[0] != 0x43) return;   /* not a Yamaha maker id */
 
-    /* MA-7 form: 43 79 08 7F 21 [bank msb][bank lsb][pc][drum note][type][rsv]
-     * then 3 global bytes and TEN bytes per operator.
+    /* MA-7 form: 43 79 08 7F 21 [bank msb][bank lsb][pc][?][?][form] body
      *
-     * MA-7 stores the operator block in the chip's own layout instead of the
-     * packed VM35 one.  Yamaha's middleware converts VM35 -> native with a
-     * fixed shuffle (M7_EmuSmw7.dll, the routine at 0x10183980):
+     * p[10] selects the body layout.  Only form 0x00 is decoded here: 3 global
+     * bytes then TEN bytes per operator, the chip's own layout rather than the
+     * packed VM35 one the older chips use.  Yamaha's middleware converts
+     * VM35 -> native with a fixed shuffle (M7_EmuSmw7.dll, routine 0x10183980):
      *
      *     native[0..4] = vm35[0..4]      native[5] = 0
      *     native[6]    = vm35[6]         native[7] = native[8] = 0
      *     native[9]    = vm35[5]
      *
-     * so undoing it recovers a VM35 operator and the existing decoder can do
-     * the rest.  Confirmed by round-tripping all four voices in the corpus
-     * back through that routine: every operator byte reproduces exactly, and
-     * the three bytes it zeroes are zero in all of them. */
-    if (n >= 14 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21) {
+     * so undoing it recovers a VM35 operator and the existing decoder does the
+     * rest.  Confirmed by round-tripping corpus voices back through that
+     * routine: every operator byte reproduces exactly.  (Bytes 5/7/8 carry
+     * MA-7-only parameters that VM35 cannot express - zero in voices that were
+     * authored as VM35, non-zero otherwise - and are ignored either way.)
+     *
+     * Forms 0x01 (3 + 7/op, i.e. plain VM35), 0x02, 0x03 and 0x07 also occur
+     * in the wild; their layouts are not established, so they are declined
+     * rather than guessed at.  See docs/formats/SmafFileFormat.txt. */
+    if (n >= 14 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
+        p[10] == 0x00) {
         const uint8_t *body = p + 11;
         uint32_t bn = n - 11;
         uint8_t vm35[3 + 7 * 4];
         int alg, ops, i;
 
+        if (bn > 0 && p[n - 1] == 0xf7)
+            bn--;                   /* drop the terminator if it is included */
+        if (bn < 3) return;
+        alg = body[2] & 0x07;
+        ops = op_count_from_alg(alg);
+        /* exact fit only: a body that is not 3 + 10*ops is some other form */
+        if (bn != (uint32_t)(3 + 10 * ops)) return;
+
         out->key.bank_msb = p[5];
         out->key.bank_lsb = p[6];
         out->key.pc = p[7];
         out->key.drum_note = p[8];
-        if (p[9] != 0) {            /* PCM (sampled) voice, not FM */
-            out->is_pcm = 1;
-            return;
-        }
-        if (bn < 3) return;
-        alg = body[2] & 0x07;
-        ops = op_count_from_alg(alg);
-        if (bn < (uint32_t)(3 + 10 * ops)) return;
 
         vm35[0] = body[0];
         vm35[1] = body[1];

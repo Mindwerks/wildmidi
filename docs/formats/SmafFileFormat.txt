@@ -231,21 +231,33 @@ optional FM engine, the VOICE/instrument form.
   section); it recognises Mthv / Mhvs / Mhsc, which the sample corpus does not
   contain.
 
-  MA-7 voice-exclusive (SOLVED).  MA-7 Mtsu voices look like this:
+  MA-7 voice-exclusive (form 0x00 solved; other forms open).
 
-      43 79 08 7F 21 | 7c 02 0a 00 | 00 | 00 | <23-byte body> | F7
-      \-- id ------/   \- key ---/  type rsv
-                       bankMSB bankLSB pc drumNote
+      43 79 08 7F 21 | 7c 02 0a 00 | 00 | 00 | <body> | F7
+      \-- id ------/   \- key ---/   ?    form
+                       bankMSB bankLSB pc  p[8]
 
-  Same maker id / bank / program / drum-note / voice-type key as the MA-3 and
-  MA-5 forms (which use "43 79 06|07 7F 01"), with model byte 0x08, sub-id
-  0x21, and one reserved byte (0 in every corpus voice) before the body.
+  p[5..7] are bank MSB / bank LSB / program as in the MA-3 and MA-5 forms.
+  Bank 0x7D marks a drum voice, where p[7] is the drum bank and p[8] the drum
+  note.  p[8] and p[9] otherwise hold split points - a group of records can
+  share one program and differ only in those bytes, running up to 0x7F (e.g.
+  52, 57, 77, 93, 127 for one instrument), so they look like velocity or key
+  split limits.  They are NOT a voice-type byte; an earlier reading of this
+  document said so and was wrong.
 
-  The body is 3 global bytes followed by TEN bytes per operator - not the
-  seven that MA-3/MA-5 use.  The globals are unchanged, so the algorithm is
-  still  global[2] & 7  and still picks 2 or 4 operators; a 2-operator MA-7
-  voice is therefore 3 + 20 = 23 body bytes, which is exactly what the corpus
-  files carry.
+  p[10] selects the BODY LAYOUT, and several forms exist:
+
+      p[10]  body len   layout
+      0x00   23 or 43   3 global + 10 bytes/operator   <- decoded
+      0x01   17         3 global +  7 bytes/operator   (plain VM35)
+      0x02   59         not established
+      0x03   33         not established
+      0x07   42         not established
+
+  Form 0x00 is the one WildMIDI decodes.  Its body is 3 global bytes then TEN
+  bytes per operator: the globals are unchanged from VM35, so the algorithm is
+  still  global[2] & 7  and still picks 2 or 4 operators, giving 3 + 20 = 23 or
+  3 + 40 = 43 body bytes.  Both sizes occur in the corpus and both fit exactly.
 
   The reason for ten is that MA-7 stores the operator block in the CHIP's own
   layout instead of the packed VM35 one.  Yamaha's middleware converts VM35 ->
@@ -259,30 +271,29 @@ optional FM engine, the VOICE/instrument form.
       native[9]    = vm35[5]           (MULTI / DT)
 
   Undo that and the existing VM35 decoder handles the rest, which is what
-  _WM_MAFM_ParseVoiceExclusive() does.
+  _WM_MAFM_ParseVoiceExclusive() does.  Native bytes 5, 7 and 8 are MA-7-only
+  parameters with no VM35 equivalent: they are zero in voices that were
+  authored as VM35 and converted, and carry real data otherwise.  WildMIDI
+  ignores them either way, so those voices lose whatever those fields do.
 
-  How it was verified.  The mapping is not inferred from the sample bytes - it
-  was read out of Yamaha's converter and then round-tripped through it under
-  Unicorn: take each corpus voice's native operator block, apply the inverse
-  above to get a VM35 operator, feed that back into Yamaha's own routine, and
-  compare.  All 20 operator bytes reproduce exactly, for all four voices.
-  Two independent checks agree:
-    - the three bytes the routine zeroes (native 5, 7 and 8) are zero in all
-      eight operators in the corpus, which will not happen by chance;
-    - the decoded parameters are textbook 2-op FM.  Every carrier comes out
-      TL=0, MULTI=1, AR=10-13, and the modulators carry the per-instrument
-      difference (TL 28/36/52/58, MULTI 9/7/9/2, FB=1).  Earlier guesses at
-      this layout produced MULTI=0 on both operators, which no real patch has.
+  How it was verified.  The mapping was read out of Yamaha's converter and then
+  round-tripped through it under Unicorn: take a corpus voice's native operator
+  block, apply the inverse above to get a VM35 operator, feed that back into
+  Yamaha's own routine, and compare.  All 20 operator bytes reproduce exactly,
+  for all four voices in AB00221GM7.MMF / AB03957GM7.MMF.  The decoded
+  parameters are also textbook 2-op FM - every carrier comes out TL=0, MULTI=1,
+  AR=10-13, with the modulators carrying the per-instrument difference (TL
+  28/36/52/58, MULTI 9/7/9/2, FB=1).  Earlier guesses at this layout produced
+  MULTI=0 on both operators, which no real patch has.
 
-  Still unknown, and harmless: the reserved byte at p[10], and whether MA-7
-  ever ships 4-operator or PCM voices - the corpus has only four voices, all
-  2-operator FM.  The 4-operator path follows from the same 3 + 10*N rule and
-  is implemented, but is untested for want of a sample.
+  The decoder requires p[10] == 0 AND an exact 3 + 10*ops body, so the other
+  forms are declined rather than guessed at; a file mixing forms simply loses
+  the voices it cannot decode and falls back to GM for those.  Of the 54
+  "7F 21" voice records across the five known MA-7 files, 6 are form 0x00.
 
-  Also in MA-7 Mtsu, still undecoded because nothing needs them:
-  "43 79 08 7F 22 00" (end-of-setup, matching MA-5's "43 79 07 7F 07 00") and
-  two 38-byte per-channel parameter tables "43 79 08 7F 26 ..." and
-  "43 79 08 7F 27 ...".
+  Also in MA-7 Mtsu, still undecoded because nothing needs them: sub-ids 0x22
+  (end-of-setup, matching MA-5's "43 79 07 7F 07 00"), 0x23, 0x26, 0x27 and
+  0x28 - the last two being 38-byte per-channel parameter tables.
 
   Notes from the reverse-engineering, for anyone extending this
   ----------------------------------------------------------
@@ -313,6 +324,35 @@ optional FM engine, the VOICE/instrument form.
       rules both out - that converter never accepts an MA-7 record at all.
       MA-7 voices reach the chip through the loader at 0x1004c250 instead,
       which keys on bank MSB 0x7c and dispatches on record length.
+
+
+  Where to find MA-7 files
+  ------------------------
+  MA-7 content is rare - it was the last generation (2005) and shipped in few
+  phones.  Two sources were checked:
+
+    - github.com/denjhang/libsmaf carries ~1180 .mmf files.  Exactly FIVE are
+      MA-7 (score format_type 0x03):
+          mmfs/AB00221GM7.MMF
+          mmfs/AB03957GM7.MMF
+          ringtones/Demo YAMAHA SMAF/AccidentCafe7-Q-UTF8EN.mmf
+          ringtones/Demo YAMAHA SMAF/Blossom-Q-UTF8EN.mmf
+          ringtones/MA-3 MMF files/Utada Hikaru - First Love.mmf
+      The last three are the useful ones: they carry the 0x01/0x02/0x03/0x07
+      body forms and the 4-operator form 0x00 records that the first two do
+      not.  They are also much denser scores (Mtsq of 11 KB and 25 KB) and
+      exercise SEQU event types the first two never use - notably type 0 (note
+      with running velocity, 1366 of them in Blossom) and type 6 (pitch bend).
+      All five parse byte-exact.
+    - archive.org/details/RingtoneBangers21 has 68 .mmf files but NO MA-7:
+      58 are Mobile Standard and 10 HandyPhone.  Still useful as regression
+      material - between them they carry 736 MA-5 and 388 MA-3 voice
+      exclusives, which is what finally exercised those two voice paths in
+      bulk (all 68 render, none silent).
+
+  Anything that turns up more MA-7 content would help most with the undecoded
+  body forms above; a file using form 0x02, 0x03 or 0x07 together with a
+  known-good reference render would settle them.
 
 
 Description - Sequence Data (Mtsq), Mobile Standard  (format_type 0x01 / 0x02)
@@ -374,8 +414,9 @@ Description - Sequence Data (Mtsq), SEQU  (format_type 0x03, "MA-7")
   ***********************************************************************
   *  STATUS: SUPPORTED.  Decoded by decode_mobile(..., sequ=1) in         *
   *  src/smaf2mid.c.  Verified byte-exact (parse consumes the whole      *
-  *  Mtsq and lands on its End-Of-Sequence) on the MA-7 files in the     *
-  *  libsmaf corpus, AB00221GM7.MMF and AB03957GM7.MMF.                  *
+  *  Mtsq and lands on its End-Of-Sequence) on all five known MA-7 files *
+  *  (listed under "Where to find MA-7 files" in the chip-support         *
+  *  summary above), including the two dense ones.                       *
   ***********************************************************************
 
 SEQU is NOT a compressed or otherwise novel encoding - earlier notes here were
