@@ -509,15 +509,19 @@ MA-7 file seen so far leaves 16-31 at their setup defaults and plays only on
 0-15, so the fold does not collide in practice.  Carrying the upper bank
 faithfully would need a second MIDI port, which the converter cannot express.
 
-OPEN QUESTION - octave offset.  The decoded note values are raw linear semitone
-numbers (confirmed: note bytes appear with low nibbles 0xC-0xF, which rules out
-the HandyPhone-style octave|semitone nibble packing, and the pitch-class
-histogram is diatonic).  What is NOT confirmed is whether MA-7 applies a
-constant transpose on top.  The two sample songs sit at notes 64-99, roughly an
-octave above the note distribution of the Mobile-format corpus (which centres on
-60-83), but part of that is the deliberate +12 doubling layer, and two songs is
-not a sample.  WildMIDI passes the note through unchanged, as Mobile Standard
-does.  If more MA-7 files turn up and they too sit an octave high, revisit this.
+RESOLVED - there is NO octave offset.  The decoded note values are raw linear
+semitone numbers and WildMIDI passes them through unchanged, as Mobile Standard
+does.  This was open while only two MA-7 files were known, both of which sit
+about an octave high (means 85.9 and 83.7) and suggested a constant transpose.
+With five files the picture is unambiguous:
+
+    MA-7, all files      n=5003    median 63   mean 63.3
+    Mobile MA-2/3/5/6    n=101929  median 63   mean 59.9
+
+Identical medians, and the per-octave histograms overlap.  The two original
+files were simply high-register arrangements with a deliberate +12 doubling
+layer; AccidentCafe7 (mean 57.9) and Blossom (mean 56.2) sit squarely in the
+normal range.  Do not add a transpose.
 
 PRIOR ART - none of it reads MA-7.  Checked while writing this section:
   - umjammer/vavi-sound (Java) has a readSEQU(), and but80/smaf825 (Go) has a
