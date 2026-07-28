@@ -53,7 +53,7 @@ typedef char mafm_char20[20]; /* no empty source. */
 
 #define MAFM_MAX_BANK   64      /* custom voices we keep from one file */
 #define MAFM_POLYPHONY  32      /* simultaneously sounding FM voices */
-#define MAFM_MAX_WAVES  32      /* decoded ADPCM waves kept from one file */
+#define MAFM_MAX_WAVES  128     /* decoded ADPCM waves; wave ids are 7-bit */
 #define MAFM_PCM_POOL   16      /* simultaneously sounding sampled voices */
 #define MAFM_MAX_TRIGS  1024    /* scheduled ATR wave hits */
 #define MAFM_VIB_RATE_HZ 5      /* CC1 vibrato LFO rate */
@@ -75,6 +75,9 @@ struct mafm_wave {
     int16_t *pcm;
     uint32_t len;                    /* samples */
     int fs;                          /* native sample rate (Hz) */
+    int from_setup;                  /* came from an Mtsu wave record, which
+                                      * an Awa/Mwa wave of the same number is
+                                      * allowed to replace (see below) */
 };
 
 /* PCM voice envelope phase, one-off ADSR modelled on the FM operator EG in
@@ -142,38 +145,113 @@ struct mafm_synth {
 /* ------------------------------------------------------------------------- */
 /* Parse the file's Mtsu voice-exclusives into the bank.                     */
 
-/* Walk one Mtsu chunk body, decoding each voice-exclusive.  MA-1/2 handyphone
+/* Read a MIDI variable-length quantity at *pos.  On success advances *pos past
+ * the quantity and returns it; returns MAFM_VLQ_BAD (leaving *pos alone) if it
+ * runs off the end or does not terminate within four bytes. */
+#define MAFM_VLQ_BAD 0xffffffffu
+static uint32_t mafm_vlq(const uint8_t *d, uint32_t n, uint32_t *pos) {
+    uint32_t v = 0, i = 0;
+    while (*pos + i < n && i < 4) {
+        uint8_t b = d[*pos + i];
+        v = (v << 7) | (uint32_t)(b & 0x7f);
+        i++;
+        if (!(b & 0x80)) { *pos += i; return v; }
+    }
+    return MAFM_VLQ_BAD;
+}
+
+/* Is this setup record a wave-delivery record we can decode?  MA-7 spells it
+ * "43 79 08 7F 23" and MA-5 "43 79 07 7F 03"; both carry the same body.
+ *
+ * MA-3's "43 79 06 7F 03" is deliberately excluded.  It looks identical from
+ * the outside but is not this codec: across the corpus's 312 MA-3 records not
+ * one decodes plausibly at any offset or nibble order (they peg ~55% of
+ * samples at full scale), and their nibble histogram is skewed to small values
+ * instead of showing the sign-symmetry every real ADPCM payload here has.
+ * Whatever MA-3 packs into sub-id 0x03 is a separate question; see
+ * docs/formats/SMAF_TODO.md. */
+static int mafm_is_wave_record(const uint8_t *p, uint32_t n) {
+    if (n < 8 || p[0] != 0x43 || p[1] != 0x79 || p[3] != 0x7f) return 0;
+    return (p[2] == 0x08 && p[4] == 0x23) ||    /* MA-7 */
+           (p[2] == 0x07 && p[4] == 0x03);      /* MA-5 */
+}
+
+/* Decode one wave-delivery record into the wave bank:
+ *
+ *     43 79 08 7F 23 [waveId] [00] [adpcm ...]      (MA-7)
+ *     43 79 07 7F 03 [waveId] [00] [adpcm ...]      (MA-5)
+ *
+ * The payload is the same 4-bit Yamaha ADPCM as Awa/Mwa, packed low nibble
+ * first.  That order is what the corpus supports: decoded low-nibble-first,
+ * 100% of the MA-7 records and 95.9% of the MA-5 records land near zero DC
+ * with almost no clipping, while high-nibble-first pegs samples at full scale
+ * and drifts thousands off centre.
+ *
+ * Unlike Awa/Mwa the record carries no sample rate, so the wave is stored with
+ * fs 0 and mafm_start_pcm_full() takes the rate from the voice record that
+ * references it.  Byte [6] is 0 in every known record; its meaning is not
+ * established, so it is skipped rather than interpreted. */
+static void mafm_add_wave_setup(struct mafm_synth *s, const uint8_t *p,
+                                uint32_t n) {
+    struct mafm_wave *w;
+    int number;
+    uint32_t alen;
+    number = p[5] & 0x7f;
+    if (number >= MAFM_MAX_WAVES) return;
+    w = &s->waves[number];
+    if (w->pcm) return;                         /* already have this number   */
+    alen = n - 7;
+    w->pcm = (int16_t *) calloc((size_t)alen, 2 * sizeof(int16_t));
+    if (!w->pcm) return;
+    w->len = _WM_MAFM_AdpcmDecodeAll(p + 7, alen, 0 /* low-nibble-first */,
+                                     w->pcm);
+    w->fs = 0;                                  /* rate comes from the voice  */
+    w->from_setup = 1;
+    if (number + 1 > s->wave_count) s->wave_count = number + 1;
+}
+
+/* Walk one Mtsu chunk body, decoding each setup record.  MA-1/2 handyphone
  * files prefix each SysEx with the meta-event byte ("ff f0 <len> 43 ... f7");
- * MA-3/5/6 files store bare "f0 <len> 43 ... f7" instead.  Accept both. */
+ * MA-3/5/6 files store bare "f0 <len> 43 ... f7" instead.  Accept both.
+ *
+ * <len> is a variable-length quantity, not a single byte: MA-7 wave records
+ * run to well over 127 bytes, and reading one byte walks the parser into their
+ * ADPCM payload.  The two forms agree for every length below 128, so this is
+ * the same behaviour as before for voice-only files. */
 static void mafm_parse_mtsu(struct mafm_synth *s, const uint8_t *body,
                             uint32_t n) {
     uint32_t p = 0;
     while (p + 2 <= n) {
-        uint32_t hdr;
+        uint32_t hdr, len, q;
         if (body[p] == 0xff && p + 3 <= n && body[p + 1] == 0xf0)
-            hdr = 3;                                /* ff f0 <len> */
+            hdr = 2;                                /* ff f0 <len> */
         else if (body[p] == 0xf0)
-            hdr = 2;                                /* f0 <len> */
+            hdr = 1;                                /* f0 <len> */
         else { p++; continue; }
+        q = p + hdr;
+        len = mafm_vlq(body, n, &q);
+        if (len == MAFM_VLQ_BAD || (uint64_t)q + len > n) break;
         {
-            uint8_t len = body[p + hdr - 1];
-            const uint8_t *payload = body + p + hdr;
+            const uint8_t *payload = body + q;
             uint32_t plen = len;
             struct mafm_parsed_voice pv;
-            if ((uint32_t)p + hdr + len > n) break;
             if (plen > 0 && payload[plen - 1] == 0xf7) plen--;
-            _WM_MAFM_ParseVoiceExclusive(payload, plen, &pv);
-            if (pv.valid && s->bank_count < MAFM_MAX_BANK) {
-                struct mafm_bank_entry *e = &s->bank[s->bank_count++];
-                e->bank = pv.key.bank_lsb;
-                e->pc = pv.key.pc;
-                e->is_pcm = pv.is_pcm;
-                e->wave_id = pv.pcm.wave_id;
-                e->drum_note = pv.key.drum_note;
-                e->pcm = pv.pcm;
-                e->patch = pv.patch;
+            if (mafm_is_wave_record(payload, plen)) {
+                mafm_add_wave_setup(s, payload, plen);
+            } else {
+                _WM_MAFM_ParseVoiceExclusive(payload, plen, &pv);
+                if (pv.valid && s->bank_count < MAFM_MAX_BANK) {
+                    struct mafm_bank_entry *e = &s->bank[s->bank_count++];
+                    e->bank = pv.key.bank_lsb;
+                    e->pc = pv.key.pc;
+                    e->is_pcm = pv.is_pcm;
+                    e->wave_id = pv.pcm.wave_id;
+                    e->drum_note = pv.key.drum_note;
+                    e->pcm = pv.pcm;
+                    e->patch = pv.patch;
+                }
             }
-            p += hdr + len;
+            p = q + len;
         }
     }
 }
@@ -217,6 +295,29 @@ static void mafm_build_bank(struct mafm_synth *s, const uint8_t *in,
 /* ------------------------------------------------------------------------- */
 /* ADPCM wave bank + ATR wave-trigger schedule.                              */
 
+/* Claim wave slot `number` for an Awa/Mwa wave.  Returns the slot, or NULL if
+ * it is taken.  A wave decoded from an Mtsu setup record yields here: Awa/Mwa
+ * waves carry their own sample rate and are the long-established source, so
+ * where both supply the same number the Awa/Mwa one wins, exactly as before
+ * setup records were read at all. */
+static struct mafm_wave *mafm_claim_wave(struct mafm_synth *s, int number) {
+    struct mafm_wave *w;
+    /* Bound on the slot itself, not on wave_count: wave_count is the highest
+     * number seen plus one, and a setup record may legitimately push it high
+     * (Blossom ships wave 0x64) while lower slots are still free. */
+    if (number < 0 || number >= MAFM_MAX_WAVES)
+        return NULL;
+    w = &s->waves[number];
+    if (w->pcm) {
+        if (!w->from_setup) return NULL;        /* a real wave already here  */
+        free(w->pcm);                           /* drop the setup stand-in   */
+        w->pcm = NULL;
+        w->len = 0;
+        w->from_setup = 0;
+    }
+    return w;
+}
+
 /* rate class (fmt2 low nibble) -> Hz */
 static int mafm_wave_rate(uint8_t fmt2) {
     switch (fmt2 & 0x0f) {
@@ -236,13 +337,11 @@ static void mafm_add_wave(struct mafm_synth *s, int number,
     struct mafm_wave *w;
     const uint8_t *adpcm;
     uint32_t alen;
-    if (s->wave_count >= MAFM_MAX_WAVES || number < 0 || number >= MAFM_MAX_WAVES)
-        return;
     if (sz < 2) return;
     adpcm = body + 2;
     alen = sz - 2;
-    w = &s->waves[number];
-    if (w->pcm) return;              /* already have this wave number */
+    w = mafm_claim_wave(s, number);
+    if (!w) return;                  /* already have this wave number */
     w->pcm = (int16_t *) calloc((size_t)alen, 2 * sizeof(int16_t));
     if (!w->pcm) return;
     w->len = _WM_MAFM_AdpcmDecodeAll(adpcm, alen, 0 /* low-nibble-first */, w->pcm);
@@ -265,15 +364,13 @@ static void mafm_add_wave_mwa(struct mafm_synth *s, int number,
     const uint8_t *adpcm;
     uint32_t alen;
     int fs;
-    if (s->wave_count >= MAFM_MAX_WAVES || number < 0 || number >= MAFM_MAX_WAVES)
-        return;
     if (sz < 3) return;
     fs = ((int)body[1] << 8) | body[2];
     if (fs < 4000 || fs > 48000) return;
     adpcm = body + 3;
     alen = sz - 3;
-    w = &s->waves[number];
-    if (w->pcm) return;              /* already have this wave number */
+    w = mafm_claim_wave(s, number);
+    if (!w) return;                  /* already have this wave number */
     w->pcm = (int16_t *) calloc((size_t)alen, 2 * sizeof(int16_t));
     if (!w->pcm) return;
     w->len = _WM_MAFM_AdpcmDecodeAll(adpcm, alen, 0 /* low-nibble-first */, w->pcm);
@@ -713,11 +810,16 @@ static void mafm_start_pcm_full(struct mafm_synth *s, int wave, float gain,
     {
         double bend_semitones = 0.0;
         double ratio;
+        int fs = w->fs;
+        /* MA-7 wave-delivery records (7F 23) carry no rate of their own, and
+         * are stored with fs 0; the voice record referencing the wave supplies
+         * it.  Awa/Mwa waves always set a rate, so they are unaffected. */
+        if (fs <= 0) fs = (params && params->fs > 0) ? params->fs : 8000;
         if (channel >= 0 && base_note != note) {
             bend_semitones = ((double)(s->chan_pitch[channel] - 0x2000) / 8192.0) * 2.0;
         }
         ratio = pow(2.0, ((double)(note - base_note) + bend_semitones) / 12.0);
-        pv->step = (double) w->fs / s->rate * ratio;
+        pv->step = (double) fs / s->rate * ratio;
     }
     pv->gain = gain;
     pv->channel = channel;

@@ -170,6 +170,12 @@ optional FM engine, the VOICE/instrument form.
     MA-7          sampled          (p[10] = 0x01/03/07)   parsed as sampled,
                                                           not yet played
 
+  Wave data delivered inside Mtsu (as opposed to Mtsp/Mwa or ATR/Awa):
+    MA-7          "43 79 08 7F 23 ..."   decoded (Yamaha ADPCM, low nibble
+                                         first); see the MA-7 section below
+    MA-5          "43 79 07 7F 03 ..."   same layout, decoded
+    MA-3          "43 79 06 7F 03 ..."   NOT this codec; still undecoded
+
   Net: MA-1 and MA-2 are fully supported and verified (score + FM voices + ATR
   ADPCM drums).  MA-3 / MA-5 score plays; their FM voice forms are implemented
   and the byte layout now matches Yamaha's own decoder (see below), though no
@@ -317,14 +323,10 @@ optional FM engine, the VOICE/instrument form.
       sub    length     what it appears to be
       0x22   7 bytes    end-of-setup marker (analogue of MA-5 "43 79 07 7F 07 00");
                         payload is a 1-byte flag: 0x00, 0x08 or 0x18 seen
-      0x23   445..1465  ALTERNATE WAVE DELIVERY.  Where Mtsp/Mwa is missing but the
-                        file has 20+ sampled voice records (Blossom, other Demo
-                        files), the wave data itself is shipped as 43 79 08 7F 23
-                        exclusives inside Mtsu.  Bodies are high-entropy and open
-                        with runs of 0x80 nibbles, matching Yamaha ADPCM silence.
-                        Layout not established - a header, then ADPCM data.  If a
-                        future pass decodes this, most of MA-7's sampled voices
-                        will play (currently only the ~10% that use Mtsp/Mwa do).
+      0x23   445..1465  ALTERNATE WAVE DELIVERY - DECODED, see below.  Where
+                        Mtsp/Mwa is missing but the file has 20+ sampled voice
+                        records (Blossom, other Demo files), the wave data is
+                        shipped as 43 79 08 7F 23 exclusives inside Mtsu.
       0x26   38 bytes   per-channel effect config; first byte 0x02
       0x27   38 or 230  per-channel effect config; first byte 0x41
       0x28   38 bytes   per-channel effect config; first byte 0x03
@@ -332,8 +334,34 @@ optional FM engine, the VOICE/instrument form.
   0x26/0x27/0x28 would map to reverb-send / chorus-send / brightness-style
   parameters, none of which WildMIDI's wavetable can act on today (see
   docs/SYNTH_TODO.md); decoding them without the synth engine to receive them
-  would be a no-op.  0x23 is the most valuable next target - it is what
-  Blossom and the other dense MA-7 demos use in place of Mtsp.
+  would be a no-op.
+
+  Wave delivery inside Mtsu (sub-id 0x23 on MA-7, 0x03 on MA-5)
+  -------------------------------------------------------------
+  Decoded; loaded by mafm_add_wave_setup() in src/mafm.c.
+
+      43 79 08 7F 23 [waveId] [00] [payload ...] F7      MA-7
+      43 79 07 7F 03 [waveId] [00] [payload ...] F7      MA-5
+      43 79 06 7F 03 [waveId] [00] [payload ...] F7      MA-3 - NOT this codec
+
+  The payload is the same 4-bit Yamaha ADPCM as Awa/Mwa, packed LOW NIBBLE
+  FIRST, beginning at byte 7.  The record carries no sample rate: the voice
+  record that references the wave supplies it, so these waves are stored with
+  fs = 0 and the rate is taken from the voice at note-on.  Byte 6 is 0 in
+  every record in the corpus; its meaning is not established.
+
+  Nibble order is the whole trick, and getting it wrong is why an earlier pass
+  concluded this was not the Yamaha codec.  Measured over the corpus's 911
+  wave records, low-nibble-first decodes 100% of MA-7 and 95.9% of MA-5
+  records to near-zero DC with almost no clipping; high-nibble-first pegs
+  samples at full scale and drifts thousands off centre.
+
+  MA-3's 43 79 06 7F 03 is excluded: none of its 312 records decode plausibly
+  at any offset or nibble order, and its nibble histogram lacks the
+  sign-symmetry real ADPCM payloads show here.  See docs/formats/SMAF_TODO.md.
+
+  Note also that <len> in Mtsu is a variable-length quantity, not a single
+  byte - these records are far longer than 127 bytes.
 
   Notes from the reverse-engineering, for anyone extending this
   ----------------------------------------------------------
