@@ -248,6 +248,114 @@ static void flush_all_offs(struct smaf_ctx *ctx) {
 }
 
 /* ------------------------------------------------------------------------- */
+/* Mobile Standard Huffman decompression (format_type 0x01).
+ *
+ * A compressed Mtsq body is: 4-byte big-endian uncompressed length, then a
+ * bit stream (MSB first within each byte) carrying an Okumura-style prefix-
+ * coded tree and the encoded bytes.
+ *
+ * Tree pass: each bit reads a node.
+ *     bit 1 -> internal node, recursively read left then right subtrees.
+ *     bit 0 -> leaf, read the next 8 bits (MSB first) as a literal byte.
+ * The tree uses at most 2*256 - 1 = 511 slots; the lower 256 are the
+ * possible leaf byte values (0..255), the higher slots are internal nodes
+ * numbered from 256 upward.
+ *
+ * Data pass: for each output byte, walk from the root; 0 goes left, 1 goes
+ * right, until reaching a node index < 256 which is the byte to emit.  Repeat
+ * until the declared uncompressed length is reached. */
+#define HUFF_MAX_NODES (2 * 256 - 1)
+
+struct huff_state {
+    const uint8_t *in;
+    uint32_t       in_len;
+    uint32_t       in_pos;
+    uint8_t        bit_buf;
+    uint8_t        bit_n;
+    int            oom;
+    int            avail;                   /* next internal-node slot to fill */
+    int16_t        left [HUFF_MAX_NODES];
+    int16_t        right[HUFF_MAX_NODES];
+};
+
+/* Read one bit MSB-first, or return -1 on end-of-stream. */
+static int huff_bit(struct huff_state *h) {
+    if (h->bit_n == 0) {
+        if (h->in_pos >= h->in_len) return -1;
+        h->bit_buf = h->in[h->in_pos++];
+        h->bit_n = 8;
+    }
+    int b = (h->bit_buf >> 7) & 1;
+    h->bit_buf = (uint8_t)(h->bit_buf << 1);
+    h->bit_n--;
+    return b;
+}
+
+/* Read the next 8 bits as a byte, or return -1 on end-of-stream. */
+static int huff_byte(struct huff_state *h) {
+    int v = 0, i, b;
+    for (i = 0; i < 8; i++) {
+        b = huff_bit(h);
+        if (b < 0) return -1;
+        v = (v << 1) | b;
+    }
+    return v;
+}
+
+/* Read the tree.  Returns the node index (0..510) or -1 on error. */
+static int huff_read_tree(struct huff_state *h) {
+    int b = huff_bit(h);
+    if (b < 0) return -1;
+    if (b) {
+        int i, l, r;
+        if (h->avail >= HUFF_MAX_NODES) return -1;
+        i = h->avail++;
+        l = huff_read_tree(h);
+        if (l < 0) return -1;
+        r = huff_read_tree(h);
+        if (r < 0) return -1;
+        h->left [i] = (int16_t) l;
+        h->right[i] = (int16_t) r;
+        return i;
+    }
+    return huff_byte(h);                    /* leaf: 8-bit literal */
+}
+
+/* Decompress `in` (compressed body without the 4-byte length prefix) into a
+ * newly-allocated buffer of exactly `want` bytes.  Returns NULL on any error
+ * (bad tree, truncated stream, allocation failure); caller frees the buffer. */
+static uint8_t *huff_decompress(const uint8_t *in, uint32_t in_len,
+                                uint32_t want) {
+    struct huff_state h;
+    uint8_t *out;
+    uint32_t o;
+    int root, j, b;
+
+    memset(&h, 0, sizeof(h));
+    h.in = in;
+    h.in_len = in_len;
+    h.avail = 256;
+
+    root = huff_read_tree(&h);
+    if (root < 0) return NULL;
+
+    out = (uint8_t *) malloc(want ? want : 1);
+    if (!out) return NULL;
+
+    for (o = 0; o < want; o++) {
+        j = root;
+        while (j >= 256) {
+            b = huff_bit(&h);
+            if (b < 0) { free(out); return NULL; }
+            j = b ? h.right[j] : h.left[j];
+            if (j < 0 || j >= HUFF_MAX_NODES) { free(out); return NULL; }
+        }
+        out[o] = (uint8_t) j;
+    }
+    return out;
+}
+
+/* ------------------------------------------------------------------------- */
 
 /* True if the container has an ATR audio track (a top-level "ATR*" chunk).
  * Used to keep audio-only SMAF files (CNTI + ATR, no MTR) from being rejected
@@ -841,6 +949,7 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
     uint32_t ms_dur, ms_gate;
     uint32_t track_size_pos, begin_track_pos, current_pos;
     uint8_t fmt = 0x02;
+    uint8_t *huff_out = NULL;           /* allocated by huff_decompress on 0x01 */
     int ret = -1;
 
     if (!out || !outsize) {
@@ -875,16 +984,29 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
     }
 
     /* Supported score-track formats: Mobile Standard (0x02), HandyPhone
-     * Standard (0x00), MA-7 SEQU (0x03), and the audio-only sentinel 0xff.
-     * Mobile-Standard Huffman (0x01) is rejected explicitly: all four such
-     * files in the libsmaf corpus start with a 16-bit BE length prefix
-     * followed by a Huffman bitstream, and the decompressor is not
-     * implemented.  Silently falling through to the 0x02 parser produces
-     * garbage or silence; a clean error is more useful. */
+     * Standard (0x00), MA-7 SEQU (0x03), the audio-only sentinel 0xff, and
+     * now Mobile-Standard Huffman (0x01) - the body is [u32 BE uncompressed
+     * length][Okumura-Huffman bit stream]; decompress it and treat the
+     * result as a plain fmt=0x02 body. */
     if (fmt == 0x01) {
-        _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF,
-                         "(Huffman-compressed Mobile Standard not implemented)", 0);
-        return -1;
+        uint32_t want;
+        if (seqlen < 4) {
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(Huffman body truncated)", 0);
+            return -1;
+        }
+        want = BE32(seq);
+        if (want == 0 || want > 0x1000000u) {   /* 16 MiB sanity cap */
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(Huffman length out of range)", 0);
+            return -1;
+        }
+        huff_out = huff_decompress(seq + 4, seqlen - 4, want);
+        if (!huff_out) {
+            _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(Huffman decode failed)", 0);
+            return -1;
+        }
+        seq = huff_out;
+        seqlen = want;
+        fmt = 0x02;                             /* now a plain Mobile stream */
     }
     if (fmt < 0xff && fmt > 0x03) {
         _WM_GLOBAL_ERROR(WM_ERR_NOT_SMAF, "(unsupported SMAF track format)", 0);
@@ -992,6 +1114,7 @@ int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
 
 _end:
     free(ctx.offs);
+    free(huff_out);                     /* NULL-safe; only set on fmt=0x01 */
     if (ret < 0) {
         free(ctx.dst);
         *out = NULL;
