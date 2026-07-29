@@ -1,12 +1,12 @@
 /* Assert-based smoke test for the Mtsp/Mwa wave loader in mafm.c.
  *
  * Two things get exercised:
- *  - a file with an Mtsu voice bank AND an Mtsp wave should engage the MAFM
- *    engine as before (i.e. Mtsp does not break the pre-existing case);
- *  - a file with NO Mtsu voice records but an Mtsp Mwa should ALSO engage the
+ *  - a file with NO Mtsu voice records but an Mtsp Mwa should engage the
  *    engine, so streaming-audio MA-7 files (First Love, Yamaha example.mmf)
  *    have somewhere for their single-note trigger to go instead of falling
- *    back to a GM patch that plays silence.
+ *    back to a GM patch that plays silence;
+ *  - a file with neither must NOT engage it, so the "engage on Mtsp waves"
+ *    clause stays gated on wave_count rather than on the file parsing.
  *
  * See docs/formats/SmafFileFormat.txt and docs/formats/SMAF_TODO.md. */
 #include <assert.h>

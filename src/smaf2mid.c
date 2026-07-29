@@ -280,12 +280,13 @@ struct huff_state {
 
 /* Read one bit MSB-first, or return -1 on end-of-stream. */
 static int huff_bit(struct huff_state *h) {
+    int b;
     if (h->bit_n == 0) {
         if (h->in_pos >= h->in_len) return -1;
         h->bit_buf = h->in[h->in_pos++];
         h->bit_n = 8;
     }
-    int b = (h->bit_buf >> 7) & 1;
+    b = (h->bit_buf >> 7) & 1;
     h->bit_buf = (uint8_t)(h->bit_buf << 1);
     h->bit_n--;
     return b;

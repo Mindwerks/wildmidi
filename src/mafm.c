@@ -586,7 +586,10 @@ int _WM_MAFM_HasCustomVoices(const uint8_t *smaf, uint32_t size) {
         mafm_build_waves(tmp, smaf, size);
     }
     has = tmp->bank_count > 0 || tmp->wave_count > 0;
-    free(tmp);
+    /* Not plain free(): the probe decodes real waves into both banks, so it
+     * has to go through the same teardown a live synth does or every call
+     * leaks the decoded PCM (hundreds of KB for a streaming Mwa). */
+    _WM_MAFM_FreeSynth(tmp);
     return has;
 }
 
