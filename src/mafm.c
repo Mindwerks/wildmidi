@@ -976,9 +976,9 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
     int sounding_note;
     float vel01, vel_curve;
     /* Matched voice is a sampled instrument.  Play its wave one-shot at the
-     * native rate: SMAF sampled voices are overwhelmingly drums (the audit in
-     * docs/formats/SMAF_TODO.md gap 1 puts them at 2537 records vs 2355 FM),
-     * where fixed-pitch playback is the intended behaviour.  A future pass
+     * native rate: SMAF sampled voices are overwhelmingly drums (a corpus
+     * audit puts them at 2537 records vs 2355 FM), where fixed-pitch playback
+     * is the intended behaviour.  A future pass
      * can add pitch shift for the melodic sampled voices some MA-7 files
      * carry; for now they play at concert pitch, which is more useful than
      * the silence they used to. */
@@ -1006,8 +1006,8 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
          * MA-3/5 files with PCM voices point exclusively at ROM waves 0..~25
          * that no file provides.  Rather than silence those notes, fall back
          * to the FM drum approximation - a synthetic kick/snare beats a
-         * missing hit for percussion tracks.  See docs/formats/SMAF_TODO.md
-         * for the ROM-wave gap. */
+         * missing hit for percussion tracks.  See docs/formats/SmafFileFormat.txt
+         * for the ROM-wave situation. */
         _WM_MAFM_DrumApprox(note, &patch);
         /* fall through to the FM code path below with the approx patch */
     }

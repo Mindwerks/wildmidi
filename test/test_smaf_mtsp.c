@@ -8,7 +8,7 @@
  *  - a file with neither must NOT engage it, so the "engage on Mtsp waves"
  *    clause stays gated on wave_count rather than on the file parsing.
  *
- * See docs/formats/SmafFileFormat.txt and docs/formats/SMAF_TODO.md. */
+ * See docs/formats/SmafFileFormat.txt. */
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>

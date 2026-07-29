@@ -234,7 +234,7 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
      * be loaded (from Mtsp/Mwa) and falls back to a DrumApprox FM voice
      * otherwise, matching the ROM-wave treatment MA-3/5 already gets.  This
      * still leaves the MA-7-specific fields (per-note velocity split, effect
-     * sends, etc.) on the table; see docs/formats/SMAF_TODO.md. */
+     * sends, etc.) on the table; see docs/formats/SmafFileFormat.txt. */
     if (n >= 27 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
         (p[10] == 0x01 || p[10] == 0x03 || p[10] == 0x07)) {
         const uint8_t *b = p + 11;              /* body starts here */

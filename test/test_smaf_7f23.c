@@ -17,7 +17,7 @@
  * single byte -- with a one-byte read the length is misparsed, the wave never
  * loads, and the first assert fails.
  *
- * See docs/formats/SmafFileFormat.txt and docs/formats/SMAF_TODO.md. */
+ * See docs/formats/SmafFileFormat.txt. */
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -124,7 +124,7 @@ int main(void) {
     free(mmf);
 
     /* MA-3 spells it "43 79 06 7F 03" and 7-bit packs the payload, so it goes
-     * through mafm_unpack7() before the ADPCM decoder. */
+     * through _WM_MAFM_Unpack7() before the ADPCM decoder. */
     mmf = build_wave_mmf_family(0x06, 0x03, &sz);
     assert(_WM_MAFM_HasCustomVoices(mmf, sz) == 1);
     free(mmf);

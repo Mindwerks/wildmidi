@@ -179,10 +179,14 @@ optional FM engine, the VOICE/instrument form.
 
   Net: MA-1 and MA-2 are fully supported and verified (score + FM voices + ATR
   ADPCM drums).  MA-3 / MA-5 score plays; their FM voice forms are implemented
-  and the byte layout now matches Yamaha's own decoder (see below), though no
-  MA-3/5 file has been listened to end to end.  MA-7 score plays and all its FM
-  voices are decoded, so MA-7 files play on the FM engine.  What no generation
-  has is SAMPLED (PCM) voice playback - see docs/formats/SMAF_TODO.md.
+  and the byte layout now matches Yamaha's own decoder (see below).  MA-7 score
+  plays and all its FM voices are decoded, so MA-7 files play on the FM engine.
+
+  Sampled (PCM) voices play on every generation: the wave is used when the file
+  ships one, and the FM drum approximation covers the ROM waves it does not.
+  That fallback is the remaining limitation - Yamaha MA chips carry an on-chip
+  sample ROM that most sampled voices reference, and it is not redistributable,
+  so those notes are approximated rather than reproduced.
 
   VM35 layout confirmed against Yamaha's MCP-MA7 player
   ----------------------------------------------------
@@ -265,7 +269,10 @@ optional FM engine, the VOICE/instrument form.
       0x03   33         sampled   -
       0x07   42         sampled   -
 
-  WildMIDI decodes the two FM forms and declines the sampled ones.
+  WildMIDI decodes all five forms.  The two FM forms drive the FM engine; the
+  three sampled forms play the referenced wave when the file ships it (as an
+  Mtsu wave record, Mtsp/Mwa or ATR/Awa) and fall back to the FM drum
+  approximation when the wave is a ROM one the file does not carry.
 
   Both FM forms use the SAME body rule: 3 global bytes, the algorithm is still
   global[2] & 7, it still picks 2 or 4 operators, and each operator is TEN
@@ -289,7 +296,7 @@ optional FM engine, the VOICE/instrument form.
   24 of the 36 form 0x03 records and 2 of the 4 form 0x01 records are drum-bank
   voices.  Their exact layouts are only partly established, but sampled voices
   now play: the wave is used when the file ships one, and DrumApprox covers the
-  ROM waves it does not - see docs/formats/SMAF_TODO.md, gaps 1 and 2.
+  ROM waves it does not.
 
   How it was verified.  The mapping was read out of Yamaha's converter and then
   round-tripped through it under Unicorn: take a corpus voice's native operator
@@ -314,9 +321,8 @@ optional FM engine, the VOICE/instrument form.
   fields; the rest of their body (per-note velocity split, per-op envelope,
   effect sends) has not been reverse-engineered.  Downstream in mafm.c the
   sampled voice plays the referenced wave if it happens to be loaded from
-  Mtsp/Mwa, and falls back to an FM drum approximation otherwise - matching
-  the ROM-wave treatment MA-3/MA-5 already gets (see docs/formats/SMAF_TODO.md
-  gap 1 for the ROM-wave situation).
+  an Mtsu wave record or Mtsp/Mwa, and falls back to an FM drum approximation
+  otherwise - matching the ROM-wave treatment MA-3/MA-5 already gets.
 
   Non-voice MA-7 Mtsu exclusives (43 79 08 7F <sub>) surveyed across the five
   known files.  All are declined at parse time:
@@ -333,9 +339,9 @@ optional FM engine, the VOICE/instrument form.
       0x28   38 bytes   per-channel effect config; first byte 0x03
 
   0x26/0x27/0x28 would map to reverb-send / chorus-send / brightness-style
-  parameters, none of which WildMIDI's wavetable can act on today (see
-  docs/SYNTH_TODO.md); decoding them without the synth engine to receive them
-  would be a no-op.
+  parameters, none of which WildMIDI's wavetable can act on today: there is no
+  per-channel reverb/chorus/filter state for them to land in, so decoding them
+  without the synth engine to receive them would be a no-op.
 
   Wave delivery inside Mtsu (sub-id 0x23 on MA-7, 0x03 on MA-5)
   -------------------------------------------------------------
@@ -369,7 +375,6 @@ optional FM engine, the VOICE/instrument form.
   samples play near-silently.  This is the same bit-stealing scheme
   apply_ma3_packed() undoes for MA-3 FM voices; MA-3 uses it in three places
   (FM voice bodies, sampled voice bodies, wave payloads).
-  See docs/formats/SMAF_TODO.md.
 
   Note also that <len> in Mtsu is a variable-length quantity, not a single
   byte - these records are far longer than 127 bytes.
@@ -379,7 +384,7 @@ optional FM engine, the VOICE/instrument form.
   2128 samples, never over 2 s) while Mwa waves are the score's streaming
   audio (median 13446, up to 69 s).  55 corpus files ship both and about half
   reuse the same numbers for different waves.  A sampled voice's wave_id
-  addresses the setup bank; see docs/formats/SMAF_TODO.md.
+  addresses the setup bank.
 
   Notes from the reverse-engineering, for anyone extending this
   ----------------------------------------------------------
