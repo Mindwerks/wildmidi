@@ -135,9 +135,9 @@ The score-track format_type byte selects the sequence encoding:
     0x02  Mobile Standard          (uncompressed; the common MA-2/3/5/6 case)
     0x03  SEQU                     (the MA-7 format; SUPPORTED, see below)
 
-WildMIDI converts 0x00, 0x02 and 0x03.  0x01 is the Huffman-compressed variant
-of Mobile Standard; the converter treats it like 0x02 and will only work if the
-body is not actually compressed (decompression is not implemented).  0x03
+WildMIDI converts all four.  0x01 is the Huffman-compressed variant of Mobile
+Standard: the converter decompresses it (Yamaha's Okumura-style prefix code,
+see smaf2mid.c) and then decodes the result as 0x02.  0x03
 (SEQU / MA-7) is Mobile Standard with a 32-channel status byte and shares the
 same decoder.  0x00 (HandyPhone) uses a different, simpler encoding (see its
 section below) and is decoded by decode_handyphone().
@@ -152,7 +152,7 @@ optional FM engine, the VOICE/instrument form.
   Score (format_type):
     MA-1 / MA-2   HandyPhone (0x00)            decoded, tested on real files
     MA-2 / 3 / 5  Mobile uncompressed (0x02)   decoded, tested on real files
-    (any)         Mobile compressed (0x01)     only if not actually Huffman'd
+    (any)         Mobile compressed (0x01)     decompressed, then as 0x02
     MA-7          SEQU (0x03)                  decoded, tested on real files
 
   FM voice-exclusives (Mtsu; decoded by src/mafm/smaf_voice.c, played by the FM
@@ -174,7 +174,8 @@ optional FM engine, the VOICE/instrument form.
     MA-7          "43 79 08 7F 23 ..."   decoded (Yamaha ADPCM, low nibble
                                          first); see the MA-7 section below
     MA-5          "43 79 07 7F 03 ..."   same layout, decoded
-    MA-3          "43 79 06 7F 03 ..."   NOT this codec; still undecoded
+    MA-3          "43 79 06 7F 03 ..."   same codec, but the payload AND the
+                                         sampled-voice body are 7-bit packed
 
   Net: MA-1 and MA-2 are fully supported and verified (score + FM voices + ATR
   ADPCM drums).  MA-3 / MA-5 score plays; their FM voice forms are implemented
@@ -342,7 +343,7 @@ optional FM engine, the VOICE/instrument form.
 
       43 79 08 7F 23 [waveId] [00] [payload ...] F7      MA-7
       43 79 07 7F 03 [waveId] [00] [payload ...] F7      MA-5
-      43 79 06 7F 03 [waveId] [00] [payload ...] F7      MA-3 - NOT this codec
+      43 79 06 7F 03 [waveId] [00] [payload ...] F7      MA-3 (7-bit packed)
 
   The payload is the same 4-bit Yamaha ADPCM as Awa/Mwa, packed LOW NIBBLE
   FIRST, beginning at byte 7.  The record carries no sample rate: the voice
@@ -356,9 +357,19 @@ optional FM engine, the VOICE/instrument form.
   records to near-zero DC with almost no clipping; high-nibble-first pegs
   samples at full scale and drifts thousands off centre.
 
-  MA-3's 43 79 06 7F 03 is excluded: none of its 312 records decode plausibly
-  at any offset or nibble order, and its nibble histogram lacks the
-  sign-symmetry real ADPCM payloads show here.  See docs/formats/SMAF_TODO.md.
+  MA-3 keeps its payload 7-bit clean, the way a SysEx body is supposed to be:
+  each group of 8 bytes carries 7 data bytes, the group's first byte holding
+  their high bits, most significant first (_WM_MAFM_Unpack7).  Unpack first and
+  96.8% of its 312 records decode like the others.  The corpus is unambiguous:
+  no MA-3 record has a byte above 0x7f, every MA-5/MA-7 record does.
+
+  MA-3's SAMPLED VOICE body is packed the same way - 19 bytes -> 16, which is
+  the MA-5 PCM layout byte for byte.  Read raw, Fs is out of range for 31% of
+  voices and TL reads 28 (a 0.089 gain) on 86% of them, so correctly decoded
+  samples play near-silently.  This is the same bit-stealing scheme
+  apply_ma3_packed() undoes for MA-3 FM voices; MA-3 uses it in three places
+  (FM voice bodies, sampled voice bodies, wave payloads).
+  See docs/formats/SMAF_TODO.md.
 
   Note also that <len> in Mtsu is a variable-length quantity, not a single
   byte - these records are far longer than 127 bytes.

@@ -160,21 +160,23 @@ static uint32_t mafm_vlq(const uint8_t *d, uint32_t n, uint32_t *pos) {
     return MAFM_VLQ_BAD;
 }
 
-/* Is this setup record a wave-delivery record we can decode?  MA-7 spells it
- * "43 79 08 7F 23" and MA-5 "43 79 07 7F 03"; both carry the same body.
- *
- * MA-3's "43 79 06 7F 03" is deliberately excluded.  It looks identical from
- * the outside but is not this codec: across the corpus's 312 MA-3 records not
- * one decodes plausibly at any offset or nibble order (they peg ~55% of
- * samples at full scale), and their nibble histogram is skewed to small values
- * instead of showing the sign-symmetry every real ADPCM payload here has.
- * Whatever MA-3 packs into sub-id 0x03 is a separate question; see
- * docs/formats/SMAF_TODO.md. */
+/* Is this setup record a wave-delivery record?  Each MA generation spells it
+ * differently but they all carry the same body. */
 static int mafm_is_wave_record(const uint8_t *p, uint32_t n) {
     if (n < 8 || p[0] != 0x43 || p[1] != 0x79 || p[3] != 0x7f) return 0;
     return (p[2] == 0x08 && p[4] == 0x23) ||    /* MA-7 */
-           (p[2] == 0x07 && p[4] == 0x03);      /* MA-5 */
+           (p[2] == 0x07 && p[4] == 0x03) ||    /* MA-5 */
+           (p[2] == 0x06 && p[4] == 0x03);      /* MA-3, 7-bit packed */
 }
+
+/* MA-3 keeps its wave payload 7-bit clean, the way a SysEx body is supposed to
+ * be, and _WM_MAFM_Unpack7() undoes it.  MA-5 and MA-7 just store the ADPCM
+ * raw and run bytes up to 0xff straight through the setup chunk.
+ *
+ * Verified over the whole corpus: none of the 312 MA-3 records contains a byte
+ * above 0x7f, while every one of the 599 MA-5/MA-7 records does.  Unpacking
+ * first is what makes MA-3 decode - 96.8% of records land near zero DC, versus
+ * nothing at all when the payload is fed to the decoder as-is. */
 
 /* Decode one wave-delivery record into the wave bank:
  *
@@ -194,6 +196,8 @@ static int mafm_is_wave_record(const uint8_t *p, uint32_t n) {
 static void mafm_add_wave_setup(struct mafm_synth *s, const uint8_t *p,
                                 uint32_t n) {
     struct mafm_wave *w;
+    const uint8_t *adpcm;
+    uint8_t *unpacked = NULL;
     int number;
     uint32_t alen;
     number = p[5] & 0x7f;
@@ -201,12 +205,21 @@ static void mafm_add_wave_setup(struct mafm_synth *s, const uint8_t *p,
     w = &s->waves[number];
     if (w->pcm) return;                         /* already have this number   */
     alen = n - 7;
+    adpcm = p + 7;
+    if (p[2] == 0x06) {                         /* MA-3 ships it 7-bit packed */
+        unpacked = (uint8_t *) malloc(alen);
+        if (!unpacked) return;
+        alen = _WM_MAFM_Unpack7(adpcm, alen, unpacked);
+        adpcm = unpacked;
+    }
+    if (alen == 0) { free(unpacked); return; }
     w->pcm = (int16_t *) calloc((size_t)alen, 2 * sizeof(int16_t));
-    if (!w->pcm) return;
-    w->len = _WM_MAFM_AdpcmDecodeAll(p + 7, alen, 0 /* low-nibble-first */,
+    if (!w->pcm) { free(unpacked); return; }
+    w->len = _WM_MAFM_AdpcmDecodeAll(adpcm, alen, 0 /* low-nibble-first */,
                                      w->pcm);
     w->fs = 0;                                  /* rate comes from the voice  */
     w->from_setup = 1;
+    free(unpacked);
     if (number + 1 > s->wave_count) s->wave_count = number + 1;
 }
 

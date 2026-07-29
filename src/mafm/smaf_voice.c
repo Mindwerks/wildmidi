@@ -145,6 +145,19 @@ static void apply_ma3_packed(const uint8_t *body, uint32_t n, int operator_count
     apply_vm35_body(fixed, w, operator_count, v);
 }
 
+uint32_t _WM_MAFM_Unpack7(const uint8_t *in, uint32_t n, uint8_t *out) {
+    uint32_t i, w = 0;
+    for (i = 0; i + 1 < n; i += 8) {
+        uint32_t g = n - i, j;
+        uint8_t hdr = in[i];
+        if (g > 8) g = 8;
+        for (j = 1; j < g; j++)
+            out[w++] = (uint8_t)((in[i + j] & 0x7f) |
+                                 (((hdr >> (7 - j)) & 1) << 7));
+    }
+    return w;
+}
+
 void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
                                   struct mafm_parsed_voice *out) {
     memset(out, 0, sizeof(*out));
@@ -258,6 +271,18 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
         if (voice_type != 0) {                       /* PCM (sampled) voice */
             const uint8_t *b = p + 10;
             uint32_t bn = n - 10;
+            uint8_t unpacked[32];
+            /* MA-3 packs the body 7-bit-safe, the same bit-stealing scheme
+             * apply_ma3_packed() undoes for FM voices.  Unpacked it is the
+             * MA-5 layout below byte for byte: 19 packed bytes -> 16.  Read
+             * raw, the fields land one byte early - Fs falls outside a sane
+             * range for 31% of the corpus's MA-3 voices and TL reads 28
+             * (a 0.089 gain) on 86% of them, which silences the samples. */
+            if (p[2] == 0x06) {
+                uint32_t cap = (bn > sizeof(unpacked)) ? (uint32_t) sizeof(unpacked) : bn;
+                bn = _WM_MAFM_Unpack7(b, cap, unpacked);
+                b = unpacked;
+            }
             out->is_pcm = 1;
             if (bn >= 16) {
                 struct mafm_pcm_params *pc = &out->pcm;

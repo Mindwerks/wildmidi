@@ -39,8 +39,17 @@ static uint8_t *put_u32be(uint8_t *p, uint32_t v) {
 }
 
 /* Build a minimal MA-7 (format_type 0x03) container whose score track carries
- * an Mtsu holding one wave-delivery record with the given sub-id. */
+ * an Mtsu holding one wave-delivery record with the given family/sub-id.
+ * family 0x08 + sub 0x23 is MA-7, 0x07 + 0x03 MA-5, 0x06 + 0x03 MA-3. */
+static uint8_t *build_wave_mmf_family(uint8_t family, uint8_t sub_id,
+                                      uint32_t *size_out);
+
 static uint8_t *build_wave_mmf(uint8_t sub_id, uint32_t *size_out) {
+    return build_wave_mmf_family(0x08, sub_id, size_out);
+}
+
+static uint8_t *build_wave_mmf_family(uint8_t family, uint8_t sub_id,
+                                      uint32_t *size_out) {
     static const uint8_t mtsq_body[] = { 0x00, 0xff, 0x2f, 0x00 };
 
     /* 43 79 08 7F <sub> <waveId> <00> + ADPCM + F7 */
@@ -72,11 +81,14 @@ static uint8_t *build_wave_mmf(uint8_t sub_id, uint32_t *size_out) {
     *p++ = 0xf0;
     *p++ = (uint8_t)(0x80 | (payload >> 7));    /* VLQ length, 2 bytes      */
     *p++ = (uint8_t)(payload & 0x7f);
-    *p++ = 0x43; *p++ = 0x79; *p++ = 0x08;      /* Yamaha, MA-7             */
+    *p++ = 0x43; *p++ = 0x79; *p++ = family;    /* Yamaha, MA generation    */
     *p++ = 0x7f; *p++ = sub_id;
     *p++ = 0x05;                                /* waveId 5                 */
     *p++ = 0x00;                                /* reserved / format byte   */
-    for (i = 0; i < ADPCM_LEN; i++) *p++ = ADPCM_FILL;
+    /* MA-3 payloads are 7-bit packed, so keep the fill inside 0..0x7f for
+     * that family; MA-5/MA-7 store raw bytes and may exceed 0x7f. */
+    for (i = 0; i < ADPCM_LEN; i++)
+        *p++ = (family == 0x06) ? (ADPCM_FILL & 0x7f) : ADPCM_FILL;
     *p++ = 0xf7;
 
     memcpy(p, "Mtsq", 4); p += 4;
@@ -103,6 +115,23 @@ int main(void) {
      * engagement above is down to the 7F 23 loader and not to the walk simply
      * finding a record. */
     mmf = build_wave_mmf(0x2f, &sz);
+    assert(_WM_MAFM_HasCustomVoices(mmf, sz) == 0);
+    free(mmf);
+
+    /* MA-5 spells the same record "43 79 07 7F 03". */
+    mmf = build_wave_mmf_family(0x07, 0x03, &sz);
+    assert(_WM_MAFM_HasCustomVoices(mmf, sz) == 1);
+    free(mmf);
+
+    /* MA-3 spells it "43 79 06 7F 03" and 7-bit packs the payload, so it goes
+     * through mafm_unpack7() before the ADPCM decoder. */
+    mmf = build_wave_mmf_family(0x06, 0x03, &sz);
+    assert(_WM_MAFM_HasCustomVoices(mmf, sz) == 1);
+    free(mmf);
+
+    /* MA-3's sub-id under the MA-7 family id is not a wave record, so the
+     * family check has to be part of the match rather than the sub-id alone. */
+    mmf = build_wave_mmf_family(0x08, 0x03, &sz);
     assert(_WM_MAFM_HasCustomVoices(mmf, sz) == 0);
     free(mmf);
 
