@@ -191,6 +191,13 @@ static int env_finished(const struct mafm_env *e) {
     return e->phase == MAFM_EG_IDLE;
 }
 
+/* A voice output below this for MAFM_QUIET_SAMPLES running samples is treated
+ * as finished.  Voice output is nominally -1..1, so 1/32768 is one step of the
+ * 16-bit mix - inaudible by construction.  ~50 ms of silence is far longer than
+ * any waveform's zero crossing but short enough not to clip a real release. */
+#define MAFM_QUIET_LEVEL   (1.0 / 32768.0)
+#define MAFM_QUIET_SAMPLES 2048
+
 /* ── operator ───────────────────────────────────────────────────────────── */
 
 static void op_recalc(struct mafm_operator *o) {
@@ -322,6 +329,7 @@ void _WM_MAFM_VoiceNoteOn(struct mafm_voice *v, const struct mafm_voice_patch *p
         op_note_on(&v->ops[i], freq_hz);
     }
     v->active = 1;
+    v->quiet_run = 0;       /* a fresh note starts audible again */
 }
 
 void _WM_MAFM_VoiceNoteOff(struct mafm_voice *v) {
@@ -430,6 +438,25 @@ float _WM_MAFM_VoiceTick(struct mafm_voice *v) {
     }
     if (!any_live) v->active = 0;
 
-    return (float)(out * v->velocity * v->volume * 0.7);
+    out = out * v->velocity * v->volume * 0.7;
+
+    /* Retire a voice that has gone inaudible, even though its envelope has not
+     * reached exactly zero yet.  A release rate of 0 decays linearly over ~20 s,
+     * so an operator muted by TL or landing above fs/2 keeps its envelope
+     * "live" long after it stopped contributing anything.  wildmidi_lib keeps
+     * rendering while _WM_MAFM_ActiveVoices() is nonzero (capped at 10 s), so
+     * without this a 0.09 s alert renders as 10 s of digital silence.
+     *
+     * Require a continuous run below the threshold rather than a single sample,
+     * so a waveform's zero crossings cannot retire a voice that is still
+     * sounding. */
+    if (out > -MAFM_QUIET_LEVEL && out < MAFM_QUIET_LEVEL) {
+        if (v->quiet_run < MAFM_QUIET_SAMPLES) v->quiet_run++;
+        if (v->quiet_run >= MAFM_QUIET_SAMPLES) v->active = 0;
+    } else {
+        v->quiet_run = 0;
+    }
+
+    return (float) out;
 }
 #endif /* WILDMIDI_MAFM */

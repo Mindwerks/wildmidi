@@ -734,12 +734,64 @@ static uint8_t hp_melodic_channel(uint8_t base_ch, uint8_t ch) {
  *   base_ch  : MIDI channel for this track's SMAF channel 0 (0,4,8,12).
  *   perc_mask: bit c set => SMAF channel c is a percussion channel and is
  *              rerouted to MIDI channel 9 (its notes taken from the program). */
+/* F-Number/block -> MIDI pitch, for the register-write form below.
+ *
+ * The registers follow the classic OPL layout, so the sounding frequency is
+ *      f = fnum * FS / 2^(20 - block)
+ * with FS the chip's sample rate.  Yamaha's MA-1/MA-2 clock is not documented
+ * here, so FS is taken as OPL2's 49716 Hz; that only shifts every pitch by the
+ * same constant, and on the files where this form carries a real tune it lands
+ * on sensible values (the two-tone ringers come out at 1975 and 2637 Hz, which
+ * is what a phone ringer of that era sounds like).  Returns -1 if the result
+ * is not a usable MIDI pitch. */
+static int hp_reg_pitch(uint32_t fnum, uint32_t block) {
+    /* Semitone frequencies for one octave, C4..B4, in milli-Hz.  Used instead
+     * of a log() so this file keeps needing no libm - it is also built for the
+     * DOS/OS-2/Watcom targets. */
+    static const long semi[12] = {
+        261626L, 277183L, 293665L, 311127L, 329628L, 349228L,
+        369994L, 391995L, 415305L, 440000L, 466164L, 493883L
+    };
+    double hz;
+    long mhz;
+    int oct = 0, i, best = 0;
+    long bestd = 0;
+
+    if (fnum == 0) return -1;
+    hz = (double) fnum * 49716.0 / (double)(1UL << (20 - block));
+    if (hz < 8.0 || hz > 13000.0) return -1;
+    mhz = (long)(hz * 1000.0 + 0.5);
+
+    /* Fold into the C4..B4 octave, counting octaves as we go. */
+    while (mhz >= semi[0] * 2) { mhz /= 2; oct++; }
+    while (mhz <  semi[0])     { mhz *= 2; oct--; }
+
+    for (i = 0; i < 12; i++) {                  /* nearest semitone */
+        long d = mhz - semi[i];
+        if (d < 0) d = -d;
+        if (i == 0 || d < bestd) { bestd = d; best = i; }
+    }
+    /* The fold can leave us just under C, whose nearest entry is the B above. */
+    if (semi[11] - mhz < mhz - semi[best] && semi[11] - mhz >= 0) best = 11;
+
+    i = 60 + oct * 12 + best;
+    if (i < 0 || i > 127) return -1;
+    return i;
+}
+
 static int decode_handyphone(struct hp_events *e, const uint8_t *seq,
                              uint32_t seqlen, uint32_t ms_dur, uint32_t ms_gate,
                              uint8_t base_ch, uint8_t perc_mask) {
     uint32_t p = 0, cur_ms = 0;
     uint8_t oct_shift[4] = { 0, 0, 0, 0 };
     uint8_t program[4]   = { 0, 0, 0, 0 };
+    /* State for the "43 03 90 <reg> <val>" direct register-write form (below):
+     * the F-Number low byte per channel, and the pitch currently sounding so a
+     * key-off knows which note to release. */
+    uint8_t  reg_fnum[16];
+    int      reg_playing[16];
+    int      i;
+    for (i = 0; i < 16; i++) { reg_fnum[i] = 0; reg_playing[i] = -1; }
 
     while (p < seqlen) {
         uint32_t dur;
@@ -768,6 +820,52 @@ static int decode_handyphone(struct hp_events *e, const uint8_t *seq,
                 if (p >= seqlen) break;
                 len = seq[p++];
                 if ((uint32_t)p + len > seqlen) { p = seqlen; break; }
+                /* "43 03 90 <reg> <val>" is a direct write to an FM register.
+                 * 21 files in the corpus (two-tone ringers and system alerts)
+                 * carry their whole tune this way and emit no note events at
+                 * all, so without this they render as pure silence.
+                 *
+                 * The registers are laid out as on OPL:
+                 *   0xB0+n  F-Number, low 8 bits, channel n
+                 *   0xC0+n  bit5 key-on, bits4-2 block, bits1-0 F-Num high
+                 * so a key-on turns into a note-on at the pitch those two
+                 * registers describe, and the matching key-off releases it.
+                 *
+                 * Treat this as approximate.  The layout is inferred from the
+                 * corpus rather than from a Yamaha spec: it is convincing on
+                 * the ringers (six files agree on the same two frequencies,
+                 * landing within ~0.11 of a semitone), but the alert files
+                 * write only two key-ons each, which is too little to confirm
+                 * anything.  Playing them beats leaving them silent. */
+                if (len >= 5 && seq[p] == 0x43 && seq[p + 1] == 0x03 &&
+                    seq[p + 2] == 0x90) {
+                    uint8_t reg = seq[p + 3], val = seq[p + 4];
+                    if (reg >= 0xb0 && reg <= 0xbf) {
+                        reg_fnum[reg - 0xb0] = val;
+                    } else if (reg >= 0xc0 && reg <= 0xcf) {
+                        int ch = reg - 0xc0;
+                        uint8_t midi_ch = hp_melodic_channel(base_ch,
+                                                             (uint8_t)(ch & 3));
+                        if (reg_playing[ch] >= 0) {     /* release the old note */
+                            if (hp_push(e, cur_ms, 0x80 | midi_ch,
+                                        (uint8_t) reg_playing[ch], 0x40, 1) < 0)
+                                return -1;
+                            reg_playing[ch] = -1;
+                        }
+                        if (val & 0x20) {               /* key-on */
+                            uint32_t fnum = ((uint32_t)(val & 3) << 8)
+                                          | reg_fnum[ch];
+                            int pitch = hp_reg_pitch(fnum, (val >> 2) & 7);
+                            if (pitch >= 0) {
+                                if (hp_push(e, cur_ms, 0x90 | midi_ch,
+                                            (uint8_t) pitch,
+                                            HP_NOTE_VELOCITY, 1) < 0)
+                                    return -1;
+                                reg_playing[ch] = pitch;
+                            }
+                        }
+                    }
+                }
                 p += len;
             }
             /* other 0xff e2: no payload, ignore */
@@ -858,6 +956,17 @@ static int decode_handyphone(struct hp_events *e, const uint8_t *seq,
                 return -1;
             if (hp_push(e, cur_ms + gate * ms_gate, 0x80 | midi_ch,
                         (uint8_t)pitch, 0x40, 1) < 0)
+                return -1;
+        }
+    }
+    /* A register-write note is held until its key-off, so anything still
+     * sounding when the stream ends has to be released here or it rings on
+     * for the rest of the render. */
+    for (i = 0; i < 16; i++) {
+        if (reg_playing[i] >= 0) {
+            uint8_t midi_ch = hp_melodic_channel(base_ch, (uint8_t)(i & 3));
+            if (hp_push(e, cur_ms, 0x80 | midi_ch,
+                        (uint8_t) reg_playing[i], 0x40, 1) < 0)
                 return -1;
         }
     }

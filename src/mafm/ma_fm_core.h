@@ -113,6 +113,7 @@ struct mafm_voice {
     double  lfo_sin;                     /* this sample's LFO value */
     int     channel;                     /* owning smaf channel (for stealing) */
     int     note;                        /* current note (for stealing) */
+    uint32_t quiet_run;                  /* consecutive inaudible samples */
 };
 
 /* Voice lifecycle.  Set the sample rate once, then note-on/off and tick. */
