@@ -131,12 +131,12 @@ IF (CMAKE_C_COMPILER_ID MATCHES "(Clang|^GNU$)")
 
     IF (NOT WIN32 AND NOT CYGWIN)
         SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Werror")
-        CHECK_C_SOURCE_COMPILES("int foo(void) __attribute__((visibility(\"default\")));
-                                 int main(void) {return 0;}" HAVE_VISIBILITY_DEFAULT)
-        IF (HAVE_VISIBILITY_DEFAULT)
-            CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_VISIBILITY_HIDDEN)
-        ENDIF()
+        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Werror -fvisibility=hidden")
+        CHECK_C_SOURCE_COMPILES("__attribute__((visibility(\"default\"))) int foo(void);
+                                 __attribute__((visibility(\"hidden\")))  int bar(void);
+                                 int foo (void) { return 0; }
+                                 int bar (void) { return 1; }
+                                 int main(void) { return 0; }" HAVE_VISIBILITY)
         SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
     ENDIF()
 
