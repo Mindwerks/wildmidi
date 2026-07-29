@@ -374,6 +374,13 @@ optional FM engine, the VOICE/instrument form.
   Note also that <len> in Mtsu is a variable-length quantity, not a single
   byte - these records are far longer than 127 bytes.
 
+  These setup waves are a SEPARATE bank from the Mtsp/Awa "Mwa" waves, not a
+  shared numbering space: setup waves are short instrument samples (median
+  2128 samples, never over 2 s) while Mwa waves are the score's streaming
+  audio (median 13446, up to 69 s).  55 corpus files ship both and about half
+  reuse the same numbers for different waves.  A sampled voice's wave_id
+  addresses the setup bank; see docs/formats/SMAF_TODO.md.
+
   Notes from the reverse-engineering, for anyone extending this
   ----------------------------------------------------------
     - The InstallShield package unpacks with "unshield x data1.cab" and yields
