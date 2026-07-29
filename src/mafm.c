@@ -729,6 +729,22 @@ void _WM_MAFM_Reset(void *synth) {
     s->vib_phase = 0.0;
 }
 
+void _WM_MAFM_ReleaseAll(void *synth) {
+    struct mafm_synth *s = (struct mafm_synth *) synth;
+    int i;
+    if (!s) return;
+    for (i = 0; i < MAFM_POLYPHONY; i++) {
+        if (_WM_MAFM_VoiceActive(&s->voices[i]))
+            _WM_MAFM_VoiceNoteOff(&s->voices[i]);
+    }
+    for (i = 0; i < MAFM_PCM_POOL; i++) {
+        struct mafm_pcm_voice *pv = &s->pcm[i];
+        if (pv->active && pv->env_phase != MAFM_PCM_EG_IDLE &&
+            pv->env_phase != MAFM_PCM_EG_RELEASE)
+            pv->env_phase = MAFM_PCM_EG_RELEASE;
+    }
+}
+
 int _WM_MAFM_ActiveVoices(void *synth) {
     struct mafm_synth *s = (struct mafm_synth *) synth;
     int i, n = 0;

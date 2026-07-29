@@ -1403,6 +1403,10 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
 #endif
 
     _WM_Release_Allowance(mdi);
+    /* The FM engine keeps its own voices; a sustaining one holds its level
+     * until key-off, so release them here too or a score that ends without
+     * keying every note off rings on to the caller's cut-off. */
+    if (mdi->mafm_synth) _WM_MAFM_ReleaseAll(mdi->mafm_synth);
     return;
 }
 

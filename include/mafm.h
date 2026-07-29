@@ -52,6 +52,11 @@ void  _WM_MAFM_Event(void *synth, struct _mdi *mdi, struct _event *event);
 /* Nonzero while notes are still sounding (release tails). */
 int   _WM_MAFM_ActiveVoices(void *synth);
 
+/* Put every sounding voice into its release phase.  Called at end of track:
+ * a sustaining voice holds its level until key-off, so one the score never
+ * keys off would otherwise ring until the caller's cut-off. */
+void  _WM_MAFM_ReleaseAll(void *synth);
+
 /* Render stereo frames into the 32-bit mix buffer (accumulates). */
 void  _WM_MAFM_Render(void *synth, int32_t *out, uint32_t frames);
 

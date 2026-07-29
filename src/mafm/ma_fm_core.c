@@ -142,7 +142,13 @@ static void env_configure(struct mafm_env *e, const struct mafm_op_patch *p,
                           double sample_rate, double rate_scale) {
     e->atk_step = rate_to_step(p->ar, sample_rate, 1) * rate_scale;
     e->dec_step = rate_to_step(p->dr, sample_rate, 0) * rate_scale;
-    e->sus_step = rate_to_step(p->sr, sample_rate, 0) * rate_scale;
+    /* Sustain rate 0 means "no second decay": hold the level until key-off,
+     * which is what a sustaining voice is for.  rate_to_step() floors rate 0
+     * to a ~20 s glide so a decaying stage always retires, but applying that
+     * floor here turns every held note into a 20 s fade and leaves it ringing
+     * long after the score has finished. */
+    e->sus_step = (p->sr == 0) ? 0.0
+                : rate_to_step(p->sr, sample_rate, 0) * rate_scale;
     e->rel_step = rate_to_step(p->rr, sample_rate, 0) * rate_scale;
     e->sus_level = 1.0 - ((double) p->sl / 15.0);   /* sl 0 = top, 15 = ~silent */
     e->sustaining = p->eg_type;

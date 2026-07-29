@@ -369,9 +369,15 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
                 o->dvb  = (uint8_t)((op[4] >> 6) & 3);
                 o->dam  = (uint8_t)((op[4] >> 4) & 3);
                 o->wave = op[4] & 0x07;
-                /* VMAFMOperator.ToVM35: SR = EGT ? 0 : RR ; sustaining if SR!=0 */
+                /* VMAFMOperator.ToVM35: SR = EGT ? 0 : RR.  EGT is the EG type:
+                 * set means the voice SUSTAINS (hold at the sustain level until
+                 * key-off), clear means percussive (decay away on its own), so
+                 * SR = 0 is "no second decay" rather than "not sustaining".
+                 * Deriving eg_type from SR != 0 inverted that and sent every
+                 * sustaining voice straight to release: Mainfile_12's 60 ms
+                 * note sounded for 4 ms. */
                 o->sr = egt ? 0 : (op[1] >> 4) & 0x0f;
-                o->eg_type = (o->sr != 0);
+                o->eg_type = egt;
                 if (i == 0) o->fb = (uint8_t) fb; /* VMA feedback lands on op0 */
                 op += 5;
             }
