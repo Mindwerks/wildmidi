@@ -130,14 +130,14 @@ IF (CMAKE_C_COMPILER_ID MATCHES "(Clang|^GNU$)")
     ENDIF()
 
     IF (NOT WIN32 AND NOT CYGWIN)
-        SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Werror -fvisibility=hidden")
+        cmake_push_check_state()
+        SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -fvisibility=hidden")
         CHECK_C_SOURCE_COMPILES("__attribute__((visibility(\"default\"))) int foo(void);
                                  __attribute__((visibility(\"hidden\")))  int bar(void);
                                  int foo (void) { return 0; }
                                  int bar (void) { return 1; }
                                  int main(void) { return 0; }" HAVE_VISIBILITY)
-        SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
+        cmake_pop_check_state()
     ENDIF()
 
     IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -148,15 +148,15 @@ IF (CMAKE_C_COMPILER_ID MATCHES "(Clang|^GNU$)")
 ENDIF()
 
 IF (CMAKE_C_COMPILER_ID MATCHES "SunPro")
-    SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -xldscope=hidden")
+    cmake_push_check_state()
+    SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -xldscope=hidden")
     # __SUNPRO_C >= 0x550
     CHECK_C_SOURCE_COMPILES("__global int foo(void);
                              int main(void) {return 0;}" HAVE_LDSCOPE_GLOBAL)
     IF (HAVE_LDSCOPE_GLOBAL)# OR HAVE_VISIBILITY_DEFAULT
         SET(HAVE_LDSCOPE_HIDDEN 1)
     ENDIF()
-    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
+    cmake_pop_check_state()
 ENDIF()
 
 CHECK_C_SOURCE_COMPILES("int main(void) {__builtin_expect(0,0); return 0;}" HAVE___BUILTIN_EXPECT)
@@ -174,10 +174,10 @@ if (APPLE)
 ELSEIF(SYS_OPENBSD)
     SET(EXTRA_LDFLAGS "")
 ELSE()
-    SET(OLD_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS} -Wl,--no-undefined")
+    cmake_push_check_state()
+    SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wl,--no-undefined")
     CHECK_C_COMPILER_FLAG("" HAVE_NO_UNDEFINED)
-    SET(CMAKE_REQUIRED_FLAGS "${OLD_REQUIRED_FLAGS}")
+    cmake_pop_check_state()
     IF (HAVE_NO_UNDEFINED)
         SET(EXTRA_LDFLAGS "-Wl,--no-undefined")
     ELSE()
