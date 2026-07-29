@@ -115,13 +115,16 @@ All four now render: `J-SH08/My Happiness.mmf` (55.7 s, peak 30002),
 `J-SH010/system/j-sh010_30.mmf` (6.1 s, peak 28446),
 `J-SH010/system/j-sh010_46.mmf` (2.7 s, peak 5624).
 
-## 5. Container metadata is not surfaced
+## 5. Container metadata is not surfaced - tracked in docs/TEXT_TODO.md
 
-**Impact: cosmetic**, 704 files carry `OPDA`.
+**Impact: cosmetic.**  1178 files carry `CNTI`, 704 carry `OPDA`.
 
 `CNTI` (contents class/type/copy status) and `OPDA` (title, artist, composer,
-copyright - 2-uppercase-letter keys) are parsed by nothing. Other WildMIDI
-front-ends expose track names; SMAF titles could feed the same path.
+copyright - 2-uppercase-letter keys) are parsed by nothing.  This is really a
+library-wide gap rather than a SMAF one - WildMIDI surfaces no text from any
+format it reads, including SMF/KAR lyrics - so it now lives in
+`docs/TEXT_TODO.md` along with the encoding question (SMAF predates universal
+UTF-8 and the corpus contains Shift-JIS).
 
 ---
 
@@ -150,7 +153,8 @@ Worth recording so nobody re-investigates:
 - Gap 1 sub-item: ROM sample bank - see "ROM sample bank" below.
 - Gap 1 sub-item: do setup waves and `Mtsp`/`Mwa` waves share one numbering
   space?  See "Wave delivery in Mtsu" below.
-- Gap 5: expose `CNTI`/`OPDA` metadata as track name / composer (cosmetic).
+- Gap 5: expose `CNTI`/`OPDA` metadata - moved to `docs/TEXT_TODO.md`, which
+  covers SMF/KAR lyrics and the encoding question too.
 
 Gap 4 (Huffman-compressed Mobile Standard, format_type 0x01) is now DONE -
 see the section further below.

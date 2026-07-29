@@ -163,12 +163,12 @@ optional FM engine, the VOICE/instrument form.
     MA-5          VM35 direct      "43 79 07 ..." /
                                    "43 05 01 ..."        decoded, layout
                                                          confirmed vs Yamaha
-    MA-3 / MA-5   PCM (sampled)    "43 79 .. type!=0"    parsed, not yet played
+    MA-3 / MA-5   PCM (sampled)    "43 79 .. type!=0"    decoded and played
     MA-7          native ops       "43 79 08 7F 21 ..."  FM forms 0x00/0x02
                                     (p[10] = 0x00, 0x02)  decoded, layout
                                                           confirmed vs Yamaha
-    MA-7          sampled          (p[10] = 0x01/03/07)   parsed as sampled,
-                                                          not yet played
+    MA-7          sampled          (p[10] = 0x01/03/07)   decoded and played
+                                                          when the wave exists
 
   Wave data delivered inside Mtsu (as opposed to Mtsp/Mwa or ATR/Awa):
     MA-7          "43 79 08 7F 23 ..."   decoded (Yamaha ADPCM, low nibble
@@ -287,9 +287,9 @@ optional FM engine, the VOICE/instrument form.
       0x02   0/7    (all start 0x0079, an FM global)      0/7    <- not rates
 
   24 of the 36 form 0x03 records and 2 of the 4 form 0x01 records are drum-bank
-  voices.  Their exact layouts are not established, and playing them needs the
-  sampled-voice support that WildMIDI lacks for every MA generation - see
-  docs/formats/SMAF_TODO.md, gaps 1 and 2.
+  voices.  Their exact layouts are only partly established, but sampled voices
+  now play: the wave is used when the file ships one, and DrumApprox covers the
+  ROM waves it does not - see docs/formats/SMAF_TODO.md, gaps 1 and 2.
 
   How it was verified.  The mapping was read out of Yamaha's converter and then
   round-tripped through it under Unicorn: take a corpus voice's native operator

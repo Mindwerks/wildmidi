@@ -75,9 +75,6 @@ struct mafm_wave {
     int16_t *pcm;
     uint32_t len;                    /* samples */
     int fs;                          /* native sample rate (Hz) */
-    int from_setup;                  /* came from an Mtsu wave record, which
-                                      * an Awa/Mwa wave of the same number is
-                                      * allowed to replace (see below) */
 };
 
 /* PCM voice envelope phase, one-off ADSR modelled on the FM operator EG in
@@ -119,8 +116,14 @@ struct mafm_synth {
     struct mafm_bank_entry bank[MAFM_MAX_BANK];
     int bank_count;
 
-    /* ADPCM wave bank + scheduled ATR triggers */
-    struct mafm_wave waves[MAFM_MAX_WAVES];
+    /* Two wave banks with different jobs, deliberately NOT merged.  Awa/Mwa
+     * waves are the score track's streaming audio: median 13446 samples and up
+     * to 706352 (69 s), i.e. whole phrases or whole songs.  Mtsu setup-record
+     * waves are instrument samples for sampled voices: median 2128 samples,
+     * never over 15872 (2 s).  55 corpus files ship both and about half reuse
+     * the same numbers for different waves, so one array cannot hold them. */
+    struct mafm_wave waves[MAFM_MAX_WAVES];        /* Awa / Mwa (streaming) */
+    struct mafm_wave setup_waves[MAFM_MAX_WAVES];  /* Mtsu records (voices)  */
     int wave_count;
     struct mafm_trigger trigs[MAFM_MAX_TRIGS];
     int trig_count;
@@ -202,7 +205,7 @@ static void mafm_add_wave_setup(struct mafm_synth *s, const uint8_t *p,
     uint32_t alen;
     number = p[5] & 0x7f;
     if (number >= MAFM_MAX_WAVES) return;
-    w = &s->waves[number];
+    w = &s->setup_waves[number];
     if (w->pcm) return;                         /* already have this number   */
     alen = n - 7;
     adpcm = p + 7;
@@ -218,7 +221,6 @@ static void mafm_add_wave_setup(struct mafm_synth *s, const uint8_t *p,
     w->len = _WM_MAFM_AdpcmDecodeAll(adpcm, alen, 0 /* low-nibble-first */,
                                      w->pcm);
     w->fs = 0;                                  /* rate comes from the voice  */
-    w->from_setup = 1;
     free(unpacked);
     if (number + 1 > s->wave_count) s->wave_count = number + 1;
 }
@@ -308,11 +310,9 @@ static void mafm_build_bank(struct mafm_synth *s, const uint8_t *in,
 /* ------------------------------------------------------------------------- */
 /* ADPCM wave bank + ATR wave-trigger schedule.                              */
 
-/* Claim wave slot `number` for an Awa/Mwa wave.  Returns the slot, or NULL if
- * it is taken.  A wave decoded from an Mtsu setup record yields here: Awa/Mwa
- * waves carry their own sample rate and are the long-established source, so
- * where both supply the same number the Awa/Mwa one wins, exactly as before
- * setup records were read at all. */
+/* Claim wave slot `number` in the Awa/Mwa bank.  Returns the slot, or NULL if
+ * it is already taken.  Setup-record waves live in their own bank, so the two
+ * sources no longer contend for a number. */
 static struct mafm_wave *mafm_claim_wave(struct mafm_synth *s, int number) {
     struct mafm_wave *w;
     /* Bound on the slot itself, not on wave_count: wave_count is the highest
@@ -321,13 +321,7 @@ static struct mafm_wave *mafm_claim_wave(struct mafm_synth *s, int number) {
     if (number < 0 || number >= MAFM_MAX_WAVES)
         return NULL;
     w = &s->waves[number];
-    if (w->pcm) {
-        if (!w->from_setup) return NULL;        /* a real wave already here  */
-        free(w->pcm);                           /* drop the setup stand-in   */
-        w->pcm = NULL;
-        w->len = 0;
-        w->from_setup = 0;
-    }
+    if (w->pcm) return NULL;                    /* already have this number  */
     return w;
 }
 
@@ -596,6 +590,19 @@ int _WM_MAFM_HasCustomVoices(const uint8_t *smaf, uint32_t size) {
     return has;
 }
 
+/* Resolve a wave number for a SAMPLED VOICE.  The Mtsu setup bank holds the
+ * instrument samples voices are written against, so it wins; the Awa/Mwa bank
+ * is the score's streaming audio and is only consulted for files whose voices
+ * reference a number solely it supplies. */
+static struct mafm_wave *mafm_voice_wave(struct mafm_synth *s, int id) {
+    if (id < 0 || id >= MAFM_MAX_WAVES) return NULL;
+    if (s->setup_waves[id].pcm && s->setup_waves[id].len)
+        return &s->setup_waves[id];
+    if (s->waves[id].pcm && s->waves[id].len)
+        return &s->waves[id];
+    return NULL;
+}
+
 /* Resolve a channel's (bank, program) to a bank patch, or fall back to the
  * GM/drum approximation. */
 /* Returns >=0 with the bank index on match (caller inspects s->bank[i].is_pcm
@@ -691,8 +698,10 @@ void _WM_MAFM_FreeSynth(void *synth) {
     struct mafm_synth *s = (struct mafm_synth *) synth;
     int i;
     if (!s) return;
-    for (i = 0; i < MAFM_MAX_WAVES; i++)
+    for (i = 0; i < MAFM_MAX_WAVES; i++) {
         free(s->waves[i].pcm);
+        free(s->setup_waves[i].pcm);
+    }
     free(s);
 }
 
@@ -800,16 +809,14 @@ static double pcm_env_advance(struct mafm_pcm_voice *pv) {
  * trigger.  base_note is the MIDI note at which the wave plays at its native
  * rate (drums fix it to the played note; melodic voices use 60).  params is
  * the voice's env + loop config, or NULL for an unenvelope one-shot. */
-static void mafm_start_pcm_full(struct mafm_synth *s, int wave, float gain,
-                                int channel, int note, int base_note,
+static void mafm_start_pcm_full(struct mafm_synth *s, struct mafm_wave *w,
+                                float gain, int channel, int note,
+                                int base_note,
                                 const struct mafm_pcm_params *params) {
-    struct mafm_wave *w;
     struct mafm_pcm_voice *pv = NULL;
     int i;
     float pan;
-    if (wave < 0 || wave >= s->wave_count) return;
-    w = &s->waves[wave];
-    if (!w->pcm || w->len == 0) return;
+    if (!w || !w->pcm || w->len == 0) return;
     for (i = 0; i < MAFM_PCM_POOL; i++)
         if (!s->pcm[i].active) { pv = &s->pcm[i]; break; }
     if (!pv) pv = &s->pcm[0];       /* steal slot 0 if the pool is full */
@@ -907,7 +914,8 @@ static void mafm_start_pcm_full(struct mafm_synth *s, int wave, float gain,
 
 static void mafm_start_pcm(struct mafm_synth *s, int wave) {
     /* ATR triggers are ownerless one-shots; note = base_note keeps ratio = 1. */
-    mafm_start_pcm_full(s, wave, 1.0f, -1, 0, 0, NULL);
+    if (wave < 0 || wave >= MAFM_MAX_WAVES) return;
+    mafm_start_pcm_full(s, &s->waves[wave], 1.0f, -1, 0, 0, NULL);
 }
 
 /* Advance the ATR trigger schedule and render one PCM sample, summed into
@@ -972,10 +980,8 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
      * carry; for now they play at concert pitch, which is more useful than
      * the silence they used to. */
     if (bank_idx >= 0 && s->bank[bank_idx].is_pcm) {
-        int wid = s->bank[bank_idx].wave_id;
-        int have_wave = (wid >= 0 && wid < s->wave_count &&
-                         s->waves[wid].pcm && s->waves[wid].len);
-        if (have_wave) {
+        struct mafm_wave *w = mafm_voice_wave(s, s->bank[bank_idx].wave_id);
+        if (w) {
             /* Same default-velocity trick the FM branch uses just below:
              * SMAF's HandyPhone score carries no velocity byte, so the
              * converter emits vel=0 to mean "no explicit velocity", which we
@@ -988,7 +994,7 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
              * every wavetable synth WildMIDI already ships uses. */
             int drum_note = s->bank[bank_idx].drum_note;
             int base = drum_note ? note : 60;
-            mafm_start_pcm_full(s, wid, g, ch, note, base,
+            mafm_start_pcm_full(s, w, g, ch, note, base,
                                 &s->bank[bank_idx].pcm);
             return;
         }
