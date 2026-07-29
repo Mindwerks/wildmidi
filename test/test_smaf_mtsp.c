@@ -22,15 +22,25 @@
  * decode to something less than white noise if someone plays it. */
 #define ADPCM_QUIET 0x80
 
-/* Write a big-endian uint32 to p and return p + 4. */
+/**
+ * Writes a 32-bit unsigned integer in big-endian byte order.
+ *
+ * @param p Destination buffer for the four encoded bytes.
+ * @param v Value to encode.
+ * @return Pointer immediately after the encoded value.
+ */
 static uint8_t *put_u32be(uint8_t *p, uint32_t v) {
     p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16);
     p[2] = (uint8_t)(v >>  8); p[3] = (uint8_t) v;
     return p + 4;
 }
 
-/* Build a minimal MA-7 (format_type 0x03) container with a Mobile-standard
- * score track that carries an Mtsp holding one Mwa wave. */
+/**
+ * Builds a minimal MA-7 container with a Mobile-standard score track containing one Mwa wave.
+ *
+ * @param size_out Receives the size of the allocated container in bytes.
+ * @return The allocated container buffer.
+ */
 static uint8_t *build_streaming_mmf(uint32_t *size_out) {
     /* Mwa1 body: 3-byte header (fmt, rate BE) + a chunk of ADPCM.  Any size
      * works; give it 32 bytes so mafm_add_wave_mwa can decode a full window. */
@@ -84,9 +94,12 @@ static uint8_t *build_streaming_mmf(uint32_t *size_out) {
     return b;
 }
 
-/* Same shape, but no Mtsp - just a Mobile-standard score track.  Used as the
- * "engine must NOT engage" control: without a voice bank and without any
- * Mwa waves, MAFM has nothing to do and HasCustomVoices should say so. */
+/**
+ * Builds a minimal mobile-standard score container without Mtsp wave data.
+ *
+ * @param size_out Receives the size of the allocated container in bytes.
+ * @return A newly allocated container buffer.
+ */
 static uint8_t *build_empty_mmf(uint32_t *size_out) {
     static const uint8_t mtsq_body[] = { 0x00, 0xff, 0x2f, 0x00 };
     uint32_t mtsq  = 8 + (uint32_t) sizeof(mtsq_body);
@@ -109,6 +122,11 @@ static uint8_t *build_empty_mmf(uint32_t *size_out) {
     return b;
 }
 
+/**
+ * Verifies custom-voice detection for SMAF containers with and without Mtsp wave data.
+ *
+ * @return 0 after both test cases pass.
+ */
 int main(void) {
     uint8_t *mmf; uint32_t sz;
 

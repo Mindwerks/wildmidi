@@ -106,12 +106,14 @@ static void apply_vm35_body(const uint8_t *g, uint32_t n, int operator_count,
     /* 2-op voices leave ops[2..3] at defaults (harmless; core only ticks 2). */
 }
 
-/* Un-pack the MA-3 (VM3Exclusive) form into the plain VM35 body, byte-for-byte
- * per go-smaf voice/vm35fm Read().  The packed data is 36 bytes (4 global + 8
- * per op); carriers live at raw[op*8] (stealing SR/RR/AR/TL bit7) and at
- * raw[8+op*8] (stealing MUL/WS bit7); raw[0] doubles as the global carrier.
- * After restoring the stolen bits we splice out the carriers to build the
- * standard 3-global + 7/op stream and hand it to apply_vm35_body. */
+/**
+ * Unpacks an MA-3 packed FM voice body into the standard VM35 voice format.
+ *
+ * @param body Packed MA-3 voice data.
+ * @param n Number of bytes available in body.
+ * @param operator_count Number of operators to decode.
+ * @param v Voice patch to populate.
+ */
 static void apply_ma3_packed(const uint8_t *body, uint32_t n, int operator_count,
                              struct mafm_voice_patch *v) {
     uint8_t raw[36];
@@ -145,6 +147,13 @@ static void apply_ma3_packed(const uint8_t *body, uint32_t n, int operator_count
     apply_vm35_body(fixed, w, operator_count, v);
 }
 
+/**
+ * Unpacks 7-bit data groups into 8-bit output bytes.
+ * @param in Packed input data.
+ * @param n Number of input bytes.
+ * @param out Buffer receiving unpacked bytes.
+ * @return Number of bytes written to `out`.
+ */
 uint32_t _WM_MAFM_Unpack7(const uint8_t *in, uint32_t n, uint8_t *out) {
     uint32_t i, w = 0;
     for (i = 0; i + 1 < n; i += 8) {
@@ -158,6 +167,17 @@ uint32_t _WM_MAFM_Unpack7(const uint8_t *in, uint32_t n, uint8_t *out) {
     return w;
 }
 
+/**
+ * Parses a Yamaha voice-exclusive message into an internal voice representation.
+ *
+ * Recognized FM and PCM formats populate the voice data and mark the result
+ * valid; unrecognized or malformed messages leave it invalid with a default
+ * patch.
+ *
+ * @param p Voice-exclusive message data.
+ * @param n Number of bytes in the message.
+ * @param out Destination for the parsed voice.
+ */
 void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
                                   struct mafm_parsed_voice *out) {
     memset(out, 0, sizeof(*out));

@@ -152,6 +152,13 @@ struct mafm_synth {
  * the quantity and returns it; returns MAFM_VLQ_BAD (leaving *pos alone) if it
  * runs off the end or does not terminate within four bytes. */
 #define MAFM_VLQ_BAD 0xffffffffu
+/**
+ * Decodes a MIDI-style variable-length quantity.
+ * @param d Input byte sequence.
+ * @param n Number of bytes available in d.
+ * @param pos Position at which decoding starts; advanced past the value on success.
+ * @returns Decoded value, or MAFM_VLQ_BAD if the value is incomplete or exceeds four bytes.
+ */
 static uint32_t mafm_vlq(const uint8_t *d, uint32_t n, uint32_t *pos) {
     uint32_t v = 0, i = 0;
     while (*pos + i < n && i < 4) {
@@ -181,21 +188,13 @@ static int mafm_is_wave_record(const uint8_t *p, uint32_t n) {
  * first is what makes MA-3 decode - 96.8% of records land near zero DC, versus
  * nothing at all when the payload is fed to the decoder as-is. */
 
-/* Decode one wave-delivery record into the wave bank:
+/**
+ * Decodes a setup-record wave and stores it in the setup wave bank.
  *
- *     43 79 08 7F 23 [waveId] [00] [adpcm ...]      (MA-7)
- *     43 79 07 7F 03 [waveId] [00] [adpcm ...]      (MA-5)
- *
- * The payload is the same 4-bit Yamaha ADPCM as Awa/Mwa, packed low nibble
- * first.  That order is what the corpus supports: decoded low-nibble-first,
- * 100% of the MA-7 records and 95.9% of the MA-5 records land near zero DC
- * with almost no clipping, while high-nibble-first pegs samples at full scale
- * and drifts thousands off centre.
- *
- * Unlike Awa/Mwa the record carries no sample rate, so the wave is stored with
- * fs 0 and mafm_start_pcm_full() takes the rate from the voice record that
- * references it.  Byte [6] is 0 in every known record; its meaning is not
- * established, so it is skipped rather than interpreted. */
+ * @param s Synthesizer whose wave bank receives the decoded wave.
+ * @param p Wave-delivery record payload.
+ * @param n Length of the payload in bytes.
+ */
 static void mafm_add_wave_setup(struct mafm_synth *s, const uint8_t *p,
                                 uint32_t n) {
     struct mafm_wave *w;
@@ -225,14 +224,13 @@ static void mafm_add_wave_setup(struct mafm_synth *s, const uint8_t *p,
     if (number + 1 > s->wave_count) s->wave_count = number + 1;
 }
 
-/* Walk one Mtsu chunk body, decoding each setup record.  MA-1/2 handyphone
- * files prefix each SysEx with the meta-event byte ("ff f0 <len> 43 ... f7");
- * MA-3/5/6 files store bare "f0 <len> 43 ... f7" instead.  Accept both.
+/**
+ * Decodes setup records from an Mtsu chunk body and adds wave or voice definitions to the synth.
  *
- * <len> is a variable-length quantity, not a single byte: MA-7 wave records
- * run to well over 127 bytes, and reading one byte walks the parser into their
- * ADPCM payload.  The two forms agree for every length below 128, so this is
- * the same behaviour as before for voice-only files. */
+ * @param s Synth state receiving the decoded records.
+ * @param body Mtsu chunk body.
+ * @param n Size of the chunk body in bytes.
+ */
 static void mafm_parse_mtsu(struct mafm_synth *s, const uint8_t *body,
                             uint32_t n) {
     uint32_t p = 0;
@@ -310,9 +308,13 @@ static void mafm_build_bank(struct mafm_synth *s, const uint8_t *in,
 /* ------------------------------------------------------------------------- */
 /* ADPCM wave bank + ATR wave-trigger schedule.                              */
 
-/* Claim wave slot `number` in the Awa/Mwa bank.  Returns the slot, or NULL if
- * it is already taken.  Setup-record waves live in their own bank, so the two
- * sources no longer contend for a number. */
+/**
+ * Claims an available Awa/Mwa wave slot.
+ *
+ * @param s Synthesizer containing the wave bank.
+ * @param number Wave number to claim.
+ * @return The claimed wave slot, or NULL if the number is out of range or already has decoded PCM data.
+ */
 static struct mafm_wave *mafm_claim_wave(struct mafm_synth *s, int number) {
     struct mafm_wave *w;
     /* Bound on the slot itself, not on wave_count: wave_count is the highest
@@ -325,7 +327,11 @@ static struct mafm_wave *mafm_claim_wave(struct mafm_synth *s, int number) {
     return w;
 }
 
-/* rate class (fmt2 low nibble) -> Hz */
+/**
+ * Converts an ATR wave rate class to a sample rate in hertz.
+ * @param fmt2 Wave format byte containing the rate class in its low nibble.
+ * @return The corresponding sample rate, or 8000 for an unsupported rate class.
+ */
 static int mafm_wave_rate(uint8_t fmt2) {
     switch (fmt2 & 0x0f) {
     case 0: return 4000;
@@ -337,8 +343,14 @@ static int mafm_wave_rate(uint8_t fmt2) {
     }
 }
 
-/* Decode one Awa (ATR) wave body ([formatByte][fmt2][adpcm...]) into the bank.
- * fmt2 holds an ATR-style 4-bit rate class - mafm_wave_rate() maps it to Hz. */
+/**
+ * Decodes an ATR Awa wave body and stores the resulting PCM samples in the wave bank.
+ *
+ * @param s Synthesizer whose wave bank receives the decoded wave.
+ * @param number Wave-bank index to populate.
+ * @param body Awa wave body containing the format byte, rate class, and ADPCM data.
+ * @param sz Size of the wave body in bytes.
+ */
 static void mafm_add_wave(struct mafm_synth *s, int number,
                           const uint8_t *body, uint32_t sz) {
     struct mafm_wave *w;
@@ -356,15 +368,14 @@ static void mafm_add_wave(struct mafm_synth *s, int number,
     if (number + 1 > s->wave_count) s->wave_count = number + 1;
 }
 
-/* Decode one Mwa (Mtsp / score track) wave body into the bank.  Same Yamaha
- * ADPCM as Awa, but with a 3-byte header carrying an explicit u16 BE sample
- * rate instead of Awa's 4-bit class code:
+/**
+ * Decodes an Mwa score-track wave body and adds it to the streaming wave bank.
  *
- *     [formatByte][rateHi][rateLo][adpcm...]
- *
- * The corpus rates that occur are 8000, 11025, 12000, 15000, 16000, 22050,
- * 22000, 24000; refuse anything outside a sane range so a stray body cannot
- * pin the resampler at 0 or run wildly fast. */
+ * @param s Synthesizer whose wave bank receives the decoded wave.
+ * @param number Wave number to populate.
+ * @param body Mwa body containing the format byte, big-endian sample rate, and ADPCM data.
+ * @param sz Size of the Mwa body in bytes.
+ */
 static void mafm_add_wave_mwa(struct mafm_synth *s, int number,
                               const uint8_t *body, uint32_t sz) {
     struct mafm_wave *w;
@@ -385,7 +396,13 @@ static void mafm_add_wave_mwa(struct mafm_synth *s, int number,
     if (number + 1 > s->wave_count) s->wave_count = number + 1;
 }
 
-/* HandyPhone VLQ (1-or-2 byte), as in smaf2mid.c / the ATR sequence. */
+/**
+ * Decodes a HandyPhone-style variable-length quantity.
+ * @param seq Sequence data.
+ * @param pp Pointer to the current position, updated past the decoded value or to `end` on truncated input.
+ * @param end Exclusive end position of the sequence.
+ * @return Decoded value, or 0 when the input is truncated.
+ */
 static uint32_t mafm_hps_vlq(const uint8_t *seq, uint32_t *pp, uint32_t end) {
     uint32_t p = *pp;
     uint8_t b;
@@ -455,7 +472,13 @@ static void mafm_decode_atsq(struct mafm_synth *s, const uint8_t *seq,
     }
 }
 
-/* Scan the container's ATR audio track(s) for the Awa waves + Atsq triggers. */
+/**
+ * Scans ATR tracks for Awa wave data and Atsq wave triggers.
+ *
+ * @param s Synthesizer that receives decoded waves and scheduled triggers.
+ * @param in SMAF container data.
+ * @param insize Size of the SMAF container data in bytes.
+ */
 static void mafm_build_waves(struct mafm_synth *s, const uint8_t *in,
                              uint32_t insize) {
     uint32_t pos = 8, end = insize;
@@ -561,7 +584,13 @@ static void mafm_build_mtsp_waves(struct mafm_synth *s, const uint8_t *in,
     }
 }
 
-/* ------------------------------------------------------------------------- */
+/**
+ * Determines whether a SMAF file contains custom MAFM voices or playable wave content.
+ *
+ * @param smaf SMAF file data.
+ * @param size Size of the SMAF file data in bytes.
+ * @return 1 if the file contains custom voices or wave content, 0 otherwise.
+ */
 
 int _WM_MAFM_HasCustomVoices(const uint8_t *smaf, uint32_t size) {
     struct mafm_synth *tmp;
@@ -593,10 +622,13 @@ int _WM_MAFM_HasCustomVoices(const uint8_t *smaf, uint32_t size) {
     return has;
 }
 
-/* Resolve a wave number for a SAMPLED VOICE.  The Mtsu setup bank holds the
- * instrument samples voices are written against, so it wins; the Awa/Mwa bank
- * is the score's streaming audio and is only consulted for files whose voices
- * reference a number solely it supplies. */
+/**
+ * Resolves a sampled voice's wave number to decoded wave data.
+ *
+ * @param s Synthesizer containing setup and streaming wave banks.
+ * @param id Wave number to resolve.
+ * @return The matching decoded wave, or NULL if the number is invalid or no usable wave exists.
+ */
 static struct mafm_wave *mafm_voice_wave(struct mafm_synth *s, int id) {
     if (id < 0 || id >= MAFM_MAX_WAVES) return NULL;
     if (s->setup_waves[id].pcm && s->setup_waves[id].len)
@@ -649,6 +681,14 @@ static struct mafm_voice *mafm_alloc_voice(struct mafm_synth *s) {
     return &s->voices[steal];
 }
 
+/**
+ * Creates and initializes a Yamaha MA-series FM synthesizer for a SMAF file.
+ *
+ * @param smaf SMAF data used to build custom voices and waves.
+ * @param size Size of the SMAF data in bytes.
+ * @param rate Output sample rate, or 44100 Hz when zero.
+ * @returns Initialized synthesizer, or NULL if allocation fails.
+ */
 void *_WM_MAFM_NewSynth(const uint8_t *smaf, uint32_t size, uint16_t rate) {
     struct mafm_synth *s;
     int i;
@@ -697,6 +737,10 @@ void *_WM_MAFM_NewSynth(const uint8_t *smaf, uint32_t size, uint16_t rate) {
     return s;
 }
 
+/**
+ * Releases a MA-series FM synthesizer and its decoded wave data.
+ * @param synth Synthesizer instance to release.
+ */
 void _WM_MAFM_FreeSynth(void *synth) {
     struct mafm_synth *s = (struct mafm_synth *) synth;
     int i;
@@ -729,6 +773,13 @@ void _WM_MAFM_Reset(void *synth) {
     s->vib_phase = 0.0;
 }
 
+/**
+ * Counts active FM and PCM voices, including pending ATR triggers scheduled
+ * within the next 15 seconds.
+ *
+ * @param synth Synthesizer instance.
+ * @return Number of active voices and near-term pending ATR triggers.
+ */
 int _WM_MAFM_ActiveVoices(void *synth) {
     struct mafm_synth *s = (struct mafm_synth *) synth;
     int i, n = 0;
@@ -767,7 +818,11 @@ static double pcm_rate_to_step(uint8_t rate, double sample_rate, int attack) {
     return 1.0 / samples;
 }
 
-/* One envelope step, mirroring the FM operator EG. */
+/**
+ * Advances a PCM voice envelope by one step.
+ * @param pv PCM voice whose envelope state is updated.
+ * @returns The updated envelope level.
+ */
 static double pcm_env_advance(struct mafm_pcm_voice *pv) {
     switch (pv->env_phase) {
     case MAFM_PCM_EG_IDLE:
@@ -805,13 +860,17 @@ static double pcm_env_advance(struct mafm_pcm_voice *pv) {
     return pv->env_level;
 }
 
-/* Start a sampled wave playing on a free PCM slot.  channel < 0 marks an
- * "ownerless" trigger (ATR drums, phrases) which are one-shot at centre pan
- * with no envelope; channel >= 0 attaches the slot to a MIDI channel so pan
- * tracks the channel's pan CC and note-off can find and release its own
- * trigger.  base_note is the MIDI note at which the wave plays at its native
- * rate (drums fix it to the played note; melodic voices use 60).  params is
- * the voice's env + loop config, or NULL for an unenvelope one-shot. */
+/**
+ * Starts a sampled wave on a PCM voice slot.
+ *
+ * @param s Synthesizer state.
+ * @param w Wave to play.
+ * @param gain Initial playback gain.
+ * @param channel MIDI channel associated with the voice, or a negative value for an ownerless centered one-shot.
+ * @param note MIDI note being played.
+ * @param base_note MIDI note at which the wave plays at its native rate.
+ * @param params PCM envelope and loop configuration, or NULL for an unenveloped one-shot.
+ */
 static void mafm_start_pcm_full(struct mafm_synth *s, struct mafm_wave *w,
                                 float gain, int channel, int note,
                                 int base_note,
@@ -915,14 +974,25 @@ static void mafm_start_pcm_full(struct mafm_synth *s, struct mafm_wave *w,
     pv->active = 1;
 }
 
+/**
+ * Starts an ownerless one-shot playback of an ATR wave.
+ *
+ * @param s Synthesizer containing the wave.
+ * @param wave Index of the ATR wave to play.
+ */
 static void mafm_start_pcm(struct mafm_synth *s, int wave) {
     /* ATR triggers are ownerless one-shots; note = base_note keeps ratio = 1. */
     if (wave < 0 || wave >= MAFM_MAX_WAVES) return;
     mafm_start_pcm_full(s, &s->waves[wave], 1.0f, -1, 0, 0, NULL);
 }
 
-/* Advance the ATR trigger schedule and render one PCM sample, summed into
- * *l and *r with each slot's own pan (ownerless ATR triggers stay centred). */
+/**
+ * Advances scheduled ATR triggers and mixes one sample from each active PCM voice into the stereo output.
+ *
+ * @param s Synthesizer state containing the trigger schedule and PCM voice pool.
+ * @param l Pointer to the left-channel accumulator.
+ * @param r Pointer to the right-channel accumulator.
+ */
 static void mafm_pcm_tick(struct mafm_synth *s, double *l, double *r) {
     int i;
     /* fire any triggers whose time has arrived */
@@ -968,6 +1038,14 @@ static void mafm_pcm_tick(struct mafm_synth *s, double *l, double *r) {
     s->cursor++;
 }
 
+/**
+ * Starts a sampled or FM voice for a note-on event.
+ *
+ * @param s Synthesizer state.
+ * @param ch MIDI channel.
+ * @param note MIDI note number.
+ * @param vel Note velocity; zero uses the default velocity.
+ */
 static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
     struct mafm_voice_patch patch;
     struct mafm_voice *v;
@@ -1034,6 +1112,13 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
     v->note = note;              /* raw key for note-off matching */
 }
 
+/**
+ * Releases one active voice matching the specified channel and note.
+ *
+ * @param s Synthesizer whose voice state is updated.
+ * @param ch MIDI channel of the voice to release.
+ * @param note MIDI note of the voice to release.
+ */
 static void mafm_note_off(struct mafm_synth *s, int ch, int note) {
     int i;
     /* Release only ONE matching voice, matching the reference.  If the score
@@ -1172,6 +1257,12 @@ static void mafm_voice_pan_gains(const struct mafm_synth *s,
     *gr = 1.0f + pan;
 }
 
+/**
+ * Renders FM and PCM voices into an interleaved stereo output buffer.
+ * @param synth Synthesizer state.
+ * @param out Interleaved stereo output buffer to which samples are added.
+ * @param frames Number of stereo frames to render.
+ */
 void _WM_MAFM_Render(void *synth, int32_t *out, uint32_t frames) {
     struct mafm_synth *s = (struct mafm_synth *) synth;
     /* Soft peak limiter: a dozen voices summing at full-scale would exceed

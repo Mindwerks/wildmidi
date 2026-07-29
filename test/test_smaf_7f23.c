@@ -31,7 +31,13 @@
 #define ADPCM_FILL 0x88
 #define ADPCM_LEN  200          /* > 127, so the length needs a 2-byte VLQ */
 
-/* Write a big-endian uint32 to p and return p + 4. */
+/**
+ * Writes a 32-bit value in big-endian order and advances the buffer pointer.
+ *
+ * @param p Destination buffer.
+ * @param v Value to write.
+ * @return Pointer immediately after the written value.
+ */
 static uint8_t *put_u32be(uint8_t *p, uint32_t v) {
     p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16);
     p[2] = (uint8_t)(v >>  8); p[3] = (uint8_t) v;
@@ -44,10 +50,25 @@ static uint8_t *put_u32be(uint8_t *p, uint32_t v) {
 static uint8_t *build_wave_mmf_family(uint8_t family, uint8_t sub_id,
                                       uint32_t *size_out);
 
+/**
+ * Builds a minimal MA-7 waveform container for the specified sub-ID.
+ *
+ * @param sub_id Wave-delivery record sub-ID to encode.
+ * @param size_out Receives the size of the allocated container in bytes.
+ * @return A pointer to the allocated waveform container.
+ */
 static uint8_t *build_wave_mmf(uint8_t sub_id, uint32_t *size_out) {
     return build_wave_mmf_family(0x08, sub_id, size_out);
 }
 
+/**
+ * Builds an in-memory SMAF waveform container containing one MA wave-delivery record.
+ *
+ * @param family MA generation identifier encoded in the wave-delivery record.
+ * @param sub_id Wave-delivery sub-identifier encoded in the record.
+ * @param size_out Receives the size of the allocated container in bytes.
+ * @return Newly allocated SMAF container, or an assertion failure if allocation or construction invariants fail.
+ */
 static uint8_t *build_wave_mmf_family(uint8_t family, uint8_t sub_id,
                                       uint32_t *size_out) {
     static const uint8_t mtsq_body[] = { 0x00, 0xff, 0x2f, 0x00 };
@@ -101,6 +122,11 @@ static uint8_t *build_wave_mmf_family(uint8_t family, uint8_t sub_id,
     return b;
 }
 
+/**
+ * Verifies MA wave-delivery record loading across supported family and sub-ID encodings.
+ *
+ * @return 0 after all assertions pass.
+ */
 int main(void) {
     uint8_t *mmf; uint32_t sz;
 

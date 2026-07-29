@@ -303,7 +303,12 @@ static int huff_byte(struct huff_state *h) {
     return v;
 }
 
-/* Read the tree.  Returns the node index (0..510) or -1 on error. */
+/**
+ * Reads a Huffman tree from the input bitstream.
+ *
+ * @param h Huffman decoder state.
+ * @return The root node index, or -1 if the tree is invalid or truncated.
+ */
 static int huff_read_tree(struct huff_state *h) {
     int b = huff_bit(h);
     if (b < 0) return -1;
@@ -322,9 +327,15 @@ static int huff_read_tree(struct huff_state *h) {
     return huff_byte(h);                    /* leaf: 8-bit literal */
 }
 
-/* Decompress `in` (compressed body without the 4-byte length prefix) into a
- * newly-allocated buffer of exactly `want` bytes.  Returns NULL on any error
- * (bad tree, truncated stream, allocation failure); caller frees the buffer. */
+/**
+ * Decompresses a Huffman-encoded stream into a newly allocated buffer.
+ *
+ * @param in Compressed data without the four-byte uncompressed-length prefix.
+ * @param in_len Length of the compressed data in bytes.
+ * @param want Number of bytes to produce.
+ * @return A buffer containing exactly {@p want} decompressed bytes, or NULL if
+ *         the stream is invalid, truncated, or cannot be allocated.
+ */
 static uint8_t *huff_decompress(const uint8_t *in, uint32_t in_len,
                                 uint32_t want) {
     struct huff_state h;
@@ -358,11 +369,13 @@ static uint8_t *huff_decompress(const uint8_t *in, uint32_t in_len,
 
 /* ------------------------------------------------------------------------- */
 
-/* True if the container has an ATR audio track (a top-level "ATR*" chunk).
- * Used to keep audio-only SMAF files (CNTI + ATR, no MTR) from being rejected
- * as "not a SMAF file"; those play through MAFM's ATR wave-trigger path with
- * a minimal placeholder MIDI standing in for the score.  See the audio-only
- * emit block near the bottom of _WM_smaf2midi. */
+/**
+ * Determines whether a SMAF container contains a top-level ATR audio track.
+ *
+ * @param in Input SMAF container data.
+ * @param insize Size of the input data in bytes.
+ * @return `1` if an ATR audio track is present, `0` otherwise.
+ */
 static int has_audio_track(const uint8_t *in, uint32_t insize) {
     uint32_t pos = 8, end = insize;
     if (insize >= 8) {
@@ -939,7 +952,17 @@ static int decode_all_handyphone(struct hp_events *e, const uint8_t *in,
     return track_no;
 }
 
-/* ------------------------------------------------------------------------- */
+/**
+ * Converts a Yamaha SMAF container into a single-track MIDI file containing
+ * its score data or an audio-only placeholder track.
+ *
+ * @param in Input SMAF container data.
+ * @param insize Size of the input data in bytes.
+ * @param out Receives the allocated MIDI data on success.
+ * @param outsize Receives the MIDI data size in bytes.
+ * @return 0 on success, or -1 if the input is invalid, unsupported, malformed,
+ *         or output allocation fails.
+ */
 
 int _WM_smaf2midi(const uint8_t *in, uint32_t insize,
                   uint8_t **out, uint32_t *outsize) {

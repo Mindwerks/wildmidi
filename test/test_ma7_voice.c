@@ -50,6 +50,11 @@ static const uint8_t ma7_form03[] = {
     0x1f, 0x00, 0x96
 };
 
+/**
+ * Validates MA-7 voice-exclusive decoding for FM and sampled voice forms.
+ *
+ * @return 0 after all decoding assertions pass.
+ */
 int main(void) {
     struct mafm_parsed_voice v;
     const struct mafm_op_patch *m, *c;
