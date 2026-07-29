@@ -145,6 +145,19 @@ static void apply_ma3_packed(const uint8_t *body, uint32_t n, int operator_count
     apply_vm35_body(fixed, w, operator_count, v);
 }
 
+uint32_t _WM_MAFM_Unpack7(const uint8_t *in, uint32_t n, uint8_t *out) {
+    uint32_t i, w = 0;
+    for (i = 0; i + 1 < n; i += 8) {
+        uint32_t g = n - i, j;
+        uint8_t hdr = in[i];
+        if (g > 8) g = 8;
+        for (j = 1; j < g; j++)
+            out[w++] = (uint8_t)((in[i + j] & 0x7f) |
+                                 (((hdr >> (7 - j)) & 1) << 7));
+    }
+    return w;
+}
+
 void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
                                   struct mafm_parsed_voice *out) {
     memset(out, 0, sizeof(*out));
@@ -171,10 +184,8 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
      *
      * Form 0x02 is the same FM voice with a 16-byte trailer after the
      * operators (rate/level pairs that this engine does not model), so it
-     * shares the code.  Forms 0x01, 0x03 and 0x07 are SAMPLED voices, not FM -
-     * their bodies start with a PCM sample rate and most of them sit in the
-     * drum bank - so they are declined here; playing them needs the sampled
-     * voice support tracked in docs/formats/SMAF_TODO.md. */
+     * shares the code.  Forms 0x01, 0x03 and 0x07 are SAMPLED voices, not FM;
+     * they get parsed by the block further down. */
     if (n >= 14 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
         (p[10] == 0x00 || p[10] == 0x02)) {
         const uint8_t *body = p + 11;
@@ -212,6 +223,42 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
         return;
     }
 
+    /* MA-7 SAMPLED forms: 43 79 08 7F 21 [bank..][pc][?][?] form=0x01/03/07
+     *
+     * Their bodies open with an unmistakable u16 BE sample rate (the 4-file
+     * corpus survey shows 41/41 fall in 2618..16500 Hz; drum-bank distribution
+     * matches sampled-percussion norms and body[15] cleanly splits into a
+     * loop bit + 0..127 wave id).  So the fields are recognisable even though
+     * the full body layout has not been reverse-engineered.  Accept them as
+     * PCM voices; downstream, mafm_note_on() plays the wave if it happens to
+     * be loaded (from Mtsp/Mwa) and falls back to a DrumApprox FM voice
+     * otherwise, matching the ROM-wave treatment MA-3/5 already gets.  This
+     * still leaves the MA-7-specific fields (per-note velocity split, effect
+     * sends, etc.) on the table; see docs/formats/SmafFileFormat.txt. */
+    if (n >= 27 && p[1] == 0x79 && p[2] == 0x08 && p[3] == 0x7f && p[4] == 0x21 &&
+        (p[10] == 0x01 || p[10] == 0x03 || p[10] == 0x07)) {
+        const uint8_t *b = p + 11;              /* body starts here */
+        uint32_t bn = n - 11;
+        int fs;
+        if (bn > 0 && p[n - 1] == 0xf7) bn--;   /* drop the terminator */
+        if (bn < 16) return;                    /* need through b[15]        */
+        fs = ((int)b[0] << 8) | b[1];
+        if (fs < 2000 || fs > 48000) return;    /* not the layout we expect  */
+
+        out->key.bank_msb = p[5];
+        out->key.bank_lsb = p[6];
+        out->key.pc = p[7];
+        out->key.drum_note = p[8];
+        out->is_pcm = 1;
+        out->pcm.fs = fs;
+        out->pcm.wave_id = b[15] & 0x7f;
+        out->pcm.loop    = (b[15] & 0x80) != 0;
+        out->pcm.loop_pt = 0;                   /* not established           */
+        out->pcm.end_pt  = 0;
+        out->valid = 1;
+        return;
+    }
+
     /* MA-3 / MA-5 long form: 43 79 06|07 7F 01 [bank...] body */
     if (n >= 11 && p[1] == 0x79 && (p[2] == 0x06 || p[2] == 0x07) &&
         p[3] == 0x7f && p[4] == 0x01) {
@@ -224,6 +271,18 @@ void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
         if (voice_type != 0) {                       /* PCM (sampled) voice */
             const uint8_t *b = p + 10;
             uint32_t bn = n - 10;
+            uint8_t unpacked[32];
+            /* MA-3 packs the body 7-bit-safe, the same bit-stealing scheme
+             * apply_ma3_packed() undoes for FM voices.  Unpacked it is the
+             * MA-5 layout below byte for byte: 19 packed bytes -> 16.  Read
+             * raw, the fields land one byte early - Fs falls outside a sane
+             * range for 31% of the corpus's MA-3 voices and TL reads 28
+             * (a 0.089 gain) on 86% of them, which silences the samples. */
+            if (p[2] == 0x06) {
+                uint32_t cap = (bn > sizeof(unpacked)) ? (uint32_t) sizeof(unpacked) : bn;
+                bn = _WM_MAFM_Unpack7(b, cap, unpacked);
+                b = unpacked;
+            }
             out->is_pcm = 1;
             if (bn >= 16) {
                 struct mafm_pcm_params *pc = &out->pcm;

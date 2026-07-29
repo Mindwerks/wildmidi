@@ -56,4 +56,11 @@ struct mafm_parsed_voice {
 void _WM_MAFM_ParseVoiceExclusive(const uint8_t *p, uint32_t n,
                                   struct mafm_parsed_voice *out);
 
+/* Undo MA-3's 7-bit packing: every group of 8 bytes carries 7 data bytes, with
+ * the group's first byte holding their high bits, most significant first.
+ * MA-3 uses this for both its sampled-voice bodies and its wave payloads; the
+ * FM path open-codes the same scheme in apply_ma3_packed().  Writes at most n
+ * bytes to out and returns the number produced. */
+uint32_t _WM_MAFM_Unpack7(const uint8_t *in, uint32_t n, uint8_t *out);
+
 #endif /* MAFM_SMAF_VOICE_H */

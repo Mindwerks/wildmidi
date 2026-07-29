@@ -135,9 +135,9 @@ The score-track format_type byte selects the sequence encoding:
     0x02  Mobile Standard          (uncompressed; the common MA-2/3/5/6 case)
     0x03  SEQU                     (the MA-7 format; SUPPORTED, see below)
 
-WildMIDI converts 0x00, 0x02 and 0x03.  0x01 is the Huffman-compressed variant
-of Mobile Standard; the converter treats it like 0x02 and will only work if the
-body is not actually compressed (decompression is not implemented).  0x03
+WildMIDI converts all four.  0x01 is the Huffman-compressed variant of Mobile
+Standard: the converter decompresses it (Yamaha's Okumura-style prefix code,
+see smaf2mid.c) and then decodes the result as 0x02.  0x03
 (SEQU / MA-7) is Mobile Standard with a 32-channel status byte and shares the
 same decoder.  0x00 (HandyPhone) uses a different, simpler encoding (see its
 section below) and is decoded by decode_handyphone().
@@ -152,7 +152,7 @@ optional FM engine, the VOICE/instrument form.
   Score (format_type):
     MA-1 / MA-2   HandyPhone (0x00)            decoded, tested on real files
     MA-2 / 3 / 5  Mobile uncompressed (0x02)   decoded, tested on real files
-    (any)         Mobile compressed (0x01)     only if not actually Huffman'd
+    (any)         Mobile compressed (0x01)     decompressed, then as 0x02
     MA-7          SEQU (0x03)                  decoded, tested on real files
 
   FM voice-exclusives (Mtsu; decoded by src/mafm/smaf_voice.c, played by the FM
@@ -163,19 +163,30 @@ optional FM engine, the VOICE/instrument form.
     MA-5          VM35 direct      "43 79 07 ..." /
                                    "43 05 01 ..."        decoded, layout
                                                          confirmed vs Yamaha
-    MA-3 / MA-5   PCM (sampled)    "43 79 .. type!=0"    parsed, not yet played
+    MA-3 / MA-5   PCM (sampled)    "43 79 .. type!=0"    decoded and played
     MA-7          native ops       "43 79 08 7F 21 ..."  FM forms 0x00/0x02
                                     (p[10] = 0x00, 0x02)  decoded, layout
                                                           confirmed vs Yamaha
-    MA-7          sampled          (p[10] = 0x01/03/07)   parsed as sampled,
-                                                          not yet played
+    MA-7          sampled          (p[10] = 0x01/03/07)   decoded and played
+                                                          when the wave exists
+
+  Wave data delivered inside Mtsu (as opposed to Mtsp/Mwa or ATR/Awa):
+    MA-7          "43 79 08 7F 23 ..."   decoded (Yamaha ADPCM, low nibble
+                                         first); see the MA-7 section below
+    MA-5          "43 79 07 7F 03 ..."   same layout, decoded
+    MA-3          "43 79 06 7F 03 ..."   same codec, but the payload AND the
+                                         sampled-voice body are 7-bit packed
 
   Net: MA-1 and MA-2 are fully supported and verified (score + FM voices + ATR
   ADPCM drums).  MA-3 / MA-5 score plays; their FM voice forms are implemented
-  and the byte layout now matches Yamaha's own decoder (see below), though no
-  MA-3/5 file has been listened to end to end.  MA-7 score plays and all its FM
-  voices are decoded, so MA-7 files play on the FM engine.  What no generation
-  has is SAMPLED (PCM) voice playback - see docs/formats/SMAF_TODO.md.
+  and the byte layout now matches Yamaha's own decoder (see below).  MA-7 score
+  plays and all its FM voices are decoded, so MA-7 files play on the FM engine.
+
+  Sampled (PCM) voices play on every generation: the wave is used when the file
+  ships one, and the FM drum approximation covers the ROM waves it does not.
+  That fallback is the remaining limitation - Yamaha MA chips carry an on-chip
+  sample ROM that most sampled voices reference, and it is not redistributable,
+  so those notes are approximated rather than reproduced.
 
   VM35 layout confirmed against Yamaha's MCP-MA7 player
   ----------------------------------------------------
@@ -258,7 +269,10 @@ optional FM engine, the VOICE/instrument form.
       0x03   33         sampled   -
       0x07   42         sampled   -
 
-  WildMIDI decodes the two FM forms and declines the sampled ones.
+  WildMIDI decodes all five forms.  The two FM forms drive the FM engine; the
+  three sampled forms play the referenced wave when the file ships it (as an
+  Mtsu wave record, Mtsp/Mwa or ATR/Awa) and fall back to the FM drum
+  approximation when the wave is a ROM one the file does not carry.
 
   Both FM forms use the SAME body rule: 3 global bytes, the algorithm is still
   global[2] & 7, it still picks 2 or 4 operators, and each operator is TEN
@@ -280,9 +294,9 @@ optional FM engine, the VOICE/instrument form.
       0x02   0/7    (all start 0x0079, an FM global)      0/7    <- not rates
 
   24 of the 36 form 0x03 records and 2 of the 4 form 0x01 records are drum-bank
-  voices.  Their exact layouts are not established, and playing them needs the
-  sampled-voice support that WildMIDI lacks for every MA generation - see
-  docs/formats/SMAF_TODO.md, gaps 1 and 2.
+  voices.  Their exact layouts are only partly established, but sampled voices
+  now play: the wave is used when the file ships one, and DrumApprox covers the
+  ROM waves it does not.
 
   How it was verified.  The mapping was read out of Yamaha's converter and then
   round-tripped through it under Unicorn: take a corpus voice's native operator
@@ -294,26 +308,83 @@ optional FM engine, the VOICE/instrument form.
   28/36/52/58, MULTI 9/7/9/2, FB=1).  Earlier guesses at this layout produced
   MULTI=0 on both operators, which no real patch has.
 
-  Coverage.  Every FM voice in every known MA-7 file is now decoded.  Across
-  the 58 "7F 21" voice records in the five files:
+  Coverage.  Every voice record in every known MA-7 file is now accepted.
+  Across the 58 "7F 21" voice records in the five files:
 
       form 0x00   10   FM       decoded
-      form 0x02    7   FM       decoded
-      form 0x01    4   sampled  declined
-      form 0x03   36   sampled  declined
-      form 0x07    1   sampled  declined
+      form 0x02    7   FM       decoded, ignoring the 16-byte trailer
+      form 0x01    4   sampled  decoded (fs from body u16 BE, wave_id at [15])
+      form 0x03   36   sampled  decoded (fs from body u16 BE, wave_id at [15])
+      form 0x07    1   sampled  decoded (fs from body u16 BE, wave_id at [15])
 
-  i.e. 17 FM records decoded and 41 sampled ones declined.  Per file:
-  AB00221GM7 4/4, AB03957GM7 4/4, AccidentCafe7 4 FM of 25, Blossom 5 of 25,
-  First Love has no voice records at all (it is a streaming Mtsp file).
+  The sampled forms share the MA-3/MA-5 PCM layout for their fs and wave_id
+  fields; the rest of their body (per-note velocity split, per-op envelope,
+  effect sends) has not been reverse-engineered.  Downstream in mafm.c the
+  sampled voice plays the referenced wave if it happens to be loaded from
+  an Mtsu wave record or Mtsp/Mwa, and falls back to an FM drum approximation
+  otherwise - matching the ROM-wave treatment MA-3/MA-5 already gets.
 
-  The remaining 41 are not an MA-7 gap as such - WildMIDI plays no sampled SMAF
-  voice on any chip generation.  Fixing that fixes MA-3, MA-5 and MA-7 at once;
-  see docs/formats/SMAF_TODO.md.
+  Non-voice MA-7 Mtsu exclusives (43 79 08 7F <sub>) surveyed across the five
+  known files.  All are declined at parse time:
 
-  Also in MA-7 Mtsu, still undecoded because nothing needs them: sub-ids 0x22
-  (end-of-setup, matching MA-5's "43 79 07 7F 07 00"), 0x23, 0x26, 0x27 and
-  0x28 - the last two being 38-byte per-channel parameter tables.
+      sub    length     what it appears to be
+      0x22   7 bytes    end-of-setup marker (analogue of MA-5 "43 79 07 7F 07 00");
+                        payload is a 1-byte flag: 0x00, 0x08 or 0x18 seen
+      0x23   445..1465  ALTERNATE WAVE DELIVERY - DECODED, see below.  Where
+                        Mtsp/Mwa is missing but the file has 20+ sampled voice
+                        records (Blossom, other Demo files), the wave data is
+                        shipped as 43 79 08 7F 23 exclusives inside Mtsu.
+      0x26   38 bytes   per-channel effect config; first byte 0x02
+      0x27   38 or 230  per-channel effect config; first byte 0x41
+      0x28   38 bytes   per-channel effect config; first byte 0x03
+
+  0x26/0x27/0x28 would map to reverb-send / chorus-send / brightness-style
+  parameters, none of which WildMIDI's wavetable can act on today: there is no
+  per-channel reverb/chorus/filter state for them to land in, so decoding them
+  without the synth engine to receive them would be a no-op.
+
+  Wave delivery inside Mtsu (sub-id 0x23 on MA-7, 0x03 on MA-5)
+  -------------------------------------------------------------
+  Decoded; loaded by mafm_add_wave_setup() in src/mafm.c.
+
+      43 79 08 7F 23 [waveId] [00] [payload ...] F7      MA-7
+      43 79 07 7F 03 [waveId] [00] [payload ...] F7      MA-5
+      43 79 06 7F 03 [waveId] [00] [payload ...] F7      MA-3 (7-bit packed)
+
+  The payload is the same 4-bit Yamaha ADPCM as Awa/Mwa, packed LOW NIBBLE
+  FIRST, beginning at byte 7.  The record carries no sample rate: the voice
+  record that references the wave supplies it, so these waves are stored with
+  fs = 0 and the rate is taken from the voice at note-on.  Byte 6 is 0 in
+  every record in the corpus; its meaning is not established.
+
+  Nibble order is the whole trick, and getting it wrong is why an earlier pass
+  concluded this was not the Yamaha codec.  Measured over the corpus's 911
+  wave records, low-nibble-first decodes 100% of MA-7 and 95.9% of MA-5
+  records to near-zero DC with almost no clipping; high-nibble-first pegs
+  samples at full scale and drifts thousands off centre.
+
+  MA-3 keeps its payload 7-bit clean, the way a SysEx body is supposed to be:
+  each group of 8 bytes carries 7 data bytes, the group's first byte holding
+  their high bits, most significant first (_WM_MAFM_Unpack7).  Unpack first and
+  96.8% of its 312 records decode like the others.  The corpus is unambiguous:
+  no MA-3 record has a byte above 0x7f, every MA-5/MA-7 record does.
+
+  MA-3's SAMPLED VOICE body is packed the same way - 19 bytes -> 16, which is
+  the MA-5 PCM layout byte for byte.  Read raw, Fs is out of range for 31% of
+  voices and TL reads 28 (a 0.089 gain) on 86% of them, so correctly decoded
+  samples play near-silently.  This is the same bit-stealing scheme
+  apply_ma3_packed() undoes for MA-3 FM voices; MA-3 uses it in three places
+  (FM voice bodies, sampled voice bodies, wave payloads).
+
+  Note also that <len> in Mtsu is a variable-length quantity, not a single
+  byte - these records are far longer than 127 bytes.
+
+  These setup waves are a SEPARATE bank from the Mtsp/Awa "Mwa" waves, not a
+  shared numbering space: setup waves are short instrument samples (median
+  2128 samples, never over 2 s) while Mwa waves are the score's streaming
+  audio (median 13446, up to 69 s).  55 corpus files ship both and about half
+  reuse the same numbers for different waves.  A sampled voice's wave_id
+  addresses the setup bank.
 
   Notes from the reverse-engineering, for anyone extending this
   ----------------------------------------------------------
