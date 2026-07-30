@@ -143,7 +143,7 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_track_offset[i] = *hmi_data++;
         hmi_track_offset[i] += (*hmi_data++ << 8);
         hmi_track_offset[i] += (*hmi_data++ << 16);
-        hmi_track_offset[i] += (*hmi_data++ << 24);
+        hmi_track_offset[i] += ((uint32_t)*hmi_data++ << 24);
 
         if (hmi_size < (hmi_track_offset[i] + 0x5a + 4)) {
             _WM_GLOBAL_ERROR(WM_ERR_NOT_HMI, "file too short", 0);
@@ -160,7 +160,7 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
         hmi_track_header_length[i] = hmi_addr[0x57];
         hmi_track_header_length[i] += (hmi_addr[0x58] << 8);
         hmi_track_header_length[i] += (hmi_addr[0x59] << 16);
-        hmi_track_header_length[i] += (hmi_addr[0x5a] << 24);
+        hmi_track_header_length[i] += ((uint32_t)hmi_addr[0x5a] << 24);
 
         /* GHSA-f2xg-2rq9-xvhm: header length is file-controlled; bound it
          * against the remaining buffer so the pointer advance below cannot

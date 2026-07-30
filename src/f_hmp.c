@@ -111,7 +111,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_file_length = *hmp_data++;
     hmp_file_length += (*hmp_data++ << 8);
     hmp_file_length += (*hmp_data++ << 16);
-    hmp_file_length += (*hmp_data++ << 24);
+    hmp_file_length += ((uint32_t)*hmp_data++ << 24);
     hmp_size -= 4;
 
     WMIDI_UNUSED(hmp_file_length);
@@ -123,7 +123,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_chunks = *hmp_data++;
     hmp_chunks += (*hmp_data++ << 8);
     hmp_chunks += (*hmp_data++ << 16);
-    hmp_chunks += (*hmp_data++ << 24);
+    hmp_chunks += ((uint32_t)*hmp_data++ << 24);
     hmp_size -= 4;
 
     if (!hmp_chunks) {
@@ -135,7 +135,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_unknown = *hmp_data++;
     hmp_unknown += (*hmp_data++ << 8);
     hmp_unknown += (*hmp_data++ << 16);
-    hmp_unknown += (*hmp_data++ << 24);
+    hmp_unknown += ((uint32_t)*hmp_data++ << 24);
     hmp_size -= 4;
 
     WMIDI_UNUSED(hmp_unknown);
@@ -147,7 +147,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_bpm = *hmp_data++;
     hmp_bpm += (*hmp_data++ << 8);
     hmp_bpm += (*hmp_data++ << 16);
-    hmp_bpm += (*hmp_data++ << 24);
+    hmp_bpm += ((uint32_t)*hmp_data++ << 24);
     hmp_size -= 4;
 
     if (!hmp_bpm) {
@@ -171,7 +171,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
     hmp_song_time = *hmp_data++;
     hmp_song_time += (*hmp_data++ << 8);
     hmp_song_time += (*hmp_data++ << 16);
-    hmp_song_time += (*hmp_data++ << 24);
+    hmp_song_time += ((uint32_t)*hmp_data++ << 24);
     hmp_size -= 4;
 
     /* DEBUG */
@@ -211,7 +211,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_num = *hmp_data++;
         chunk_num += (*hmp_data++ << 8);
         chunk_num += (*hmp_data++ << 16);
-        chunk_num += (*hmp_data++ << 24);
+        chunk_num += ((uint32_t)*hmp_data++ << 24);
         chunk_ofs[i] += 4;
 
         WMIDI_UNUSED(chunk_num);
@@ -219,7 +219,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         chunk_length[i] = *hmp_data++;
         chunk_length[i] += (*hmp_data++ << 8);
         chunk_length[i] += (*hmp_data++ << 16);
-        chunk_length[i] += (*hmp_data++ << 24);
+        chunk_length[i] += ((uint32_t)*hmp_data++ << 24);
         chunk_ofs[i] += 4;
 
         if (chunk_length[i] > hmp_size) {
@@ -232,7 +232,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         hmp_track = *hmp_data++;
         hmp_track += (*hmp_data++ << 8);
         hmp_track += (*hmp_data++ << 16);
-        hmp_track += (*hmp_data++ << 24);
+        hmp_track += ((uint32_t)*hmp_data++ << 24);
         chunk_ofs[i] += 4;
 
         WMIDI_UNUSED(hmp_track);

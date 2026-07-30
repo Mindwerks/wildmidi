@@ -73,7 +73,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_size -= 4;
 
     /* bytes until next entry */
-    xmi_tmpdata = *xmi_data++ << 24;
+    xmi_tmpdata = (uint32_t)*xmi_data++ << 24;
     xmi_tmpdata |= *xmi_data++ << 16;
     xmi_tmpdata |= *xmi_data++ << 8;
     xmi_tmpdata |= *xmi_data++;
@@ -125,7 +125,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
     xmi_data += 4;
     xmi_size -= 4;
 
-    xmi_catlen = *xmi_data++ << 24;
+    xmi_catlen = (uint32_t)*xmi_data++ << 24;
     xmi_catlen |= *xmi_data++ << 16;
     xmi_catlen |= *xmi_data++ << 8;
     xmi_catlen |= *xmi_data++;
@@ -164,7 +164,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
         xmi_data += 4;
         xmi_size -= 4;
 
-        xmi_subformlen = *xmi_data++ << 24;
+        xmi_subformlen = (uint32_t)*xmi_data++ << 24;
         xmi_subformlen |= *xmi_data++ << 16;
         xmi_subformlen |= *xmi_data++ << 8;
         xmi_subformlen |= *xmi_data++;
@@ -196,7 +196,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                 /*        hold patch events */
                 xmi_data += 4;
 
-                xmi_tmpdata = *xmi_data++ << 24;
+                xmi_tmpdata = (uint32_t)*xmi_data++ << 24;
                 xmi_tmpdata |= *xmi_data++ << 16;
                 xmi_tmpdata |= *xmi_data++ << 8;
                 xmi_tmpdata |= *xmi_data++;
@@ -216,7 +216,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
                 /* FIXME: May not be needed for playback */
                 xmi_data += 4;
 
-                xmi_tmpdata = *xmi_data++ << 24;
+                xmi_tmpdata = (uint32_t)*xmi_data++ << 24;
                 xmi_tmpdata |= *xmi_data++ << 16;
                 xmi_tmpdata |= *xmi_data++ << 8;
                 xmi_tmpdata |= *xmi_data++;
@@ -234,7 +234,7 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
 
                 xmi_evnt_cnt++;
 
-                xmi_evntlen = *xmi_data++ << 24;
+                xmi_evntlen = (uint32_t)*xmi_data++ << 24;
                 xmi_evntlen |= *xmi_data++ << 16;
                 xmi_evntlen |= *xmi_data++ << 8;
                 xmi_evntlen |= *xmi_data++;

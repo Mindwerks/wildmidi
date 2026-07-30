@@ -88,7 +88,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
     /*
      * Get Midi Header Size - must always be 6
      */
-    tmp_val = *midi_data++ << 24;
+    tmp_val = (uint32_t)*midi_data++ << 24;
     tmp_val |= *midi_data++ << 16;
     tmp_val |= *midi_data++ << 8;
     tmp_val |= *midi_data++;
@@ -166,7 +166,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
         midi_size -= 4;
 
         /* track size */
-        tmp_val = *midi_data++ << 24;
+        tmp_val = (uint32_t)*midi_data++ << 24;
         tmp_val |= *midi_data++ << 16;
         tmp_val |= *midi_data++ << 8;
         tmp_val |= *midi_data++;
