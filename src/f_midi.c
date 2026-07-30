@@ -36,6 +36,9 @@
 #include "reverb.h"
 #include "sample.h"
 
+/* Smallest float that does NOT fit in a uint32_t (2^32); used to reject an
+ * out-of-range sample count before the float->uint32 conversion. */
+#define WM_TWO_TO_32_F 4294967296.0f
 
 struct _mdi *
 _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
@@ -247,7 +250,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
 
     subtract_delta = smallest_delta;
     sample_count_f = (((float) smallest_delta * samples_per_delta_f) + sample_remainder);
-    if (sample_count_f < 0.0f || sample_count_f >= 4294967296.0f) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
+    if (sample_count_f < 0.0f || sample_count_f >= WM_TWO_TO_32_F) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
     sample_remainder = sample_count_f - (float) sample_count;
 
     mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
@@ -345,7 +348,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
             subtract_delta = smallest_delta;
             sample_count_f = (((float) smallest_delta * samples_per_delta_f)
                               + sample_remainder);
-            if (sample_count_f < 0.0f || sample_count_f >= 4294967296.0f) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
+            if (sample_count_f < 0.0f || sample_count_f >= WM_TWO_TO_32_F) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
             sample_remainder = sample_count_f - (float) sample_count;
 
             mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
@@ -418,7 +421,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                 }
                 sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
                                   + sample_remainder);
-                if (sample_count_f < 0.0f || sample_count_f >= 4294967296.0f) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
+                if (sample_count_f < 0.0f || sample_count_f >= WM_TWO_TO_32_F) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
                 sample_remainder = sample_count_f - (float) sample_count;
                 mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
                 mdi->extra_info.approx_total_samples += sample_count;
