@@ -211,7 +211,7 @@ static int32_t writevarlen(int32_t value, uint8_t *out)
 }
 
 #define READ_INT16(b) ((b)[0] | ((b)[1] << 8))
-#define READ_INT32(b) ((b)[0] | ((b)[1] << 8) | ((b)[2] << 16) | ((uint32_t)(b)[3] << 24))
+#define READ_INT32(b) ((uint32_t)(b)[0] | ((uint32_t)(b)[1] << 8) | ((uint32_t)(b)[2] << 16) | ((uint32_t)(b)[3] << 24))
 
 int _WM_mus2midi(const uint8_t *in, uint32_t insize,
                  uint8_t **out, uint32_t *outsize,
