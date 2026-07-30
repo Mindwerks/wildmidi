@@ -247,7 +247,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
 
     subtract_delta = smallest_delta;
     sample_count_f = (((float) smallest_delta * samples_per_delta_f) + sample_remainder);
-    sample_count = (sample_count_f >= 4294967296.0f) ? 0xFFFFFFFFu : (sample_count_f > 0.0f) ? (uint32_t) sample_count_f : 0u;
+    if (sample_count_f < 0.0f || sample_count_f >= 4294967296.0f) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
     sample_remainder = sample_count_f - (float) sample_count;
 
     mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
@@ -345,7 +345,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
             subtract_delta = smallest_delta;
             sample_count_f = (((float) smallest_delta * samples_per_delta_f)
                               + sample_remainder);
-            sample_count = (sample_count_f >= 4294967296.0f) ? 0xFFFFFFFFu : (sample_count_f > 0.0f) ? (uint32_t) sample_count_f : 0u;
+            if (sample_count_f < 0.0f || sample_count_f >= 4294967296.0f) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
             sample_remainder = sample_count_f - (float) sample_count;
 
             mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
@@ -418,7 +418,7 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
                 }
                 sample_count_f = (((float) track_delta[i] * samples_per_delta_f)
                                   + sample_remainder);
-                sample_count = (sample_count_f >= 4294967296.0f) ? 0xFFFFFFFFu : (sample_count_f > 0.0f) ? (uint32_t) sample_count_f : 0u;
+                if (sample_count_f < 0.0f || sample_count_f >= 4294967296.0f) { _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "sample count out of range", 0); goto _end; } sample_count = (uint32_t) sample_count_f;
                 sample_remainder = sample_count_f - (float) sample_count;
                 mdi->events[mdi->event_count - 1].samples_to_next += sample_count;
                 mdi->extra_info.approx_total_samples += sample_count;
