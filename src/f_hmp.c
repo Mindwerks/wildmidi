@@ -242,20 +242,25 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
         var_len_shift = 0;
         if (*hmp_data < 0x80) {
             do {
-                /* var_len_shift is unbounded on malformed input; only accumulate
-                 * while the shift is in range for the 32-bit chunk_delta, and
-                 * shift as unsigned. Bytes are still consumed so parsing stays
-                 * aligned. */
-                if (var_len_shift < 32)
-                    chunk_delta[i] |= ((uint32_t)(*hmp_data & 0x7F) << var_len_shift);
+                /* A var-length quantity that needs a shift of 32+ cannot fit the
+                 * 32-bit chunk_delta -- reject it as corrupt rather than perform
+                 * an out-of-range (undefined) shift. */
+                if (var_len_shift >= 32) {
+                    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "var-length quantity too large", 0);
+                    goto _hmp_end;
+                }
+                chunk_delta[i] |= ((uint32_t)(*hmp_data & 0x7F) << var_len_shift);
                 hmp_data++;
                 var_len_shift += 7;
                 chunk_ofs[i]++;
             } while (hmp_data < data_end && *hmp_data < 0x80);
         }
         if (hmp_data == data_end) goto tooshort;
-        if (var_len_shift < 32)
-            chunk_delta[i] |= ((uint32_t)(*hmp_data & 0x7F) << var_len_shift);
+        if (var_len_shift >= 32) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "var-length quantity too large", 0);
+            goto _hmp_end;
+        }
+        chunk_delta[i] |= ((uint32_t)(*hmp_data & 0x7F) << var_len_shift);
         hmp_data++;
         chunk_ofs[i]++;
 
@@ -351,11 +356,14 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
                 if (chunk_length[i] && *hmp_chunk[i] < 0x80) {
                     do {
                         if (! chunk_length[i]) break;
-                        /* Bound the shift (see the other var-len loop above): a
-                         * long run of continuation bytes would otherwise drive
-                         * var_len_shift past 31 -> undefined shift. */
-                        if (var_len_shift < 32)
-                            chunk_delta[i] += ((uint32_t)(*hmp_chunk[i] & 0x7F) << var_len_shift);
+                        /* See the other var-len loop above: a shift of 32+ cannot
+                         * fit chunk_delta, so fail closed rather than perform an
+                         * out-of-range (undefined) shift. */
+                        if (var_len_shift >= 32) {
+                            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "var-length quantity too large", 0);
+                            goto _hmp_end;
+                        }
+                        chunk_delta[i] += ((uint32_t)(*hmp_chunk[i] & 0x7F) << var_len_shift);
                         var_len_shift += 7;
                         hmp_chunk[i]++;
                         chunk_length[i]--;
@@ -365,8 +373,11 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
                     _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, "file too short", 0);
                     goto _hmp_end;
                 }
-                if (var_len_shift < 32)
-                    chunk_delta[i] += ((uint32_t)(*hmp_chunk[i] & 0x7F) << var_len_shift);
+                if (var_len_shift >= 32) {
+                    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "var-length quantity too large", 0);
+                    goto _hmp_end;
+                }
+                chunk_delta[i] += ((uint32_t)(*hmp_chunk[i] & 0x7F) << var_len_shift);
                 hmp_chunk[i]++;
                 chunk_length[i]--;
             } while (!chunk_delta[i]);
