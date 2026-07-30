@@ -784,29 +784,29 @@ struct _sample * _WM_load_gus_pat(const char *filename, int fix_release) {
         }
 
         gus_sample->loop_fraction = gus_patch[gus_ptr + 7];
-        gus_sample->data_length = (gus_patch[gus_ptr + 11] << 24)
+        gus_sample->data_length = ((uint32_t)gus_patch[gus_ptr + 11] << 24)
                                 | (gus_patch[gus_ptr + 10] << 16)
                                 | (gus_patch[gus_ptr + 9]  <<  8)
                                 |  gus_patch[gus_ptr + 8];
-        gus_sample->loop_start  = (gus_patch[gus_ptr + 15] << 24)
+        gus_sample->loop_start  = ((uint32_t)gus_patch[gus_ptr + 15] << 24)
                                 | (gus_patch[gus_ptr + 14] << 16)
                                 | (gus_patch[gus_ptr + 13] <<  8)
                                 |  gus_patch[gus_ptr + 12];
-        gus_sample->loop_end    = (gus_patch[gus_ptr + 19] << 24)
+        gus_sample->loop_end    = ((uint32_t)gus_patch[gus_ptr + 19] << 24)
                                 | (gus_patch[gus_ptr + 18] << 16)
                                 | (gus_patch[gus_ptr + 17] <<  8)
                                 |  gus_patch[gus_ptr + 16];
         gus_sample->rate        = (gus_patch[gus_ptr + 21] << 8)
                                 |  gus_patch[gus_ptr + 20];
-        gus_sample->freq_low    = (gus_patch[gus_ptr + 25] << 24)
+        gus_sample->freq_low    = ((uint32_t)gus_patch[gus_ptr + 25] << 24)
                                 | (gus_patch[gus_ptr + 24] << 16)
                                 | (gus_patch[gus_ptr + 23] <<  8)
                                 |  gus_patch[gus_ptr + 22];
-        gus_sample->freq_high   = (gus_patch[gus_ptr + 29] << 24)
+        gus_sample->freq_high   = ((uint32_t)gus_patch[gus_ptr + 29] << 24)
                                 | (gus_patch[gus_ptr + 28] << 16)
                                 | (gus_patch[gus_ptr + 27] <<  8)
                                 |  gus_patch[gus_ptr + 26];
-        gus_sample->freq_root   = (gus_patch[gus_ptr + 33] << 24)
+        gus_sample->freq_root   = ((uint32_t)gus_patch[gus_ptr + 33] << 24)
                                 | (gus_patch[gus_ptr + 32] << 16)
                                 | (gus_patch[gus_ptr + 31] <<  8)
                                 |  gus_patch[gus_ptr + 30];
