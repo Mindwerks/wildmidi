@@ -2649,6 +2649,9 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options, uint16_t setti
 #ifdef WILDMIDI_SF2
             _WM_SF2_AdjustChannelVolumes(mdi);
 #endif
+#ifdef WILDMIDI_MAFM
+            _WM_MAFM_AdjustChannelVolumes(mdi);
+#endif
     } else if (options & WM_MO_REVERB) {
         _WM_reset_reverb(mdi->reverb);
     }

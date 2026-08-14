@@ -1,4 +1,5 @@
 /* assert-based smoke test for WM_LC_Tokenize_Line's config-line path handling */
+#undef NDEBUG /* the asserts are the test; keep them in a Release build */
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>

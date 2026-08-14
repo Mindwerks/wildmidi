@@ -136,6 +136,8 @@ struct mafm_synth {
     uint8_t chan_program[16];
     float   chan_volume[16];
     float   chan_expression[16];     /* CC 0x0B; multiplied with volume */
+    float   chan_gain[16];           /* volume x expression through the mixer's
+                                      * volume curve; see mafm_apply_channel_volume */
     int     chan_pitch[16];          /* 14-bit pitch wheel, centred 0x2000 */
     uint8_t chan_pan[16];            /* 0..127 pan CC, 64 = centre; 0xff = unset */
     uint8_t chan_modulation[16];     /* CC 1 mod wheel, drives a 5Hz pitch LFO */
@@ -660,6 +662,7 @@ void *_WM_MAFM_NewSynth(const uint8_t *smaf, uint32_t size, uint16_t rate) {
         s->chan_program[i] = 0;
         s->chan_volume[i] = 1.0f;
         s->chan_expression[i] = 1.0f;
+        s->chan_gain[i] = 1.0f;
         s->chan_pitch[i] = 0x2000;
         s->chan_pan[i] = 0xff;       /* sentinel: use patch pan_default */
     }
@@ -722,6 +725,7 @@ void _WM_MAFM_Reset(void *synth) {
         s->chan_program[i] = 0;
         s->chan_volume[i] = 1.0f;
         s->chan_expression[i] = 1.0f;
+        s->chan_gain[i] = 1.0f;
         s->chan_pitch[i] = 0x2000;
         s->chan_pan[i] = 0xff;       /* sentinel: use patch pan_default */
         s->chan_modulation[i] = 0;
@@ -1006,7 +1010,7 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
              * converter emits vel=0 to mean "no explicit velocity", which we
              * treat as 100. */
             float pv = (vel ? (float) vel : 100.0f) / 127.0f;
-            float g = s->chan_volume[ch] * s->chan_expression[ch] * pv * pv;
+            float g = s->chan_gain[ch] * pv * pv;
             /* Fixed pitch for drums (drum_note != 0) means playing the wave
              * at native rate regardless of the incoming note.  A melodic PCM
              * voice takes root note 60, matching the "root=middle C" default
@@ -1035,8 +1039,9 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
     v = mafm_alloc_voice(s);
     /* Volume x expression, matching the reference mixer.  A file that keeps
      * volume at 100/127 and rides expression for dynamics needs both to
-     * combine, otherwise the swells never reach the voice. */
-    _WM_MAFM_VoiceSetVolume(v, s->chan_volume[ch] * s->chan_expression[ch]);
+     * combine, otherwise the swells never reach the voice.  See
+     * mafm_apply_channel_volume() for how chan_gain is derived. */
+    _WM_MAFM_VoiceSetVolume(v, s->chan_gain[ch]);
     /* Squared velocity curve.  A linear map made every mid-velocity note
      * nearly full-scale and constantly pushed the limiter; squaring keeps the
      * musical dynamic range and matches how the chip's own velocity table
@@ -1087,6 +1092,35 @@ static void mafm_clear_vibrato(struct mafm_synth *s, uint8_t ch) {
         struct mafm_voice *v = &s->voices[i];
         if (_WM_MAFM_VoiceActive(v) && v->channel == ch)
             _WM_MAFM_VoiceSetPitch(v, mafm_note_hz(v->note, s->chan_pitch[ch]));
+    }
+}
+
+/* Push a channel's CC7 x CC11 gain onto every voice sounding on it, so volume
+ * swells and expression rides reach in-flight notes: without this a long note
+ * that started quiet stays quiet, missing the crescendo the score encodes.
+ * WM_MO_LOG_VOLUME squares the gain, the same curve the GUS mixer's
+ * dBm_volume table (40*log10(v/127)) and the SF2 backend use. */
+static void mafm_apply_channel_volume(struct mafm_synth *s, struct _mdi *mdi,
+                                      uint8_t ch) {
+    float gain = s->chan_volume[ch] * s->chan_expression[ch];
+    int i;
+    if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
+        gain *= gain;
+    }
+    s->chan_gain[ch] = gain; /* note-on reads this, so new notes match */
+    for (i = 0; i < MAFM_POLYPHONY; i++) {
+        struct mafm_voice *v = &s->voices[i];
+        if (_WM_MAFM_VoiceActive(v) && v->channel == ch)
+            _WM_MAFM_VoiceSetVolume(v, gain);
+    }
+}
+
+/* Re-apply every channel's gain, for a WM_MO_LOG_VOLUME toggle mid-playback. */
+void _WM_MAFM_AdjustChannelVolumes(struct _mdi *mdi) {
+    uint8_t ch;
+    if (mdi->mafm_synth == NULL) return;
+    for (ch = 0; ch < 16; ch++) {
+        mafm_apply_channel_volume((struct mafm_synth *)mdi->mafm_synth, mdi, ch);
     }
 }
 
@@ -1143,22 +1177,11 @@ void _WM_MAFM_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     } break;
     case ev_control_channel_volume:
     case ev_control_channel_expression: {
-        /* Update ALL currently-sounding voices on this channel so volume
-         * swells / expression rides reach in-flight notes.  Without this a
-         * long note that started at low volume stays low forever, missing
-         * the crescendo the score encodes as CC 7/11 rises. */
-        int j;
-        float v_gain;
         if (event->evtype == ev_control_channel_volume)
             s->chan_volume[ch] = (float)(val & 0x7F) / 127.0f;
         else
             s->chan_expression[ch] = (float)(val & 0x7F) / 127.0f;
-        v_gain = s->chan_volume[ch] * s->chan_expression[ch];
-        for (j = 0; j < MAFM_POLYPHONY; j++) {
-            struct mafm_voice *vp = &s->voices[j];
-            if (_WM_MAFM_VoiceActive(vp) && vp->channel == ch)
-                _WM_MAFM_VoiceSetVolume(vp, v_gain);
-        }
+        mafm_apply_channel_volume(s, mdi, ch);
     } break;
     case ev_control_channel_pan:
         s->chan_pan[ch] = (uint8_t)(val & 0x7F);
@@ -1197,6 +1220,9 @@ void _WM_MAFM_Render(void *synth, int32_t *out, uint32_t frames) {
      * below the 32767 cap to leave headroom for reverb / master volume. */
     const double LIM_THRESHOLD = 30000.0;
     const double LIM_RELEASE   = 0.9999;
+    /* Applied after the limiter, so turning the master volume down does not
+     * change how hard the limiter works - only how loud its output is. */
+    const double master_vol = (double)_WM_MasterVolume / 1024.0;
     uint32_t f, i;
     /* Cache per-voice pan gains once per Render call: pan is a mix of the
      * channel's pan CC and the voice's patch pan_default, both of which are
@@ -1267,8 +1293,8 @@ void _WM_MAFM_Render(void *synth, int32_t *out, uint32_t frames) {
             l *= gain;
             r *= gain;
         }
-        out[f * 2]     += (int32_t) l;
-        out[f * 2 + 1] += (int32_t) r;
+        out[f * 2]     += (int32_t) (l * master_vol);
+        out[f * 2 + 1] += (int32_t) (r * master_vol);
     }
 }
 

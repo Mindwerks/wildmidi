@@ -4,6 +4,7 @@
  * sparse overlay on bank 0 (eawpats' "bank 8" defines one program, "drumset 8"
  * one note), so a program the overlay does not define has to come from bank 0
  * and not from the nearest-patch search inside the overlay. */
+#undef NDEBUG /* the asserts are the test; keep them in a Release build */
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>

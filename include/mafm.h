@@ -49,6 +49,9 @@ void  _WM_MAFM_Reset(void *synth);
 /* Translate a WildMIDI event to the synth. */
 void  _WM_MAFM_Event(void *synth, struct _mdi *mdi, struct _event *event);
 
+/* Re-apply every channel's gain (after a WM_MO_LOG_VOLUME toggle). */
+void  _WM_MAFM_AdjustChannelVolumes(struct _mdi *mdi);
+
 /* Nonzero while notes are still sounding (release tails). */
 int   _WM_MAFM_ActiveVoices(void *synth);
 
