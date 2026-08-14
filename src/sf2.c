@@ -164,9 +164,12 @@ void _WM_SF2_Reset(struct _mdi *mdi) {
         tsf_channel_midi_control(f, ch, 121, 0); /* reset controllers */
     }
     WM_SF2_InitChannels(f);
-    /* Callers reset the mdi's own channel state separately (and afterwards),
-       so seed the gains from _WM_do_sysex_gm_reset()'s defaults, not from
-       whatever mdi->channel still holds. */
+    /* Seed the gains from _WM_do_sysex_gm_reset()'s own defaults rather than
+       from mdi->channel[], which makes this independent of when the caller
+       resets the mdi: WM_GetOutput_SF2()'s loop path resets it just after,
+       FastSeek/SongSeek just before, and the GM/GS/XG sysex path runs before
+       do_event() has applied the reset at all.  All four land on the same
+       volume 100 / expression 127 either way. */
     for (ch = 0; ch < 16; ch++) {
         WM_SF2_ChannelVolume(f, mdi, (uint8_t)ch, 100, 127);
     }

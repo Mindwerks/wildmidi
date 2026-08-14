@@ -90,7 +90,9 @@ struct mafm_pcm_voice {
     uint32_t end_pt;                 /* loop/end point, clamped to len */
     double pos;                      /* fractional read position (samples) */
     double step;                     /* native_fs / output_rate * pitch ratio */
-    float  gain;                     /* volume * expression * velocity^2 */
+    float  gain;                     /* chan_gain * vel_gain, what render uses */
+    float  vel_gain;                 /* velocity^2, kept apart from the channel
+                                      * gain so a later CC7/CC11 can recompute */
     float  pan_l, pan_r;             /* per-slot L/R gains from chan_pan CC */
     int    channel;                  /* -1 for ATR one-shots (no owner ch) */
     int    note;
@@ -833,7 +835,7 @@ static double pcm_env_advance(struct mafm_pcm_voice *pv) {
  * rate (drums fix it to the played note; melodic voices use 60).  params is
  * the voice's env + loop config, or NULL for an unenvelope one-shot. */
 static void mafm_start_pcm_full(struct mafm_synth *s, struct mafm_wave *w,
-                                float gain, int channel, int note,
+                                float vel_gain, int channel, int note,
                                 int base_note,
                                 const struct mafm_pcm_params *params) {
     struct mafm_pcm_voice *pv = NULL;
@@ -864,7 +866,10 @@ static void mafm_start_pcm_full(struct mafm_synth *s, struct mafm_wave *w,
         ratio = pow(2.0, ((double)(note - base_note) + bend_semitones) / 12.0);
         pv->step = (double) fs / s->rate * ratio;
     }
-    pv->gain = gain;
+    /* Keep the two halves apart: an ATR one-shot (channel < 0) has no owning
+     * channel and stays at its own gain, everything else tracks its channel. */
+    pv->vel_gain = vel_gain;
+    pv->gain = (channel >= 0) ? s->chan_gain[channel] * vel_gain : vel_gain;
     pv->channel = channel;
     pv->note = note;
     /* Pan.  channel < 0 stays centred; channel >= 0 tracks its chan_pan CC.
@@ -1010,7 +1015,7 @@ static void mafm_note_on(struct mafm_synth *s, int ch, int note, int vel) {
              * converter emits vel=0 to mean "no explicit velocity", which we
              * treat as 100. */
             float pv = (vel ? (float) vel : 100.0f) / 127.0f;
-            float g = s->chan_gain[ch] * pv * pv;
+            float g = pv * pv; /* start_pcm_full folds in the channel gain */
             /* Fixed pitch for drums (drum_note != 0) means playing the wave
              * at native rate regardless of the incoming note.  A melodic PCM
              * voice takes root note 60, matching the "root=middle C" default
@@ -1112,6 +1117,14 @@ static void mafm_apply_channel_volume(struct mafm_synth *s, struct _mdi *mdi,
         struct mafm_voice *v = &s->voices[i];
         if (_WM_MAFM_VoiceActive(v) && v->channel == ch)
             _WM_MAFM_VoiceSetVolume(v, gain);
+    }
+    /* Sampled voices hold a flattened gain rather than reading the channel
+     * each sample, so they need the same update or a long PCM phrase would
+     * ignore every CC7/CC11 that arrives after its note-on. */
+    for (i = 0; i < MAFM_PCM_POOL; i++) {
+        struct mafm_pcm_voice *pv = &s->pcm[i];
+        if (pv->active && pv->channel == (int)ch)
+            pv->gain = gain * pv->vel_gain;
     }
 }
 
