@@ -80,13 +80,21 @@ _WM_get_patch_data(struct _mdi *mdi, uint16_t patchid) {
     WMIDI_UNUSED(mdi);
 
     _WM_Lock(&_WM_patch_lock);
-    search_patch = _find_nearest_patch(patchid);
+    search_patch = _find_matched_patch(patchid);
     if (search_patch == NULL && (patchid & 0xff00) != 0) {
-        /* Nothing at all in the requested bank: fall back to bank 0 rather
-         * than play silence, as a hardware synth does for an unknown bank.
-         * SMAF needs this - its scores select Yamaha's own voice banks (0x7c
-         * and friends), which no GUS/SF2 patch set defines, so without the
-         * fallback every SMAF file that has no custom FM voices is mute. */
+        /* A non-zero bank in a timidity.cfg is an overlay: it lists only the
+         * few programs that differ from bank 0 (eawpats' "bank 8" holds a
+         * single sine wave, "drumset 8" a single tambourine).  Fall back to
+         * bank 0 for everything it does not define, or the nearest-patch
+         * search below would answer every request from that bank with its one
+         * unrelated instrument.  This is also what makes SMAF audible: its
+         * scores select Yamaha's own voice banks (0x7c and friends), which no
+         * GUS/SF2 patch set defines at all. */
+        search_patch = _find_matched_patch(patchid & 0x00ff);
+    }
+    if (search_patch == NULL) {
+        /* Bank 0 has no such program either - a sparse patch set.  Nearest
+         * program is still better than silence. */
         search_patch = _find_nearest_patch(patchid & 0x00ff);
     }
     _WM_Unlock(&_WM_patch_lock);

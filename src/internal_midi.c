@@ -1407,6 +1407,11 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
      * until key-off, so release them here too or a score that ends without
      * keying every note off rings on to the caller's cut-off. */
     if (mdi->mafm_synth) _WM_MAFM_ReleaseAll(mdi->mafm_synth);
+#ifdef WILDMIDI_SF2
+    /* Same for the soundfont engine: without this a score that ends on a
+     * still-held note sustains it until the render loop's 10s tail cap. */
+    if (mdi->sf2_synth) _WM_SF2_ReleaseAll(mdi->sf2_synth);
+#endif
     return;
 }
 

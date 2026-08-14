@@ -104,10 +104,35 @@ int _WM_SF2_Active(void) {
     return (WM_sf2 != NULL);
 }
 
+/* Channel volume, using wildmidi's own curves rather than tsf's cubic
+ * default, so WM_MO_LOG_VOLUME does the same thing here as it does for the
+ * GUS mixer.  The linear curve is _WM_lin_volume[v]/1024 == v/127; the log
+ * curve is the MIDI2 table dBm_volume[v] == 40*log10(v/127), whose gain
+ * 10^(dBm/20) is just (v/127) squared. */
+static void WM_SF2_ChannelVolume(tsf *f, struct _mdi *mdi, uint8_t ch,
+                                 int volume, int expression) {
+    float gain = (float)((volume * expression) / 127) / 127.0f;
+    if (mdi->extra_info.mixer_options & WM_MO_LOG_VOLUME) {
+        gain *= gain;
+    }
+    tsf_channel_set_volume(f, ch, gain);
+}
+
 static void WM_SF2_InitChannels(tsf *f) {
     int ch;
     for (ch = 0; ch < 16; ch++) {
         tsf_channel_set_bank_preset(f, ch, (ch == 9) ? 128 : 0, 0);
+    }
+}
+
+/* (Re)apply every channel's volume from the mdi's own state.  Needed after a
+ * reset and whenever WM_MO_LOG_VOLUME is toggled mid-playback. */
+void _WM_SF2_AdjustChannelVolumes(struct _mdi *mdi) {
+    uint8_t ch;
+    if (mdi->sf2_synth == NULL) return;
+    for (ch = 0; ch < 16; ch++) {
+        WM_SF2_ChannelVolume((tsf *)mdi->sf2_synth, mdi, ch,
+                             mdi->channel[ch].volume, mdi->channel[ch].expression);
     }
 }
 
@@ -130,14 +155,25 @@ void _WM_SF2_FreeSynth(void *synth) {
     }
 }
 
-void _WM_SF2_Reset(void *synth) {
-    tsf *f = (tsf *)synth;
+void _WM_SF2_Reset(struct _mdi *mdi) {
+    tsf *f = (tsf *)mdi->sf2_synth;
     int ch;
+    if (f == NULL) return;
     tsf_reset(f);
     for (ch = 0; ch < 16; ch++) {
         tsf_channel_midi_control(f, ch, 121, 0); /* reset controllers */
     }
     WM_SF2_InitChannels(f);
+    /* Callers reset the mdi's own channel state separately (and afterwards),
+       so seed the gains from _WM_do_sysex_gm_reset()'s defaults, not from
+       whatever mdi->channel still holds. */
+    for (ch = 0; ch < 16; ch++) {
+        WM_SF2_ChannelVolume(f, mdi, (uint8_t)ch, 100, 127);
+    }
+}
+
+void _WM_SF2_ReleaseAll(void *synth) {
+    tsf_note_off_all((tsf *)synth);
 }
 
 int _WM_SF2_ActiveVoices(void *synth) {
@@ -179,7 +215,8 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
         tsf_channel_midi_control(f, ch, 6, val & 0x7F);
         break;
     case ev_control_channel_volume:
-        tsf_channel_midi_control(f, ch, 7, val & 0x7F);
+        /* do_event() has not run yet, so pass the new value explicitly */
+        WM_SF2_ChannelVolume(f, mdi, ch, val & 0x7F, mdi->channel[ch].expression);
         break;
     case ev_control_channel_balance:
         tsf_channel_midi_control(f, ch, 8, val & 0x7F);
@@ -188,7 +225,7 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
         tsf_channel_midi_control(f, ch, 10, val & 0x7F);
         break;
     case ev_control_channel_expression:
-        tsf_channel_midi_control(f, ch, 11, val & 0x7F);
+        WM_SF2_ChannelVolume(f, mdi, ch, mdi->channel[ch].volume, val & 0x7F);
         break;
     case ev_control_data_entry_fine:
         tsf_channel_midi_control(f, ch, 38, val & 0x7F);
@@ -213,6 +250,9 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
         break;
     case ev_control_channel_controllers_off:
         tsf_channel_midi_control(f, ch, 121, val & 0x7F);
+        /* CC121 puts tsf's own volume back to unity; restore ours.  Like
+           _WM_do_control_channel_controllers_off(), CC7 survives, CC11 does not. */
+        WM_SF2_ChannelVolume(f, mdi, ch, mdi->channel[ch].volume, 127);
         break;
     case ev_control_channel_notes_off:
         tsf_channel_midi_control(f, ch, 123, val & 0x7F);
@@ -226,23 +266,31 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     case ev_sysex_gm_reset:
     case ev_sysex_roland_reset:
     case ev_sysex_yamaha_reset:
-        _WM_SF2_Reset(f);
+        _WM_SF2_Reset(mdi);
         break;
     default: /* meta/timing events don't reach the synth */
         break;
     }
 }
 
+/* Headroom, matching VOL_DIVISOR in internal_midi.c: a soundfont renders a
+ * single note at full velocity close to full scale, so any busy score summed
+ * at unity gain clips hard. */
+#define SF2_VOL_DIVISOR 4.0f
+
 void _WM_SF2_Render(void *synth, int32_t *out, uint32_t frames) {
     tsf *f = (tsf *)synth;
-    short buf[256 * 2];
+    float buf[256 * 2];
+    /* Render float, not short: tsf_render_short() clamps to int16 itself, so
+       scaling its output afterwards would only make the clipping quieter. */
+    const float gain = (32767.0f * (float)_WM_MasterVolume / 1024.0f) / SF2_VOL_DIVISOR;
     uint32_t n, i;
 
     while (frames) {
         n = (frames > 256) ? 256 : frames;
-        tsf_render_short(f, buf, (int)n, 0);
+        tsf_render_float(f, buf, (int)n, 0);
         for (i = 0; i < n * 2; i++) {
-            out[i] += buf[i];
+            out[i] += (int32_t)(buf[i] * gain);
         }
         out += n * 2;
         frames -= n;
