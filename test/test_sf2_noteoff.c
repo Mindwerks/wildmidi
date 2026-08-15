@@ -203,6 +203,35 @@ static int32_t render_note(uint32_t gap, uint32_t frames) {
     return peak;
 }
 
+/* Two overlapping voices on one key, both switched off during the attack.
+ * Every deferred off has to be re-issued, or the surplus voice keeps sounding
+ * to the end of the render.  Returns the peak once both should be long gone. */
+static int32_t render_overlapping_pair(void) {
+    uint32_t frames = RENDER_RATE * 3; /* attack 1s + release 0.5s, twice over */
+    int32_t *buf = (int32_t *) calloc(frames * 2, sizeof(int32_t));
+    void *synth = _WM_SF2_NewSynth(RENDER_RATE);
+    int32_t peak = 0;
+    uint32_t i;
+
+    assert(buf != NULL);
+    assert(synth != NULL);
+
+    send(synth, ev_note_on, 0, (60 << 8) | 100);
+    send(synth, ev_note_on, 0, (60 << 8) | 100); /* second voice, same key */
+    send(synth, ev_note_off, 0, (60 << 8));
+    send(synth, ev_note_off, 0, (60 << 8));
+    _WM_SF2_Render(synth, buf, frames);
+
+    /* only the last tenth of a second matters: by then both releases are over */
+    for (i = (frames - RENDER_RATE / 10) * 2; i < frames * 2; i++) {
+        int32_t v = buf[i] < 0 ? -buf[i] : buf[i];
+        if (v > peak) peak = v;
+    }
+    _WM_SF2_FreeSynth(synth);
+    free(buf);
+    return peak;
+}
+
 int main(void) {
     int32_t deferred, sustained;
 
@@ -225,6 +254,9 @@ int main(void) {
     sustained = render_note(RENDER_RATE / 2, 1);
     assert(deferred >= sustained - (sustained / 8));
     assert(deferred <= sustained + (sustained / 8));
+
+    /* neither voice of a retriggered key may outlive its own note off */
+    assert(render_overlapping_pair() == 0);
 
     _WM_SF2_Unload();
     assert(!_WM_SF2_Active());

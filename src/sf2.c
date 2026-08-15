@@ -79,7 +79,9 @@ int _WM_sf2_lock = 0;
  * the render loop once the voice has left its attack. */
 struct wm_sf2_synth {
     tsf *f;
-    uint8_t held_off[16][128];
+    uint8_t held_off[16][128]; /* deferred offs per channel/key, not a flag:
+                                  a key retriggered while held has a voice per
+                                  note on, and each one needs its own off */
     int held_count;
     uint32_t silent_frames; /* consecutive rendered frames that came out zero */
 };
@@ -230,8 +232,8 @@ static int WM_SF2_InAttack(tsf *f, int ch, int key) {
 
 static void WM_SF2_NoteOff(struct wm_sf2_synth *s, int ch, int key) {
     if (WM_SF2_InAttack(s->f, ch, key)) {
-        if (!s->held_off[ch][key]) {
-            s->held_off[ch][key] = 1;
+        if (s->held_off[ch][key] < 0xFF) { /* a stuck key cannot wrap the count */
+            s->held_off[ch][key]++;
             s->held_count++;
         }
         return;
@@ -241,15 +243,19 @@ static void WM_SF2_NoteOff(struct wm_sf2_synth *s, int ch, int key) {
 
 /* Re-issue the note offs whose voices have now left their attack.  tsf picks
  * the oldest voice for the key, which is the one the held off belongs to; if
- * the voice is gone the call is a no-op and the entry just clears. */
+ * the voice is gone the call is a no-op and the entry just clears.  Nothing
+ * matching the key is in attack by this point, so every off held for it can
+ * go at once. */
 static void WM_SF2_FlushHeldOffs(struct wm_sf2_synth *s) {
     int ch, key;
     for (ch = 0; ch < 16 && s->held_count; ch++) {
         for (key = 0; key < 128 && s->held_count; key++) {
             if (!s->held_off[ch][key] || WM_SF2_InAttack(s->f, ch, key)) continue;
-            s->held_off[ch][key] = 0;
-            s->held_count--;
-            tsf_channel_note_off(s->f, ch, key);
+            do {
+                s->held_off[ch][key]--;
+                s->held_count--;
+                tsf_channel_note_off(s->f, ch, key);
+            } while (s->held_off[ch][key]);
         }
     }
 }
@@ -277,8 +283,10 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
             WM_SF2_NoteOff(s, ch, (val >> 8) & 0x7F);
         } else {
             uint8_t key = (val >> 8) & 0x7F;
-            if (s->held_off[ch][key]) { /* retrigger: let the old voice go first */
-                s->held_off[ch][key] = 0;
+            if (s->held_off[ch][key]) { /* retrigger: let the oldest voice go
+                                           first, since waiting for the new
+                                           note's attack would hold it on */
+                s->held_off[ch][key]--;
                 s->held_count--;
                 tsf_channel_note_off(f, ch, key);
             }
