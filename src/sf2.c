@@ -69,6 +69,27 @@ typedef char tsf_char20[20]; /* no empty source. */
 static tsf *WM_sf2 = NULL;
 int _WM_sf2_lock = 0;
 
+/* A per-mdi synth is a tsf plus the note offs we are holding back.  tsf
+ * releases a voice from wherever its amplitude envelope has got to, so a note
+ * switched off while still in its attack never becomes audible at all.  XMI
+ * scores really do carry zero-length notes - the descending triplet at 38s in
+ * SUNNYDAY.XMI is three of them - and the GUS mixer keeps those by deferring
+ * the release until the first envelope stage has finished (see the env == 0
+ * branch of _WM_do_note_off).  Park the note off here and re-issue it from
+ * the render loop once the voice has left its attack. */
+struct wm_sf2_synth {
+    tsf *f;
+    uint8_t held_off[16][128];
+    int held_count;
+    uint32_t silent_frames; /* consecutive rendered frames that came out zero */
+};
+
+/* How long the render has to stay at zero before the tail counts as over.
+ * Only reached once every voice has decayed below 16bit resolution, so it
+ * just has to be longer than a waveform's own zero crossings: 2048 frames is
+ * 46ms even at 44.1kHz. */
+#define SF2_SILENCE_FRAMES 2048
+
 int _WM_SF2_Magic(const uint8_t *data, uint32_t size) {
     return (size >= 12 && !memcmp(data, "RIFF", 4) && !memcmp(data + 8, "sfbk", 4));
 }
@@ -131,12 +152,13 @@ void _WM_SF2_AdjustChannelVolumes(struct _mdi *mdi) {
     uint8_t ch;
     if (mdi->sf2_synth == NULL) return;
     for (ch = 0; ch < 16; ch++) {
-        WM_SF2_ChannelVolume((tsf *)mdi->sf2_synth, mdi, ch,
+        WM_SF2_ChannelVolume(((struct wm_sf2_synth *)mdi->sf2_synth)->f, mdi, ch,
                              mdi->channel[ch].volume, mdi->channel[ch].expression);
     }
 }
 
 void *_WM_SF2_NewSynth(uint16_t rate) {
+    struct wm_sf2_synth *s;
     tsf *f;
     _WM_Lock(&_WM_sf2_lock);
     f = WM_sf2 ? tsf_copy(WM_sf2) : NULL;
@@ -144,21 +166,33 @@ void *_WM_SF2_NewSynth(uint16_t rate) {
     if (f == NULL) {
         return NULL;
     }
+    s = (struct wm_sf2_synth *) calloc(1, sizeof(struct wm_sf2_synth));
+    if (s == NULL) {
+        tsf_close(f);
+        return NULL;
+    }
+    s->f = f;
     tsf_set_output(f, TSF_STEREO_INTERLEAVED, rate, 0.0f);
     WM_SF2_InitChannels(f);
-    return f;
+    return s;
 }
 
 void _WM_SF2_FreeSynth(void *synth) {
     if (synth) {
-        tsf_close((tsf *)synth);
+        tsf_close(((struct wm_sf2_synth *)synth)->f);
+        free(synth);
     }
 }
 
 void _WM_SF2_Reset(struct _mdi *mdi) {
-    tsf *f = (tsf *)mdi->sf2_synth;
+    struct wm_sf2_synth *s = (struct wm_sf2_synth *)mdi->sf2_synth;
+    tsf *f;
     int ch;
-    if (f == NULL) return;
+    if (s == NULL) return;
+    f = s->f;
+    memset(s->held_off, 0, sizeof(s->held_off));
+    s->held_count = 0;
+    s->silent_frames = 0;
     tsf_reset(f);
     for (ch = 0; ch < 16; ch++) {
         tsf_channel_midi_control(f, ch, 121, 0); /* reset controllers */
@@ -176,28 +210,83 @@ void _WM_SF2_Reset(struct _mdi *mdi) {
 }
 
 void _WM_SF2_ReleaseAll(void *synth) {
-    tsf_note_off_all((tsf *)synth);
+    struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
+    memset(s->held_off, 0, sizeof(s->held_off)); /* superseded by the release */
+    s->held_count = 0;
+    tsf_note_off_all(s->f);
 }
 
+/* Is this voice still in its attack, i.e. would releasing it now silence it? */
+static int WM_SF2_InAttack(tsf *f, int ch, int key) {
+    struct tsf_voice *v = f->voices, *vEnd = v ? v + f->voiceNum : TSF_NULL;
+    for (; v != vEnd; v++) {
+        if (v->playingPreset != -1 && v->playingChannel == ch
+            && v->playingKey == key && v->ampenv.segment <= TSF_SEGMENT_ATTACK) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void WM_SF2_NoteOff(struct wm_sf2_synth *s, int ch, int key) {
+    if (WM_SF2_InAttack(s->f, ch, key)) {
+        if (!s->held_off[ch][key]) {
+            s->held_off[ch][key] = 1;
+            s->held_count++;
+        }
+        return;
+    }
+    tsf_channel_note_off(s->f, ch, key);
+}
+
+/* Re-issue the note offs whose voices have now left their attack.  tsf picks
+ * the oldest voice for the key, which is the one the held off belongs to; if
+ * the voice is gone the call is a no-op and the entry just clears. */
+static void WM_SF2_FlushHeldOffs(struct wm_sf2_synth *s) {
+    int ch, key;
+    for (ch = 0; ch < 16 && s->held_count; ch++) {
+        for (key = 0; key < 128 && s->held_count; key++) {
+            if (!s->held_off[ch][key] || WM_SF2_InAttack(s->f, ch, key)) continue;
+            s->held_off[ch][key] = 0;
+            s->held_count--;
+            tsf_channel_note_off(s->f, ch, key);
+        }
+    }
+}
+
+/* tsf holds a voice open for its whole nominal release time, which on a
+ * soundfont with long releases runs on for seconds after the envelope has
+ * decayed out of 16bit range - dead air on the end of the render.  What has
+ * actually come out of the mixer settles that better than any envelope
+ * threshold can, so a run of silent frames ends the tail. */
 int _WM_SF2_ActiveVoices(void *synth) {
-    return tsf_active_voice_count((tsf *)synth);
+    struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
+    if (s->silent_frames >= SF2_SILENCE_FRAMES) return 0;
+    return tsf_active_voice_count(s->f);
 }
 
 void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
-    tsf *f = (tsf *)synth;
-    uint8_t ch = event->event_data.channel;
+    struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
+    tsf *f = s->f;
+    uint8_t ch = event->event_data.channel & 0x0F; /* held_off[] is indexed by it */
     uint32_t val = event->event_data.data.value;
 
     switch (event->evtype) {
     case ev_note_on:
         if ((val & 0xFF) == 0) { /* velocity 0 == note off */
-            tsf_channel_note_off(f, ch, (val >> 8) & 0x7F);
+            WM_SF2_NoteOff(s, ch, (val >> 8) & 0x7F);
         } else {
-            tsf_channel_note_on(f, ch, (val >> 8) & 0x7F, (float)(val & 0x7F) / 127.0f);
+            uint8_t key = (val >> 8) & 0x7F;
+            if (s->held_off[ch][key]) { /* retrigger: let the old voice go first */
+                s->held_off[ch][key] = 0;
+                s->held_count--;
+                tsf_channel_note_off(f, ch, key);
+            }
+            tsf_channel_note_on(f, ch, key, (float)(val & 0x7F) / 127.0f);
         }
         break;
     case ev_note_off:
-        tsf_channel_note_off(f, ch, (val >> 8) & 0x7F);
+        WM_SF2_NoteOff(s, ch, (val >> 8) & 0x7F);
         break;
     case ev_patch:
         tsf_channel_set_presetnumber(f, ch, val & 0x7F, mdi->channel[ch].isdrum);
@@ -276,13 +365,19 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     }
 }
 
-/* Headroom, matching VOL_DIVISOR in internal_midi.c: a soundfont renders a
- * single note at full velocity close to full scale, so any busy score summed
- * at unity gain clips hard. */
-#define SF2_VOL_DIVISOR 4.0f
+/* Headroom.  A soundfont renders a single note at full velocity close to full
+ * scale, so a busy score summed at unity gain clips hard.  VOL_DIVISOR in
+ * internal_midi.c uses 4.0 for the GUS mixer, but soundfont material has a
+ * much higher crest factor: at 4.0 three of GeneralUser GS's own nine demo
+ * scores clip, the worst of them needing 7.0 to stay inside 16 bits.  8.0 is
+ * the next power of two above that, and leaves the mix around 4dB quieter
+ * than the GUS path in RMS - raise it back with WildMidi_MasterVolume() if
+ * the material is quiet enough to take it. */
+#define SF2_VOL_DIVISOR 8.0f
 
 void _WM_SF2_Render(void *synth, int32_t *out, uint32_t frames) {
-    tsf *f = (tsf *)synth;
+    struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
+    tsf *f = s->f;
     float buf[256 * 2];
     /* Render float, not short: tsf_render_short() clamps to int16 itself, so
        scaling its output afterwards would only make the clipping quieter. */
@@ -290,11 +385,16 @@ void _WM_SF2_Render(void *synth, int32_t *out, uint32_t frames) {
     uint32_t n, i;
 
     while (frames) {
+        int32_t heard = 0;
         n = (frames > 256) ? 256 : frames;
+        if (s->held_count) WM_SF2_FlushHeldOffs(s);
         tsf_render_float(f, buf, (int)n, 0);
         for (i = 0; i < n * 2; i++) {
-            out[i] += (int32_t)(buf[i] * gain);
+            int32_t v = (int32_t)(buf[i] * gain);
+            heard |= v;
+            out[i] += v;
         }
+        s->silent_frames = heard ? 0 : (s->silent_frames + n);
         out += n * 2;
         frames -= n;
     }
