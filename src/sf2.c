@@ -225,16 +225,22 @@ void _WM_SF2_ReleaseAll(void *synth) {
     tsf_note_off_all(s->f);
 }
 
-/* Is this voice still in its attack, i.e. would releasing it now silence it? */
+/* Would a note off now silence the voice it lands on?  tsf_channel_note_off()
+ * releases the sounding voice with the lowest playIndex - the oldest note on
+ * the key - so that is the only envelope that matters here.  Asking whether
+ * *any* matching voice is in attack would hold an older voice that is long
+ * past its own attack for the whole of a newer overlapping note's. */
 static int WM_SF2_InAttack(tsf *f, int ch, int key) {
     struct tsf_voice *v = f->voices, *vEnd = v ? v + f->voiceNum : TSF_NULL;
+    struct tsf_voice *oldest = TSF_NULL;
     for (; v != vEnd; v++) {
-        if (v->playingPreset != -1 && v->playingChannel == ch
-            && v->playingKey == key && v->ampenv.segment <= TSF_SEGMENT_ATTACK) {
-            return 1;
-        }
+        /* the same filter tsf_channel_note_off() applies when it picks a voice */
+        if (v->playingPreset == -1 || v->playingChannel != ch || v->playingKey != key
+            || v->ampenv.segment >= TSF_SEGMENT_RELEASE || v->heldSustain) continue;
+        if (!oldest || v->playIndex < oldest->playIndex) oldest = v;
     }
-    return 0;
+    /* nothing to release: let the off through, tsf makes it a no-op */
+    return (oldest != TSF_NULL && oldest->ampenv.segment <= TSF_SEGMENT_ATTACK);
 }
 
 static void WM_SF2_NoteOff(struct wm_sf2_synth *s, int ch, int key) {
@@ -250,19 +256,18 @@ static void WM_SF2_NoteOff(struct wm_sf2_synth *s, int ch, int key) {
 
 /* Re-issue the note offs whose voices have now left their attack.  tsf picks
  * the oldest voice for the key, which is the one the held off belongs to; if
- * the voice is gone the call is a no-op and the entry just clears.  Nothing
- * matching the key is in attack by this point, so every off held for it can
- * go at once. */
+ * the voice is gone the call is a no-op and the entry just clears.  Each off
+ * uncovers the next voice down, which may still be in its own attack, so the
+ * check has to be repeated rather than draining the whole count at once. */
 static void WM_SF2_FlushHeldOffs(struct wm_sf2_synth *s) {
     int ch, key;
     for (ch = 0; ch < 16 && s->held_count; ch++) {
         for (key = 0; key < 128 && s->held_count; key++) {
-            if (!s->held_off[ch][key] || WM_SF2_InAttack(s->f, ch, key)) continue;
-            do {
+            while (s->held_off[ch][key] && !WM_SF2_InAttack(s->f, ch, key)) {
                 s->held_off[ch][key]--;
                 s->held_count--;
                 tsf_channel_note_off(s->f, ch, key);
-            } while (s->held_off[ch][key]);
+            }
         }
     }
 }

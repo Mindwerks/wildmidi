@@ -232,6 +232,64 @@ static int32_t render_overlapping_pair(void) {
     return peak;
 }
 
+/* peak of a lone voice that has finished its attack and is still held down */
+static int32_t render_held(void) {
+    uint32_t frames = RENDER_RATE / 10;
+    int32_t *buf = (int32_t *) calloc(RENDER_RATE * 2, sizeof(int32_t));
+    void *synth = _WM_SF2_NewSynth(RENDER_RATE);
+    int32_t peak = 0;
+    uint32_t i;
+
+    assert(buf != NULL);
+    assert(synth != NULL);
+
+    send(synth, ev_note_on, 0, (60 << 8) | 100);
+    _WM_SF2_Render(synth, buf, RENDER_RATE); /* the whole one second attack */
+    memset(buf, 0, RENDER_RATE * 2 * sizeof(int32_t));
+    _WM_SF2_Render(synth, buf, frames);
+
+    for (i = 0; i < frames * 2; i++) {
+        int32_t v = buf[i] < 0 ? -buf[i] : buf[i];
+        if (v > peak) peak = v;
+    }
+    _WM_SF2_FreeSynth(synth);
+    free(buf);
+    return peak;
+}
+
+/* Two voices on one key, staggered: the first has finished its attack and the
+ * second has only just started when a single note off arrives.  tsf releases
+ * the older voice, so nothing should be deferred - deferring would pin the
+ * older voice at full level for the rest of the newer one's attack.  Returns
+ * the peak 0.4s later, by when a released first voice is 64dB down and the
+ * second is four tenths of the way up. */
+static int32_t render_staggered_pair(void) {
+    uint32_t frames = (RENDER_RATE * 2) / 5;
+    int32_t *buf = (int32_t *) calloc(RENDER_RATE * 2, sizeof(int32_t));
+    void *synth = _WM_SF2_NewSynth(RENDER_RATE);
+    int32_t peak = 0;
+    uint32_t i;
+
+    assert(buf != NULL);
+    assert(synth != NULL);
+
+    send(synth, ev_note_on, 0, (60 << 8) | 100);
+    _WM_SF2_Render(synth, buf, RENDER_RATE); /* first voice reaches full level */
+    send(synth, ev_note_on, 0, (60 << 8) | 100); /* second voice, now in attack */
+    send(synth, ev_note_off, 0, (60 << 8));
+    memset(buf, 0, RENDER_RATE * 2 * sizeof(int32_t));
+    _WM_SF2_Render(synth, buf, frames);
+
+    /* the last tenth of a second, once the older voice has had time to go */
+    for (i = (frames - RENDER_RATE / 10) * 2; i < frames * 2; i++) {
+        int32_t v = buf[i] < 0 ? -buf[i] : buf[i];
+        if (v > peak) peak = v;
+    }
+    _WM_SF2_FreeSynth(synth);
+    free(buf);
+    return peak;
+}
+
 int main(void) {
     int32_t deferred, sustained;
 
@@ -257,6 +315,11 @@ int main(void) {
 
     /* neither voice of a retriggered key may outlive its own note off */
     assert(render_overlapping_pair() == 0);
+
+    /* A note off aimed at an older voice must not wait on a newer one's
+     * attack.  Released, the pair peaks at the second voice's 0.4 alone; held,
+     * it peaks at 1.4 of a voice, so three quarters separates the two. */
+    assert(render_staggered_pair() < (render_held() * 3) / 4);
 
     _WM_SF2_Unload();
     assert(!_WM_SF2_Active());
