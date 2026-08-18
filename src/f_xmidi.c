@@ -382,7 +382,16 @@ struct _mdi *_WM_ParseNewXmi(const uint8_t *xmi_data, uint32_t xmi_size) {
 
                             /* store length */
                             xmi_notelen[128 * xmi_ch + xmi_note] = xmi_tmpdata;
-                            if ((xmi_tmpdata > 0) && ((xmi_lowestdelta == 0) || (xmi_tmpdata < xmi_lowestdelta))) {
+                            if (xmi_tmpdata == 0) {
+                                /* A zero length note never reaches the countdown
+                                 * above, where 0 means "not sounding", so it would
+                                 * hang until the next note on the same key turned
+                                 * it off - the descending triplet at 38s in TES:
+                                 * Arena's SUNNYDAY.XMI rings for 1.6s that way.
+                                 * Release it at once, which is what xmi2mid.c
+                                 * writes out for the same note. */
+                                _WM_midi_setup_noteoff(xmi_mdi, xmi_ch, xmi_note, 0);
+                            } else if ((xmi_lowestdelta == 0) || (xmi_tmpdata < xmi_lowestdelta)) {
                                 xmi_lowestdelta = xmi_tmpdata;
                             }
 

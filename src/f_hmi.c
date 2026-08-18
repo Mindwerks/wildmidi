@@ -361,7 +361,12 @@ _WM_ParseNewHmi(const uint8_t *hmi_data, uint32_t hmi_size) {
                                 smallest_delta = note[hmi_tmp].length;
                             }
                         } else {
-                            _WM_midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel, j, 0);
+                            /* zero length note: release it at once, as the
+                             * countdown above reads a length of 0 as "not
+                             * sounding".  j is the note sweep's counter, left
+                             * at 128 - the off has to name this note. */
+                            _WM_midi_setup_noteoff(hmi_mdi, note[hmi_tmp].channel,
+                                                   (uint8_t)(hmi_tmp - (i * 128)), 0);
                         }
 
                     } else {

@@ -83,14 +83,21 @@ struct wm_sf2_synth {
                                   a key retriggered while held has a voice per
                                   note on, and each one needs its own off */
     int held_count;
-    uint32_t silent_frames; /* consecutive rendered frames that came out zero */
+    uint32_t silent_frames; /* consecutive rendered frames that stayed inaudible */
 };
 
-/* How long the render has to stay at zero before the tail counts as over.
- * Only reached once every voice has decayed below 16bit resolution, so it
- * just has to be longer than a waveform's own zero crossings: 2048 frames is
- * 46ms even at 44.1kHz. */
+/* How long the render has to stay inaudible before the tail counts as over.
+ * It just has to be longer than a waveform's own zero crossings: 2048 frames
+ * is 46ms even at 44.1kHz. */
 #define SF2_SILENCE_FRAMES 2048
+
+/* What counts as inaudible, in 16bit output counts.  A release that has decayed
+ * this far is 60dB below full scale and another 20dB below anything else the
+ * score is doing, so waiting for it to reach the last bit only buys seconds of
+ * dead air: GeneralUser GS runs ~4s past the last note of SUNNYDAY.XMI at 1
+ * count, ~2s at 32.  Only consulted once the event list is exhausted, so it
+ * cannot cut a quiet passage short mid-score. */
+#define SF2_SILENCE_LEVEL 32
 
 int _WM_SF2_Magic(const uint8_t *data, uint32_t size) {
     return (size >= 12 && !memcmp(data, "RIFF", 4) && !memcmp(data + 8, "sfbk", 4));
@@ -375,13 +382,15 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
 
 /* Headroom.  A soundfont renders a single note at full velocity close to full
  * scale, so a busy score summed at unity gain clips hard.  VOL_DIVISOR in
- * internal_midi.c uses 4.0 for the GUS mixer, but soundfont material has a
- * much higher crest factor: at 4.0 three of GeneralUser GS's own nine demo
- * scores clip, the worst of them needing 7.0 to stay inside 16 bits.  8.0 is
- * the next power of two above that, and leaves the mix around 4dB quieter
- * than the GUS path in RMS - raise it back with WildMidi_MasterVolume() if
- * the material is quiet enough to take it. */
-#define SF2_VOL_DIVISOR 8.0f
+ * internal_midi.c uses 4.0 for the GUS mixer; soundfont material has a higher
+ * crest factor than that covers.  Rendering GeneralUser GS's own nine demo
+ * scores, the loudest (Jump!) needs 4.78 to stay inside 16 bits and the rest
+ * need 1.43 to 3.67, so 5.0 clears the set.  It is also fluidsynth's default
+ * gain of 0.2, and it puts SUNNYDAY.XMI within 0.1dB of the eawpats render in
+ * RMS - the GUS and SF2 paths should not change loudness under the listener.
+ * Denser material than those demos will reach the clamp; turn it down with
+ * WildMidi_MasterVolume(). */
+#define SF2_VOL_DIVISOR 5.0f
 
 void _WM_SF2_Render(void *synth, int32_t *out, uint32_t frames) {
     struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
@@ -399,7 +408,7 @@ void _WM_SF2_Render(void *synth, int32_t *out, uint32_t frames) {
         tsf_render_float(f, buf, (int)n, 0);
         for (i = 0; i < n * 2; i++) {
             int32_t v = (int32_t)(buf[i] * gain);
-            heard |= v;
+            if (v > SF2_SILENCE_LEVEL || v < -SF2_SILENCE_LEVEL) heard = 1;
             out[i] += v;
         }
         s->silent_frames = heard ? 0 : (s->silent_frames + n);

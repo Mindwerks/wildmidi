@@ -14,6 +14,11 @@ IF (WANT_SF2)
     ADD_TEST(NAME sf2_noteoff COMMAND test_sf2_noteoff)
 ENDIF (WANT_SF2)
 
+ADD_EXECUTABLE(test_xmi_notelen test_xmi_notelen.c)
+TARGET_INCLUDE_DIRECTORIES(test_xmi_notelen PRIVATE ${CMAKE_SOURCE_DIR}/include)
+TARGET_LINK_LIBRARIES(test_xmi_notelen libwildmidi-static ${M_LIBRARY})
+ADD_TEST(NAME xmi_notelen COMMAND test_xmi_notelen)
+
 ADD_EXECUTABLE(test_smaf_sequ test_smaf_sequ.c)
 TARGET_LINK_LIBRARIES(test_smaf_sequ libwildmidi-static ${M_LIBRARY})
 ADD_TEST(NAME smaf_sequ COMMAND test_smaf_sequ)
