@@ -38,7 +38,13 @@ extern int _WM_SF2_Active(void);
 /* per-mdi synth instances (voices private, sample data shared) */
 extern void *_WM_SF2_NewSynth(uint16_t rate);
 extern void _WM_SF2_FreeSynth(void *synth);
-extern void _WM_SF2_Reset(void *synth);
+extern void _WM_SF2_Reset(struct _mdi *mdi);
+
+/* re-apply every channel's volume (after a reset, or a WM_MO_LOG_VOLUME toggle) */
+extern void _WM_SF2_AdjustChannelVolumes(struct _mdi *mdi);
+
+/* send every sounding voice into its release stage */
+extern void _WM_SF2_ReleaseAll(void *synth);
 
 /* translate a wildmidi event to the synth */
 extern void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event);

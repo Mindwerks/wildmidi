@@ -1406,7 +1406,14 @@ void _WM_do_meta_endoftrack(struct _mdi *mdi, struct _event_data *data) {
     /* The FM engine keeps its own voices; a sustaining one holds its level
      * until key-off, so release them here too or a score that ends without
      * keying every note off rings on to the caller's cut-off. */
+#ifdef WILDMIDI_MAFM
     if (mdi->mafm_synth) _WM_MAFM_ReleaseAll(mdi->mafm_synth);
+#endif
+#ifdef WILDMIDI_SF2
+    /* Same for the soundfont engine: without this a score that ends on a
+     * still-held note sustains it until the render loop's 10s tail cap. */
+    if (mdi->sf2_synth) _WM_SF2_ReleaseAll(mdi->sf2_synth);
+#endif
     return;
 }
 
@@ -2149,6 +2156,12 @@ _WM_initMDI(void) {
 #endif
 
     _WM_do_sysex_gm_reset(mdi, NULL);
+#ifdef WILDMIDI_SF2
+    /* the reset above only touches mdi's own channel state; push its volumes
+       into the synth too, so a channel that never sends CC7 still plays at
+       wildmidi's default rather than TSF's unity gain */
+    _WM_SF2_AdjustChannelVolumes(mdi);
+#endif
 
     return (mdi);
 }

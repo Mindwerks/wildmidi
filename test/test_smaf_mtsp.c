@@ -9,6 +9,7 @@
  *    clause stays gated on wave_count rather than on the file parsing.
  *
  * See docs/formats/SmafFileFormat.txt. */
+#undef NDEBUG /* the asserts are the test; keep them in a Release build */
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>

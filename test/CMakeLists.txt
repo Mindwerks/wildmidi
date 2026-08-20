@@ -2,6 +2,23 @@ ADD_EXECUTABLE(test_tokenize test_tokenize.c)
 TARGET_LINK_LIBRARIES(test_tokenize libwildmidi-static ${M_LIBRARY})
 ADD_TEST(NAME tokenize COMMAND test_tokenize)
 
+ADD_EXECUTABLE(test_patch_bank test_patch_bank.c)
+TARGET_INCLUDE_DIRECTORIES(test_patch_bank PRIVATE ${CMAKE_SOURCE_DIR}/include)
+TARGET_LINK_LIBRARIES(test_patch_bank libwildmidi-static ${M_LIBRARY})
+ADD_TEST(NAME patch_bank COMMAND test_patch_bank)
+
+IF (WANT_SF2)
+    ADD_EXECUTABLE(test_sf2_noteoff test_sf2_noteoff.c)
+    TARGET_INCLUDE_DIRECTORIES(test_sf2_noteoff PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    TARGET_LINK_LIBRARIES(test_sf2_noteoff libwildmidi-static ${M_LIBRARY})
+    ADD_TEST(NAME sf2_noteoff COMMAND test_sf2_noteoff)
+ENDIF (WANT_SF2)
+
+ADD_EXECUTABLE(test_xmi_notelen test_xmi_notelen.c)
+TARGET_INCLUDE_DIRECTORIES(test_xmi_notelen PRIVATE ${CMAKE_SOURCE_DIR}/include)
+TARGET_LINK_LIBRARIES(test_xmi_notelen libwildmidi-static ${M_LIBRARY})
+ADD_TEST(NAME xmi_notelen COMMAND test_xmi_notelen)
+
 ADD_EXECUTABLE(test_smaf_sequ test_smaf_sequ.c)
 TARGET_LINK_LIBRARIES(test_smaf_sequ libwildmidi-static ${M_LIBRARY})
 ADD_TEST(NAME smaf_sequ COMMAND test_smaf_sequ)

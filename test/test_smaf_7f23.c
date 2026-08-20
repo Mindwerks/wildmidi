@@ -18,6 +18,7 @@
  * loads, and the first assert fails.
  *
  * See docs/formats/SmafFileFormat.txt. */
+#undef NDEBUG /* the asserts are the test; keep them in a Release build */
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>

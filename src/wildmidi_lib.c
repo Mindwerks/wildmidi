@@ -2090,7 +2090,7 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
 #ifdef WILDMIDI_SF2
         /* Rewind TSF too so replayed events rebuild its state from scratch. */
         if (mdi->sf2_synth) {
-            _WM_SF2_Reset(mdi->sf2_synth);
+            _WM_SF2_Reset(mdi);
         }
 #endif
 #ifdef WILDMIDI_MAFM
@@ -2217,7 +2217,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         event = mdi->events;
         _WM_ResetToStart((struct _mdi *) handle);
 #ifdef WILDMIDI_SF2
-        if (mdi->sf2_synth) _WM_SF2_Reset(mdi->sf2_synth);
+        if (mdi->sf2_synth) _WM_SF2_Reset(mdi);
 #endif
 #ifdef WILDMIDI_MAFM
         if (mdi->mafm_synth) _WM_MAFM_Reset(mdi->mafm_synth);
@@ -2254,7 +2254,7 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         event = mdi->events;
         _WM_ResetToStart((struct _mdi *) handle);
 #ifdef WILDMIDI_SF2
-        if (mdi->sf2_synth) _WM_SF2_Reset(mdi->sf2_synth);
+        if (mdi->sf2_synth) _WM_SF2_Reset(mdi);
 #endif
 #ifdef WILDMIDI_MAFM
         if (mdi->mafm_synth) _WM_MAFM_Reset(mdi->mafm_synth);
@@ -2341,7 +2341,7 @@ static int WM_GetOutput_SF2(midi * handle, int8_t *buffer, uint32_t size) {
                 event->do_event(mdi, &event->event_data);
                 if ((mdi->extra_info.mixer_options & WM_MO_LOOP) && (event[0].evtype == ev_meta_endoftrack) && !end_encountered) {
                     end_encountered = 1; /* Avoid an infinite loop. */
-                    _WM_SF2_Reset(mdi->sf2_synth);
+                    _WM_SF2_Reset(mdi);
                     _WM_ResetToStart(mdi);
                     event = mdi->current_event;
                 } else {
@@ -2646,6 +2646,12 @@ WM_SYMBOL int WildMidi_SetOption(midi * handle, uint16_t options, uint16_t setti
     if (options & WM_MO_LOG_VOLUME) {
             _WM_AdjustChannelVolumes(mdi, 16);  /* Settings greater than 15
                                                    adjusts all channels */
+#ifdef WILDMIDI_SF2
+            _WM_SF2_AdjustChannelVolumes(mdi);
+#endif
+#ifdef WILDMIDI_MAFM
+            _WM_MAFM_AdjustChannelVolumes(mdi);
+#endif
     } else if (options & WM_MO_REVERB) {
         _WM_reset_reverb(mdi->reverb);
     }

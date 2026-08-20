@@ -5,6 +5,7 @@
  * the 7-byte packed VM35 one the older chips use; the decoder undoes the
  * shuffle Yamaha's middleware applies.  See docs/formats/SmafFileFormat.txt.
  * The bytes below are the pc=0x0a voice out of AB00221GM7.MMF. */
+#undef NDEBUG /* the asserts are the test; keep them in a Release build */
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>

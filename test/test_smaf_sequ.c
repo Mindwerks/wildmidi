@@ -3,6 +3,7 @@
  * address 32 channels: bit 7 is the channel bank, bits 6-4 are the event type
  * (MIDI status nibble 0x8+n), bits 3-0 are the low channel nibble.
  * See docs/formats/SmafFileFormat.txt. */
+#undef NDEBUG /* the asserts are the test; keep them in a Release build */
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
