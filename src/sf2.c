@@ -305,6 +305,9 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     case ev_note_off:
         WM_SF2_NoteOff(s, ch, (val >> 8) & 0x7F);
         break;
+    case ev_aftertouch:
+        tsf_channel_set_keypressure(f, ch, (val >> 8) & 0x7F, val & 0x7F);
+        break;
     case ev_patch:
         tsf_channel_set_presetnumber(f, ch, val & 0x7F, mdi->channel[ch].isdrum);
         break;
@@ -342,6 +345,12 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     case ev_control_channel_hold:
         tsf_channel_midi_control(f, ch, 64, val & 0x7F);
         break;
+    case ev_control_data_increment:
+        tsf_channel_midi_control(f, ch, 96, val & 0x7F);
+        break;
+    case ev_control_data_decrement:
+        tsf_channel_midi_control(f, ch, 97, val & 0x7F);
+        break;
     case ev_control_non_registered_param_fine:
         tsf_channel_midi_control(f, ch, 98, val & 0x7F);
         break;
@@ -368,6 +377,9 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
         break;
     case ev_control_dummy: /* unhandled CCs are stored as (controller << 8) | value */
         tsf_channel_midi_control(f, ch, (val >> 8) & 0x7F, val & 0x7F);
+        break;
+    case ev_channel_pressure:
+        tsf_channel_set_pressure(f, ch, val & 0x7F);
         break;
     case ev_sysex_roland_drum_track:
         tsf_channel_set_bank_preset(f, ch, val ? 128 : 0, 0);
