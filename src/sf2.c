@@ -203,9 +203,6 @@ void _WM_SF2_Reset(struct _mdi *mdi) {
     s->held_count = 0;
     s->silent_frames = 0;
     tsf_reset(f);
-    for (ch = 0; ch < 16; ch++) {
-        tsf_channel_midi_control(f, ch, 121, 0); /* reset controllers */
-    }
     WM_SF2_InitChannels(f);
     /* Seed the gains from _WM_do_sysex_gm_reset()'s own defaults rather than
        from mdi->channel[], which makes this independent of when the caller
@@ -376,10 +373,19 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
         tsf_channel_set_bank_preset(f, ch, val ? 128 : 0, 0);
         break;
     case ev_sysex_gm_reset:
-    case ev_sysex_roland_reset:
-    case ev_sysex_yamaha_reset:
         _WM_SF2_Reset(mdi);
         break;
+    case ev_sysex_roland_reset:
+    case ev_sysex_yamaha_reset:
+    {
+        int ch;
+        _WM_SF2_Reset(mdi);
+        for (ch = 0; ch < 16; ch++) {
+            /* CC91=40 (reverb) default for GM2/GS/XG reset by spec, undefined for GM1 spec */
+            tsf_channel_midi_control(f, ch, 91, 40);
+        }
+        break;
+    }
     default: /* meta/timing events don't reach the synth */
         break;
     }
