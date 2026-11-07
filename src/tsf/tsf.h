@@ -1,4 +1,4 @@
-/* TinySoundFont2 - v2.02 - SoundFont2 synthesizer
+/* TinySoundFont2 - v2.022 - SoundFont2 synthesizer - https://github.com/anzz1/TinySoundFont2
                                      no warranty implied; use at your own risk
    Do this:
       #define TSF_IMPLEMENTATION
@@ -12,7 +12,7 @@
    [OPTIONAL] #define TSF_NO_STDIO to remove stdio dependency
    [OPTIONAL] #define TSF_MALLOC, TSF_REALLOC, and TSF_FREE to avoid stdlib.h
    [OPTIONAL] #define TSF_MEMCPY, TSF_MEMSET to avoid string.h
-   [OPTIONAL] #define TSF_POW, TSF_POWF, TSF_EXPF, TSF_LOG, TSF_TAN, TSF_LOG10 to avoid math.h
+   [OPTIONAL] #define TSF_EXP, TSF_EXPF, TSF_LOGF, TSF_SQRT, TSF_TAN to avoid math.h
 
    SUPPORT
      - 100% of General MIDI (GM1): channel messages, controllers, RPN 0/1/2, drum channel
@@ -194,8 +194,9 @@ TSFDEF void tsf_reset_effects(tsf* f);
 // so don't keep this number too low or otherwise sounds may not play.
 // When the limit is reached a new note takes the released voice furthest into its release, else the oldest note held only by a
 // pedal, else the oldest note.
-//   max_voices: maximum number to pre-allocate and set the limit to
-//   (tsf_set_max_voices returns 0 if allocation failed, otherwise 1)
+//   max_voices: maximum number to pre-allocate and set the limit to (a number below the current one keeps the old number),
+//               or 0 for dynamic polyphony (default, the pool grows as needed)
+//   (tsf_set_max_voices returns 0 if max_voices is negative or allocation failed, otherwise 1)
 TSFDEF int tsf_set_max_voices(tsf* f, int max_voices);
 
 // Number of voice slots (valid voice_index values for tsf_get_voice_effects)
@@ -204,19 +205,19 @@ TSFDEF int tsf_get_voice_slot_count(const tsf* f);
 // Read the chorus and reverb send levels (0..1) of a playing voice, returns 0 if the slot has no playing voice
 TSFDEF int tsf_get_voice_effects(const tsf* f, int voice_index, float* chorus_send, float* reverb_send);
 
-// Start playing a note
+// Start playing a note (on no channel: the channel settings and controllers don't apply, the modulators see their defaults)
 //   preset_index: preset index >= 0 and < tsf_get_presetcount()
 //   key: note value between 0 and 127 (60 being middle C)
 //   vel: velocity as a float between 0.0 (equal to note off) and 1.0 (full)
 //   bank: instrument bank number (alternative to preset_index)
 //   preset_number: preset number (alternative to preset_index)
-//   (tsf_note_on returns 0 if the allocation of a new voice failed, otherwise 1)
-//   (tsf_bank_note_on returns 0 if preset does not exist or allocation failed, otherwise 1)
+//   (tsf_note_on returns 0 if the preset index or key is invalid or the allocation of a new voice failed, otherwise 1)
+//   (tsf_bank_note_on returns 0 if preset does not exist, the key is invalid or allocation failed, otherwise 1)
 TSFDEF int tsf_note_on(tsf* f, int preset_index, int key, float vel);
 TSFDEF int tsf_bank_note_on(tsf* f, int bank, int preset_number, int key, float vel);
 
-// Stop playing a note
-//   (bank_note_off returns 0 if preset does not exist, otherwise 1)
+// Stop playing a note started with tsf_note_on/tsf_bank_note_on (no channel)
+//   (bank_note_off returns 0 if preset does not exist or the key is invalid, otherwise 1)
 TSFDEF void tsf_note_off(tsf* f, int preset_index, int key);
 TSFDEF int  tsf_bank_note_off(tsf* f, int bank, int preset_number, int key);
 
@@ -246,12 +247,12 @@ TSFDEF void tsf_render_float(tsf* f, float* buffer, int samples, int flag_mixing
 //   pitch_wheel: pitch wheel position 0 to 16383 (default 8192 unpitched)
 //   pitch_range: range of the pitch wheel in semitones (default 2.0, total +/- 2 semitones), the pitch wheel sensitivity source
 //   tuning: tuning of all playing voices in semitones (default 0.0, standard (A440) tuning)
-//   flag_sustain: 0 to end notes that were held sustained and disable holding sustain otherwise enable it
-//   sostenuto: pedal flag, sounding notes are held until it is released (even if their keys are released)
+//   flag_sustain: 0 to end notes that were held sustained and disable holding sustain otherwise enable it (also sets CC64 to 127/0)
+//   sostenuto: pedal flag, sounding notes are held until it is released (even if their keys are released) (also sets CC66 to 127/0)
 //   pressure: channel pressure (aftertouch) from 0 to 127
 //   (poly) pressure: polyphonic pressure from 0 to 127 for the playing notes of the given key
 //   (tsf_set_preset_number and set_bank_preset return 0 if preset does not exist, otherwise 1)
-//   (tsf_channel_set_... return 0 if a new channel needed allocation and that failed, otherwise 1)
+//   (tsf_channel_set_... return 0 if a new channel needed allocation and that failed, or if the value is invalid, otherwise 1)
 TSFDEF int tsf_channel_set_presetindex(tsf* f, int channel, int preset_index);
 TSFDEF int tsf_channel_set_presetnumber(tsf* f, int channel, int preset_number, int flag_mididrums CPP_DEFAULT0);
 TSFDEF int tsf_channel_set_bank(tsf* f, int channel, int bank);
@@ -271,7 +272,7 @@ TSFDEF int tsf_channel_set_sostenuto(tsf* f, int channel, int flag_sostenuto);
 //   channel: channel number
 //   key: note value between 0 and 127 (60 being middle C)
 //   vel: velocity as a float between 0.0 (equal to note off) and 1.0 (full)
-//   (tsf_channel_note_on returns 0 on allocation failure of new voice, otherwise 1)
+//   (tsf_channel_note_on returns 0 for an invalid channel or key, or on allocation failure of new voice, otherwise 1)
 TSFDEF int tsf_channel_note_on(tsf* f, int channel, int key, float vel);
 TSFDEF void tsf_channel_note_off(tsf* f, int channel, int key);
 TSFDEF void tsf_channel_note_off_all(tsf* f, int channel); //end with sustain and release (pedals do not keep the notes, CC123 does wait for them)
@@ -281,7 +282,7 @@ TSFDEF void tsf_channel_sounds_off_all(tsf* f, int channel); //end quickly (10 m
 // (the SoundFont's modulators handle volume, expression, pan, modulation wheel, ...). Bank select, RPN/data entry,
 // data increment/decrement, sustain, hold 2, sostenuto, soft pedal, legato footswitch, portamento and the channel mode controllers
 // 120/121/123-127 are additionally handled directly.
-//    (tsf_channel_midi_control returns 0 on allocation failure of new channel, otherwise 1)
+//    (tsf_channel_midi_control returns 0 for an invalid channel or controller number, or on allocation failure of new channel, otherwise 1)
 TSFDEF int tsf_channel_midi_control(tsf* f, int channel, int controller, int control_value);
 
 // Get current values set on the channels
@@ -328,8 +329,13 @@ TSFDEF float tsf_channel_get_tuning(tsf* f, int channel);
 #define EMU8K_COMPAT 1
 #endif
 
-// Grace release time for quick voice off (avoid clicking noise)
+// Quick voice off fade and the minimum volume envelope release, in seconds (avoid clicking noise)
 #define TSF_FASTRELEASETIME 0.01f
+
+// Minimum note length (seconds, 0 = off): an earlier note off waits until then, so zero-length notes (drum hits) are heard
+#ifndef TSF_MIN_NOTE_LENGTH
+#define TSF_MIN_NOTE_LENGTH 0.01f
+#endif
 
 #include <stddef.h>
 
@@ -342,22 +348,35 @@ TSFDEF float tsf_channel_get_tuning(tsf* f, int channel);
 
 #if !defined(TSF_MEMCPY) || !defined(TSF_MEMSET)
 #  include <string.h>
+#  ifndef TSF_MEMCPY
 #  define TSF_MEMCPY  memcpy
+#  endif
+#  ifndef TSF_MEMSET
 #  define TSF_MEMSET  memset
+#  endif
 #endif
 
-#if !defined(TSF_POW) || !defined(TSF_POWF) || !defined(TSF_EXPF) || !defined(TSF_LOG) || !defined(TSF_TAN) || !defined(TSF_LOG10)
+#if !defined(TSF_EXP) || !defined(TSF_EXPF) || !defined(TSF_LOGF) || !defined(TSF_SQRT) || !defined(TSF_TAN)
 #  include <math.h>
-#  if !defined(__cplusplus) && !defined(NAN) && !defined(powf) && !defined(expf)
-#    define powf (float)pow // deal with old math.h
-#    define expf (float)exp // files that come without
-#  endif // powf and expf
-#  define TSF_POW     pow
-#  define TSF_POWF    powf
+#  if !defined(__cplusplus) && !defined(NAN) && !defined(expf) && !defined(logf)
+#    define expf (float)exp // deal with old math.h
+#    define logf (float)log // files that come without
+#  endif // expf and logf
+#  ifndef TSF_EXP
+#  define TSF_EXP     exp
+#  endif
+#  ifndef TSF_EXPF
 #  define TSF_EXPF    expf
-#  define TSF_LOG     log
+#  endif
+#  ifndef TSF_LOGF
+#  define TSF_LOGF    logf
+#  endif
+#  ifndef TSF_SQRT
+#  define TSF_SQRT    sqrt
+#  endif
+#  ifndef TSF_TAN
 #  define TSF_TAN     tan
-#  define TSF_LOG10   log10
+#  endif
 #endif
 
 #ifndef TSF_NO_STDIO
@@ -368,6 +387,7 @@ TSFDEF float tsf_channel_get_tuning(tsf* f, int channel);
 #define TSF_FALSE 0
 #define TSF_BOOL unsigned char
 #define TSF_PI 3.14159265358979323846264338327950288
+#define TSF_LN2_1200 0.000577622650466621 // ln(2) / 1200: 2^(cents / 1200) = exp(cents * TSF_LN2_1200)
 #define TSF_NULL NULL
 
 #if EMU8K_COMPAT
@@ -377,7 +397,7 @@ TSFDEF float tsf_channel_get_tuning(tsf* f, int channel);
 #endif
 
 #if TSF_RENDER_EFFECTSAMPLEBLOCK < 1 || TSF_RENDER_EFFECTSAMPLEBLOCK > 256 || (256 % TSF_RENDER_EFFECTSAMPLEBLOCK) != 0
-#error TSF_RENDER_EFFECTSAMPLEBLOCK must be a power of two up and <= 256
+#error TSF_RENDER_EFFECTSAMPLEBLOCK must be a power of two and <= 256
 #endif
 #if TSF_RENDER_SHORTBUFFERBLOCK < 1 || (TSF_RENDER_SHORTBUFFERBLOCK % (2 * TSF_RENDER_EFFECTSAMPLEBLOCK)) != 0
 #error TSF_RENDER_SHORTBUFFERBLOCK must be a multiple of 2 * TSF_RENDER_EFFECTSAMPLEBLOCK
@@ -445,7 +465,11 @@ struct tsf
 
 #ifndef TSF_NO_STDIO
 static int tsf_stream_stdio_read(FILE* f, void* ptr, unsigned int size) { return (int)fread(ptr, 1, size, f); }
-static int tsf_stream_stdio_skip(FILE* f, unsigned int count) { return !fseek(f, count, SEEK_CUR); }
+static int tsf_stream_stdio_skip(FILE* f, unsigned int count) // in steps that fit a 32-bit long (a larger count would seek backwards)
+{
+	for (; count > 0x7FFFFFFF; count -= 0x7FFFFFFF) if (fseek(f, 0x7FFFFFFF, SEEK_CUR)) return 0;
+	return !fseek(f, (long)count, SEEK_CUR);
+}
 TSFDEF tsf* tsf_load_filename(const char* filename)
 {
 	tsf* res;
@@ -469,13 +493,13 @@ TSFDEF tsf* tsf_load_filename(const char* filename)
 
 struct tsf_stream_memory { const char* buffer; unsigned int total, pos; };
 static int tsf_stream_memory_read(struct tsf_stream_memory* m, void* ptr, unsigned int size) { if (size > m->total - m->pos) size = m->total - m->pos; TSF_MEMCPY(ptr, m->buffer+m->pos, size); m->pos += size; return size; }
-static int tsf_stream_memory_skip(struct tsf_stream_memory* m, unsigned int count) { if (m->pos + count > m->total) return 0; m->pos += count; return 1; }
+static int tsf_stream_memory_skip(struct tsf_stream_memory* m, unsigned int count) { if (count > m->total - m->pos) return 0; m->pos += count; return 1; }
 TSFDEF tsf* tsf_load_memory(const void* buffer, int size)
 {
 	struct tsf_stream stream = { TSF_NULL, (int(*)(void*,void*,unsigned int))&tsf_stream_memory_read, (int(*)(void*,unsigned int))&tsf_stream_memory_skip };
 	struct tsf_stream_memory f = { TSF_NULL, 0, 0 };
 	f.buffer = (const char*)buffer;
-	f.total = size;
+	f.total = (size > 0 ? (unsigned int)size : 0);
 	stream.data = &f;
 	return tsf_load(&stream);
 }
@@ -533,7 +557,7 @@ static void tsf_hydra_read_shdr(struct tsf_hydra_shdr* i, struct tsf_stream* str
 struct tsf_riffchunk { tsf_fourcc id; tsf_u32 size; };
 struct tsf_envelope { float delay, attack, hold, decay, sustain, release, keynumToHold, keynumToDecay; };
 struct tsf_voice_envelope { unsigned char segment, segmentIsExponential : 1, isAmpEnv : 1; short midiVelocity; float level, slope, slopeBlock; int samplesUntilNextSegment; struct tsf_envelope parameters; };
-struct tsf_voice_lowpass { double QInv, gain, a0, a1, b1, b2, z1, z2; TSF_BOOL active, resonant; };
+struct tsf_voice_lowpass { double QInv, gain, k1, p, q, ic1, ic2; TSF_BOOL active, resonant; };
 struct tsf_voice_lfo { int samplesUntil; float level, delta; };
 
 struct tsf_region
@@ -545,7 +569,7 @@ struct tsf_region
 	unsigned int sample_start, sample_end; // the sample's own data (the sample header's start and end), all positions stay inside it
 	int addrOfs[8]; // address offset generators: start, end, loop start, loop end (fine), then the same in 32768 steps (coarse)
 	int transpose, tune, pitch_keycenter, pitch_keytrack;
-	int fixedKey, fixedVel; // keynum and velocity generators: the key/velocity the note is played as, -1 if not set
+	int fixedKey, fixedVel; // keynum and velocity generators: the key/velocity the note is played as, -1 if not set (or illegal)
 	float attenuation, pan;
 	struct tsf_envelope ampenv, modenv;
 	int initialFilterQ, initialFilterFc;
@@ -582,7 +606,10 @@ struct tsf_voice
 	unsigned char sostenuto; // held by the sostenuto pedal
 	float portaCents, portaDelta; // remaining portamento glide (cents) and its change per sample
 	float chorusSend, reverbSend; // 0..1 effect send levels
-	unsigned char modulatesLFO, modulatesEnv; // set if a modulator can change the depth of the mod LFO / mod envelope
+	unsigned char rampValid; // the gains below hold the end of the last rendered block (volume or pan changes ramp from there)
+	unsigned char releasePending; // a note off came before the minimum note length
+	int minLengthLeft; // samples left of the minimum note length
+	float rampMono, rampLeft, rampRight;
 	struct tsf_region mr; // the region with the modulator outputs applied
 };
 
@@ -598,20 +625,21 @@ struct tsf_channel
 	signed char tuneCoarse; float tuneFine; // RPN 2 and RPN 1 (semitones), their sum is the channel tuning
 	unsigned char nrpnMSB; unsigned short nrpnSel, nrpnAcc; // SF2.01 NRPN (9.6): selected generator (0xFFFF none) and the 100/1000/10000 steps
 	short nrpn[TSF_NUMGENS]; // SF2.01 NRPN data entry per generator (offset from 8192), added like a modulator output
+	unsigned int aweSet; short awe[27]; // AWE32 NRPN (MSB 127): the parameters set (bits) and their values in generator units
 };
 
 struct tsf_channels
 {
-	int channelNum, activeChannel;
+	int channelNum;
 	float glideCents, glideDelta; // portamento handed to the voices of the note being started
 	struct tsf_channel channels[1];
 };
 
-static double tsf_timecents2Secsd(double timecents) { return TSF_POW(2.0, timecents / 1200.0); }
-static float tsf_cents2Hertz(float cents) { return 8.176f * TSF_POWF(2.0f, cents / 1200.0f); }
-static float tsf_decibelsToGain(float db) { return (db > -100.f ? TSF_POWF(10.0f, db * 0.05f) : 0); }
+static double tsf_timecents2Secsd(double timecents) { return TSF_EXP(timecents * TSF_LN2_1200); }
+static float tsf_cents2Hertz(float cents) { return 8.176f * TSF_EXPF(cents * (float)TSF_LN2_1200); }
+static float tsf_decibelsToGain(float db) { return (db > -100.f ? TSF_EXPF(db * 0.11512925f) : 0); }
 #define TSF_FINITE(x) ((x) - (x) == 0.0f) // false for infinity and NaN, which the API's float arguments ignore
-static float tsf_gainToDecibels(float gain) { return (gain <= .00001f ? -100.f : (float)(20.0 * TSF_LOG10(gain))); }
+static float tsf_gainToDecibels(float gain) { return (gain <= 1e-10f ? -200.f : 8.6858896f * TSF_LOGF(gain)); }
 
 static TSF_BOOL tsf_riffchunk_read(struct tsf_riffchunk* parent, struct tsf_riffchunk* chunk, struct tsf_stream* stream)
 {
@@ -625,7 +653,7 @@ static TSF_BOOL tsf_riffchunk_read(struct tsf_riffchunk* parent, struct tsf_riff
 	if (*chunk->id <= ' ' || *chunk->id >= 'z') return TSF_FALSE;
 	if (!stream->read(stream->data, &chunk->size, sizeof(tsf_u32))) return TSF_FALSE;
 	chunk->size = TSF_SWAP32LE(chunk->size);
-	if (parent && sizeof(tsf_fourcc) + sizeof(tsf_u32) + chunk->size > parent->size) return TSF_FALSE;
+	if (parent && (parent->size < sizeof(tsf_fourcc) + sizeof(tsf_u32) || chunk->size > parent->size - (sizeof(tsf_fourcc) + sizeof(tsf_u32)))) return TSF_FALSE; // (no wraparound with a 32-bit size_t)
 	if (parent) parent->size -= sizeof(tsf_fourcc) + sizeof(tsf_u32) + chunk->size;
 	IsRiff = TSF_FourCCEquals(chunk->id, "RIFF"), IsList = TSF_FourCCEquals(chunk->id, "LIST");
 	if (IsRiff && parent) return TSF_FALSE; //not allowed
@@ -699,11 +727,11 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 	#define _TSFREGIONADDROFFSET(I) (unsigned char)(offsetof(struct tsf_region,addrOfs) / sizeof(int) + (I)) // no subscript inside offsetof (not a constant for MSVC)
 	static const struct { unsigned char mode, offset; } genMetas[_GEN_MAX] =
 	{
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(0)                          }, // 0 StartAddrsOffset
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(1)                          }, // 1 EndAddrsOffset
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(2)                          }, // 2 StartloopAddrsOffset
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(3)                          }, // 3 EndloopAddrsOffset
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(4)                          }, // 4 StartAddrsCoarseOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(0)                               }, // 0 StartAddrsOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(1)                               }, // 1 EndAddrsOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(2)                               }, // 2 StartloopAddrsOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(3)                               }, // 3 EndloopAddrsOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(4)                               }, // 4 StartAddrsCoarseOffset
 		{ GEN_INT   | GEN_INT_LIMIT12K     , _TSFREGIONOFFSET(         int, modLfoToPitch        ) }, // 5 ModLfoToPitch
 		{ GEN_INT   | GEN_INT_LIMIT12K     , _TSFREGIONOFFSET(         int, vibLfoToPitch        ) }, // 6 VibLfoToPitch
 		{ GEN_INT   | GEN_INT_LIMIT12K     , _TSFREGIONOFFSET(         int, modEnvToPitch        ) }, // 7 ModEnvToPitch
@@ -711,11 +739,11 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 		{ GEN_INT   | GEN_INT_LIMITQ       , _TSFREGIONOFFSET(         int, initialFilterQ       ) }, // 9 InitialFilterQ
 		{ GEN_INT   | GEN_INT_LIMIT12K     , _TSFREGIONOFFSET(         int, modLfoToFilterFc     ) }, //10 ModLfoToFilterFc
 		{ GEN_INT   | GEN_INT_LIMIT12K     , _TSFREGIONOFFSET(         int, modEnvToFilterFc     ) }, //11 ModEnvToFilterFc
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(5)                          }, //12 EndAddrsCoarseOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(5)                               }, //12 EndAddrsCoarseOffset
 		{ GEN_INT   | GEN_INT_LIMIT960     , _TSFREGIONOFFSET(         int, modLfoToVolume       ) }, //13 ModLfoToVolume
 		{ 0                                , (0                                                  ) }, //   Unused
-		{ GEN_FLOAT | GEN_FLOAT_MAX1000    , _TSFREGIONOFFSET(    float, chorusSend           ) }, //15 ChorusEffectsSend
-		{ GEN_FLOAT | GEN_FLOAT_MAX1000    , _TSFREGIONOFFSET(    float, reverbSend           ) }, //16 ReverbEffectsSend
+		{ GEN_FLOAT | GEN_FLOAT_MAX1000    , _TSFREGIONOFFSET(       float, chorusSend           ) }, //15 ChorusEffectsSend
+		{ GEN_FLOAT | GEN_FLOAT_MAX1000    , _TSFREGIONOFFSET(       float, reverbSend           ) }, //16 ReverbEffectsSend
 		{ GEN_FLOAT | GEN_FLOAT_LIMITPAN   , _TSFREGIONOFFSET(       float, pan                  ) }, //17 Pan
 		{ 0                                , (0                                                  ) }, //   Unused
 		{ 0                                , (0                                                  ) }, //   Unused
@@ -744,12 +772,12 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 		{ 0                                , (0                                                  ) }, //   Reserved
 		{ GEN_KEYRANGE                     , (0                                                  ) }, //43 KeyRange
 		{ GEN_VELRANGE                     , (0                                                  ) }, //44 VelRange
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(6)                          }, //45 StartloopAddrsCoarseOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(6)                               }, //45 StartloopAddrsCoarseOffset
 		{ GEN_INT                          , _TSFREGIONOFFSET(         int, fixedKey             ) }, //46 Keynum
 		{ GEN_INT                          , _TSFREGIONOFFSET(         int, fixedVel             ) }, //47 Velocity
 		{ GEN_FLOAT | GEN_FLOAT_LIMITATTN  , _TSFREGIONOFFSET(       float, attenuation          ) }, //48 InitialAttenuation
 		{ 0                                , (0                                                  ) }, //   Reserved
-		{ GEN_INT                          , _TSFREGIONADDROFFSET(7)                          }, //50 EndloopAddrsCoarseOffset
+		{ GEN_INT                          , _TSFREGIONADDROFFSET(7)                               }, //50 EndloopAddrsCoarseOffset
 		{ GEN_INT   | GEN_INT_LIMIT120     , _TSFREGIONOFFSET(         int, transpose            ) }, //51 CoarseTune
 		{ GEN_INT                          , _TSFREGIONOFFSET(         int, tune                 ) }, //52 FineTune
 		{ 0                                , (0                                                  ) }, //   SampleID (special)
@@ -801,7 +829,8 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 		if      ((mode & _GEN_TYPE_MASK) == GEN_FLOAT) x = *fval + delta;
 		else if ((mode & _GEN_TYPE_MASK) == GEN_INT)   x = (float)*ival + delta;
 		else return;
-		if (mode & _GEN_LIMIT_MASK)
+		if (x <= -32768.0f && genOper < 64 && (((tsf_u64)0xE0EA << 20) >> genOper & 1)) x = -32768.0f; // delays, attacks, holds: -32768 is zero time (8.1.2)
+		else if (mode & _GEN_LIMIT_MASK)
 		{
 			float vmin = limits[mode >> 4][0], vmax = limits[mode >> 4][1];
 			if      (x < vmin) x = vmin;
@@ -813,14 +842,18 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 }
 
 // Convert (modulated, clamped) envelope parameters from timecents to seconds and the sustain level to a 0..1 value.
-// The key number scaling of hold and decay is applied in timecents first (8.1.2 #31/#32/#39/#40).
-static float tsf_timecents2Secs(float tc) { return (tc < -11950.0f ? 0.0f : TSF_POWF(2.0f, tc / 1200.0f)); }
+// The key number scaling of hold and decay is applied in timecents first (8.1.2 #31/#32/#39/#40), and the result is kept in the
+// generator's range (up to 1200 tc/key * 67 keys would otherwise give times of 2^70 seconds, which overflow the sample counts).
+// exact (8.1.3, 8.5): the minimum -12000 timecents is 1 ms, -32768 (delays, attacks, holds) is 0
+static float tsf_timecents2Secs(float tc) { return (tc <= -32768.0f ? 0.0f : TSF_EXPF(tc * (float)TSF_LN2_1200)); }
+static float tsf_timecents_clamp(float tc, float max) { return (tc < -12000.0f ? -12000.0f : (tc > max ? max : tc)); }
 static void tsf_envelope_tosecs(struct tsf_envelope* p, int key, TSF_BOOL isAmpEnv)
 {
 	p->delay   = tsf_timecents2Secs(p->delay);
 	p->attack  = tsf_timecents2Secs(p->attack);
-	p->hold    = tsf_timecents2Secs(p->hold  + p->keynumToHold  * (60 - key));
-	p->decay   = tsf_timecents2Secs(p->decay + p->keynumToDecay * (60 - key));
+	p->hold    = p->hold + p->keynumToHold * (60 - key);
+	p->hold    = (p->hold <= -32768.0f ? 0.0f : tsf_timecents2Secs(tsf_timecents_clamp(p->hold, 5000.0f)));
+	p->decay   = tsf_timecents2Secs(tsf_timecents_clamp(p->decay + p->keynumToDecay * (60 - key), 8000.0f));
 	p->release = tsf_timecents2Secs(p->release);
 	p->sustain = (isAmpEnv ? tsf_decibelsToGain(-p->sustain * 0.1f) : 1.0f - p->sustain * 0.001f); // cB attenuation / 0.1% decrease
 }
@@ -828,7 +861,7 @@ static void tsf_envelope_tosecs(struct tsf_envelope* p, int key, TSF_BOOL isAmpE
 // ---------------------------------------------------------------------------------------------------------
 // Modulators (SoundFont 2.01 section 8), load time part
 
-#define TSF_MAXMODS 48 // modulators per list, any additional ones in a SoundFont are ignored
+#define TSF_MAXMODS 64 // modulators per list, any additional ones in a SoundFont are ignored
 #define TSF_MODEND  0xFFFF
 struct tsf_modlist { int num; struct tsf_mod mods[TSF_MAXMODS]; };
 
@@ -851,7 +884,7 @@ static TSF_BOOL tsf_mod_srcvalid(unsigned s, TSF_BOOL isAmountSrc)
 {
 	unsigned idx = s & 127;
 	if ((s >> 10) > 3) return TSF_FALSE; // unknown curve type
-	if (s & 128) return (idx && idx != 6 && idx != 32 && idx != 38 && (idx < 98 || idx > 101) && idx < 120); // MIDI controller
+	if (s & 128) return (idx && idx != 6 && (idx < 32 || idx > 63) && (idx < 98 || idx > 101) && idx < 120); // MIDI controller (32-63 are LSBs, 8.2.1)
 	return (idx == 0 || idx == 2 || idx == 3 || idx == 10 || idx == 13 || idx == 14 || idx == 16 || (idx == 127 && !isAmountSrc));
 }
 
@@ -984,6 +1017,7 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 	for (pphdr = hydra->phdrs, pphdrMax = pphdr + hydra->phdrNum - 1; pphdr != pphdrMax; pphdr++)
 	{
 		int sortedIndex = 0, region_index = 0;
+		unsigned int regionCount = 0; // a damaged font can reference up to 65535 sample zones 65535 times, more than fits an int
 		struct tsf_hydra_phdr *otherphdr;
 		struct tsf_preset* preset;
 		struct tsf_hydra_pbag *ppbag, *ppbagEnd;
@@ -1024,12 +1058,14 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 					{
 						if (pigen->genOper == GenKeyRange) { ilokey = pigen->genAmount.range.lo; ihikey = pigen->genAmount.range.hi; continue; }
 						if (pigen->genOper == GenVelRange) { ilovel = pigen->genAmount.range.lo; ihivel = pigen->genAmount.range.hi; continue; }
-						if (pigen->genOper == GenSampleID && ihikey >= plokey && ilokey <= phikey && ihivel >= plovel && ilovel <= phivel) preset->regionNum++;
+						if (pigen->genOper == GenSampleID && ihikey >= plokey && ilokey <= phikey && ihivel >= plovel && ilovel <= phivel) regionCount++;
 					}
 				}
 			}
 		}
 
+		if (regionCount > 0x7FFFFFFF / sizeof(struct tsf_region)) goto out_of_memory; // over 2 GB (also keeps the allocation size from overflowing on 32-bit)
+		preset->regionNum = (int)regionCount;
 		preset->regions = (struct tsf_region*)TSF_MALLOC((preset->regionNum ? preset->regionNum : 1) * sizeof(struct tsf_region));
 		if (!preset->regions) goto out_of_memory;
 		tsf_region_clear(&globalRegion, TSF_TRUE);
@@ -1053,7 +1089,8 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 					struct tsf_region instRegion;
 					struct tsf_modlist instMods;
 					tsf_u16 whichInst = ppgen->genAmount.wordAmount;
-					if (whichInst >= (unsigned int)(hydra->instNum - 1)) continue; // the last INST is the terminal record
+					hadGenInstrument = 1; // not the global zone, also if the instrument is invalid
+					if (whichInst >= (unsigned int)(hydra->instNum - 1)) break; // the last INST is the terminal record
 
 					tsf_region_clear(&instRegion, TSF_FALSE);
 					TSF_MEMCPY(instMods.mods, tsf_defmods, sizeof(tsf_defmods));
@@ -1074,13 +1111,15 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 								struct tsf_modlist finalMods;
 								int modIdx;
 
-								if (pigen->genAmount.wordAmount >= (unsigned int)(hydra->shdrNum - 1)) continue; // no such sample (the last SHDR is the terminal record)
+								hadSampleID = 1; // not the global zone, also if the sample is invalid or skipped
+								if (pigen->genAmount.wordAmount >= (unsigned int)(hydra->shdrNum - 1)) break; // no such sample (the last SHDR is the terminal record)
 								pshdr = &hydra->shdrs[pigen->genAmount.wordAmount];
-								if (pshdr->start >= pshdr->end || pshdr->end > fontSampleCount || !pshdr->sampleRate) continue;
+								if (pshdr->start >= pshdr->end || pshdr->end > fontSampleCount || !pshdr->sampleRate) break;
+								if (pshdr->sampleType & 0x8000) break; // ROM sample (7.10): its data is in a sound ROM, not in the smpl chunk
 
 								//preset region key and vel ranges are a filter for the zone regions
-								if (zoneRegion.hikey < presetRegion.lokey || zoneRegion.lokey > presetRegion.hikey) continue;
-								if (zoneRegion.hivel < presetRegion.lovel || zoneRegion.lovel > presetRegion.hivel) continue;
+								if (zoneRegion.hikey < presetRegion.lokey || zoneRegion.lokey > presetRegion.hikey) break;
+								if (zoneRegion.hivel < presetRegion.lovel || zoneRegion.lovel > presetRegion.hivel) break;
 								if (presetRegion.lokey > zoneRegion.lokey) zoneRegion.lokey = presetRegion.lokey;
 								if (presetRegion.hikey < zoneRegion.hikey) zoneRegion.hikey = presetRegion.hikey;
 								if (presetRegion.lovel > zoneRegion.lovel) zoneRegion.lovel = presetRegion.lovel;
@@ -1107,19 +1146,21 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 									zoneRegion.loop_end   = TSF_ADDR(pshdr->endLoop, 3);
 									#undef TSF_ADDR
 								}
-								if (zoneRegion.offset >= zoneRegion.end) continue;
+								if (zoneRegion.offset >= zoneRegion.end) break;
 								zoneRegion.sample_start = pshdr->start; zoneRegion.sample_end = pshdr->end;
 								// the loop may begin before the start point (playback runs into the loop and then loops), but must end inside the played part
 								if (zoneRegion.loop_end > zoneRegion.end || zoneRegion.loop_end <= zoneRegion.loop_start + 1)
 									zoneRegion.loop_mode = TSF_LOOPMODE_NONE, zoneRegion.loop_start = zoneRegion.loop_end = 0;
 								else zoneRegion.loop_end--;
-								if (zoneRegion.pitch_keycenter < 0 || zoneRegion.pitch_keycenter > 127) zoneRegion.pitch_keycenter = pshdr->originalPitch;
+								if (zoneRegion.pitch_keycenter < 0 || zoneRegion.pitch_keycenter > 127) zoneRegion.pitch_keycenter = (pshdr->originalPitch <= 127 ? pshdr->originalPitch : 60); // 255 (unpitched) and the illegal 128-254 mean 60 (7.10)
+								if (zoneRegion.fixedKey > 127) zoneRegion.fixedKey = -1; // an illegal keynum or velocity generator is ignored (10.4)
+								if (zoneRegion.fixedVel < 1 || zoneRegion.fixedVel > 127) zoneRegion.fixedVel = -1;
 								zoneRegion.tune += pshdr->pitchCorrection;
 								zoneRegion.sample_rate = pshdr->sampleRate;
 
 								preset->regions[region_index] = zoneRegion;
 								region_index++;
-								hadSampleID = 1;
+								break; // the sampleID is the zone's last generator, any after it are ignored (7.9)
 							}
 							else tsf_region_operator(&zoneRegion, pigen->genOper, &pigen->genAmount, TSF_NULL, 0);
 						}
@@ -1128,7 +1169,7 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 						if (pibag == hydra->ibags + tsf_hydra_clamp_start(pinst->instBagNdx, hydra->ibagNum - 1) && !hadSampleID)
 							instRegion = zoneRegion, instMods = zoneMods;
 					}
-					hadGenInstrument = 1;
+					break; // the instrument is the zone's last generator, any after it are ignored (7.5)
 				}
 				else if (!tsf_gen_instrument_only(ppgen->genOper)) tsf_region_operator(&presetRegion, ppgen->genOper, &ppgen->genAmount, TSF_NULL, 0);
 			}
@@ -1149,9 +1190,20 @@ out_of_memory:
 }
 
 #ifdef STB_VORBIS_INCLUDE_STB_VORBIS_H
-static int tsf_decode_ogg(const tsf_u8 *pSmpl, const tsf_u8 *pSmplEnd, float** pRes, tsf_u32* pResNum, tsf_u32* pResMax, tsf_u32 resInitial)
+#define TSF_MAX_DECODED 0x3FFFFFFF // decoded samples (2 GB)
+// The output grows by half, trimmed at the end
+#define TSF_DECODE_GROW(res, oldres, resNum, resMax, resInitial, fail) \
+	if (resNum > resMax) \
+	{ \
+		resMax = (resMax ? resMax + resMax / 2 : resInitial); if (resMax < resNum) resMax = resNum; if (resMax > TSF_MAX_DECODED) resMax = TSF_MAX_DECODED; \
+		oldres = res; \
+		if (!(res = (short*)TSF_REALLOC(res, resMax * sizeof(short)))) { TSF_FREE(oldres); fail } \
+	}
+
+// Decode an Ogg Vorbis stream to 16-bit samples appended to *pRes
+static int tsf_decode_ogg(const tsf_u8 *pSmpl, const tsf_u8 *pSmplEnd, short** pRes, tsf_u32* pResNum, tsf_u32* pResMax, tsf_u32 resInitial)
 {
-	float *res = *pRes, *oldres; tsf_u32 resNum = *pResNum; tsf_u32 resMax = *pResMax; stb_vorbis *v;
+	short *res = *pRes, *oldres, *out; tsf_u32 resNum = *pResNum; tsf_u32 resMax = *pResMax; stb_vorbis *v;
 
 	// Use whatever stb_vorbis API that is available (either pull or push)
 	#if !defined(STB_VORBIS_NO_PULLDATA_API) && !defined(STB_VORBIS_NO_FROMMEMORY)
@@ -1163,7 +1215,7 @@ static int tsf_decode_ogg(const tsf_u8 *pSmpl, const tsf_u8 *pSmplEnd, float** p
 
 	for (;;)
 	{
-		float** outputs; int n_samples;
+		float** outputs; const float* in; int n_samples;
 
 		// Decode one frame of vorbis samples with whatever stb_vorbis API that is available
 		#if !defined(STB_VORBIS_NO_PULLDATA_API) && !defined(STB_VORBIS_NO_FROMMEMORY)
@@ -1175,46 +1227,44 @@ static int tsf_decode_ogg(const tsf_u8 *pSmpl, const tsf_u8 *pSmplEnd, float** p
 		if (!n_samples) continue;
 		#endif
 
-		// Expand our output buffer if necessary then copy over the decoded frame samples
+		// Expand the output buffer if necessary, then convert the frame to 16-bit, rounded and clipped (NaN as 0)
+		if ((tsf_u32)n_samples > TSF_MAX_DECODED - resNum) { TSF_FREE(res); *pRes = TSF_NULL; stb_vorbis_close(v); return 0; }
 		resNum += n_samples;
-		if (resNum > resMax)
-		{
-			do { resMax += (resMax ? (resMax < 1048576 ? resMax : 1048576) : resInitial); } while (resNum > resMax);
-			oldres = res;
-			res = (float*)TSF_REALLOC(res, resMax * sizeof(float));
-			if (!res) { TSF_FREE(oldres); *pRes = TSF_NULL; stb_vorbis_close(v); return 0; }
-		}
-		TSF_MEMCPY(res + resNum - n_samples, outputs[0], n_samples * sizeof(float));
+		TSF_DECODE_GROW(res, oldres, resNum, resMax, resInitial, *pRes = TSF_NULL; stb_vorbis_close(v); return 0;)
+		for (in = outputs[0], out = res + resNum - n_samples; out != res + resNum; in++)
+			{ float x = *in * 32768.0f; *(out++) = (short)(x > -32767.5f ? (x < 32766.5f ? (int)(x + (x < 0.0f ? -0.5f : 0.5f)) : 32767) : (x <= -32767.5f ? -32768 : 0)); }
 	}
 	stb_vorbis_close(v);
 	*pRes = res; *pResNum = resNum; *pResMax = resMax;
 	return 1;
 }
 
-static int tsf_decode_sf3_samples(const void* rawBuffer, float** pFloatBuffer, unsigned int* pSmplCount, struct tsf_hydra *hydra)
+static int tsf_decode_sf3_samples(const void* rawBuffer, short** pSampleBuffer, unsigned int* pSmplCount, struct tsf_hydra *hydra)
 {
 	const tsf_u8* smplBuffer = (const tsf_u8*)rawBuffer;
 	tsf_u32 smplLength = *pSmplCount, smplShorts = smplLength / 2, resNum = 0, resMax = 0, resInitial = (smplLength > 0x100000 ? (smplLength & ~0xFFFFF) : 65536);
-	float *res = TSF_NULL, *oldres;
+	short *res = TSF_NULL, *oldres;
 	int i, shdrLast = hydra->shdrNum - 1, is_sf3 = 0;
 	for (i = 0; i <= shdrLast; i++)
 	{
 		struct tsf_hydra_shdr *shdr = &hydra->shdrs[i];
-		if (shdr->sampleType & 0x30) // compression flags (sometimes Vorbis flag): start and end are byte offsets, the loop is relative
+		if (shdr->sampleType & 0x10) // compressed sample: start and end are byte offsets, the loop is relative
 		{
-			int ok = 0;
-			if (shdr->end <= smplLength && shdr->start + 4 <= shdr->end && TSF_FourCCEquals(smplBuffer + shdr->start, "OggS"))
+			if (shdr->end <= smplLength && shdr->start < shdr->end && shdr->end - shdr->start >= 4)
 			{
 				tsf_u32 start = resNum;
-				ok = tsf_decode_ogg(smplBuffer + shdr->start, smplBuffer + shdr->end, &res, &resNum, &resMax, resInitial);
-				if (!ok) { TSF_FREE(res); return 0; } // out of memory
-				if (ok > 0) { shdr->start = start; shdr->startLoop += start; shdr->endLoop += start; shdr->end = resNum; is_sf3 = 1; }
+				if (!TSF_FourCCEquals(smplBuffer + shdr->start, "OggS") || tsf_decode_ogg(smplBuffer + shdr->start, smplBuffer + shdr->end, &res, &resNum, &resMax, resInitial) <= 0)
+				{
+					TSF_FREE(res);
+					return 0;
+				}
+				shdr->start = start; shdr->startLoop += start; shdr->endLoop += start; shdr->end = resNum; is_sf3 = 1;
 			}
-			if (ok <= 0) shdr->start = shdr->end = shdr->startLoop = shdr->endLoop = 0; // not a valid stream: the sample is left out
+			else shdr->start = shdr->end = shdr->startLoop = shdr->endLoop = 0; // invalid sample header: the sample is left out
 		}
 		else // raw PCM sample (16-bit units; positions are kept as they are until a compressed sample moved them)
 		{
-			tsf_u32 from, to, oldResNum = resNum; float *out; const short *in;
+			tsf_u32 from, to, oldResNum = resNum; short *out; const short *in;
 			if (is_sf3 && i == shdrLast) continue; // the terminal record, the rest of the buffer is compressed data
 			from = (is_sf3 ? shdr->start : resNum);
 			to = (i == shdrLast ? smplShorts : (shdr->end >= shdr->endLoop ? shdr->end : shdr->endLoop));
@@ -1229,54 +1279,51 @@ static int tsf_decode_sf3_samples(const void* rawBuffer, float** pFloatBuffer, u
 				shdr->endLoop += fix_offset;
 			}
 
-			// expand our output buffer if necessary then convert the PCM data from short to float
+			// expand the output buffer if necessary, then copy the PCM data
+			if (to - from > TSF_MAX_DECODED - resNum) { TSF_FREE(res); return 0; }
 			resNum += to - from;
-			if (resNum > resMax)
-			{
-				do { resMax += (resMax ? (resMax < 1048576 ? resMax : 1048576) : resInitial); } while (resNum > resMax);
-				oldres = res;
-				res = (float*)TSF_REALLOC(res, resMax * sizeof(float));
-				if (!res) { TSF_FREE(oldres); return 0; }
-			}
+			TSF_DECODE_GROW(res, oldres, resNum, resMax, resInitial, return 0;)
 			for (in = (const short*)smplBuffer + from, out = res + oldResNum; out != res + resNum;)
-				*(out++) = (float)((short)TSF_SWAP16LE(*(in++)) / 32768.0f);
+				*(out++) = (short)TSF_SWAP16LE(*(in++));
 		}
 	}
 
 	// Trim the sample buffer down then return success (unless out of memory)
-	if (!(*pFloatBuffer = (float*)TSF_REALLOC(res, (resNum + 1) * sizeof(float)))) { TSF_FREE(res); return 0; }
-	(*pFloatBuffer)[resNum] = 0.0f; // one extra zero sample for the interpolation at the very end
+	if (!(*pSampleBuffer = (short*)TSF_REALLOC(res, (resNum + 1) * sizeof(short)))) { TSF_FREE(res); return 0; }
+	(*pSampleBuffer)[resNum] = 0; // one extra zero sample for the interpolation at the very end
 	*pSmplCount = resNum;
 	return 1;
 }
 #endif
 
-static int tsf_load_samples(void** pRawBuffer, float** pSampleBuffer /* floats when decoded from Vorbis, else 16-bit */, unsigned int* pSmplCount, struct tsf_riffchunk *chunkSmpl, struct tsf_stream* stream)
+static int tsf_load_samples(void** pRawBuffer, short** pSampleBuffer, unsigned int* pSmplCount, struct tsf_riffchunk *chunkSmpl, struct tsf_stream* stream)
 {
 	#ifdef STB_VORBIS_INCLUDE_STB_VORBIS_H
 	// With OGG Vorbis support we cannot pre-allocate the memory for tsf_decode_sf3_samples
-	tsf_u32 resNum, resMax; float* oldres;
+	tsf_u32 resNum, resMax; short* oldres;
 	*pSmplCount = chunkSmpl->size;
-	*pRawBuffer = (void*)TSF_MALLOC(*pSmplCount);
-	if (!*pRawBuffer || !stream->read(stream->data, *pRawBuffer, chunkSmpl->size)) return 0;
+	if (*pSmplCount > 0x7FFFFFFF) return 0; // no wrap on 32-bit, and the int read result
+	*pRawBuffer = (void*)TSF_MALLOC(*pSmplCount + sizeof(short)); // room for the extra zero sample if these are plain 16-bit samples
+	if (!*pRawBuffer || !chunkSmpl->size || stream->read(stream->data, *pRawBuffer, chunkSmpl->size) != (int)chunkSmpl->size) return 0; // also a truncated file
 	if (chunkSmpl->id[3] != 'o') return 1;
 
 	// Decode custom .sfo 'smpo' format where all samples are in a single ogg stream
 	resNum = resMax = 0;
 	if (tsf_decode_ogg((tsf_u8*)*pRawBuffer, (tsf_u8*)*pRawBuffer + chunkSmpl->size, pSampleBuffer, &resNum, &resMax, 65536) != 1) return 0;
 	oldres = *pSampleBuffer;
-	if (!(*pSampleBuffer = (float*)TSF_REALLOC(*pSampleBuffer, (resNum + 1) * sizeof(float)))) { TSF_FREE(oldres); return 0; }
-	(*pSampleBuffer)[resNum] = 0.0f; // one extra zero sample for the interpolation at the very end
+	if (!(*pSampleBuffer = (short*)TSF_REALLOC(*pSampleBuffer, (resNum + 1) * sizeof(short)))) { TSF_FREE(oldres); return 0; }
+	(*pSampleBuffer)[resNum] = 0; // one extra zero sample for the interpolation at the very end
 	*pSmplCount = resNum;
 	return 1;
 	#else
 	// The samples stay 16-bit like in the file (byte-swapped in place on big-endian machines)
-	float *res; short *out; const short *in;
+	short *out, *end;
 	(void)pRawBuffer;
 	*pSmplCount = chunkSmpl->size / (unsigned int)sizeof(short);
-	*pSampleBuffer = (float*)TSF_MALLOC((*pSmplCount + 1) * sizeof(short)); // kept as 16-bit, with one extra zero sample for the interpolation at the very end
-	if (!*pSampleBuffer || !stream->read(stream->data, *pSampleBuffer, chunkSmpl->size)) return 0;
-	for (res = *pSampleBuffer, out = (short*)res, in = (short*)res + *pSmplCount; out != in; out++) *out = (short)TSF_SWAP16LE(*out);
+	if (chunkSmpl->size > 0x7FFFFFFF) return 0; // no wrap on 32-bit, and the int read result
+	*pSampleBuffer = (short*)TSF_MALLOC((*pSmplCount + 1) * sizeof(short)); // with one extra zero sample for the interpolation at the very end
+	if (!*pSampleBuffer || !chunkSmpl->size || stream->read(stream->data, *pSampleBuffer, chunkSmpl->size) != (int)chunkSmpl->size) return 0; // also a truncated file
+	for (out = *pSampleBuffer, end = out + *pSmplCount; out != end; out++) *out = (short)TSF_SWAP16LE(*out);
 	*out = 0;
 	return 1;
 	#endif
@@ -1284,14 +1331,15 @@ static int tsf_load_samples(void** pRawBuffer, float** pSampleBuffer /* floats w
 
 static int tsf_voice_envelope_release_samples(struct tsf_voice_envelope* e, float outSampleRate)
 {
-	return (int)((e->parameters.release <= 0 ? TSF_FASTRELEASETIME : e->parameters.release) * outSampleRate);
+	float r = e->parameters.release;
+	return (int)((r < TSF_FASTRELEASETIME && (e->isAmpEnv || r <= 0.0f) ? TSF_FASTRELEASETIME : r) * outSampleRate);
 }
 
 #define TSF_ENV_LN_100DB 11.512925f // ln(10^5), the amplitude ratio of 100 dB
 #define TSF_ENV_SILENCE 0.00001f // 100 dB below full scale, the volume envelope is considered silent below this
 
 // The modulation envelope's attack is convex (8.1.2 #26), the curve of the convex modulator source (8.2.4)
-static float tsf_env_convex(float x) { float y = (x >= 1.0f ? 1.0f : (x <= 0.004f ? 0.0f : 1.0f + 0.41666667f * (float)TSF_LOG10(x))); return (y > 0.0f ? y : 0.0f); }
+static float tsf_env_convex(float x) { float y = (x >= 1.0f ? 1.0f : (x <= 0.004f ? 0.0f : 1.0f + 0.18095603f * TSF_LOGF(x))); return (y > 0.0f ? y : 0.0f); }
 
 static void tsf_voice_envelope_nextsegment(struct tsf_voice_envelope* e, short active_segment, float outSampleRate)
 {
@@ -1340,12 +1388,12 @@ static void tsf_voice_envelope_nextsegment(struct tsf_voice_envelope* e, short a
 				{
 					// Linear in dB, the decay time is the time for a 100 dB drop (8.1.2 #36), so it ends early at the sustain level
 					float dbSlope = -TSF_ENV_LN_100DB / e->samplesUntilNextSegment;
-					e->slope = TSF_EXPF(dbSlope);
-					e->slopeBlock = TSF_POWF(e->slope, (float)TSF_RENDER_EFFECTSAMPLEBLOCK); // the factor of a whole block, computed once
+					e->slope = dbSlope; // exponential segments keep the log of the factor per sample
+					e->slopeBlock = TSF_EXPF(dbSlope * TSF_RENDER_EFFECTSAMPLEBLOCK); // the factor of a whole block, computed once
 					e->segmentIsExponential = TSF_TRUE;
 					if (e->parameters.sustain > 0.0f)
 					{
-						e->samplesUntilNextSegment = (int)(TSF_LOG(e->parameters.sustain) / dbSlope);
+						e->samplesUntilNextSegment = (int)(TSF_LOGF(e->parameters.sustain) / dbSlope);
 					}
 				}
 				else
@@ -1375,10 +1423,10 @@ static void tsf_voice_envelope_nextsegment(struct tsf_voice_envelope* e, short a
 			{
 				// Linear in dB, the release time is the time for a 100 dB drop (8.1.2 #38); done once 100 dB below full scale
 				float dbSlope = -TSF_ENV_LN_100DB / e->samplesUntilNextSegment;
-				e->slope = TSF_EXPF(dbSlope);
-				e->slopeBlock = TSF_POWF(e->slope, (float)TSF_RENDER_EFFECTSAMPLEBLOCK);
+				e->slope = dbSlope;
+				e->slopeBlock = TSF_EXPF(dbSlope * TSF_RENDER_EFFECTSAMPLEBLOCK);
 				e->segmentIsExponential = TSF_TRUE;
-				e->samplesUntilNextSegment = (e->level > TSF_ENV_SILENCE ? (int)(TSF_LOG(TSF_ENV_SILENCE / e->level) / dbSlope) + 1 : 0);
+				e->samplesUntilNextSegment = (e->level > TSF_ENV_SILENCE ? (int)(TSF_LOGF(TSF_ENV_SILENCE / e->level) / dbSlope) + 1 : 0);
 			}
 			else
 			{
@@ -1405,6 +1453,29 @@ static void tsf_voice_envelope_update_parameters(struct tsf_voice_envelope* e, c
 	tsf_envelope_tosecs(&e->parameters, midiNoteNumber, e->isAmpEnv);
 }
 
+// Modulated decay time, sustain level and release time (real-time generators) apply to sounding notes: a decay goes on from its
+// level with the new slope to the new sustain level (if it is already at or below it, the sustain starts), a sustain moves to the
+// new level, a release goes on from its level at the new rate. A quick release (sound off, exclusive class) stays quick.
+static void tsf_voice_envelope_modulate(struct tsf_voice_envelope* e, const struct tsf_envelope* new_parameters, int midiNoteNumber, float outSampleRate)
+{
+	float samples, s, release = e->parameters.release;
+	tsf_voice_envelope_update_parameters(e, new_parameters, midiNoteNumber);
+	if (release <= 0.0f) e->parameters.release = 0.0f;
+	else if (e->segment == TSF_SEGMENT_RELEASE && e->parameters.release != release) tsf_voice_envelope_nextsegment(e, TSF_SEGMENT_SUSTAIN, outSampleRate);
+	s = e->parameters.sustain;
+	if (e->segment == TSF_SEGMENT_SUSTAIN) e->level = s;
+	if (e->segment != TSF_SEGMENT_DECAY) return;
+	samples = e->parameters.decay * outSampleRate;
+	if (samples < 1.0f || e->level <= s) e->samplesUntilNextSegment = 0;
+	else if (e->isAmpEnv)
+	{
+		e->slope = -TSF_ENV_LN_100DB / samples;
+		e->slopeBlock = TSF_EXPF(e->slope * TSF_RENDER_EFFECTSAMPLEBLOCK);
+		e->samplesUntilNextSegment = (int)(TSF_LOGF((s > TSF_ENV_SILENCE ? s : TSF_ENV_SILENCE) / e->level) / e->slope);
+	}
+	else e->slope = -1.0f / samples, e->samplesUntilNextSegment = (int)((s - e->level) / e->slope);
+}
+
 static void tsf_voice_envelope_setup(struct tsf_voice_envelope* e, const struct tsf_envelope* new_parameters, int midiNoteNumber, short midiVelocity, TSF_BOOL isAmpEnv, float outSampleRate)
 {
 	e->isAmpEnv = isAmpEnv;
@@ -1423,7 +1494,7 @@ static void tsf_voice_envelope_process(struct tsf_voice_envelope* e, int numSamp
 		if (step > numSamples) step = numSamples;
 		if (e->slope)
 		{
-			if (e->segmentIsExponential) e->level *= (step == TSF_RENDER_EFFECTSAMPLEBLOCK ? e->slopeBlock : TSF_POWF(e->slope, (float)step));
+			if (e->segmentIsExponential) e->level *= (step == TSF_RENDER_EFFECTSAMPLEBLOCK ? e->slopeBlock : TSF_EXPF(e->slope * (float)step));
 			else e->level += e->slope * (float)step;
 		}
 		e->samplesUntilNextSegment -= step; numSamples -= step;
@@ -1431,27 +1502,34 @@ static void tsf_voice_envelope_process(struct tsf_voice_envelope* e, int numSamp
 	}
 }
 
+// The low-pass is a trapezoidal integrated (TPT) state variable filter (A. Simper, "Linear Trapezoidal Integrated SVF")
 static void tsf_voice_lowpass_setup(struct tsf_voice_lowpass* e, float Fc)
 {
-	// Lowpass filter from http://www.earlevel.com/main/2012/11/26/biquad-c-source-code/ with the DC gain of the resonance applied
-	double K = TSF_TAN(TSF_PI * Fc), KK = K * K;
-	double norm = 1 / (1 + K * e->QInv + KK);
-	e->a0 = KK * norm * e->gain;
-	e->a1 = 2 * e->a0;
-	e->b1 = 2 * (KK - 1) * norm;
-	e->b2 = (1 - K * e->QInv + KK) * norm;
+	double g = TSF_TAN(TSF_PI * Fc), a1 = 1.0 / (1.0 + g * (g + e->QInv)), a2 = g * a1;
+	e->k1 = 2.0 * a1 - 1.0; e->p = 2.0 * a2; e->q = 2.0 * g * a2;
 }
 
 // Normalized filter frequency for a cutoff in cents (kept within 20 Hz (the generator's minimum) and 45% of the sample rate)
 static float tsf_lowpass_fc(float cents, float outSampleRate)
 {
-	float hz = 8.176f * TSF_POWF(2.0f, (cents < 1500.0f ? 1500.0f : cents) / 1200.0f);
+	float hz = 8.176f * TSF_EXPF((cents < 1500.0f ? 1500.0f : cents) * (float)TSF_LN2_1200);
 	return (hz < 0.45f * outSampleRate ? hz : 0.45f * outSampleRate) / outSampleRate;
+}
+
+// A filter turning on mid-note starts in the steady state for the current input x (zero state would step the output: a click)
+static void tsf_voice_lowpass_start(struct tsf_voice_lowpass* e, double x)
+{
+	e->ic1 = 0.0; // the band pass part
+	e->ic2 = x; // the low pass part (the DC gain is applied to the output)
 }
 
 static float tsf_voice_lowpass_process(struct tsf_voice_lowpass* e, double In)
 {
-	double Out = In * e->a0 + e->z1; e->z1 = In * e->a1 + e->z2 - e->b1 * Out; e->z2 = In * e->a0 - e->b2 * Out; return (float)Out;
+	// v3 = In - ic2, v1 = a1 ic1 + a2 v3, v2 = ic2 + a2 ic1 + a3 v3, ic1 = 2 v1 - ic1, ic2 = 2 v2 - ic2, low pass v2 = (ic2 + new ic2) / 2
+	double ic2 = e->ic2, v3 = In - ic2;
+	e->ic2 = ic2 + e->p * e->ic1 + e->q * v3;
+	e->ic1 = e->k1 * e->ic1 + e->p * v3;
+	return (float)((ic2 + e->ic2) * e->gain);
 }
 
 static void tsf_voice_lfo_setup(struct tsf_voice_lfo* e, float delay, int freqCents, float outSampleRate)
@@ -1469,8 +1547,11 @@ static void tsf_voice_lfo_process(struct tsf_voice_lfo* e, int blockSamples)
 		blockSamples -= e->samplesUntil; e->samplesUntil = 0; // only the part after the delay advances the LFO
 	}
 	e->level += e->delta * blockSamples;
-	if      (e->level >  1.0f) { e->delta = -e->delta; e->level =  2.0f - e->level; }
-	else if (e->level < -1.0f) { e->delta = -e->delta; e->level = -2.0f - e->level; }
+	while (e->level > 1.0f || e->level < -1.0f) // a fast LFO can pass both peaks within a large block
+	{
+		e->delta = -e->delta;
+		e->level = (e->level > 1.0f ? 2.0f : -2.0f) - e->level;
+	}
 }
 
 static void tsf_voice_kill(struct tsf_voice* v)
@@ -1478,7 +1559,9 @@ static void tsf_voice_kill(struct tsf_voice* v)
 	v->playingPreset = -1;
 }
 
-static void tsf_voice_end(tsf* f, struct tsf_voice* v)
+#define TSF_VOICE_KEYDOWN(v) ((v)->ampenv.segment < TSF_SEGMENT_RELEASE && !(v)->releasePending)
+
+static void tsf_voice_release(tsf* f, struct tsf_voice* v)
 {
 	// if maxVoiceNum is set, assume that voice rendering and note queuing are on separate threads
 	// so to minimize the chance that voice rendering would advance the segment at the same time
@@ -1494,6 +1577,13 @@ static void tsf_voice_end(tsf* f, struct tsf_voice* v)
 			v->loopEnd = v->loopStart;
 		}
 	}
+	v->releasePending = 0;
+}
+
+static void tsf_voice_end(tsf* f, struct tsf_voice* v)
+{
+	if (v->minLengthLeft > 0) v->releasePending = 1;
+	else tsf_voice_release(f, v);
 }
 
 static void tsf_voice_endquick(tsf* f, struct tsf_voice* v)
@@ -1504,6 +1594,7 @@ static void tsf_voice_endquick(tsf* f, struct tsf_voice* v)
 	int repeats = (f->maxVoiceNum ? 2 : 1);
 	while (repeats--)
 	{
+		v->releasePending = 0;
 		v->ampenv.parameters.release = 0.0f; tsf_voice_envelope_nextsegment(&v->ampenv, TSF_SEGMENT_SUSTAIN, f->outSampleRate);
 		v->modenv.parameters.release = 0.0f; tsf_voice_envelope_nextsegment(&v->modenv, TSF_SEGMENT_SUSTAIN, f->outSampleRate);
 	}
@@ -1538,19 +1629,19 @@ static TSF_BOOL tsf_env_differs(const struct tsf_envelope* a, const struct tsf_e
 	return TSF_FALSE;
 }
 
-static void tsf_voice_lowpass_update(struct tsf_voice_lowpass* l, int fcCents, int qCentibels, float outSampleRate)
+static void tsf_voice_lowpass_update(struct tsf_voice_lowpass* l, int fcCents, int qCentibels, float outSampleRate, double x, TSF_BOOL dynamic)
 {
 	// Resonance = peak height above DC, with the DC gain lowered by half of it (8.1.2 #9). A 2-pole lowpass peaks at
 	// Q / sqrt(1 - 1 / (4 Q^2)) above DC, solved for Q here (zero resonance = Butterworth). Bypassed at maximum cutoff without resonance.
-	double peak = TSF_POW(10.0, qCentibels / 200.0);
+	double peak = TSF_EXP(qCentibels * (2.302585092994046 / 200.0));
 	TSF_BOOL wasActive = l->active;
 	l->resonant = (qCentibels > 0);
-	l->QInv = 1.0 / TSF_POW(peak * (peak + TSF_POW(peak * peak - 1.0, 0.5)) * 0.5, 0.5);
-	l->gain = 1.0 / TSF_POW(peak, 0.5);
-	l->active = (l->resonant || fcCents < 13500);
+	l->QInv = 1.0 / TSF_SQRT(peak * (peak + TSF_SQRT(peak * peak - 1.0)) * 0.5);
+	l->gain = 0.5 * TSF_EXP(qCentibels * (2.302585092994046 / -400.0)); // 1 / sqrt(peak), halved for the low-pass output (old + new state)
+	l->active = (l->resonant || fcCents < 13500 || (wasActive && dynamic)); // a modulated cutoff: the render loop decides per block
 	if (!l->active) return;
-	if (!wasActive) l->z1 = l->z2 = 0;
 	tsf_voice_lowpass_setup(l, tsf_lowpass_fc((float)fcCents, outSampleRate));
+	if (!wasActive) tsf_voice_lowpass_start(l, x);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -1559,7 +1650,7 @@ static void tsf_voice_lowpass_update(struct tsf_voice_lowpass* l, int fcCents, i
 // Concave (-40/96 * log10(1 - x)) and convex (1 + 40/96 * log10(x)) curve (8.2.1) for x in 0.0 to 1.0, the output is 0.0 to 1.0
 static float tsf_mod_curve(unsigned type, float x)
 {
-	float y = (type == 1 ? (x >= 1.0f ? 1.0f : -0.41666667f * (float)TSF_LOG10(1.0 - x)) : (x <= 0.0f ? 0.0f : 1.0f + 0.41666667f * (float)TSF_LOG10(x)));
+	float y = (type == 1 ? (x >= 1.0f ? 1.0f : -0.18095603f * TSF_LOGF(1.0f - x)) : (x <= 0.0f ? 0.0f : 1.0f + 0.18095603f * TSF_LOGF(x)));
 	return (y < 0.0f ? 0.0f : (y > 1.0f ? 1.0f : y));
 }
 
@@ -1597,14 +1688,51 @@ static float tsf_mod_source(const struct tsf_voice* v, const struct tsf_channel*
 
 }
 
-// SF2.01 NRPN (9.6) generator units per data entry step (useful range halved until it fits 8192 steps, as in FluidSynth),
-// 0 for generators that are not real-time parameters (sample offsets, ranges, keynum/velocity, sample modes, root key, ...)
+// SF2.01 NRPN (9.6.3) generator units per data entry step: the useful range (8.1.3) is halved until it is 8192 units or less,
+// so the +-8192 steps reach every value of the range, 0 for generators that are not real-time parameters
 static const unsigned char tsf_nrpn_scale[TSF_NUMGENS] =
 {
-	0, 0, 0, 0, 0, 2, 2, 2, 2, 1, 2, 2, 0, 1, 0, 1, 1, 1, 0, 0, // 0-19
-	0, 2, 4, 2, 4, 2, 2, 2, 2, 1, 2, 1, 1, 2, 2, 2, 2, 1, 2, 1, // 20-39
-	1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0     // 40-58
+	0, 0, 0, 0, 0, 4, 4, 4, 2, 1, 4, 4, 0, 1, 0, 1, 1, 1, 0, 0, // 0-19
+	0, 4, 4, 4, 4, 4, 4, 4, 4, 1, 4, 1, 1, 4, 4, 4, 4, 1, 4, 1, // 20-39
+	1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0     // 40-58
 };
+
+// AWE32 NRPN (MSB 127, LSB 0-26): the generator each sets (initial pitch adds to fine tune) and the value conversion:
+// times and pitch use the 14-bit value - 8192, the others its low 8 or 7 bits; filter cutoff and Q follow the Audigy
+
+static const unsigned char tsf_awe_gen[27] =
+{
+	21, 22, 23, 24,          // 0-3:   mod LFO delay and frequency, vibrato LFO delay and frequency
+	25, 26, 27, 28, 29, 30,  // 4-9:   mod envelope delay, attack, hold, decay, sustain, release
+	33, 34, 35, 36, 37, 38,  // 10-15: volume envelope delay, attack, hold, decay, sustain, release
+	52, 5, 6, 7, 13,         // 16-20: initial pitch (added to the fine tune), mod LFO, vibrato LFO and mod envelope to pitch, mod LFO to volume
+	8, 9, 10, 11, 15, 16     // 21-26: filter cutoff and resonance, mod LFO and mod envelope to cutoff, chorus, reverb
+};
+static short tsf_awe_round(float x) { return (short)(x < 0.0f ? x - 0.5f : x + 0.5f); }
+static short tsf_awe_nrpn_value(int param, int data)
+{
+	int x = data - 8192, b = data & 0xFF, l = data & 0x7F, sb = (b ^ 0x80) - 0x80, max = 5940;
+	switch (param)
+	{
+		case 0: case 2: case 4: case 10: max = 5900; /* fall through */ // delays: 0-5900 ms
+		case 5: case 7: case 9: case 11: case 13: case 15:              // attacks, decays and releases: 0-5940 ms
+		case 6: case 12:                                                // holds: 0-8191 ms
+			if (param == 6 || param == 12) max = 8191;
+			if (x > max) x = max;
+			return (x <= 0 ? -12000 : tsf_awe_round(1731.234f * TSF_LOGF(x * 0.001f))); // timecents
+		case 1: case 3: return (l ? tsf_awe_round(1731.234f * TSF_LOGF(l * (0.084f / 8.176f))) : -16000); // 0-127: 0.084 Hz steps
+		case 8: return (short)((127 - (b > 127 ? 127 : b)) * 1000 / 127); // 0-127: the level, 127 the peak (sustain is a 0.1% decrease)
+		case 14: return tsf_awe_round((127 - (b > 127 ? 127 : b)) * 7.5f); // 0-127: 0.75 dB steps below full level (sustain is in cB)
+		case 16: return (short)x; // -8192-8191: cents
+		case 17: case 18: case 19: return tsf_awe_round(sb * 9.375f); // -127-127: 9.375 cent steps
+		case 20: return tsf_awe_round(l * 1.875f); // 0-127: 0.1875 dB steps
+		case 21: return tsf_awe_round(4335.7f + l * (7646.0f / 128.0f)); // 0-127: 100 Hz up to 8000 Hz, logarithmic (absolute cents)
+		case 22: return tsf_awe_round(l * (200.0f / 128.0f)); // 0-127: up to 19.84 dB (cB)
+		case 23: return tsf_awe_round(((l ^ 0x40) - 0x40) * 56.25f); // -64-63: 56.25 cent steps
+		case 24: return tsf_awe_round(sb * 56.25f); // -127-127: 56.25 cent steps
+		default: return (short)(b * 1000 / 255); // 25, 26: 0-255 chorus and reverb send (0.1%)
+	}
+}
 
 // The output of modulator p in list m (a linked source is the sum of the outputs of the modulators linked to p)
 static float tsf_mod_out(const struct tsf_mod* m, const struct tsf_mod* p, const struct tsf_voice* v, const struct tsf_channel* c)
@@ -1638,15 +1766,15 @@ static void tsf_voice_modulate(tsf* f, struct tsf_voice* v, TSF_BOOL init)
 	for (p = m; p->dest != TSF_MODEND; p++)
 		if (!(p->dest & 0x8000)) g[p->dest] += tsf_mod_out(m, p, v, c);
 	if (c) for (i = 0; i != TSF_NUMGENS; i++) g[i] += c->nrpn[i] * tsf_nrpn_scale[i]; // SF2.01 NRPN offsets act like modulators
-	if (init)
-	{
-		v->modulatesLFO = v->modulatesEnv = 0;
-		for (p = m; p->dest != TSF_MODEND; p++)
+	if (c && c->aweSet) // AWE32 NRPN: replace the generator value (the modulators still add to it), the initial pitch adds cents
+		for (i = 0; i != 27; i++)
 		{
-			if (p->dest == 5 || p->dest == 10 || p->dest == 13) v->modulatesLFO = 1;
-			if (p->dest == 7 || p->dest == 11) v->modulatesEnv = 1;
+			union tsf_hydra_genamount a;
+			if (!(c->aweSet & (1u << i))) continue;
+			if (i == 16) { g[52] += c->awe[16]; continue; }
+			a.shortAmount = c->awe[i];
+			tsf_region_operator(&n, tsf_awe_gen[i], &a, TSF_NULL, 0.0f);
 		}
-	}
 	// Every generator value (instrument + preset sum) gets the modulator outputs added and is then clamped to its range
 	attMod = g[48]; // the attenuation generator is scaled, the modulators' share is not
 	for (i = 0; i != TSF_NUMGENS; i++)
@@ -1659,11 +1787,13 @@ static void tsf_voice_modulate(tsf* f, struct tsf_voice* v, TSF_BOOL init)
 	if (init || n.attenuation != o->attenuation) v->noteGainDB += ((init ? 0.0f : o->attenuation) - n.attenuation) * 0.1f;
 	if (init || n.pan != o->pan) tsf_voice_setpan(v, n.pan, (c ? c->panOffset : 0.0f));
 	if (init || n.transpose != o->transpose || n.tune != o->tune || n.pitch_keytrack != o->pitch_keytrack) tsf_voice_calcpitchratio(v, &n, (c ? c->tuning : 0.0f));
-	if (init || n.initialFilterFc != o->initialFilterFc || n.initialFilterQ != o->initialFilterQ) tsf_voice_lowpass_update(&v->lowpass, n.initialFilterFc, n.initialFilterQ, f->outSampleRate);
+	// the filter runs on the samples scaled by 2^15; a changed LFO or envelope depth too, as a depth of 0 hands the cutoff back from the render loop
+	if (init || n.initialFilterFc != o->initialFilterFc || n.initialFilterQ != o->initialFilterQ || n.modLfoToFilterFc != o->modLfoToFilterFc || n.modEnvToFilterFc != o->modEnvToFilterFc)
+		tsf_voice_lowpass_update(&v->lowpass, n.initialFilterFc, n.initialFilterQ, f->outSampleRate, (init ? 0.0 : f->fontSamples[(unsigned int)(v->sourceSamplePosition >> 32)] * 32768.0), (TSF_BOOL)(n.modLfoToFilterFc || n.modEnvToFilterFc));
 	if (!init && n.freqModLFO != o->freqModLFO) v->modlfo.delta = (v->modlfo.delta < 0.0f ? -4.0f : 4.0f) * tsf_cents2Hertz((float)n.freqModLFO) / f->outSampleRate;
 	if (!init && n.freqVibLFO != o->freqVibLFO) v->viblfo.delta = (v->viblfo.delta < 0.0f ? -4.0f : 4.0f) * tsf_cents2Hertz((float)n.freqVibLFO) / f->outSampleRate;
-	if (!init && tsf_env_differs(&n.ampenv, &o->ampenv)) tsf_voice_envelope_update_parameters(&v->ampenv, &n.ampenv, v->key);
-	if (!init && tsf_env_differs(&n.modenv, &o->modenv)) tsf_voice_envelope_update_parameters(&v->modenv, &n.modenv, v->key);
+	if (!init && tsf_env_differs(&n.ampenv, &o->ampenv)) tsf_voice_envelope_modulate(&v->ampenv, &n.ampenv, v->key, f->outSampleRate);
+	if (!init && tsf_env_differs(&n.modenv, &o->modenv)) tsf_voice_envelope_modulate(&v->modenv, &n.modenv, v->key, f->outSampleRate);
 	v->chorusSend = n.chorusSend * 0.001f;
 	v->reverbSend = n.reverbSend * 0.001f;
 	*o = n;
@@ -1675,7 +1805,7 @@ static void tsf_voice_modulate(tsf* f, struct tsf_voice* v, TSF_BOOL init)
 #define TSF_VOICE_SAMPLE(FILTER, OUTPUT, NEXTPOS) \
 	{ \
 		unsigned int pos = (unsigned int)(phase >> 32), nextPos = (NEXTPOS); \
-		int x0 = input[pos]; float val = (float)(x0 * 32768 + (input[nextPos] - x0) * (int)((unsigned int)phase >> 17)); /* linear interpolation in integers with a 15-bit fraction (the gains include 1 / 2^30) */ \
+		int x0 = input[pos], ival = x0 * 32768 + (input[nextPos] - x0) * (int)((unsigned int)phase >> 17); float val = (float)ival; /* linear interpolation in integers with a 15-bit fraction (the gains include 1 / 2^30) */ \
 		FILTER \
 		OUTPUT \
 		gainLeft += stepLeft; gainRight += stepRight; gainMono += stepMono; \
@@ -1693,12 +1823,13 @@ static void tsf_voice_modulate(tsf* f, struct tsf_voice* v, TSF_BOOL init)
 			phase = (phase - phaseLoopEnd < phaseLoopLength ? phase - phaseLoopLength : phaseLoopEnd - phaseLoopLength + (phase - phaseLoopEnd) % phaseLoopLength); \
 	}
 #define TSF_VOICE_LOOP(OUTPUT) /* one loop with the filter, one without, so the test isn't made per sample */ \
-	if (tmpLowpass.active) { TSF_VOICE_LOOP_BODY(val = tsf_voice_lowpass_process(&tmpLowpass, val);, OUTPUT) } \
+	if (tmpLowpass.active) { TSF_VOICE_LOOP_BODY(val = tsf_voice_lowpass_process(&tmpLowpass, (double)ival);, OUTPUT) } \
 	else { TSF_VOICE_LOOP_BODY(, OUTPUT) }
 #define TSF_SEND(P, level, gl, gr) P[0] += val * (gl) * (level); P[1] += val * (gr) * (level); P += 2;
 
-// Playback speed as a 32.32 fixed point step per output sample, at most 2^24 times faster (NaN plays at that rate too)
-static tsf_u64 tsf_phasestep(double pitchRatio) { return (pitchRatio < 16777216.0 ? (tsf_u64)(pitchRatio * 4294967296.0) : (tsf_u64)16777216 << 32); }
+// Playback speed as a 32.32 fixed point step per output sample, at most 2^23 times faster (NaN plays at that rate too). With the
+// position below 2^31 samples (< 2^63) the 256 steps of a block (< 2^63) can then be added to the position without overflowing.
+static tsf_u64 tsf_phasestep(double pitchRatio) { return (pitchRatio < 8388608.0 ? (tsf_u64)(pitchRatio * 4294967296.0) : (tsf_u64)8388608 << 32); }
 
 // The current output gain of a voice (volume envelope, attenuation and the modulation LFO's volume modulation)
 static float tsf_voice_gain(const struct tsf_voice* v, float noteGain, float modLfoToVolumeDB)
@@ -1707,7 +1838,7 @@ static float tsf_voice_gain(const struct tsf_voice* v, float noteGain, float mod
 	return v->ampenv.level * (modLfoToVolumeDB != 0.0f ? tsf_decibelsToGain(v->noteGainDB + v->modlfo.level * modLfoToVolumeDB) : noteGain);
 }
 
-// sendC and sendV (interleaved stereo pairs) both have to be given or both be NULL; the send a voice doesn't use is not touched
+// sendC and sendV: interleaved stereo pairs, NULL for an effect that doesn't run; the send a voice doesn't use is not touched
 static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, int numSamples, int stride, float* sendC, float* sendV)
 {
 	struct tsf_region* region = &v->mr;
@@ -1715,13 +1846,10 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	float* outL = outputBuffer;
 	float* outR = (f->outputmode == TSF_STEREO_UNWEAVED ? outL + stride : TSF_NULL);
 	float chorusSend = v->chorusSend, reverbSend = v->reverbSend;
-	int sendKind = (!sendC || !sendV ? 0 : (chorusSend > 0.0f ? (reverbSend > 0.0f ? 3 : 2) : (reverbSend > 0.0f ? 1 : 0))); /* 1 reverb, 2 chorus, 3 both */
+	int sendKind = (sendV && reverbSend > 0.0f ? 1 : 0) | (sendC && chorusSend > 0.0f ? 2 : 0); // 1 reverb, 2 chorus, 3 both
 
 	// Cache some values, to give them at least some chance of ending up in registers.
-	// depths that modulators can change (the vibrato depth by default) need their LFO to run from the start of the note
-	TSF_BOOL updateModEnv = (v->modulatesEnv || region->modEnvToPitch || region->modEnvToFilterFc);
-	TSF_BOOL updateModLFO = (v->modlfo.delta && (v->modulatesLFO || region->modLfoToPitch || region->modLfoToFilterFc || region->modLfoToVolume));
-	TSF_BOOL updateVibLFO = (v->viblfo.delta != 0.0f);
+	// The mod envelope and LFOs run also at zero depth: modulators and NRPNs can set a depth mid-note
 	TSF_BOOL isLooping    = (v->loopStart < v->loopEnd);
 	unsigned int tmpLoopStart = v->loopStart, tmpLoopEnd = v->loopEnd;
 	// The sample position is a 32.32 fixed point number while rendering
@@ -1742,6 +1870,9 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	float tmpModLfoToVolume = (float)region->modLfoToVolume * 0.1f;
 	float noteGain = tsf_decibelsToGain(v->noteGainDB), gainNext = tsf_voice_gain(v, noteGain, tmpModLfoToVolume);
 	float tmpLfoBoost = (tmpModLfoToVolume ? tsf_decibelsToGain(tmpModLfoToVolume < 0.0f ? -tmpModLfoToVolume : tmpModLfoToVolume) : 1.0f);
+	// the gains at the start of the first block: where the last block ended, so a changed volume or pan ramps instead of jumping
+	float startMono = (v->rampValid ? v->rampMono : gainNext);
+	float startLeft = (v->rampValid ? v->rampLeft : gainNext * v->panFactorLeft), startRight = (v->rampValid ? v->rampRight : gainNext * v->panFactorRight);
 	phaseStep = tsf_phasestep(pitchRatio);
 
 	while (numSamples)
@@ -1758,8 +1889,8 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 			float fres = tmpInitialFilterFc + v->modlfo.level * tmpModLfoToFilterFc + modEnv * tmpModEnvToFilterFc;
 			TSF_BOOL wasActive = tmpLowpass.active;
 			tmpLowpass.active = (tmpLowpass.resonant || fres < 13500.0f);
-			if (tmpLowpass.active && !wasActive) tmpLowpass.z1 = tmpLowpass.z2 = 0; // no stale state from when it was bypassed
 			if (tmpLowpass.active && (fres != lastFres || !wasActive)) tsf_voice_lowpass_setup(&tmpLowpass, tsf_lowpass_fc(fres, tmpSampleRate)), lastFres = fres; // e.g. not while the envelope sustains
+			if (tmpLowpass.active && !wasActive) tsf_voice_lowpass_start(&tmpLowpass, input[(unsigned int)(phase >> 32)] * 32768.0); // no stale state from when it was bypassed
 		}
 
 		if (dynamicPitchRatio)
@@ -1773,18 +1904,29 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 			phaseStep = tsf_phasestep(pitchRatio);
 		}
 
+		if (v->minLengthLeft > 0) v->minLengthLeft -= blockSamples;
+		if (v->releasePending && v->minLengthLeft <= 0) // every block: a note off from another thread can come late
+		{
+			tsf_voice_release(f, v);
+			if (isLooping && v->loopStart >= v->loopEnd) isLooping = TSF_FALSE, phaseSafe = phaseEnd; // a sustain loop ends with the release
+		}
+
 		// Update EG and LFOs, the gain ramps from the value at the start of the block to the value at its end
-		gainMono = gainNext;
 		tsf_voice_envelope_process(&v->ampenv, blockSamples, tmpSampleRate);
-		if (updateModEnv) tsf_voice_envelope_process(&v->modenv, blockSamples, tmpSampleRate);
-		if (updateModLFO) tsf_voice_lfo_process(&v->modlfo, blockSamples);
-		if (updateVibLFO) tsf_voice_lfo_process(&v->viblfo, blockSamples);
+		tsf_voice_envelope_process(&v->modenv, blockSamples, tmpSampleRate);
+		tsf_voice_lfo_process(&v->modlfo, blockSamples);
+		tsf_voice_lfo_process(&v->viblfo, blockSamples);
 		gainNext = tsf_voice_gain(v, noteGain, tmpModLfoToVolume);
 		// A released voice ends once its total gain (envelope and attenuation, at the LFO's loudest) is 100 dB down (9.1.7)
 		if (v->ampenv.segment == TSF_SEGMENT_RELEASE && v->ampenv.level * noteGain * tmpLfoBoost < TSF_ENV_SILENCE) v->ampenv.segment = TSF_SEGMENT_DONE, gainNext = 0.0f;
-		stepMono = (gainNext - gainMono) / blockSamples;
+		{
+			float endLeft = gainNext * v->panFactorLeft, endRight = gainNext * v->panFactorRight, scale = (1.0f / 1073741824.0f) / blockSamples; // the interpolated samples are scaled by 2^30
+			gainMono = startMono * (1.0f / 1073741824.0f), gainLeft = startLeft * (1.0f / 1073741824.0f), gainRight = startRight * (1.0f / 1073741824.0f);
+			stepMono = (gainNext - startMono) * scale, stepLeft = (endLeft - startLeft) * scale, stepRight = (endRight - startRight) * scale;
+			startMono = gainNext, startLeft = endLeft, startRight = endRight;
+		}
 
-		if (gainMono == 0.0f && gainNext == 0.0f && !tmpLowpass.active) // silent block (envelope delay, zero volume): only advance the position
+		if (gainMono == 0.0f && stepMono == 0.0f && !tmpLowpass.active) // silent block (envelope delay, zero volume): only advance the position
 		{
 			phase += phaseStep * (tsf_u64)blockSamples;
 			if (isLooping && phase >= phaseLoopEnd) phase = phaseLoopEnd - phaseLoopLength + (phase - phaseLoopEnd) % phaseLoopLength;
@@ -1795,9 +1937,6 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 		}
 		else
 		{
-		gainMono *= (1.0f / 1073741824.0f); stepMono *= (1.0f / 1073741824.0f); // the interpolated samples are scaled by 2^30
-		gainLeft = gainMono * v->panFactorLeft, gainRight = gainMono * v->panFactorRight;
-		stepLeft = stepMono * v->panFactorLeft, stepRight = stepMono * v->panFactorRight;
 		if (!sendKind)
 		{
 			switch (f->outputmode)
@@ -1844,6 +1983,7 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	}
 
 	v->sourceSamplePosition = phase;
+	v->rampMono = startMono, v->rampLeft = startLeft, v->rampRight = startRight, v->rampValid = 1;
 	if (tmpLowpass.active || dynamicLowpass) v->lowpass = tmpLowpass;
 }
 #undef TSF_VOICE_LOOP
@@ -1886,17 +2026,25 @@ static TSF_BOOL tsf_fx_alloc(struct tsf_fx* e, float rate)
 	return TSF_TRUE;
 }
 
-static void tsf_fx_clear(struct tsf_fx* e)
+// Clear delay lines from..to-1 (0-7 combs, 8-11 allpasses: the reverb; 12-13: the chorus)
+static void tsf_fx_clear_lines(struct tsf_fx* e, unsigned int from, unsigned int to)
 {
 	unsigned int i;
-	for (i = 0; i != 14; i++)
+	for (i = from; i != to; i++)
 	{
 		struct tsf_fx_line* l = (i < 8 ? &e->comb[i] : (i < 12 ? &e->allpass[i - 8] : &e->chorus[i - 12]));
 		if (l->data) TSF_MEMSET(l->data, 0, l->length * sizeof(float));
 		l->pos = 0;
 	}
-	TSF_MEMSET(e->combStore, 0, sizeof(e->combStore));
-	e->idle = 0;
+	if (from == 0) TSF_MEMSET(e->combStore, 0, sizeof(e->combStore));
+	if (to > 12) e->chorusPhase = 0.0f; // the chorus LFO starts over too, as on a fresh instance
+}
+
+// Clear both effects: nothing left to play (they start again once a voice sends)
+static void tsf_fx_clear(struct tsf_fx* e)
+{
+	tsf_fx_clear_lines(e, 0, 14);
+	e->idle = 0x40000000;
 }
 
 // Get the effects of f, allocating them if they are about to be enabled
@@ -2035,7 +2183,7 @@ TSFDEF tsf* tsf_load(struct tsf_stream* stream)
 	struct tsf_riffchunk chunkList;
 	struct tsf_hydra hydra;
 	void* rawBuffer = TSF_NULL;
-	float* sampleBuffer = TSF_NULL; // floats while decoding Vorbis, else (and at the end) 16-bit samples
+	short* sampleBuffer = TSF_NULL; // the 16-bit samples (decoded if compressed)
 	tsf_u32 smplCount = 0;
 
 	if (!tsf_riffchunk_read(TSF_NULL, &chunkHead, stream) || !TSF_FourCCEquals(chunkHead.id, "sfbk"))
@@ -2053,14 +2201,21 @@ TSFDEF tsf* tsf_load(struct tsf_stream* stream)
 		{
 			while (tsf_riffchunk_read(&chunkList, &chunk, stream))
 			{
+				// one stream read per chunk (a truncated file is rejected), parsed from memory; a chunk over 2 GB would wrap num * sizeof on 32-bit
 				#define HandleChunk(chunkName) (TSF_FourCCEquals(chunk.id, #chunkName) && !(chunk.size % chunkName##SizeInFile)) \
 					{ \
-						int num = chunk.size / chunkName##SizeInFile, i; \
+						int num = (int)(chunk.size / chunkName##SizeInFile), i; \
+						struct tsf_stream_memory mem = { TSF_NULL, 0, 0 }; \
+						struct tsf_stream ms = { TSF_NULL, (int(*)(void*,void*,unsigned int))&tsf_stream_memory_read, (int(*)(void*,unsigned int))&tsf_stream_memory_skip }; \
 						TSF_FREE(hydra.chunkName##s); /* a damaged font can repeat a chunk */ \
-						hydra.chunkName##Num = num; \
-						hydra.chunkName##s = (struct tsf_hydra_##chunkName*)TSF_MALLOC(num * sizeof(struct tsf_hydra_##chunkName)); \
-						if (!hydra.chunkName##s) goto out_of_memory; \
-						for (i = 0; i < num; ++i) tsf_hydra_read_##chunkName(&hydra.chunkName##s[i], stream); \
+						hydra.chunkName##s = TSF_NULL; hydra.chunkName##Num = 0; \
+						if (chunk.size > 0x7FFFFFFF) goto out_of_memory; \
+						if (!(mem.buffer = (const char*)TSF_MALLOC(chunk.size ? chunk.size : 1))) goto out_of_memory; \
+						if (stream->read(stream->data, (void*)mem.buffer, chunk.size) != (int)chunk.size || \
+							!(hydra.chunkName##s = (struct tsf_hydra_##chunkName*)TSF_MALLOC((num ? num : 1) * sizeof(struct tsf_hydra_##chunkName)))) { TSF_FREE((void*)mem.buffer); goto out_of_memory; } \
+						hydra.chunkName##Num = num; mem.total = chunk.size; ms.data = &mem; \
+						for (i = 0; i < num; ++i) tsf_hydra_read_##chunkName(&hydra.chunkName##s[i], &ms); \
+						TSF_FREE((void*)mem.buffer); \
 					}
 				enum
 				{
@@ -2103,20 +2258,26 @@ TSFDEF tsf* tsf_load(struct tsf_stream* stream)
 	else
 	{
 		#ifdef STB_VORBIS_INCLUDE_STB_VORBIS_H
-		if (!sampleBuffer && !tsf_decode_sf3_samples(rawBuffer, &sampleBuffer, &smplCount, &hydra)) goto out_of_memory;
+		int j = 0; // with no compressed sample (a plain .sf2) the samples are used as they are, like without Vorbis support
+		if (!sampleBuffer) while (j != hydra.shdrNum && !(hydra.shdrs[j].sampleType & 0x10)) j++;
+		if (!sampleBuffer && j == hydra.shdrNum)
+		{
+			short *s = (short*)rawBuffer, *sEnd = s + (smplCount /= sizeof(short));
+			for (; s != sEnd; s++) *s = (short)TSF_SWAP16LE(*s);
+			*s = 0; // one extra zero sample for the interpolation at the very end
+			sampleBuffer = (short*)rawBuffer, rawBuffer = TSF_NULL;
+		}
+		else if (!sampleBuffer && !tsf_decode_sf3_samples(rawBuffer, &sampleBuffer, &smplCount, &hydra)) goto out_of_memory;
+		#else
+		int j = 0; // a compressed sample (SF3) can't play without Vorbis support: reject the font
+		while (j != hydra.shdrNum && !(hydra.shdrs[j].sampleType & 0x10)) j++;
+		if (j != hydra.shdrNum) goto done;
 		#endif
 		res = (tsf*)TSF_MALLOC(sizeof(tsf));
 		if (res) TSF_MEMSET(res, 0, sizeof(tsf));
 		if (!res || !tsf_load_presets(res, &hydra, smplCount)) goto out_of_memory;
 		res->outSampleRate = 44100.0f;
-		#ifdef STB_VORBIS_INCLUDE_STB_VORBIS_H
-		{ // the decoded samples are floats: convert them to 16-bit in place (each short is written where its float was already read)
-			short* out = (short*)sampleBuffer; unsigned int i; void* shrunk;
-			for (i = 0; i <= smplCount; i++) { float v = sampleBuffer[i] * 32768.0f; out[i] = (short)(v >= 32767.0f ? 32767 : v <= -32768.0f ? -32768 : (int)(v + (v < 0 ? -0.5f : 0.5f))); }
-			shrunk = TSF_REALLOC(sampleBuffer, (smplCount + 1) * sizeof(short)); if (shrunk) sampleBuffer = (float*)shrunk;
-		}
-		#endif
-		res->fontSamples = (short*)sampleBuffer;
+		res->fontSamples = sampleBuffer;
 		{ struct tsf_fx* fx = tsf_fx_get(res, 1); if (fx) fx->reverbEnabled = fx->chorusEnabled = 1; } // built-in effects on by default (none if out of memory)
 		sampleBuffer = TSF_NULL; // don't free below
 	}
@@ -2147,7 +2308,7 @@ TSFDEF tsf* tsf_copy(tsf* f)
 	if (!res) return TSF_NULL;
 	TSF_MEMCPY(res, f, sizeof(tsf));
 	res->voices = TSF_NULL;
-	res->voiceNum = 0;
+	res->voiceNum = res->maxVoiceNum = 0;
 	res->channels = TSF_NULL;
 	res->fx = TSF_NULL; // effects are not shared, the copy gets its own with the same settings
 	if (f->fx)
@@ -2159,6 +2320,13 @@ TSFDEF tsf* tsf_copy(tsf* f)
 			fx->roomSize = f->fx->roomSize; fx->damping = f->fx->damping; fx->width = f->fx->width; fx->reverbWet = f->fx->reverbWet;
 			fx->chorusDepth = f->fx->chorusDepth; fx->chorusRate = f->fx->chorusRate; fx->chorusWet = f->fx->chorusWet;
 		}
+	}
+	if (f->maxVoiceNum && !tsf_set_max_voices(res, f->maxVoiceNum))
+	{
+		if (res->fx) TSF_FREE(res->fx->mem);
+		TSF_FREE(res->fx);
+		TSF_FREE(res);
+		return TSF_NULL;
 	}
 	(*res->refCount)++;
 	return res;
@@ -2243,14 +2411,15 @@ static void tsf_set_global_gain(tsf* f, float gainDB)
 
 TSFDEF void tsf_set_output(tsf* f, enum TSFOutputMode outputmode, int samplerate, float global_gain_db)
 {
-	float newRate = (float)(samplerate >= 1 ? samplerate : 44100.0f);
+	float newRate = (float)(samplerate < 1 ? 44100 : (samplerate > 10000000 ? 10000000 : samplerate)); // up to 10 MHz, so the longest times (101 s) fit the int sample counts
 	TSF_BOOL rateChange = (newRate != f->outSampleRate);
+	if (outputmode < 0 || outputmode > TSF_MONO) return;
 	if (f->fx && rateChange) // the effects' delay lines depend on the sample rate
 	{
 		TSF_FREE(f->fx->mem);
 		f->fx->mem = TSF_NULL;
-		if (!tsf_fx_alloc(f->fx, newRate)) f->fx->reverbEnabled = f->fx->chorusEnabled = 0;
-		f->fx->idle = 0x40000000;
+		if (!tsf_fx_alloc(f->fx, newRate)) { TSF_FREE(f->fx); f->fx = TSF_NULL; } // out of memory: no effects
+		else tsf_fx_clear(f->fx); // also no filter state from the old rate
 	}
 	f->outputmode = outputmode;
 	f->outSampleRate = newRate;
@@ -2264,14 +2433,17 @@ TSFDEF void tsf_set_output(tsf* f, enum TSFOutputMode outputmode, int samplerate
 
 TSFDEF void tsf_set_volume(tsf* f, float global_volume)
 {
-	tsf_set_global_gain(f, tsf_gainToDecibels(global_volume)); // -100 dB (silent) at or below 0.00001
+	tsf_set_global_gain(f, tsf_gainToDecibels(global_volume)); // -200 dB (silent) at or below 1e-10
 }
 
 TSFDEF int tsf_set_max_voices(tsf* f, int max_voices)
 {
 	int i = f->voiceNum;
 	int newVoiceNum = (f->voiceNum > max_voices ? f->voiceNum : max_voices);
-	struct tsf_voice *newVoices = (struct tsf_voice*)TSF_REALLOC(f->voices, newVoiceNum * sizeof(struct tsf_voice));
+	struct tsf_voice *newVoices;
+	if (max_voices == 0) { f->maxVoiceNum = 0; return 1; } // dynamic polyphony (the voices already allocated stay)
+	if (max_voices < 0 || newVoiceNum > 0x7FFFFFFF / (int)sizeof(struct tsf_voice)) return 0; // over 2 GB (the allocation size would wrap on 32-bit)
+	newVoices = (struct tsf_voice*)TSF_REALLOC(f->voices, newVoiceNum * sizeof(struct tsf_voice));
 	if (!newVoices) return 0;
 	f->voices = newVoices;
 	f->voiceNum = f->maxVoiceNum = newVoiceNum;
@@ -2280,29 +2452,40 @@ TSFDEF int tsf_set_max_voices(tsf* f, int max_voices)
 	return 1;
 }
 
-TSFDEF int tsf_note_on(tsf* f, int preset_index, int key, float vel)
+// Start a note, for a channel (its controllers are the modulator sources) or for channel -1 (the preset API, default controllers).
+// legatoIndex: NULL for a new note, else the play index of a legato note whose voices moved from fromKey to this key: only the zones
+// that don't cover fromKey start (a layer), as part of that note
+static int tsf_note_on_channel(tsf* f, int preset_index, int key, float vel, int channel, const unsigned int* legatoIndex, int fromKey)
 {
+	struct tsf_channel* c = (channel >= 0 ? &f->channels->channels[channel] : TSF_NULL);
 	short midiVelocity;
 	unsigned int voicePlayIndex;
 	struct tsf_region *region, *regionEnd;
 
-	if (key < 0 || key > 127 || preset_index < 0 || preset_index >= f->presetNum) return 1;
+	if (key < 0 || key > 127 || preset_index < 0 || preset_index >= f->presetNum) return 0;
 	if (!(vel > 0.0f)) { tsf_note_off(f, preset_index, key); return 1; } // also NaN
 	midiVelocity = (short)(vel >= 1.0f ? 127 : (vel < 1.5f / 127 ? 1 : vel * 127 + 0.5f)); // a note on has a velocity of at least 1
 
 	// Play all matching regions.
-	voicePlayIndex = f->voicePlayIndex++;
+	voicePlayIndex = (legatoIndex ? *legatoIndex : f->voicePlayIndex++);
 	for (region = f->presets[preset_index].regions, regionEnd = region + f->presets[preset_index].regionNum; region != regionEnd; region++)
 	{
 		struct tsf_voice *voice, *v, *vEnd; TSF_BOOL doLoop;
 		if (key < region->lokey || key > region->hikey || midiVelocity < region->lovel || midiVelocity > region->hivel) continue;
 
 		voice = TSF_NULL, v = f->voices, vEnd = v ? v + f->voiceNum : TSF_NULL;
+		if (legatoIndex)
+		{
+			if (fromKey >= region->lokey && fromKey <= region->hikey) continue; // the zone played the previous key (or has ended): no new attack
+			for (; v != vEnd; v++)
+				if (v->playIndex == voicePlayIndex && v->region == region && v->playingPreset == preset_index && v->playingChannel == channel && v->playingKey == key && TSF_VOICE_KEYDOWN(v)) break;
+			if (v != vEnd) continue; // the legato note plays this zone already
+			v = f->voices;
+		}
 		if (region->group)
 		{
-			int activeChannel = (f->channels ? f->channels->activeChannel : -1);
 			for (; v != vEnd; v++)
-				if (v->playingPreset == preset_index && v->playingChannel == activeChannel && v->region->group == region->group && v->playIndex != voicePlayIndex) tsf_voice_endquick(f, v); // not the voices of this very note (e.g. the other side of a stereo sample)
+				if (v->playingPreset == preset_index && v->playingChannel == channel && v->region->group == region->group && v->playIndex != voicePlayIndex) tsf_voice_endquick(f, v); // not the voices of this very note (e.g. the other side of a stereo sample)
 				else if (v->playingPreset == -1 && !voice) voice = v;
 		}
 		else for (; v != vEnd; v++) if (v->playingPreset == -1) { voice = v; break; }
@@ -2346,21 +2529,22 @@ TSFDEF int tsf_note_on(tsf* f, int preset_index, int key, float vel)
 		voice->region = region;
 		voice->playingPreset = preset_index;
 		voice->playingKey = key;
-		voice->playingChannel = (f->channels ? f->channels->activeChannel : -1);
+		voice->playingChannel = channel;
 		voice->playIndex = voicePlayIndex;
-		voice->heldSustain = voice->sostenuto = 0;
+		voice->heldSustain = voice->sostenuto = voice->rampValid = voice->releasePending = 0;
+		voice->minLengthLeft = (int)(TSF_MIN_NOTE_LENGTH * f->outSampleRate);
 		voice->portaCents = voice->portaDelta = 0.0f;
-		if (f->channels) voice->portaCents = f->channels->glideCents, voice->portaDelta = f->channels->glideDelta;
-		voice->key = (unsigned char)(region->fixedKey >= 0 && region->fixedKey <= 127 ? region->fixedKey : key);
-		voice->velocity = (unsigned char)(region->fixedVel > 0 && region->fixedVel <= 127 ? region->fixedVel : midiVelocity);
+		if (c) voice->portaCents = f->channels->glideCents, voice->portaDelta = f->channels->glideDelta;
+		voice->key = (unsigned char)(region->fixedKey >= 0 ? region->fixedKey : key);
+		voice->velocity = (unsigned char)(region->fixedVel >= 0 ? region->fixedVel : midiVelocity);
 		voice->keyPressure = 0;
-		voice->noteGainDB = f->globalGainDB + (f->channels ? f->channels->channels[f->channels->activeChannel].gainDB : 0.0f);
-		voice->lowpass.z1 = voice->lowpass.z2 = 0;
+		voice->noteGainDB = f->globalGainDB + (c ? c->gainDB : 0.0f);
+		voice->lowpass.ic1 = voice->lowpass.ic2 = 0;
 		voice->lowpass.active = TSF_FALSE;
 		voice->softFc = 0;
-		if (f->channels && f->channels->channels[f->channels->activeChannel].cc[67] >= 64) // soft pedal: quieter and darker, for notes started while pressed
+		if (c && c->cc[67] >= 64) // soft pedal: quieter and darker, for notes started while pressed
 		{
-			float soft = (f->channels->channels[f->channels->activeChannel].cc[67] - 63) * (1.0f / 64.0f);
+			float soft = (c->cc[67] - 63) * (1.0f / 64.0f);
 			voice->noteGainDB -= 6.0f * soft, voice->softFc = (short)(360.0f * soft);
 		}
 
@@ -2388,14 +2572,19 @@ TSFDEF int tsf_note_on(tsf* f, int preset_index, int key, float vel)
 		}
 
 		// Setup envelopes (from the modulated timecents).
-		tsf_voice_envelope_setup(&voice->ampenv, &voice->mr.ampenv, voice->key, voice->velocity, TSF_TRUE, f->outSampleRate);
-		tsf_voice_envelope_setup(&voice->modenv, &voice->mr.modenv, voice->key, voice->velocity, TSF_FALSE, f->outSampleRate);
+		tsf_voice_envelope_setup(&voice->ampenv, &voice->mr.ampenv, voice->key, midiVelocity, TSF_TRUE, f->outSampleRate);
+		tsf_voice_envelope_setup(&voice->modenv, &voice->mr.modenv, voice->key, midiVelocity, TSF_FALSE, f->outSampleRate);
 
 		// Setup LFO filters.
 		tsf_voice_lfo_setup(&voice->modlfo, tsf_timecents2Secs(voice->mr.delayModLFO), voice->mr.freqModLFO, f->outSampleRate);
 		tsf_voice_lfo_setup(&voice->viblfo, tsf_timecents2Secs(voice->mr.delayVibLFO), voice->mr.freqVibLFO, f->outSampleRate);
 	}
 	return 1;
+}
+
+TSFDEF int tsf_note_on(tsf* f, int preset_index, int key, float vel)
+{
+	return tsf_note_on_channel(f, preset_index, key, vel, -1, TSF_NULL, 0); // not on any channel
 }
 
 TSFDEF int tsf_bank_note_on(tsf* f, int bank, int preset_number, int key, float vel)
@@ -2411,7 +2600,7 @@ TSFDEF void tsf_note_off(tsf* f, int preset_index, int key)
 	for (; v != vEnd; v++)
 	{
 		//Find the first and last entry in the voices list with matching preset, key and look up the smallest play index
-		if (v->playingPreset != preset_index || v->playingKey != key || v->ampenv.segment >= TSF_SEGMENT_RELEASE) continue;
+		if (v->playingPreset != preset_index || v->playingKey != key || v->playingChannel != -1 || !TSF_VOICE_KEYDOWN(v)) continue;
 		else if (!vMatchFirst || v->playIndex < vMatchFirst->playIndex) vMatchFirst = vMatchLast = v;
 		else if (v->playIndex == vMatchFirst->playIndex) vMatchLast = v;
 	}
@@ -2420,7 +2609,7 @@ TSFDEF void tsf_note_off(tsf* f, int preset_index, int key)
 	{
 		//Stop all voices with matching preset, key and the smallest play index which was enumerated above
 		if (v != vMatchFirst && v != vMatchLast &&
-			(v->playIndex != vMatchFirst->playIndex || v->playingPreset != preset_index || v->playingKey != key || v->ampenv.segment >= TSF_SEGMENT_RELEASE)) continue;
+			(v->playIndex != vMatchFirst->playIndex || v->playingPreset != preset_index || v->playingKey != key || v->playingChannel != -1 || !TSF_VOICE_KEYDOWN(v))) continue;
 		tsf_voice_end(f, v);
 	}
 }
@@ -2428,7 +2617,7 @@ TSFDEF void tsf_note_off(tsf* f, int preset_index, int key)
 TSFDEF int tsf_bank_note_off(tsf* f, int bank, int preset_number, int key)
 {
 	int preset_index = tsf_get_presetindex(f, bank, preset_number);
-	if (preset_index == -1) return 0;
+	if (preset_index == -1 || key < 0 || key > 127) return 0;
 	tsf_note_off(f, preset_index, key);
 	return 1;
 }
@@ -2436,7 +2625,7 @@ TSFDEF int tsf_bank_note_off(tsf* f, int bank, int preset_number, int key)
 TSFDEF void tsf_note_off_all(tsf* f)
 {
 	struct tsf_voice *v = f->voices, *vEnd = v ? v + f->voiceNum : TSF_NULL;
-	for (; v != vEnd; v++) if (v->playingPreset != -1 && v->ampenv.segment < TSF_SEGMENT_RELEASE)
+	for (; v != vEnd; v++) if (v->playingPreset != -1 && TSF_VOICE_KEYDOWN(v))
 		tsf_voice_end(f, v);
 }
 
@@ -2460,18 +2649,18 @@ TSFDEF void tsf_render_short(tsf* f, short* buffer, int samples, int flag_mixing
 		tsf_render_float(f, floatSamples, channelSamples, TSF_FALSE);
 		samples -= channelSamples;
 
+		// Rounded to the nearest step (truncating would drop everything below one step, a dead zone around zero) and saturated
 		if (flag_mixing)
 			while (buffer != bufferEnd)
 			{
-				float v = *floatSamples++;
-				int vi = *buffer + (v < -1.00004566f ? (int)-32768 : (v > 1.00001514f ? (int)32767 : (int)(v * 32767.5f)));
-				*buffer++ = (vi < -32768 ? (short)-32768 : (vi > 32767 ? (short)32767 : (short)vi));
+				float v = *buffer + *floatSamples++ * 32768.0f;
+				*buffer++ = (short)(v > -32767.5f ? (v < 32766.5f ? (int)(v + (v < 0.0f ? -0.5f : 0.5f)) : 32767) : (v <= -32767.5f ? -32768 : 0)); // NaN as 0
 			}
 		else
 			while (buffer != bufferEnd)
 			{
-				float v = *floatSamples++;
-				*buffer++ = (v < -1.00004566f ? (short)-32768 : (v > 1.00001514f ? (short)32767 : (short)(v * 32767.5f)));
+				float v = *floatSamples++ * 32768.0f;
+				*buffer++ = (short)(v > -32767.5f ? (v < 32766.5f ? (int)(v + (v < 0.0f ? -0.5f : 0.5f)) : 32767) : (v <= -32767.5f ? -32768 : 0));
 			}
 	}
 }
@@ -2482,11 +2671,14 @@ TSFDEF void tsf_render_float(tsf* f, float* buffer, int samples, int flag_mixing
 	struct tsf_fx* fx = f->fx;
 	int channels = (f->outputmode == TSF_MONO ? 1 : 2), offset = 0, total = samples;
 	int idleLimit = (fx ? (int)(f->outSampleRate * TSF_FX_QUIET_SECONDS) : 0);
+	TSF_BOOL doReverb = (fx && fx->reverbEnabled && fx->reverbWet > 0.0f), doChorus = (fx && fx->chorusEnabled && fx->chorusWet > 0.0f); // as tsf_fx_process
+	if (samples <= 0) return;
 	if (!flag_mixing) TSF_MEMSET(buffer, 0, channels * sizeof(float) * samples);
-	if (fx && (fx->reverbEnabled || fx->chorusEnabled) && fx->idle >= idleLimit) // without a tail, check if anything sends at all
+	#define TSF_VOICE_SENDS(v) (v->playingPreset != -1 && ((doChorus && v->chorusSend > 0.0f) || (doReverb && v->reverbSend > 0.0f))) // to an effect that runs
+	if ((doReverb || doChorus) && fx->idle >= idleLimit) // without a tail, check if anything sends at all
 		for (v = f->voices; v != vEnd; v++)
-			if (v->playingPreset != -1 && (v->chorusSend > 0.0f || v->reverbSend > 0.0f)) { fx->idle = 0; break; }
-	if (!fx || !(fx->reverbEnabled || fx->chorusEnabled) || fx->idle >= idleLimit)
+			if (TSF_VOICE_SENDS(v)) { fx->idle = 0; break; }
+	if (!(doReverb || doChorus) || fx->idle >= idleLimit)
 	{
 		for (v = f->voices; v != vEnd; v++)
 			if (v->playingPreset != -1)
@@ -2504,8 +2696,8 @@ TSFDEF void tsf_render_float(tsf* f, float* buffer, int samples, int flag_mixing
 		for (v = f->voices; v != vEnd; v++)
 			if (v->playingPreset != -1)
 			{
-				tsf_voice_render(f, v, out, block, total, chorusSend, reverbSend);
-				if (v->playingPreset != -1 && (v->chorusSend > 0.0f || v->reverbSend > 0.0f)) sending = TSF_TRUE;
+				tsf_voice_render(f, v, out, block, total, (doChorus ? chorusSend : TSF_NULL), (doReverb ? reverbSend : TSF_NULL));
+				if (TSF_VOICE_SENDS(v)) sending = TSF_TRUE;
 			}
 		if (fx->idle < idleLimit || sending)
 		{
@@ -2521,34 +2713,39 @@ TSFDEF void tsf_render_float(tsf* f, float* buffer, int samples, int flag_mixing
 			}
 			if (f->outputmode == TSF_STEREO_INTERLEAVED) for (i = 0; i != block; i++) { out[i * 2] += wetL[i]; out[i * 2 + 1] += wetR[i]; }
 			else if (f->outputmode == TSF_STEREO_UNWEAVED) for (i = 0; i != block; i++) { out[i] += wetL[i]; out[total + i] += wetR[i]; }
-			else for (i = 0; i != block; i++) out[i] += (wetL[i] + wetR[i]) * 0.5f;
+			else for (i = 0; i != block; i++) out[i] += (wetL[i] + wetR[i]) * 0.70710678f; // the stereo returns' power (mostly uncorrelated)
 			if (sending || peak > TSF_FX_SILENCE) fx->idle = 0;
-			else if ((fx->idle += block) >= idleLimit) { tsf_fx_clear(fx); fx->idle = 0x40000000; } // the tail has died out, start from silence next time
+			else if ((fx->idle += block) >= idleLimit) tsf_fx_clear(fx); // the tail has died out, start from silence next time
 		}
 		if (f->outputmode != TSF_STEREO_UNWEAVED) buffer += block * channels;
 		offset += block; samples -= block;
 	}
+	#undef TSF_VOICE_SENDS
 }
 
+#define TSF_FXCLAMP(x) (!((x) > 0.0f) ? 0.0f : ((x) > 1.0f ? 1.0f : (x))) // NaN as 0
 TSFDEF void tsf_set_reverb(tsf* f, int enabled, float room_size, float damping, float width, float wet)
 {
-	struct tsf_fx* fx;
-	#define TSF_FXCLAMP(x) (!((x) > 0.0f) ? 0.0f : ((x) > 1.0f ? 1.0f : (x))) // NaN as 0
+	struct tsf_fx* fx; TSF_BOOL wasRunning;
 	if (!f) return;
 	if (!(fx = tsf_fx_get(f, enabled))) return;
+	wasRunning = (fx->reverbEnabled && fx->reverbWet > 0.0f);
 	fx->reverbEnabled = (enabled != 0); fx->roomSize = TSF_FXCLAMP(room_size); fx->damping = TSF_FXCLAMP(damping); fx->width = TSF_FXCLAMP(width); fx->reverbWet = TSF_FXCLAMP(wet);
+	if (!wasRunning && fx->reverbEnabled && fx->reverbWet > 0.0f) tsf_fx_clear_lines(fx, 0, 12);
 	tsf_fx_release_if_unused(f);
 }
 
 TSFDEF void tsf_set_chorus(tsf* f, int enabled, float depth, float rate, float wet)
 {
-	struct tsf_fx* fx;
+	struct tsf_fx* fx; TSF_BOOL wasRunning;
 	if (!f) return;
 	if (!(fx = tsf_fx_get(f, enabled))) return;
+	wasRunning = (fx->chorusEnabled && fx->chorusWet > 0.0f);
 	fx->chorusEnabled = (enabled != 0); fx->chorusDepth = TSF_FXCLAMP(depth); fx->chorusRate = (!(rate > 0.0f) ? 0.0f : (rate > 5.0f ? 5.0f : rate)); fx->chorusWet = TSF_FXCLAMP(wet);
-	#undef TSF_FXCLAMP
+	if (!wasRunning && fx->chorusEnabled && fx->chorusWet > 0.0f) tsf_fx_clear_lines(fx, 12, 14);
 	tsf_fx_release_if_unused(f);
 }
+#undef TSF_FXCLAMP
 
 TSFDEF void tsf_reset_effects(tsf* f)
 {
@@ -2582,7 +2779,6 @@ static struct tsf_channel* tsf_channel_init(tsf* f, int channel)
 		f->channels = (struct tsf_channels*)TSF_MALLOC(sizeof(struct tsf_channels) + sizeof(struct tsf_channel) * channel);
 		if (!f->channels) return TSF_NULL;
 		f->channels->channelNum = 0;
-		f->channels->activeChannel = 0;
 		f->channels->glideCents = f->channels->glideDelta = 0.0f;
 	}
 	else
@@ -2610,6 +2806,7 @@ static struct tsf_channel* tsf_channel_init(tsf* f, int channel)
 		c->modDepth = 1.0f;
 		c->nrpnMSB = 0; c->nrpnSel = 0xFFFF; c->nrpnAcc = 0;
 		TSF_MEMSET(c->nrpn, 0, sizeof(c->nrpn));
+		c->aweSet = 0;
 		c->monoCount = 0;
 		c->pressure = 0;
 		TSF_MEMSET(c->cc, 0, sizeof(c->cc));
@@ -2677,7 +2874,7 @@ TSFDEF int tsf_channel_set_presetnumber(tsf* f, int channel, int preset_number, 
 
 TSFDEF int tsf_channel_set_bank(tsf* f, int channel, int bank)
 {
-	struct tsf_channel *c = tsf_channel_init(f, channel);
+	struct tsf_channel *c = (bank < 0 || bank > 16383 ? TSF_NULL : tsf_channel_init(f, channel));
 	if (!c) return 0;
 	c->bank = (unsigned short)bank;
 	return 1;
@@ -2758,32 +2955,34 @@ static void tsf_channel_pedals_released(tsf* f, int channel, const struct tsf_ch
 	struct tsf_voice *v, *vEnd;
 	if (c->sustain || c->hold2) return;
 	for (v = f->voices, vEnd = v ? v + f->voiceNum : TSF_NULL; v != vEnd; v++)
-		if (v->playingPreset != -1 && v->playingChannel == channel && v->ampenv.segment < TSF_SEGMENT_RELEASE && v->heldSustain && !v->sostenuto)
+		if (v->playingPreset != -1 && v->playingChannel == channel && TSF_VOICE_KEYDOWN(v) && v->heldSustain && !v->sostenuto)
 			tsf_voice_end(f, v);
+}
+
+// Pressing sostenuto captures the notes sounding with their key down, releasing it ends those whose key was released meanwhile
+static void tsf_channel_sostenuto(tsf* f, int channel, struct tsf_channel* c, int flag_sostenuto)
+{
+	struct tsf_voice *v, *vEnd;
+	if (!c->sostenuto == !flag_sostenuto) return;
+	c->sostenuto = (unsigned short)(flag_sostenuto != 0);
+	for (v = f->voices, vEnd = v ? v + f->voiceNum : TSF_NULL; v != vEnd; v++)
+		if (v->playingPreset != -1 && v->playingChannel == channel && TSF_VOICE_KEYDOWN(v))
+			v->sostenuto = (unsigned char)(flag_sostenuto && !v->heldSustain);
+	tsf_channel_pedals_released(f, channel, c);
 }
 
 TSFDEF int tsf_channel_set_sustain(tsf* f, int channel, int flag_sustain)
 {
 	struct tsf_channel *c = tsf_channel_init(f, channel);
 	if (!c) return 0;
-	c->sustain = (unsigned short)(flag_sustain != 0);
-	tsf_channel_pedals_released(f, channel, c); //turning on sustain does nothing now, it only makes note off keep the notes
-	return 1;
+	return (!c->sustain == !flag_sustain ? 1 : tsf_channel_midi_control(f, channel, 64, flag_sustain ? 127 : 0));
 }
 
 TSFDEF int tsf_channel_set_sostenuto(tsf* f, int channel, int flag_sostenuto)
 {
 	struct tsf_channel *c = tsf_channel_init(f, channel);
-	struct tsf_voice *v, *vEnd;
 	if (!c) return 0;
-	if (!c->sostenuto == !flag_sostenuto) return 1;
-	c->sostenuto = (unsigned short)(flag_sostenuto != 0);
-	//Pressing the pedal captures the notes that are sounding with their key down, releasing it ends those whose key was released meanwhile
-	for (v = f->voices, vEnd = v ? v + f->voiceNum : TSF_NULL; v != vEnd; v++)
-		if (v->playingPreset != -1 && v->playingChannel == channel && v->ampenv.segment < TSF_SEGMENT_RELEASE)
-			v->sostenuto = (unsigned char)(flag_sostenuto && !v->heldSustain);
-	tsf_channel_pedals_released(f, channel, c);
-	return 1;
+	return (!c->sostenuto == !flag_sostenuto ? 1 : tsf_channel_midi_control(f, channel, 66, flag_sostenuto ? 127 : 0));
 }
 
 // Start a glide of cents (the pitch offset the note starts with, it moves to 0 linearly) for the voice being started or retargeted.
@@ -2795,28 +2994,97 @@ static void tsf_channel_glide(tsf* f, const struct tsf_channel* c, float cents, 
 	else *outCents = *outDelta = 0.0f;
 }
 
-// Mono mode: a key pressed while another one is held continues that note's voices with the new pitch instead of starting new ones
-static TSF_BOOL tsf_channel_legato(tsf* f, int channel, struct tsf_channel* c, int key)
+//a note whose key is down, or that sustain or hold 2 keeps (like a held key); a note kept by sostenuto stays as it is
+#define TSF_LEGATO_SOURCE(v) (v->playingPreset != -1 && v->playingChannel == channel && TSF_VOICE_KEYDOWN(v) && (!v->heldSustain || !v->sostenuto))
+//a note sounding for the (new) key: its key is down and no pedal keeps it
+#define TSF_KEY_NOTE(v) (v->playingPreset != -1 && v->playingChannel == channel && v->playingKey == key && TSF_VOICE_KEYDOWN(v) && !v->heldSustain)
+
+// Continue oldKey's voices at the new key without re-attacking, gliding from the CC84 key or with portamento on (false: none could).
+// A voice whose zone doesn't cover the new key (another sample) is released, and a zone that covers only the new key (a layer)
+// starts as part of the note. *restartVel gets the note's velocity, for a new note when no voice could continue.
+static TSF_BOOL tsf_channel_retarget(tsf* f, int channel, struct tsf_channel* c, int oldKey, int key, float* restartVel)
 {
-	struct tsf_voice *v, *vEnd = (f->voices ? f->voices + f->voiceNum : TSF_NULL), *last = TSF_NULL;
-	int oldKey;
-	for (v = f->voices; v != vEnd; v++) //the most recently started note whose key is still down
-		if (v->playingPreset != -1 && v->playingChannel == channel && v->ampenv.segment < TSF_SEGMENT_RELEASE && !v->heldSustain && v->playingKey != key && (!last || v->playIndex > last->playIndex)) last = v;
-	if (!last) return TSF_FALSE;
-	oldKey = last->playingKey;
+	struct tsf_voice *v, *vEnd = (f->voices ? f->voices + f->voiceNum : TSF_NULL);
+	TSF_BOOL found = TSF_FALSE;
+	unsigned int playIndex = 0;
+	int preset = 0;
+	float glideCents = 0.0f, glideDelta = 0.0f, keepCents, keepDelta;
+	*restartVel = 0.0f;
 	for (v = f->voices; v != vEnd; v++)
-		if (v->playingPreset != -1 && v->playingChannel == channel && v->playingKey == oldKey && v->ampenv.segment < TSF_SEGMENT_RELEASE && !v->heldSustain)
+		if (TSF_LEGATO_SOURCE(v) && v->playingKey == oldKey)
+		{
+			if (v->ampenv.midiVelocity > *restartVel * 127.0f) *restartVel = v->ampenv.midiVelocity * (1.0f / 127.0f);
+			if (key < v->region->lokey || key > v->region->hikey) tsf_voice_end(f, v);
+			else found = TSF_TRUE;
+		}
+	if (!found) return TSF_FALSE;
+	// oldKey's voices can be several notes (pedal-held, struck again) and the key its own: one key down is one note, else they would hang
+	for (v = f->voices; v != vEnd; v++)
+		if ((TSF_LEGATO_SOURCE(v) && v->playingKey == oldKey) || TSF_KEY_NOTE(v)) { if (v->playIndex > playIndex) playIndex = v->playIndex; }
+	for (v = f->voices; v != vEnd; v++)
+		if (TSF_LEGATO_SOURCE(v) && v->playingKey == oldKey)
 		{
 			float cents = (c->portaKey != 255 ? (c->portaKey - key) * 100.0f : (oldKey - key) * 100.0f + v->portaCents);
-			if (c->cc[65] >= 64) tsf_channel_glide(f, c, cents, &v->portaCents, &v->portaDelta);
+			v->heldSustain = 0; // the new key is down now
+			if (c->portaKey != 255 || c->cc[65] >= 64) tsf_channel_glide(f, c, cents, &v->portaCents, &v->portaDelta);
 			else v->portaCents = v->portaDelta = 0.0f;
 			v->playingKey = key;
 			if (v->region->fixedKey < 0) v->key = (unsigned char)key;
 			tsf_voice_modulate(f, v, TSF_FALSE); //key number sources
 			tsf_voice_calcpitchratio(v, &v->mr, c->tuning);
+			preset = v->playingPreset, glideCents = v->portaCents, glideDelta = v->portaDelta;
 		}
+	for (v = f->voices; v != vEnd; v++) if (TSF_KEY_NOTE(v)) v->playIndex = playIndex;
+	// the zones of the note's preset that cover the new key but not the old one start, gliding along with the note
+	keepCents = f->channels->glideCents, keepDelta = f->channels->glideDelta;
+	f->channels->glideCents = glideCents, f->channels->glideDelta = glideDelta;
+	tsf_note_on_channel(f, preset, key, *restartVel, channel, &playIndex, oldKey); // (can reallocate the voices)
+	f->channels->glideCents = keepCents, f->channels->glideDelta = keepDelta;
 	c->portaKey = 255;
 	return TSF_TRUE;
+}
+
+// Mono mode: a key pressed while another one is held continues that note's voices with the new pitch instead of starting new ones
+static TSF_BOOL tsf_channel_legato(tsf* f, int channel, struct tsf_channel* c, int key, float* restartVel)
+{
+	struct tsf_voice *v, *vEnd = (f->voices ? f->voices + f->voiceNum : TSF_NULL), *last = TSF_NULL;
+	//the newest note whose key is down (sounding as the top key), else the newest one a pedal keeps
+	for (v = f->voices; v != vEnd; v++)
+		if (TSF_LEGATO_SOURCE(v) && (v->playingKey != key || v->heldSustain) &&
+			(!last || (last->heldSustain && !v->heldSustain) || (last->heldSustain == v->heldSustain && v->playIndex > last->playIndex))) last = v;
+	*restartVel = 0.0f;
+	return (last && tsf_channel_retarget(f, channel, c, last->playingKey, key, restartVel));
+}
+#undef TSF_LEGATO_SOURCE
+#undef TSF_KEY_NOTE
+
+// Remember a key held down in mono mode or with the legato footswitch (moved to the top of the held keys, the last one sounds)
+static void tsf_channel_hold_key(struct tsf_channel* c, int key)
+{
+	unsigned i = 0;
+	while (i != c->monoCount && c->monoKeys[i] != key) i++;
+	if (i == c->monoCount) { if (i == sizeof(c->monoKeys)) i = 0; /* full: the oldest key is dropped */ else c->monoCount++; }
+	for (; i + 1 < c->monoCount; i++) c->monoKeys[i] = c->monoKeys[i + 1];
+	c->monoKeys[c->monoCount - 1] = (unsigned char)key;
+}
+
+// The legato footswitch pressed in poly mode: the keys already held down are remembered (oldest note first), so releasing a
+// legato key returns to a key that was held before the pedal
+static void tsf_channel_hold_down_keys(tsf* f, int channel, struct tsf_channel* c)
+{
+	struct tsf_voice *v, *vEnd = (f->voices ? f->voices + f->voiceNum : TSF_NULL), *next;
+	unsigned int after = 0;
+	TSF_BOOL any = TSF_FALSE;
+	c->monoCount = 0;
+	for (;;)
+	{
+		for (next = TSF_NULL, v = f->voices; v != vEnd; v++)
+			if (v->playingPreset != -1 && v->playingChannel == channel && TSF_VOICE_KEYDOWN(v) && !v->heldSustain &&
+				(!any || v->playIndex > after) && (!next || v->playIndex < next->playIndex)) next = v;
+		if (!next) return;
+		tsf_channel_hold_key(c, next->playingKey);
+		after = next->playIndex, any = TSF_TRUE;
+	}
 }
 
 TSFDEF int tsf_channel_note_on(tsf* f, int channel, int key, float vel)
@@ -2824,32 +3092,37 @@ TSFDEF int tsf_channel_note_on(tsf* f, int channel, int key, float vel)
 	struct tsf_channels* cs;
 	struct tsf_channel* c;
 	int res;
+	float restartVel;
+	if (key < 0 || key > 127) return 0;
 	if (!(vel > 0.0f)) // also NaN
 	{
 		tsf_channel_note_off(f, channel, key);
-		return 1;
+		return ((unsigned)channel < TSF_MAX_CHANNELS);
 	}
 	c = tsf_channel_init(f, channel); // a note on a channel that wasn't set up yet plays its default preset
 	if (!c) return 0;
 	cs = f->channels;
-	cs->activeChannel = channel;
 	if (c->monoMode || c->cc[68] >= 64) // mono mode or legato footswitch
 	{
-		unsigned i = 0; // remember the key (moved to the top of the held keys)
-		while (i != c->monoCount && c->monoKeys[i] != key) i++;
-		if (i == c->monoCount) { if (i == sizeof(c->monoKeys)) i = 0; /* full: the oldest key is dropped */ else c->monoCount++; }
-		for (; i + 1 < c->monoCount; i++) c->monoKeys[i] = c->monoKeys[i + 1];
-		c->monoKeys[c->monoCount - 1] = (unsigned char)key;
-		if (tsf_channel_legato(f, channel, c, key)) { c->lastKey = (unsigned char)key; return 1; }
+		tsf_channel_hold_key(c, key);
+		if (tsf_channel_legato(f, channel, c, key, &restartVel)) { c->lastKey = (unsigned char)key; return 1; } // else a new note
+		if (c->monoMode) // the same key pressed again restarts the note: one note per channel in mono mode
+		{
+			struct tsf_voice *v, *vEnd = (f->voices ? f->voices + f->voiceNum : TSF_NULL);
+			for (v = f->voices; v != vEnd; v++)
+				if (v->playingPreset != -1 && v->playingChannel == channel && v->playingKey == key && TSF_VOICE_KEYDOWN(v)) tsf_voice_end(f, v);
+		}
 	}
-	if (c->cc[65] >= 64) //portamento on: glide from the CC84 key (for this note only) or else from the previous note
+	//CC84 (MIDI 1.0): a sounding note on the source key glides to the new key, no new voice
+	if (c->portaKey != 255 && c->portaKey != key && tsf_channel_retarget(f, channel, c, c->portaKey, key, &restartVel)) { c->lastKey = (unsigned char)key; return 1; }
+	if (c->portaKey != 255 || c->cc[65] >= 64) //glide from the CC84 key (this note only, also with portamento off), or with portamento on from the previous note
 	{
 		int from = (c->portaKey != 255 ? c->portaKey : c->lastKey);
 		if (from != 255) tsf_channel_glide(f, c, (from - key) * 100.0f, &cs->glideCents, &cs->glideDelta);
 	}
 	c->portaKey = 255;
 	c->lastKey = (unsigned char)key;
-	res = tsf_note_on(f, c->presetIndex, key, vel);
+	res = tsf_note_on_channel(f, c->presetIndex, key, vel, channel, TSF_NULL, 0);
 	cs->glideCents = cs->glideDelta = 0.0f;
 	return res;
 }
@@ -2868,14 +3141,31 @@ TSFDEF void tsf_channel_note_off(tsf* f, int channel, int key)
 		{
 			wasTop = (i + 1 == c->monoCount);
 			for (c->monoCount--; i < c->monoCount; i++) c->monoKeys[i] = c->monoKeys[i + 1];
-			f->channels->activeChannel = channel;
-			if (wasTop && c->monoCount && tsf_channel_legato(f, channel, c, c->monoKeys[c->monoCount - 1])) return;
+			if (wasTop && c->monoCount) // the released key's own note continues at the held key
+			{
+				int back = c->monoKeys[c->monoCount - 1];
+				float restartVel;
+				for (v = f->voices; v != vEnd; v++) // unless that key sounds its own note (held from before the legato footswitch)
+					if (v->playingPreset != -1 && v->playingChannel == channel && v->playingKey == back && TSF_VOICE_KEYDOWN(v) && !v->heldSustain) break;
+				if (v == vEnd)
+				{
+					unsigned char ptc = c->portaKey; // a CC84 key is for the next note on, not for this return
+					TSF_BOOL moved;
+					c->portaKey = 255;
+					moved = tsf_channel_retarget(f, channel, c, key, back, &restartVel);
+					if (moved) c->lastKey = (unsigned char)back; // the next note glides from the key that sounds
+					else if (restartVel > 0.0f) tsf_channel_note_on(f, channel, back, restartVel); // the held key is in another zone: a new note
+					c->portaKey = ptc;
+					if (moved || restartVel > 0.0f) return;
+				}
+				v = f->voices;
+			}
 		}
 	}
 	for (; v != vEnd; v++)
 	{
 		//Find the first and last entry in the voices list with matching channel, key and look up the smallest play index
-		if (v->playingPreset == -1 || v->playingChannel != channel || v->playingKey != key || v->ampenv.segment >= TSF_SEGMENT_RELEASE || v->heldSustain) continue;
+		if (v->playingPreset == -1 || v->playingChannel != channel || v->playingKey != key || !TSF_VOICE_KEYDOWN(v) || v->heldSustain) continue;
 		else if (!vMatchFirst || v->playIndex < vMatchFirst->playIndex) vMatchFirst = vMatchLast = v;
 		else if (v->playIndex == vMatchFirst->playIndex) vMatchLast = v;
 	}
@@ -2884,7 +3174,7 @@ TSFDEF void tsf_channel_note_off(tsf* f, int channel, int key)
 	{
 		//Stop all voices with matching channel, key and the smallest play index which was enumerated above
 		if (v != vMatchFirst && v != vMatchLast &&
-			(v->playIndex != vMatchFirst->playIndex || v->playingPreset == -1 || v->playingChannel != channel || v->playingKey != key || v->ampenv.segment >= TSF_SEGMENT_RELEASE)) continue;
+			(v->playIndex != vMatchFirst->playIndex || v->playingPreset == -1 || v->playingChannel != channel || v->playingKey != key || !TSF_VOICE_KEYDOWN(v))) continue;
 		//Don't turn off if sustain or hold 2 is active or the note is held by sostenuto, just mark as held so we don't forget it
 		if (sustain || v->sostenuto)
 			v->heldSustain = 1;
@@ -2899,7 +3189,7 @@ TSFDEF void tsf_channel_note_off_all(tsf* f, int channel)
 	struct tsf_voice *v = f->voices, *vEnd = v ? v + f->voiceNum : TSF_NULL;
 	if (f->channels && (unsigned)channel < (unsigned)f->channels->channelNum) f->channels->channels[channel].monoCount = 0;
 	for (; v != vEnd; v++)
-		if (v->playingPreset != -1 && v->playingChannel == channel && v->ampenv.segment < TSF_SEGMENT_RELEASE)
+		if (v->playingPreset != -1 && v->playingChannel == channel && TSF_VOICE_KEYDOWN(v))
 			tsf_voice_end(f, v);
 }
 
@@ -2909,7 +3199,7 @@ static void tsf_channel_release_all(tsf* f, int channel, struct tsf_channel* c)
 	struct tsf_voice *v = f->voices, *vEnd = v ? v + f->voiceNum : TSF_NULL;
 	c->monoCount = 0;
 	for (; v != vEnd; v++)
-		if (v->playingPreset != -1 && v->playingChannel == channel && v->ampenv.segment < TSF_SEGMENT_RELEASE && !v->heldSustain)
+		if (v->playingPreset != -1 && v->playingChannel == channel && TSF_VOICE_KEYDOWN(v) && !v->heldSustain)
 		{
 			if (c->sustain || c->hold2 || v->sostenuto) v->heldSustain = 1;
 			else tsf_voice_end(f, v);
@@ -2939,7 +3229,7 @@ TSFDEF int tsf_channel_set_pressure(tsf* f, int channel, int pressure)
 TSFDEF int tsf_channel_set_poly_pressure(tsf* f, int channel, int key, int key_pressure)
 {
 	struct tsf_voice *v, *vEnd;
-	struct tsf_channel *c = tsf_channel_init(f, channel);
+	struct tsf_channel *c = (key < 0 || key > 127 ? TSF_NULL : tsf_channel_init(f, channel));
 	if (!c) return 0;
 	key_pressure = (key_pressure < 0 ? 0 : (key_pressure > 127 ? 127 : key_pressure));
 	for (v = f->voices, vEnd = v ? v + f->voiceNum : TSF_NULL; v != vEnd; v++)
@@ -2951,66 +3241,121 @@ TSFDEF int tsf_channel_set_poly_pressure(tsf* f, int channel, int key, int key_p
 	return 1;
 }
 
+// The selected RPN's or SF2.01 NRPN's current 14-bit value, for data increment/decrement and a lone RPN LSB
+static int tsf_channel_data_value(const struct tsf_channel* c)
+{
+	switch (c->midiRPN)
+	{
+		case 0: // pitch bend range: semitones (MSB) and cents (LSB)
+		{
+			float r = (c->pitchRange > 0.0f ? (c->pitchRange < 127.99f ? c->pitchRange : 127.99f) : 0.0f);
+			int semi = (int)r, ct = (int)((r - semi) * 100.0f + 0.5f);
+			return (semi << 7) | (ct > 99 ? 99 : ct);
+		}
+		case 1: { float x = c->tuneFine * 8192.0f + 8192.5f; return (x < 0.0f ? 0 : (x > 16383.0f ? 16383 : (int)x)); } // fine tuning
+		case 2: return (c->tuneCoarse + 64) << 7; // coarse tuning
+		case 5: // modulation depth range: semitones (MSB) and 100/128 cents (LSB)
+		{
+			float cents = c->modDepth * 50.0f; int semi = (int)(cents / 100.0f), lsb;
+			if (semi > 127) return 16383;
+			lsb = (int)((cents - semi * 100.0f) * 1.28f + 0.5f);
+			return (semi << 7) | (lsb > 127 ? 127 : lsb);
+		}
+		case 0xFFFF: if (c->nrpnSel < TSF_NUMGENS && tsf_nrpn_scale[c->nrpnSel]) return c->nrpn[c->nrpnSel] + 8192; break; // SF2.01 NRPN
+	}
+	return c->midiData;
+}
+
 TSFDEF int tsf_channel_midi_control(tsf* f, int channel, int controller, int control_value)
 {
-	struct tsf_channel* c = tsf_channel_init(f, channel);
+	struct tsf_channel* c = ((unsigned)controller > 127 ? TSF_NULL : tsf_channel_init(f, channel));
+	unsigned char prev;
 	if (!c) return 0;
 	if (control_value < 0) control_value = 0; else if (control_value > 127) control_value = 127; // MIDI data bytes are 7 bit
-	if ((unsigned)controller < 128 && c->cc[controller] != (unsigned char)control_value)
+	prev = c->cc[controller];
 	{
-		int tracked = controller - (controller - 33u < 31u && controller != 38 ? 32 : 0); // an LSB change counts for its MSB controller
-		c->cc[controller] = (unsigned char)control_value;
-		if (f->modCCs[tracked >> 5] & (1u << (tracked & 31)) || f->modCCs[controller >> 5] & (1u << (controller & 31))) tsf_channel_modulate(f, channel);
+		TSF_BOOL changed = (c->cc[controller] != (unsigned char)control_value);
+		if (controller - 1u < 31u && controller != 6 && c->cc[controller + 32]) c->cc[controller + 32] = 0, changed = TSF_TRUE; // MIDI 1.0: an MSB sets the LSB to zero
+		if (changed)
+		{
+			int tracked = controller - (controller - 33u < 31u && controller != 38 ? 32 : 0); // an LSB change counts for its MSB controller
+			c->cc[controller] = (unsigned char)control_value;
+			if (f->modCCs[tracked >> 5] & (1u << (tracked & 31)) || f->modCCs[controller >> 5] & (1u << (controller & 31))) tsf_channel_modulate(f, channel);
+		}
 	}
 	switch (controller)
 	{
-		case   6 /*DATA_ENTRY_MSB*/  : c->midiData       = (unsigned short)((c->midiData       & 0x7F)   | (control_value << 7)); goto TCMC_SET_DATA;
-		case  38 /*DATA_ENTRY_LSB*/  : c->midiData       = (unsigned short)((c->midiData       & 0x3F80) |  control_value);       goto TCMC_SET_DATA;
+		case   6 /*DATA_ENTRY_MSB*/  : c->midiData       = (unsigned short)((c->midiRPN == 0xFFFF ? (c->midiData & 0x7F) : 0) | (control_value << 7)); goto TCMC_SET_DATA; // MSB zeroes LSB, except for the SF2.01 NRPN (9.6.3)
+		case  38 /*DATA_ENTRY_LSB*/  : c->midiData       = (unsigned short)(((c->midiRPN == 0xFFFF ? c->midiData : tsf_channel_data_value(c)) & 0x3F80) | control_value); goto TCMC_SET_DATA; // an RPN's LSB completes its current value
 		case   0 /*BANK_SELECT_MSB*/ : c->bank = (unsigned short)(0x8000 | control_value); return 1; //bank select MSB alone acts like LSB
-		case  32 /*BANK_SELECT_LSB*/ : c->bank = (unsigned short)((c->bank & 0x8000 ? ((c->bank & 0x7F) << 7) : (c->bank & 0x3F80)) | control_value); return 1; //the MSB stays when only the LSB changes
+		case  32 /*BANK_SELECT_LSB*/ :
+			c->bank = (unsigned short)((c->bank & 0x8000 ? ((c->bank & 0x7F) << 7) : (c->bank & 0x3F80)) | control_value); //the MSB stays when only the LSB changes
+			if (c->bank == 128) c->bank = 0x8000 | 1; // MSB 1 LSB 0 is not the SoundFont percussion bank 128 but MSB 1
+			return 1;
 		case 101 /*RPN_MSB*/         : c->midiRPN = (unsigned short)(((c->midiRPN == 0xFFFF ? 0 : c->midiRPN) & 0x7F  ) | (control_value << 7)); return 1;
 		case 100 /*RPN_LSB*/         : c->midiRPN = (unsigned short)(((c->midiRPN == 0xFFFF ? 0 : c->midiRPN) & 0x3F80) |  control_value); return 1;
 		case  99 /*NRPN_MSB*/        : c->midiRPN = 0xFFFF; c->nrpnMSB = (unsigned char)control_value; c->nrpnSel = 0xFFFF; c->nrpnAcc = 0; return 1;
 		case  98 /*NRPN_LSB*/        : // SF2.01 NRPN (9.6) with MSB 120: LSB 100/101/102 add 100/1000/10000, LSB 0-99 completes the generator number
 			c->midiRPN = 0xFFFF;
+			if (c->nrpnMSB == 127) { c->nrpnSel = (unsigned short)(control_value <= 26 ? 0x8000 | control_value : 0xFFFF); return 1; } // AWE32 NRPN
 			if (c->nrpnMSB != 120) return 1;
-			if (control_value < 100) { c->nrpnSel = (unsigned short)(c->nrpnAcc + control_value); c->nrpnAcc = 0; }
-			else if (control_value <= 102) { c->nrpnAcc = (unsigned short)(c->nrpnAcc + (control_value == 100 ? 100 : (control_value == 101 ? 1000 : 10000))); c->nrpnSel = 0xFFFF; }
+			if (control_value < 100) // a generator that is unknown or not a real-time parameter is ignored, the selection stays (9.6.2)
+			{
+				int gen = c->nrpnAcc + control_value;
+				if (gen < TSF_NUMGENS && tsf_nrpn_scale[gen]) c->nrpnSel = (unsigned short)gen;
+				c->nrpnAcc = 0;
+			}
+			else if (control_value <= 102) { c->nrpnAcc = (unsigned short)(c->nrpnAcc + (control_value == 100 ? 100 : (control_value == 101 ? 1000 : 10000))); }
 			return 1;
-		case  64 /*SUSTAIN*/         : tsf_channel_set_sustain(f, channel, (int)(control_value >= 64)); return 1;
+		case  64 /*SUSTAIN*/         : c->sustain = (unsigned short)(control_value >= 64); tsf_channel_pedals_released(f, channel, c); return 1;
 		case  69 /*HOLD2*/           : c->hold2 = (unsigned short)(control_value >= 64); tsf_channel_pedals_released(f, channel, c); return 1;
+		case  68 /*LEGATO_SWITCH*/   : // poly mode: the keys are only tracked while the pedal is down
+			if (c->monoMode) return 1;
+			if (control_value < 64) c->monoCount = 0; // poly again: forget the held keys
+			else if (prev < 64) tsf_channel_hold_down_keys(f, channel, c); // the keys already held, legato returns to them
+			return 1;
 		case  96 /*DATA_INCREMENT*/  : // RP-018: steps the LSB, the MSB for coarse tuning
 		case  97 /*DATA_DECREMENT*/  :
 		{
-			int step = (c->midiRPN == 2 ? 128 : 1), d = (int)c->midiData + (controller == 96 ? step : -step);
-			c->midiData = (unsigned short)(d < 0 ? 0 : (d > 16383 ? 16383 : d));
+			int step = (c->midiRPN == 2 ? 128 : 1), d = tsf_channel_data_value(c); // from the selected parameter's current value
+			if (c->midiRPN == 0) // pitch bend range: the LSB is cents (0-99), so step by one cent across the semitones
+			{
+				d = (d >> 7) * 100 + ((d & 0x7F) > 99 ? 99 : (d & 0x7F)) + (controller == 96 ? 1 : -1);
+				d = (d < 0 ? 0 : (d > 127 * 100 + 99 ? 127 * 100 + 99 : d));
+				c->midiData = (unsigned short)(((d / 100) << 7) | (d % 100));
+			}
+			else
+			{
+				d += (controller == 96 ? step : -step);
+				c->midiData = (unsigned short)(d < 0 ? 0 : (d > 16383 ? 16383 : d));
+			}
 			goto TCMC_SET_DATA;
 		}
 		case 120 /*ALL_SOUND_OFF*/   : tsf_channel_sounds_off_all(f, channel); return 1;
-		case  66 /*SOSTENUTO*/       : tsf_channel_set_sostenuto(f, channel, (int)(control_value >= 64)); return 1;
+		case  66 /*SOSTENUTO*/       : tsf_channel_sostenuto(f, channel, c, (int)(control_value >= 64)); return 1;
 		case  84 /*PORTAMENTO_CTRL*/ : c->portaKey = (unsigned char)(control_value & 0x7F); return 1; // glide start key for the next note
 		case 123 /*ALL_NOTES_OFF*/   : // mode messages 124 to 127 also act as All Notes Off (MIDI 1.0)
 		case 124 /*OMNI_OFF*/        :
 		case 125 /*OMNI_ON*/         : tsf_channel_release_all(f, channel, c); return 1;
 		case 126 /*MONO_ON*/         : c->monoMode = 1; tsf_channel_release_all(f, channel, c); return 1;
 		case 127 /*POLY_ON*/         : c->monoMode = 0; tsf_channel_release_all(f, channel, c); return 1;
-		case 121 /*ALL_CTRL_OFF*/    : // RP-015: bank, program, volume, pan, effect depths, sound controllers and RPN values (pitch range, tuning) are kept
+		case 121 /*ALL_CTRL_OFF*/    : // RP-015: bank, program, volume, pan, effect depths, sound controllers and the RPN/NRPN data (pitch range, tuning, NRPN values) are kept
 		{
 			int i;
-			c->hold2 = 0;
-			tsf_channel_set_sustain(f, channel, 0);
-			tsf_channel_set_sostenuto(f, channel, 0);
+			c->hold2 = c->sustain = 0;
+			if (c->sostenuto) tsf_channel_sostenuto(f, channel, c, 0);
+			else tsf_channel_pedals_released(f, channel, c);
 			for (i = 0; i != 120; i++)
 				if (i != 0 && i != 32 && i != 7 && i != 39 && i != 10 && i != 42 && !(i >= 70 && i <= 79) && !(i >= 91 && i <= 95)) c->cc[i] = 0;
 			c->cc[11] = 127; // expression
 			c->cc[8] = 64; // balance
+			if (!c->monoMode) c->monoCount = 0; // the legato footswitch is off now
 			c->pressure = 0;
 			{ struct tsf_voice *v, *vEnd; for (v = f->voices, vEnd = v ? v + f->voiceNum : TSF_NULL; v != vEnd; v++) if (v->playingChannel == channel) v->keyPressure = 0; }
 			c->pitchWheel = 8192;
 			c->midiRPN = 0xFFFF;
 			c->midiData = 0;
-			c->nrpnMSB = 0; c->nrpnSel = 0xFFFF; c->nrpnAcc = 0;
-			TSF_MEMSET(c->nrpn, 0, sizeof(c->nrpn));
+			c->nrpnMSB = 0; c->nrpnSel = 0xFFFF; c->nrpnAcc = 0; // only the selection: the values set stay
 			c->portaKey = 255;
 			tsf_channel_modulate(f, channel);
 			return 1;
@@ -3025,6 +3370,13 @@ TCMC_SET_DATA:
 	else if (c->midiRPN == 0xFFFF && c->nrpnSel < TSF_NUMGENS && tsf_nrpn_scale[c->nrpnSel] && controller != 38) //SF2.01 NRPN: applied when the data MSB arrives
 	{
 		c->nrpn[c->nrpnSel] = (short)(c->midiData - 8192);
+		tsf_channel_modulate(f, channel);
+	}
+	else if (c->midiRPN == 0xFFFF && c->nrpnSel >= 0x8000 && c->nrpnSel != 0xFFFF) //AWE32 NRPN: applied with either data entry byte
+	{
+		int param = c->nrpnSel & 0x7FFF;
+		c->awe[param] = tsf_awe_nrpn_value(param, c->midiData);
+		c->aweSet |= 1u << param;
 		tsf_channel_modulate(f, channel);
 	}
 	return 1;
