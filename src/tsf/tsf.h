@@ -1,4 +1,4 @@
-/* TinySoundFont2 - v2.02 - SoundFont2 synthesizer
+/* TinySoundFont2 - v2.03 - SoundFont2 synthesizer - https://github.com/anzz1/TinySoundFont2
                                      no warranty implied; use at your own risk
    Do this:
       #define TSF_IMPLEMENTATION
@@ -2982,8 +2982,18 @@ TSFDEF int tsf_channel_midi_control(tsf* f, int channel, int controller, int con
 		case  96 /*DATA_INCREMENT*/  : // RP-018: steps the LSB, the MSB for coarse tuning
 		case  97 /*DATA_DECREMENT*/  :
 		{
-			int step = (c->midiRPN == 2 ? 128 : 1), d = (int)c->midiData + (controller == 96 ? step : -step);
-			c->midiData = (unsigned short)(d < 0 ? 0 : (d > 16383 ? 16383 : d));
+			int step = (c->midiRPN == 2 ? 128 : 1), d;
+			if (c->midiRPN == 0) // pitch bend range: the LSB is cents (0-99), so step by one cent across the semitones
+			{
+				d = (c->midiData >> 7) * 100 + ((c->midiData & 0x7F) > 99 ? 99 : (c->midiData & 0x7F)) + (controller == 96 ? 1 : -1);
+				d = (d < 0 ? 0 : (d > 127 * 100 + 99 ? 127 * 100 + 99 : d));
+				c->midiData = (unsigned short)(((d / 100) << 7) | (d % 100));
+			}
+			else
+			{
+				d = (int)c->midiData + (controller == 96 ? step : -step);
+				c->midiData = (unsigned short)(d < 0 ? 0 : (d > 16383 ? 16383 : d));
+			}
 			goto TCMC_SET_DATA;
 		}
 		case 120 /*ALL_SOUND_OFF*/   : tsf_channel_sounds_off_all(f, channel); return 1;

@@ -57,6 +57,9 @@ typedef char tsf_char20[20]; /* no empty source. */
 #endif
 
 #define TSF_STATIC /* keep tsf symbols out of the library's export table */
+/* Scale initialAttenuation generator by 0.4 like the EMU8000 hardware (Sound Blaster)
+ * and FluidSynth does; most soundfonts are designed for it. */
+#define EMU8K_COMPAT 1
 #define TSF_IMPLEMENTATION
 #include "tsf/tsf.h"
 
@@ -134,11 +137,12 @@ int _WM_SF2_Active(void) {
     return (WM_sf2 != NULL);
 }
 
-/* Channel volume, using wildmidi's own curves rather than tsf's cubic
- * default, so WM_MO_LOG_VOLUME does the same thing here as it does for the
- * GUS mixer.  The linear curve is _WM_lin_volume[v]/1024 == v/127; the log
- * curve is the MIDI2 table dBm_volume[v] == 40*log10(v/127), whose gain
- * 10^(dBm/20) is just (v/127) squared. */
+/* Channel volume, using wildmidi's own curves rather than the soundfont's
+ * CC7/CC11 modulators, so WM_MO_LOG_VOLUME does the same thing here as it
+ * does for the GUS mixer.  The linear curve is _WM_lin_volume[v]/1024 ==
+ * v/127; the log curve is the MIDI2 table dBm_volume[v] == 40*log10(v/127),
+ * whose gain 10^(dBm/20) is just (v/127) squared.  CC7 and CC11 are never
+ * passed to tsf, see WM_SF2_InitChannels(). */
 static void WM_SF2_ChannelVolume(tsf *f, struct _mdi *mdi, uint8_t ch,
                                  int volume, int expression) {
     float gain = (float)((volume * expression) / 127) / 127.0f;
@@ -152,6 +156,11 @@ static void WM_SF2_InitChannels(tsf *f) {
     int ch;
     for (ch = 0; ch < 16; ch++) {
         tsf_channel_set_bank_preset(f, ch, (ch == 9) ? 128 : 0, 0);
+        /* tsf starts a channel at the GM default volume 100, which its CC7
+           modulator turns into -4dB on top of the gain we apply ourselves.
+           Hold it at full so only WM_SF2_ChannelVolume() counts; CC11 already
+           starts at 127 and CC121 only ever puts it back there. */
+        tsf_channel_midi_control(f, ch, 7, 127);
     }
 }
 
@@ -230,6 +239,15 @@ void _WM_SF2_ReleaseAll(void *synth) {
 static int WM_SF2_InAttack(tsf *f, int ch, int key) {
     struct tsf_voice *v = f->voices, *vEnd = v ? v + f->voiceNum : TSF_NULL;
     struct tsf_voice *oldest = TSF_NULL;
+    const struct tsf_channel *c;
+    if (!f->channels || ch >= f->channels->channelNum) return 0;
+    /* In mono mode or with the legato footswitch down a note off is not
+       simply a release: tsf moves the voice back to a key that is still held,
+       and a key it still counts as held makes the next note continue that
+       voice legato instead of starting its own.  Holding the off back would
+       get both wrong, so leave these to tsf. */
+    c = &f->channels->channels[ch];
+    if (c->monoMode || c->cc[68] >= 64) return 0;
     for (; v != vEnd; v++) {
         /* the same filter tsf_channel_note_off() applies when it picks a voice */
         if (v->playingPreset == -1 || v->playingChannel != ch || v->playingKey != key
@@ -269,15 +287,22 @@ static void WM_SF2_FlushHeldOffs(struct wm_sf2_synth *s) {
     }
 }
 
-/* tsf holds a voice open for its whole nominal release time, which on a
- * soundfont with long releases runs on for seconds after the envelope has
- * decayed out of 16bit range - dead air on the end of the render.  What has
- * actually come out of the mixer settles that better than any envelope
- * threshold can, so a run of silent frames ends the tail. */
+/* tsf runs a release until the voice is 100dB down, which on a soundfont
+ * with long releases goes on for seconds after it has decayed out of 16bit
+ * range - dead air on the end of the render.  What has actually come out of
+ * the mixer settles that better than any envelope threshold can, so a run of
+ * silent frames ends the tail.  The reverb and chorus keep ringing after the
+ * last voice has ended, so while their tail is still running that counts as
+ * active too. */
 int _WM_SF2_ActiveVoices(void *synth) {
     struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
+    const struct tsf_fx *fx = s->f->fx;
+    int n;
     if (s->silent_frames >= SF2_SILENCE_FRAMES) return 0;
-    return tsf_active_voice_count(s->f);
+    n = tsf_active_voice_count(s->f);
+    if (!n && fx && (fx->reverbEnabled || fx->chorusEnabled)
+        && fx->idle < (int)(s->f->outSampleRate * TSF_FX_QUIET_SECONDS)) n = 1;
+    return n;
 }
 
 void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
@@ -368,8 +393,9 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
         break;
     case ev_control_channel_controllers_off:
         tsf_channel_midi_control(f, ch, 121, val & 0x7F);
-        /* CC121 puts tsf's own volume back to unity; restore ours.  Like
-           _WM_do_control_channel_controllers_off(), CC7 survives, CC11 does not. */
+        /* tsf keeps CC7 and resets CC11, but the expression lives in our own
+           channel gain, so redo that: like _WM_do_control_channel_controllers_off(),
+           CC7 survives, CC11 does not. */
         WM_SF2_ChannelVolume(f, mdi, ch, mdi->channel[ch].volume, 127);
         break;
     case ev_control_channel_notes_off:
@@ -403,17 +429,13 @@ void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event) {
     }
 }
 
-/* Headroom.  A soundfont renders a single note at full velocity close to full
- * scale, so a busy score summed at unity gain clips hard.  VOL_DIVISOR in
- * internal_midi.c uses 4.0 for the GUS mixer; soundfont material has a higher
- * crest factor than that covers.  Rendering GeneralUser GS's own nine demo
- * scores, the loudest (Jump!) needs 4.78 to stay inside 16 bits and the rest
- * need 1.43 to 3.67, so 5.0 clears the set.  It is also fluidsynth's default
- * gain of 0.2, and it puts SUNNYDAY.XMI within 0.1dB of the eawpats render in
- * RMS - the GUS and SF2 paths should not change loudness under the listener.
- * Denser material than those demos will reach the clamp; turn it down with
- * WildMidi_MasterVolume(). */
-#define SF2_VOL_DIVISOR 5.0f
+/* Headroom: the gain is 1/SF2_VOL_DIVISOR, -10.1dB at 3.2.  Soundfont renders
+ * have a high crest factor; on GeneralUser GS's nine demo scores through
+ * GeneralUser GS, TimGM6mb and an EMU8000 GM font the loudest (Jump!) needs 3.1
+ * to stay inside 16 bits, so 3.2 is about as loud as the SF2 path gets without
+ * clipping.  That puts it 2-4dB below the GUS path in RMS.  Denser material
+ * can still reach the clamp; turn it down with WildMidi_MasterVolume(). */
+#define SF2_VOL_DIVISOR 3.2f
 
 void _WM_SF2_Render(void *synth, int32_t *out, uint32_t frames) {
     struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
