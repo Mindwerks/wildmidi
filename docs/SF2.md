@@ -4,9 +4,10 @@ Implementation plan and design notes for [issue #8](https://github.com/Mindwerks
 
 ## Approach
 
-WildMIDI gains SF2 rendering via [TinySoundFont](https://github.com/schellingb/TinySoundFont)
-(`tsf.h`, MIT licensed, single-header, pure C), fetched at configure time with CMake
-`FetchContent` and pinned to a known-good commit.
+WildMIDI gains SF2 rendering via [TinySoundFont2](https://github.com/anzz1/TinySoundFont2)
+(`tsf.h`, MIT licensed, single-header, pure C), vendored under `src/tsf/`. TSF2
+implements SoundFont 2.01 and General MIDI 1 to the spec; its `TECHNICAL_DETAILS.md`
+describes how.
 
 The key insight: WildMIDI's format parsers (MID, XMI, MUS, HMP, HMI) already convert
 everything into a single time-stamped event list (`struct _event`), and the renderer is
@@ -33,11 +34,12 @@ already-decoded event types.
    `WM_GetOutput_Linear()`. Every event still runs its normal `do_event` (tempo, lyrics,
    channel state; GUS note-ons no-op safely since no GUS patches are loaded) and is
    additionally translated to the corresponding `tsf_channel_*` call. Audio is rendered
-   by `tsf_render_short()` into the 32-bit mix buffer, so `WM_MO_REVERB` and the rest of
-   the output pipeline behave exactly like the GUS path.
-4. **Release tails** — when the event list ends, rendering continues while
-   `tsf_active_voice_count() > 0`, so SF2 release envelopes aren't clipped at
-   end-of-song.
+   by `tsf_render_float()`, scaled by the master volume and mixed into the 32-bit mix
+   buffer, so `WM_MO_REVERB` and the rest of the output pipeline behave exactly like the
+   GUS path.
+4. **Release tails** — when the event list ends, rendering continues while voices or
+   TSF2's reverb/chorus tail are still audible, so SF2 release envelopes aren't clipped
+   at end-of-song.
 
 ## Event translation
 
@@ -46,7 +48,9 @@ already-decoded event types.
 | note on/off | `tsf_channel_note_on` / `_off` |
 | patch change | `tsf_channel_set_presetnumber(..., isdrum)` |
 | pitch wheel | `tsf_channel_set_pitchwheel` |
+| channel / key pressure | `tsf_channel_set_pressure` / `tsf_channel_set_keypressure` |
 | all controllers (bank, volume, pan, expression, hold, RPN/NRPN, sound/notes off, …) | `tsf_channel_midi_control` (TSF implements the full CC map) |
+| GM / GS / XG reset sysex | `tsf_reset`, drum kit on channel 10 again; GS/XG also CC91 = 40 |
 | Roland drum-track sysex | `tsf_channel_set_bank_preset(ch, 128, 0)` |
 
 Channel 9 defaults to bank 128 (drums) at synth creation, per GM convention.
