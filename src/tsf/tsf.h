@@ -2210,9 +2210,9 @@ TSFDEF tsf* tsf_load(struct tsf_stream* stream)
 						TSF_FREE(hydra.chunkName##s); /* a damaged font can repeat a chunk */ \
 						hydra.chunkName##s = TSF_NULL; hydra.chunkName##Num = 0; \
 						if (chunk.size > 0x7FFFFFFF) goto out_of_memory; \
-						if (!(mem.buffer = (const char*)TSF_MALLOC(chunk.size ? chunk.size : 1))) goto out_of_memory; \
+						if ((mem.buffer = (const char*)TSF_MALLOC(chunk.size ? chunk.size : 1)) == TSF_NULL) goto out_of_memory; \
 						if (stream->read(stream->data, (void*)mem.buffer, chunk.size) != (int)chunk.size || \
-							!(hydra.chunkName##s = (struct tsf_hydra_##chunkName*)TSF_MALLOC((num ? num : 1) * sizeof(struct tsf_hydra_##chunkName)))) { TSF_FREE((void*)mem.buffer); goto out_of_memory; } \
+							(hydra.chunkName##s = (struct tsf_hydra_##chunkName*)TSF_MALLOC((num ? num : 1) * sizeof(struct tsf_hydra_##chunkName))) == TSF_NULL) { TSF_FREE((void*)mem.buffer); goto out_of_memory; } \
 						hydra.chunkName##Num = num; mem.total = chunk.size; ms.data = &mem; \
 						for (i = 0; i < num; ++i) tsf_hydra_read_##chunkName(&hydra.chunkName##s[i], &ms); \
 						TSF_FREE((void*)mem.buffer); \
@@ -2728,7 +2728,8 @@ TSFDEF void tsf_set_reverb(tsf* f, int enabled, float room_size, float damping, 
 {
 	struct tsf_fx* fx; TSF_BOOL wasRunning;
 	if (!f) return;
-	if (!(fx = tsf_fx_get(f, enabled))) return;
+	fx = tsf_fx_get(f, enabled);
+	if (!fx) return;
 	wasRunning = (fx->reverbEnabled && fx->reverbWet > 0.0f);
 	fx->reverbEnabled = (enabled != 0); fx->roomSize = TSF_FXCLAMP(room_size); fx->damping = TSF_FXCLAMP(damping); fx->width = TSF_FXCLAMP(width); fx->reverbWet = TSF_FXCLAMP(wet);
 	if (!wasRunning && fx->reverbEnabled && fx->reverbWet > 0.0f) tsf_fx_clear_lines(fx, 0, 12);
@@ -2739,7 +2740,8 @@ TSFDEF void tsf_set_chorus(tsf* f, int enabled, float depth, float rate, float w
 {
 	struct tsf_fx* fx; TSF_BOOL wasRunning;
 	if (!f) return;
-	if (!(fx = tsf_fx_get(f, enabled))) return;
+	fx = tsf_fx_get(f, enabled);
+	if (!fx) return;
 	wasRunning = (fx->chorusEnabled && fx->chorusWet > 0.0f);
 	fx->chorusEnabled = (enabled != 0); fx->chorusDepth = TSF_FXCLAMP(depth); fx->chorusRate = (!(rate > 0.0f) ? 0.0f : (rate > 5.0f ? 5.0f : rate)); fx->chorusWet = TSF_FXCLAMP(wet);
 	if (!wasRunning && fx->chorusEnabled && fx->chorusWet > 0.0f) tsf_fx_clear_lines(fx, 12, 14);
