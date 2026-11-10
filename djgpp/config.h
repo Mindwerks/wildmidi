@@ -17,8 +17,7 @@
 #define WM_NO_LOCK 1 /* don't need locking in MS-DOS */
 
 /* #undef HAVE_EXPF */
-/* #undef HAVE_SQRTF */
-/* #undef HAVE_POWF */
+/* #undef HAVE_LOGF */
 
 #define WILDMIDI_MAFM 1
 #define WILDMIDI_SF2 1

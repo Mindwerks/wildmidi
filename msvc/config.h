@@ -5,6 +5,8 @@
 
 #define PACKAGE_VERSION "0.5.0"
 
+#pragma warning(disable:4761) /* integral size mismatch in argument; conversion supplied (for MSVC6 and older.) */
+
 /* #undef HAVE_C_INLINE */
 #define HAVE_C___INLINE
 #if !defined(__cplusplus)
@@ -22,10 +24,8 @@
 
 #if _MSC_VER >= 1400
 #define HAVE_EXPF 1
-#define HAVE_SQRTF 1
-#define HAVE_POWF 1
+#define HAVE_LOGF 1
 #endif
-#pragma warning(disable:4761) /* integral size mismatch in argument; conversion supplied (for MSVC6 and older.) */
 
 #define WILDMIDI_MAFM 1
 #define WILDMIDI_SF2 1

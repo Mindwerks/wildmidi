@@ -205,9 +205,8 @@ IF (UNIX AND NOT APPLE)
     ENDIF()
 ENDIF()
 
-check_symbol_exists(powf math.h HAVE_POWF)
 check_symbol_exists(expf math.h HAVE_EXPF)
-check_symbol_exists(sqrtf math.h HAVE_SQRTF)
+check_symbol_exists(logf math.h HAVE_LOGF)
 cmake_pop_check_state()
 
 # ######### General setup ##########

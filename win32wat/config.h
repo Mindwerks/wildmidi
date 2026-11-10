@@ -17,8 +17,7 @@
 #define HAVE_INTTYPES_H 1
 
 /* #undef HAVE_EXPF */
-/* #undef HAVE_SQRTF */
-/* #undef HAVE_POWF */
+/* #undef HAVE_LOGF */
 
 #define WILDMIDI_MAFM 1
 #define WILDMIDI_SF2 1

@@ -18,11 +18,9 @@
 #endif
 
 /* #undef HAVE_EXPF */
-/* #undef HAVE_SQRTF */
-/* #undef HAVE_POWF */
+/* #undef HAVE_LOGF */
 
 #define WILDMIDI_MAFM 1
 #define WILDMIDI_SF2 1
 
 #define AUDIODRV_AHI 1
-
