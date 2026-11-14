@@ -1,7 +1,7 @@
 # TinySoundFont2
 
 Vendored copy of [TinySoundFont2](https://github.com/anzz1/TinySoundFont2)
-v2.022 at commit `80e83dd183c6cd6fdef3c826c3506903cbfa0291` (2026-11-10), used
+v2.023 at commit `b58d32aeb8faa7a41ba7078fb08365013aa0cf90` (2026-11-14), used
 by `src/sf2.c` when built with `-DWANT_SF2=ON`. See its `TECHNICAL_DETAILS.md`
 for how the SoundFont 2.01 and General MIDI specifications are implemented.
 

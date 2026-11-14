@@ -1,4 +1,4 @@
-/* TinySoundFont2 - v2.022 - SoundFont2 synthesizer - https://github.com/anzz1/TinySoundFont2
+/* TinySoundFont2 - v2.023 - SoundFont2 synthesizer - https://github.com/anzz1/TinySoundFont2
                                      no warranty implied; use at your own risk
    Do this:
       #define TSF_IMPLEMENTATION
@@ -580,6 +580,7 @@ struct tsf_region
 	int freqVibLFO, vibLfoToPitch;
 	float chorusSend, reverbSend; // 0..1000 (0.1%)
 	unsigned int modIdx; // start of this region's modulator list in tsf.mods
+	tsf_u64 clampGens; // bit set of the generators whose value (instrument + preset) is outside their range
 };
 
 struct tsf_preset
@@ -625,6 +626,7 @@ struct tsf_channel
 	signed char tuneCoarse; float tuneFine; // RPN 2 and RPN 1 (semitones), their sum is the channel tuning
 	unsigned char nrpnMSB; unsigned short nrpnSel, nrpnAcc; // SF2.01 NRPN (9.6): selected generator (0xFFFF none) and the 100/1000/10000 steps
 	short nrpn[TSF_NUMGENS]; // SF2.01 NRPN data entry per generator (offset from 8192), added like a modulator output
+	unsigned char nrpnSet; // any of them was set
 	unsigned int aweSet; short awe[27]; // AWE32 NRPN (MSB 127): the parameters set (bits) and their values in generator units
 };
 
@@ -686,7 +688,8 @@ static void tsf_region_clear(struct tsf_region* i, TSF_BOOL for_relative)
 	i->delayVibLFO = -12000.0f;
 }
 
-static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, union tsf_hydra_genamount* amount, struct tsf_region* merge_region, float delta)
+// Set a generator (amount), add the preset level values (merge_region), or add a modulator output and clamp (delta, returns 1 if the value changed)
+static int tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, union tsf_hydra_genamount* amount, struct tsf_region* merge_region, float delta)
 {
 	enum
 	{
@@ -795,17 +798,17 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 	if (amount)
 	{
 		int offset;
-		if (genOper >= _GEN_MAX) return;
+		if (genOper >= _GEN_MAX) return 0;
 		offset = genMetas[genOper].offset;
 		switch (genMetas[genOper].mode & _GEN_TYPE_MASK)
 		{
-			case GEN_FLOAT:      ((       float*)region)[offset]  = amount->shortAmount;     return;
-			case GEN_INT:        ((         int*)region)[offset]  = amount->shortAmount;     return;
-			case GEN_KEYRANGE:   region->lokey = amount->range.lo; region->hikey = amount->range.hi; return;
-			case GEN_VELRANGE:   region->lovel = amount->range.lo; region->hivel = amount->range.hi; return;
-			case GEN_LOOPMODE:   region->loop_mode       = ((amount->wordAmount&3) == 3 ? TSF_LOOPMODE_SUSTAIN : ((amount->wordAmount&3) == 1 ? TSF_LOOPMODE_CONTINUOUS : TSF_LOOPMODE_NONE)); return;
-			case GEN_GROUP:      region->group           = amount->wordAmount;  return;
-			case GEN_KEYCENTER:  region->pitch_keycenter = amount->shortAmount; return;
+			case GEN_FLOAT:      ((       float*)region)[offset]  = amount->shortAmount;     return 0;
+			case GEN_INT:        ((         int*)region)[offset]  = amount->shortAmount;     return 0;
+			case GEN_KEYRANGE:   region->lokey = amount->range.lo; region->hikey = amount->range.hi; return 0;
+			case GEN_VELRANGE:   region->lovel = amount->range.lo; region->hivel = amount->range.hi; return 0;
+			case GEN_LOOPMODE:   region->loop_mode       = ((amount->wordAmount&3) == 3 ? TSF_LOOPMODE_SUSTAIN : ((amount->wordAmount&3) == 1 ? TSF_LOOPMODE_CONTINUOUS : TSF_LOOPMODE_NONE)); return 0;
+			case GEN_GROUP:      region->group           = amount->wordAmount;  return 0;
+			case GEN_KEYCENTER:  region->pitch_keycenter = amount->shortAmount; return 0;
 		}
 	}
 	else if (merge_region) //add the preset level values (relative) to the instrument level values (absolute), clamping happens after modulation
@@ -825,10 +828,11 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 		unsigned char mode = genMetas[genOper].mode;
 		float* fval = &((float*)region)[genMetas[genOper].offset], x;
 		int* ival = &((int*)region)[genMetas[genOper].offset];
-		if (!TSF_FINITE(delta)) return;
+		int r;
+		if (!TSF_FINITE(delta)) return 0;
 		if      ((mode & _GEN_TYPE_MASK) == GEN_FLOAT) x = *fval + delta;
 		else if ((mode & _GEN_TYPE_MASK) == GEN_INT)   x = (float)*ival + delta;
-		else return;
+		else return 0;
 		if (x <= -32768.0f && genOper < 64 && (((tsf_u64)0xE0EA << 20) >> genOper & 1)) x = -32768.0f; // delays, attacks, holds: -32768 is zero time (8.1.2)
 		else if (mode & _GEN_LIMIT_MASK)
 		{
@@ -836,9 +840,13 @@ static void tsf_region_operator(struct tsf_region* region, tsf_u16 genOper, unio
 			if      (x < vmin) x = vmin;
 			else if (x > vmax) x = vmax;
 		}
-		if ((mode & _GEN_TYPE_MASK) == GEN_FLOAT) *fval = x;
-		else *ival = (x < -2e9f ? -2000000000 : (x > 2e9f ? 2000000000 : (int)(x < 0.0f ? x - 0.5f : x + 0.5f)));
+		if ((mode & _GEN_TYPE_MASK) == GEN_FLOAT) { r = (*fval != x); *fval = x; return r; }
+		r = (x < -2e9f ? -2000000000 : (x > 2e9f ? 2000000000 : (int)(x < 0.0f ? x - 0.5f : x + 0.5f)));
+		if (*ival == r) return 0;
+		*ival = r;
+		return 1;
 	}
+	return 0;
 }
 
 // Convert (modulated, clamped) envelope parameters from timecents to seconds and the sustain level to a 0..1 value.
@@ -1157,6 +1165,11 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 								if (zoneRegion.fixedVel < 1 || zoneRegion.fixedVel > 127) zoneRegion.fixedVel = -1;
 								zoneRegion.tune += pshdr->pitchCorrection;
 								zoneRegion.sample_rate = pshdr->sampleRate;
+								{ // the generators whose summed value the range clamping changes also without a modulator
+									struct tsf_region clamped = zoneRegion; tsf_u16 g;
+									for (zoneRegion.clampGens = 0, g = 0; g != TSF_NUMGENS; g++)
+										if (tsf_region_operator(&clamped, g, TSF_NULL, TSF_NULL, 0.0f)) zoneRegion.clampGens |= (tsf_u64)1 << g;
+								}
 
 								preset->regions[region_index] = zoneRegion;
 								region_index++;
@@ -1759,15 +1772,16 @@ static void tsf_voice_modulate(tsf* f, struct tsf_voice* v, TSF_BOOL init)
 	const struct tsf_mod *m = f->mods + v->region->modIdx, *p;
 	struct tsf_region n = *v->region, *o = &v->mr;
 	float g[TSF_NUMGENS], attMod;
+	tsf_u64 clampGens = v->region->clampGens;
 	int i;
 
 	// Sum the outputs per destination generator (links are accounted for at their target) and apply to the region
 	TSF_MEMSET(g, 0, sizeof(g));
 	for (p = m; p->dest != TSF_MODEND; p++)
 		if (!(p->dest & 0x8000)) g[p->dest] += tsf_mod_out(m, p, v, c);
-	if (c) for (i = 0; i != TSF_NUMGENS; i++) g[i] += c->nrpn[i] * tsf_nrpn_scale[i]; // SF2.01 NRPN offsets act like modulators
+	if (c && c->nrpnSet) for (i = 0; i != TSF_NUMGENS; i++) g[i] += c->nrpn[i] * tsf_nrpn_scale[i]; // SF2.01 NRPN offsets act like modulators
 	if (c && c->aweSet) // AWE32 NRPN: replace the generator value (the modulators still add to it), the initial pitch adds cents
-		for (i = 0; i != 27; i++)
+		for (clampGens = ~(tsf_u64)0, i = 0; i != 27; i++)
 		{
 			union tsf_hydra_genamount a;
 			if (!(c->aweSet & (1u << i))) continue;
@@ -1775,10 +1789,11 @@ static void tsf_voice_modulate(tsf* f, struct tsf_voice* v, TSF_BOOL init)
 			a.shortAmount = c->awe[i];
 			tsf_region_operator(&n, tsf_awe_gen[i], &a, TSF_NULL, 0.0f);
 		}
-	// Every generator value (instrument + preset sum) gets the modulator outputs added and is then clamped to its range
+	// Every generator value (instrument + preset sum) gets the modulator outputs added and is then clamped to its range. Most
+	// generators have no modulator output and a value inside the range (clampGens, found when loading): those stay as they are
 	attMod = g[48]; // the attenuation generator is scaled, the modulators' share is not
 	for (i = 0; i != TSF_NUMGENS; i++)
-		if (i != 48) tsf_region_operator(&n, (tsf_u16)i, TSF_NULL, TSF_NULL, g[i]);
+		if (i != 48 && (g[i] != 0.0f || (clampGens >> i & 1))) tsf_region_operator(&n, (tsf_u16)i, TSF_NULL, TSF_NULL, g[i]);
 	n.attenuation = n.attenuation * TSF_ATTENUATION_GEN_SCALE + attMod;
 	if (n.attenuation < 0.0f) n.attenuation = 0.0f; else if (n.attenuation > 1440.0f) n.attenuation = 1440.0f;
 	n.initialFilterFc -= v->softFc;
@@ -1860,6 +1875,8 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	float tmpSampleRate = f->outSampleRate;
 
 	TSF_BOOL dynamicLowpass = (region->modLfoToFilterFc || region->modEnvToFilterFc);
+	int gridLeft = TSF_RENDER_EFFECTSAMPLEBLOCK; // samples up to the next control block boundary
+	TSF_BOOL inDelay;
 	float lastFres = -1.0f;
 	float tmpInitialFilterFc = (float)region->initialFilterFc, tmpModLfoToFilterFc = (float)region->modLfoToFilterFc, tmpModEnvToFilterFc = (float)region->modEnvToFilterFc;
 
@@ -1878,8 +1895,12 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 	while (numSamples)
 	{
 		float gainMono, gainLeft, gainRight, stepMono, stepLeft, stepRight, modEnv;
-		int blockSamples = (numSamples > TSF_RENDER_EFFECTSAMPLEBLOCK ? TSF_RENDER_EFFECTSAMPLEBLOCK : numSamples);
+		int blockSamples = (numSamples > gridLeft ? gridLeft : numSamples);
+		// The volume envelope's delay and attack end exactly: the block is split there and the rest of it follows as a block of its own
+		if (v->ampenv.segment <= TSF_SEGMENT_ATTACK && v->ampenv.samplesUntilNextSegment > 0 && v->ampenv.samplesUntilNextSegment < blockSamples) blockSamples = v->ampenv.samplesUntilNextSegment;
+		inDelay = (v->ampenv.segment == TSF_SEGMENT_DELAY); // the block was cut at the delay's end, so all of it is in the delay
 		numSamples -= blockSamples;
+		if (!(gridLeft -= blockSamples)) gridLeft = TSF_RENDER_EFFECTSAMPLEBLOCK;
 
 		// the mod envelope's attack is convex
 		modEnv = (v->modenv.segment == TSF_SEGMENT_ATTACK ? tsf_env_convex(v->modenv.level) : v->modenv.level);
@@ -1926,9 +1947,9 @@ static void tsf_voice_render(tsf* f, struct tsf_voice* v, float* outputBuffer, i
 			startMono = gainNext, startLeft = endLeft, startRight = endRight;
 		}
 
-		if (gainMono == 0.0f && stepMono == 0.0f && !tmpLowpass.active) // silent block (envelope delay, zero volume): only advance the position
+		if (inDelay || (gainMono == 0.0f && stepMono == 0.0f && !tmpLowpass.active)) // silent block: in the delay the sample waits, at zero volume it advances
 		{
-			phase += phaseStep * (tsf_u64)blockSamples;
+			if (!inDelay) phase += phaseStep * (tsf_u64)blockSamples;
 			if (isLooping && phase >= phaseLoopEnd) phase = phaseLoopEnd - phaseLoopLength + (phase - phaseLoopEnd) % phaseLoopLength;
 			if (outL) outL += blockSamples * (f->outputmode == TSF_STEREO_INTERLEAVED ? 2 : 1);
 			if (outR) outR += blockSamples;
@@ -2078,7 +2099,9 @@ static void tsf_fx_release_if_unused(tsf* f)
 static void tsf_fx_process(struct tsf_fx* e, const float* ci, const float* ri, float* ol, float* or_, int n, float rate)
 {
 	// Each filter and delay line runs over the whole block with its state in local variables (n <= TSF_FX_BLOCK)
-	float feedback = 0.70f + 0.12f * e->roomSize, damp = e->damping, undamp = 1.0f - e->damping, chorusInc = e->chorusRate / rate;
+	// the damping is a one-pole low-pass in each comb's feedback; its coefficient is for 44100 Hz and converted to keep the same cutoff
+	float damp = (rate == 44100.0f || e->damping <= 0.0f ? e->damping : TSF_EXPF(TSF_LOGF(e->damping) * (44100.0f / rate)));
+	float feedback = 0.70f + 0.12f * e->roomSize, undamp = 1.0f - damp, chorusInc = e->chorusRate / rate;
 	float rev[2][TSF_FX_BLOCK], cho[2][TSF_FX_BLOCK];
 	TSF_BOOL doReverb = (e->reverbEnabled && e->reverbWet > 0.0f), doChorus = (e->chorusEnabled && e->chorusWet > 0.0f);
 	int i, j;
@@ -2210,9 +2233,9 @@ TSFDEF tsf* tsf_load(struct tsf_stream* stream)
 						TSF_FREE(hydra.chunkName##s); /* a damaged font can repeat a chunk */ \
 						hydra.chunkName##s = TSF_NULL; hydra.chunkName##Num = 0; \
 						if (chunk.size > 0x7FFFFFFF) goto out_of_memory; \
-						if ((mem.buffer = (const char*)TSF_MALLOC(chunk.size ? chunk.size : 1)) == TSF_NULL) goto out_of_memory; \
+						if (!(mem.buffer = (const char*)TSF_MALLOC(chunk.size ? chunk.size : 1))) goto out_of_memory; \
 						if (stream->read(stream->data, (void*)mem.buffer, chunk.size) != (int)chunk.size || \
-							(hydra.chunkName##s = (struct tsf_hydra_##chunkName*)TSF_MALLOC((num ? num : 1) * sizeof(struct tsf_hydra_##chunkName))) == TSF_NULL) { TSF_FREE((void*)mem.buffer); goto out_of_memory; } \
+							!(hydra.chunkName##s = (struct tsf_hydra_##chunkName*)TSF_MALLOC((num ? num : 1) * sizeof(struct tsf_hydra_##chunkName)))) { TSF_FREE((void*)mem.buffer); goto out_of_memory; } \
 						hydra.chunkName##Num = num; mem.total = chunk.size; ms.data = &mem; \
 						for (i = 0; i < num; ++i) tsf_hydra_read_##chunkName(&hydra.chunkName##s[i], &ms); \
 						TSF_FREE((void*)mem.buffer); \
@@ -2728,8 +2751,7 @@ TSFDEF void tsf_set_reverb(tsf* f, int enabled, float room_size, float damping, 
 {
 	struct tsf_fx* fx; TSF_BOOL wasRunning;
 	if (!f) return;
-	fx = tsf_fx_get(f, enabled);
-	if (!fx) return;
+	if (!(fx = tsf_fx_get(f, enabled))) return;
 	wasRunning = (fx->reverbEnabled && fx->reverbWet > 0.0f);
 	fx->reverbEnabled = (enabled != 0); fx->roomSize = TSF_FXCLAMP(room_size); fx->damping = TSF_FXCLAMP(damping); fx->width = TSF_FXCLAMP(width); fx->reverbWet = TSF_FXCLAMP(wet);
 	if (!wasRunning && fx->reverbEnabled && fx->reverbWet > 0.0f) tsf_fx_clear_lines(fx, 0, 12);
@@ -2740,8 +2762,7 @@ TSFDEF void tsf_set_chorus(tsf* f, int enabled, float depth, float rate, float w
 {
 	struct tsf_fx* fx; TSF_BOOL wasRunning;
 	if (!f) return;
-	fx = tsf_fx_get(f, enabled);
-	if (!fx) return;
+	if (!(fx = tsf_fx_get(f, enabled))) return;
 	wasRunning = (fx->chorusEnabled && fx->chorusWet > 0.0f);
 	fx->chorusEnabled = (enabled != 0); fx->chorusDepth = TSF_FXCLAMP(depth); fx->chorusRate = (!(rate > 0.0f) ? 0.0f : (rate > 5.0f ? 5.0f : rate)); fx->chorusWet = TSF_FXCLAMP(wet);
 	if (!wasRunning && fx->chorusEnabled && fx->chorusWet > 0.0f) tsf_fx_clear_lines(fx, 12, 14);
@@ -2808,6 +2829,7 @@ static struct tsf_channel* tsf_channel_init(tsf* f, int channel)
 		c->modDepth = 1.0f;
 		c->nrpnMSB = 0; c->nrpnSel = 0xFFFF; c->nrpnAcc = 0;
 		TSF_MEMSET(c->nrpn, 0, sizeof(c->nrpn));
+		c->nrpnSet = 0;
 		c->aweSet = 0;
 		c->monoCount = 0;
 		c->pressure = 0;
@@ -3372,6 +3394,7 @@ TCMC_SET_DATA:
 	else if (c->midiRPN == 0xFFFF && c->nrpnSel < TSF_NUMGENS && tsf_nrpn_scale[c->nrpnSel] && controller != 38) //SF2.01 NRPN: applied when the data MSB arrives
 	{
 		c->nrpn[c->nrpnSel] = (short)(c->midiData - 8192);
+		c->nrpnSet = 1;
 		tsf_channel_modulate(f, channel);
 	}
 	else if (c->midiRPN == 0xFFFF && c->nrpnSel >= 0x8000 && c->nrpnSel != 0xFFFF) //AWE32 NRPN: applied with either data entry byte
