@@ -1854,7 +1854,7 @@ static void tsf_voice_modulate(tsf* f, struct tsf_voice* v, TSF_BOOL init)
 	}
 #define TSF_VOICE_LOOP(OUTPUT) /* one loop with the filter, one without, so the test isn't made per sample */ \
 	if (tmpLowpass.active) { TSF_VOICE_LOOP_BODY(val = tsf_voice_lowpass_process(&tmpLowpass, (double)ival);, OUTPUT) } \
-	else { TSF_VOICE_LOOP_BODY(, OUTPUT) }
+	else { TSF_VOICE_LOOP_BODY( do {} while (0);, OUTPUT) }
 #define TSF_SEND(P, level, gl, gr) P[0] += val * (gl) * (level); P[1] += val * (gr) * (level); P += 2;
 
 // Playback speed as a 32.32 fixed point step per output sample, at most 2^23 times faster (NaN plays at that rate too). With the
