@@ -413,7 +413,22 @@ typedef unsigned char tsf_u8;
 typedef unsigned short tsf_u16;
 typedef signed short tsf_s16;
 typedef unsigned int tsf_u32;
+#ifdef _MSC_VER
+typedef unsigned __int64 tsf_u64;
+typedef signed __int64 tsf_s64;
+#define TSF_SINT64_C(c) c ## i64
+#define TSF_UINT64_C(c) c ## ui64
+#elif defined(_LP64) || defined(__LP64__)
+typedef unsigned long tsf_u64;
+typedef signed long tsf_s64;
+#define TSF_SINT64_C(c) c ## L
+#define TSF_UINT64_C(c) c ## UL
+#else
 typedef unsigned long long tsf_u64;
+typedef signed long long tsf_s64;
+#define TSF_SINT64_C(c) c ## LL
+#define TSF_UINT64_C(c) c ## ULL
+#endif
 typedef char tsf_char20[20];
 
 #if !defined(WORDS_BIGENDIAN) && defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -1004,7 +1019,7 @@ static int tsf_hydra_clamp_end(int start, int end, int limit)
 	return (end < start ? start : (end > limit ? limit : end));
 }
 
-static unsigned int tsf_addr_clamp(long long pos, unsigned int lo, unsigned int hi) { return (unsigned int)(pos < lo ? lo : (pos > hi ? hi : pos)); }
+static unsigned int tsf_addr_clamp(tsf_s64 pos, unsigned int lo, unsigned int hi) { return (unsigned int)(pos < lo ? lo : (pos > hi ? hi : pos)); }
 
 // Generators that are only allowed at the instrument level (sample generators, substitution generators, 8.5), ignored in presets
 static TSF_BOOL tsf_gen_instrument_only(tsf_u16 g) { return (g <= 4 || g == 12 || g == 45 || g == 46 || g == 47 || g == 50 || g == 54 || g == 57 || g == 58); }
@@ -1147,7 +1162,7 @@ static int tsf_load_presets(tsf* res, struct tsf_hydra *hydra, unsigned int font
 								// Sample positions: the header's points plus the address offset generators (fine + 32768 * coarse), kept inside the
 								// sample data. The end is exclusive (the first of the zero points after the sample), the loop end is made inclusive.
 								{
-									#define TSF_ADDR(base, i) tsf_addr_clamp((long long)(base) + zoneRegion.addrOfs[i] + 32768LL * zoneRegion.addrOfs[(i) + 4], pshdr->start, pshdr->end)
+									#define TSF_ADDR(base, i) tsf_addr_clamp((tsf_s64)(base) + zoneRegion.addrOfs[i] + TSF_SINT64_C(32768) * zoneRegion.addrOfs[(i) + 4], pshdr->start, pshdr->end)
 									zoneRegion.offset     = TSF_ADDR(pshdr->start, 0);
 									zoneRegion.end        = TSF_ADDR(pshdr->end, 1);
 									zoneRegion.loop_start = TSF_ADDR(pshdr->startLoop, 2);
@@ -2578,10 +2593,10 @@ static int tsf_note_on_channel(tsf* f, int preset_index, int key, float vel, int
 		// Offset/end/loop, moved by the address offset modulators (evaluated once at note on)
 		{
 			const int *a = voice->mr.addrOfs, *b = region->addrOfs;
-			long long st = region->offset     + (a[0] - b[0]) + 32768LL * (a[4] - b[4]);
-			long long en = region->end        + (a[1] - b[1]) + 32768LL * (a[5] - b[5]);
-			long long ls = region->loop_start + (a[2] - b[2]) + 32768LL * (a[6] - b[6]);
-			long long le = region->loop_end   + (a[3] - b[3]) + 32768LL * (a[7] - b[7]);
+			tsf_s64 st = region->offset     + (a[0] - b[0]) + TSF_SINT64_C(32768) * (a[4] - b[4]);
+			tsf_s64 en = region->end        + (a[1] - b[1]) + TSF_SINT64_C(32768) * (a[5] - b[5]);
+			tsf_s64 ls = region->loop_start + (a[2] - b[2]) + TSF_SINT64_C(32768) * (a[6] - b[6]);
+			tsf_s64 le = region->loop_end   + (a[3] - b[3]) + TSF_SINT64_C(32768) * (a[7] - b[7]);
 			if (st < region->sample_start) st = region->sample_start; else if (st >= region->sample_end) st = region->sample_end - 1;
 			if (en > region->sample_end) en = region->sample_end; else if (en <= st) en = st + 1;
 			if (ls < region->sample_start) ls = region->sample_start; // loop points are kept inside the sample like at load time
