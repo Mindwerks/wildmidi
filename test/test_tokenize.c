@@ -6,10 +6,12 @@
 
 extern char **WM_LC_Tokenize_Line(char *line_data);
 
-/* ponytail: leaks the strdup'd line buffer, tokens point into it and the
- * process exits right after main(); not worth tracking for a smoke test. */
+/* tokens point into the line buffer, so it has to outlive them; each
+ * main() case frees its tokens before the next call reuses it. */
 static char **tokenize(const char *line) {
-    return WM_LC_Tokenize_Line(strdup(line));
+    static char buf[256];
+    strcpy(buf, line);
+    return WM_LC_Tokenize_Line(buf);
 }
 
 int main(void) {
