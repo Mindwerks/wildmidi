@@ -39,3 +39,8 @@ IF (WANT_MAFM)
     TARGET_LINK_LIBRARIES(test_smaf_7f23 libwildmidi-static ${M_LIBRARY})
     ADD_TEST(NAME smaf_7f23 COMMAND test_smaf_7f23)
 ENDIF (WANT_MAFM)
+
+ADD_EXECUTABLE(test_parser_bounds test_parser_bounds.c)
+TARGET_INCLUDE_DIRECTORIES(test_parser_bounds PRIVATE ${CMAKE_SOURCE_DIR}/include)
+TARGET_LINK_LIBRARIES(test_parser_bounds libwildmidi-static ${M_LIBRARY})
+ADD_TEST(NAME parser_bounds COMMAND test_parser_bounds)

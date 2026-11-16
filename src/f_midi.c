@@ -211,10 +211,16 @@ _WM_ParseNewMidi(const uint8_t *midi_data, uint32_t midi_size) {
         running_event[i] = 0;
         track_delta[i] = 0;
 
-        while (*tracks[i] > 0x7F) {
+        /* GHSA-wf5x-qm25-rf67: type 0 skips the EOT check above, so nothing
+         * guarantees a byte <= 0x7F inside the track to stop this VLQ. */
+        while (track_size[i] && *tracks[i] > 0x7F) {
             track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
             tracks[i]++;
             track_size[i]--;
+        }
+        if (!track_size[i]) {
+            _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
+            goto _end;
         }
         track_delta[i] = (track_delta[i] << 7) + (*tracks[i] & 0x7F);
         tracks[i]++;
