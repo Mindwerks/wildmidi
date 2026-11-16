@@ -19,6 +19,11 @@ TARGET_INCLUDE_DIRECTORIES(test_xmi_notelen PRIVATE ${CMAKE_SOURCE_DIR}/include)
 TARGET_LINK_LIBRARIES(test_xmi_notelen libwildmidi-static ${M_LIBRARY})
 ADD_TEST(NAME xmi_notelen COMMAND test_xmi_notelen)
 
+ADD_EXECUTABLE(test_xmi2mid test_xmi2mid.c)
+TARGET_INCLUDE_DIRECTORIES(test_xmi2mid PRIVATE ${CMAKE_SOURCE_DIR}/include)
+TARGET_LINK_LIBRARIES(test_xmi2mid libwildmidi-static ${M_LIBRARY})
+ADD_TEST(NAME xmi2mid COMMAND test_xmi2mid)
+
 ADD_EXECUTABLE(test_smaf_sequ test_smaf_sequ.c)
 TARGET_LINK_LIBRARIES(test_smaf_sequ libwildmidi-static ${M_LIBRARY})
 ADD_TEST(NAME smaf_sequ COMMAND test_smaf_sequ)

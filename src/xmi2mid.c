@@ -467,6 +467,8 @@ int _WM_xmi2midi(const uint8_t *in, uint32_t insize,
     struct xmi_ctx ctx;
     unsigned int i;
     int ret = -1;
+    int32_t division;
+    midi_event *event;
 
     if (convert_type > XMIDI_CONVERT_MT32_TO_GS) {
         _WM_ERROR_NEW("%s:%i:  %d is an invalid conversion type.", _WM_FUNCTION, __LINE__, convert_type);
@@ -503,7 +505,30 @@ int _WM_xmi2midi(const uint8_t *in, uint32_t insize,
 
     write2(&ctx, ctx.info.type);
     write2(&ctx, ctx.info.tracks);
-    write2(&ctx, ctx.timing[0]);/* write divisions from track0 */
+    /* An SMF has one division for all tracks, but every XMI sequence gets
+     * its own from its tempo.  Use the finest one and rescale the other
+     * tracks onto it, so no event spacing shrinks below its source grid. */
+    division = ctx.timing[0];
+    for (i = 1; i < ctx.info.tracks; i++) {
+        if (ctx.timing[i] > division)
+            division = ctx.timing[i];
+    }
+    for (i = 0; i < ctx.info.tracks; i++) {
+        int32_t prev = 0;
+        if (ctx.timing[i] == division)
+            continue;
+        for (event = ctx.events[i]; event; event = event->next) {
+            int64_t t = ((int64_t) event->time * division
+                         + ctx.timing[i] / 2) / ctx.timing[i];
+            /* the time must stay an int32_t and each delta a valid SMF VLQ */
+            if (t > INT32_MAX || t - prev > 0x0FFFFFFF) {
+                _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(track too long)", 0);
+                goto _end;
+            }
+            event->time = prev = (int32_t) t;
+        }
+    }
+    write2(&ctx, division);
 
     for (i = 0; i < ctx.info.tracks; i++)
         ConvertListToMTrk(&ctx, ctx.events[i]);
@@ -1036,6 +1061,9 @@ badfile:    _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(too short)", 0);
         if (!memcmp(buf, "XMID", 4)) {
             _WM_DEBUG_MSG("Warning: XMIDI without XDIR");
             ctx->info.tracks = 1;
+            /* the sequence's chunks follow the XMID type directly */
+            ctx->datastart = getsrcpos(ctx);
+            return (0);
         }
         /* Not an XMIDI that we recognise */
         else if (memcmp(buf, "XDIR", 4)) {
