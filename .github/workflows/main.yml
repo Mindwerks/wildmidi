@@ -56,3 +56,19 @@ jobs:
           name: wildmidi-${{ matrix.config.os }}-${{ matrix.config.c }}
           path: build/out/
           retention-days: 14
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build and test with ASan + UBSan
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DWANT_PLAYER=OFF \
+            -DCMAKE_C_FLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all"
+          cmake --build build -j2
+          ctest --test-dir build --output-on-failure
