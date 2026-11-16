@@ -479,16 +479,17 @@ struct tsf
 };
 
 #ifndef TSF_NO_STDIO
-static int tsf_stream_stdio_read(FILE* f, void* ptr, unsigned int size) { return (int)fread(ptr, 1, size, f); }
-static int tsf_stream_stdio_skip(FILE* f, unsigned int count) // in steps that fit a 32-bit long (a larger count would seek backwards)
+static int tsf_stream_stdio_read(void* f, void* ptr, unsigned int size) { return (int)fread(ptr, 1, size, (FILE*)f); }
+static int tsf_stream_stdio_skip(void* data, unsigned int count) // in steps that fit a 32-bit long (a larger count would seek backwards)
 {
+	FILE* f = (FILE*)data;
 	for (; count > 0x7FFFFFFF; count -= 0x7FFFFFFF) if (fseek(f, 0x7FFFFFFF, SEEK_CUR)) return 0;
 	return !fseek(f, (long)count, SEEK_CUR);
 }
 TSFDEF tsf* tsf_load_filename(const char* filename)
 {
 	tsf* res;
-	struct tsf_stream stream = { TSF_NULL, (int(*)(void*,void*,unsigned int))&tsf_stream_stdio_read, (int(*)(void*,unsigned int))&tsf_stream_stdio_skip };
+	struct tsf_stream stream = { TSF_NULL, &tsf_stream_stdio_read, &tsf_stream_stdio_skip };
 	#if __STDC_WANT_SECURE_LIB__
 	FILE* f = TSF_NULL; fopen_s(&f, filename, "rb");
 	#else
@@ -507,11 +508,11 @@ TSFDEF tsf* tsf_load_filename(const char* filename)
 #endif
 
 struct tsf_stream_memory { const char* buffer; unsigned int total, pos; };
-static int tsf_stream_memory_read(struct tsf_stream_memory* m, void* ptr, unsigned int size) { if (size > m->total - m->pos) size = m->total - m->pos; TSF_MEMCPY(ptr, m->buffer+m->pos, size); m->pos += size; return size; }
-static int tsf_stream_memory_skip(struct tsf_stream_memory* m, unsigned int count) { if (count > m->total - m->pos) return 0; m->pos += count; return 1; }
+static int tsf_stream_memory_read(void* data, void* ptr, unsigned int size) { struct tsf_stream_memory* m = (struct tsf_stream_memory*)data; if (size > m->total - m->pos) size = m->total - m->pos; TSF_MEMCPY(ptr, m->buffer+m->pos, size); m->pos += size; return size; }
+static int tsf_stream_memory_skip(void* data, unsigned int count) { struct tsf_stream_memory* m = (struct tsf_stream_memory*)data; if (count > m->total - m->pos) return 0; m->pos += count; return 1; }
 TSFDEF tsf* tsf_load_memory(const void* buffer, int size)
 {
-	struct tsf_stream stream = { TSF_NULL, (int(*)(void*,void*,unsigned int))&tsf_stream_memory_read, (int(*)(void*,unsigned int))&tsf_stream_memory_skip };
+	struct tsf_stream stream = { TSF_NULL, &tsf_stream_memory_read, &tsf_stream_memory_skip };
 	struct tsf_stream_memory f = { TSF_NULL, 0, 0 };
 	f.buffer = (const char*)buffer;
 	f.total = (size > 0 ? (unsigned int)size : 0);
@@ -2244,7 +2245,7 @@ TSFDEF tsf* tsf_load(struct tsf_stream* stream)
 					{ \
 						int num = (int)(chunk.size / chunkName##SizeInFile), i; \
 						struct tsf_stream_memory mem = { TSF_NULL, 0, 0 }; \
-						struct tsf_stream ms = { TSF_NULL, (int(*)(void*,void*,unsigned int))&tsf_stream_memory_read, (int(*)(void*,unsigned int))&tsf_stream_memory_skip }; \
+						struct tsf_stream ms = { TSF_NULL, &tsf_stream_memory_read, &tsf_stream_memory_skip }; \
 						TSF_FREE(hydra.chunkName##s); /* a damaged font can repeat a chunk */ \
 						hydra.chunkName##s = TSF_NULL; hydra.chunkName##Num = 0; \
 						if (chunk.size > 0x7FFFFFFF) goto out_of_memory; \
