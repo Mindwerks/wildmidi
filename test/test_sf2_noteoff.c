@@ -290,6 +290,37 @@ static int32_t render_staggered_pair(void) {
     return peak;
 }
 
+/* Issue #297: a seek feeds the skipped events to the synth without rendering,
+ * so each note it passes is switched off inside its attack and held back.
+ * Simulate that for a chord, clear as the seeks do, and return the peak of the
+ * first tenth of a second after - which has to be silence. */
+static int32_t render_after_seek(void) {
+    uint32_t frames = RENDER_RATE / 10;
+    int32_t *buf = (int32_t *) calloc(frames * 2, sizeof(int32_t));
+    void *synth = _WM_SF2_NewSynth(RENDER_RATE);
+    int32_t peak = 0;
+    uint32_t i;
+    uint8_t key;
+
+    assert(buf != NULL);
+    assert(synth != NULL);
+
+    for (key = 48; key < 72; key++) {
+        send(synth, ev_note_on, 0, ((uint32_t)key << 8) | 100);
+        send(synth, ev_note_off, 0, ((uint32_t)key << 8));
+    }
+    _WM_SF2_ClearVoices(synth);
+    _WM_SF2_Render(synth, buf, frames);
+
+    for (i = 0; i < frames * 2; i++) {
+        int32_t v = buf[i] < 0 ? -buf[i] : buf[i];
+        if (v > peak) peak = v;
+    }
+    _WM_SF2_FreeSynth(synth);
+    free(buf);
+    return peak;
+}
+
 int main(void) {
     int32_t deferred, sustained;
 
@@ -320,6 +351,9 @@ int main(void) {
      * attack.  Released, the pair peaks at the second voice's 0.4 alone; held,
      * it peaks at 1.4 of a voice, so three quarters separates the two. */
     assert(render_staggered_pair() < (render_held() * 3) / 4);
+
+    /* a seek drops the notes it skipped over */
+    assert(render_after_seek() == 0);
 
     _WM_SF2_Unload();
     assert(!_WM_SF2_Active());

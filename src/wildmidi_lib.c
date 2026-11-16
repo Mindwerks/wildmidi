@@ -2156,6 +2156,9 @@ WM_SYMBOL int WildMidi_FastSeek(midi * handle, unsigned long int *sample_pos) {
         } while (note_data);
     }
     mdi->note = NULL;
+#ifdef WILDMIDI_SF2
+    if (mdi->sf2_synth) _WM_SF2_ClearVoices(mdi->sf2_synth);
+#endif
 
     /* clear the reverb buffers since we not gonna be using them here */
     _WM_reset_reverb(mdi->reverb);
@@ -2286,6 +2289,12 @@ WM_SYMBOL int WildMidi_SongSeek (midi * handle, int8_t nextsong) {
         } while (note_data);
     }
     mdi->note = NULL;
+#ifdef WILDMIDI_SF2
+    if (mdi->sf2_synth) _WM_SF2_ClearVoices(mdi->sf2_synth);
+#endif
+
+    /* clear the reverb buffers since we not gonna be using them here */
+    _WM_reset_reverb(mdi->reverb);
 
     _WM_Unlock(&mdi->lock);
     return (0);

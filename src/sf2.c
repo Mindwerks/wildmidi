@@ -225,6 +225,20 @@ void _WM_SF2_ReleaseAll(void *synth) {
     tsf_note_off_all(s->f);
 }
 
+/* The seeks feed the skipped events through without rendering, so their
+ * voices never leave the attack, every note off among them is held back, and
+ * the first render after the seek sounds the lot at once (issue #297).  Like
+ * the GUS path, a fast seek only cares about new notes: kill the voices and
+ * the held offs, but keep the programs and controllers the events rebuilt. */
+void _WM_SF2_ClearVoices(void *synth) {
+    struct wm_sf2_synth *s = (struct wm_sf2_synth *)synth;
+    struct tsf_voice *v = s->f->voices, *vEnd = v ? v + s->f->voiceNum : TSF_NULL;
+    for (; v != vEnd; v++) tsf_voice_kill(v);
+    memset(s->held_off, 0, sizeof(s->held_off)); /* nothing left to release */
+    s->held_count = 0;
+    if (s->f->fx) tsf_fx_clear(s->f->fx); /* as _WM_reset_reverb does for GUS */
+}
+
 /* Would a note off now silence the voice it lands on?  tsf_channel_note_off()
  * releases the sounding voice with the lowest playIndex - the oldest note on
  * the key - so that is the only envelope that matters here.  Asking whether
