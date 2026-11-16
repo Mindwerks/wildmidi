@@ -514,17 +514,18 @@ int _WM_xmi2midi(const uint8_t *in, uint32_t insize,
             division = ctx.timing[i];
     }
     for (i = 0; i < ctx.info.tracks; i++) {
+        int32_t prev = 0;
         if (ctx.timing[i] == division)
             continue;
         for (event = ctx.events[i]; event; event = event->next) {
             int64_t t = ((int64_t) event->time * division
                          + ctx.timing[i] / 2) / ctx.timing[i];
-            /* keeps every delta a valid SMF VLQ and the time an int32_t */
-            if (t > 0x0FFFFFFF) {
+            /* the time must stay an int32_t and each delta a valid SMF VLQ */
+            if (t > INT32_MAX || t - prev > 0x0FFFFFFF) {
                 _WM_GLOBAL_ERROR(WM_ERR_CORUPT, "(track too long)", 0);
                 goto _end;
             }
-            event->time = (int32_t) t;
+            event->time = prev = (int32_t) t;
         }
     }
     write2(&ctx, division);
