@@ -268,6 +268,10 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
             smallest_delta = chunk_delta[i];
         }
 
+        /* chunk_length[i] is the event budget below; a chunk shorter than
+         * its own header would underflow it. */
+        if (chunk_length[i] < chunk_ofs[i]) goto tooshort;
+
         /* goto start of next chunk */
         hmp_data = hmp_chunk[i] + chunk_length[i];
         chunk_length[i] -= chunk_ofs[i];
@@ -320,6 +324,12 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
                 }
             }
             do {
+                /* the checks below read three bytes; a well-formed chunk
+                 * always has at least its end-of-chunk event left */
+                if (chunk_length[i] < 3) {
+                    _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, "file too short", 0);
+                    goto _hmp_end;
+                }
                 if (((hmp_chunk[i][0] & 0xf0) == 0xb0 ) && ((hmp_chunk[i][1] == 110) || (hmp_chunk[i][1] == 111)) && (hmp_chunk[i][2] > 0x7f)) {
                     /* Reserved for loop markers */
                     /* TODO: still deciding what to do about these */
@@ -355,7 +365,6 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
                 chunk_delta[i] = 0;
                 if (chunk_length[i] && *hmp_chunk[i] < 0x80) {
                     do {
-                        if (! chunk_length[i]) break;
                         /* See the other var-len loop above: a shift of 32+ cannot
                          * fit chunk_delta, so fail closed rather than perform an
                          * out-of-range (undefined) shift. */
@@ -367,7 +376,7 @@ _WM_ParseNewHmp(const uint8_t *hmp_data, uint32_t hmp_size) {
                         var_len_shift += 7;
                         hmp_chunk[i]++;
                         chunk_length[i]--;
-                    } while (*hmp_chunk[i] < 0x80);
+                    } while (chunk_length[i] && *hmp_chunk[i] < 0x80);
                 }
                 if (! chunk_length[i]) {
                     _WM_GLOBAL_ERROR(WM_ERR_NOT_HMP, "file too short", 0);
