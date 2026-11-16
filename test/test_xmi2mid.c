@@ -54,6 +54,31 @@ static const uint8_t bare[] = {
     'E','V','N','T',  0,0,0,8,  SEQ_A
 };
 
+/* sequence A at division 1 (tempo 2778 us) waits 44577 ticks; B is at
+ * division 6039 (tempo 0xffffff us).  Rescaled, A's end lands past the
+ * SMF delta limit 0x0fffffff, so the conversion must fail cleanly. */
+#define LONG_WAIT 117 /* bytes of 0x7f delay, 127 * 117 * 3 = 44577 ticks */
+static const uint8_t too_long_head[] = {
+    'F','O','R','M',  0,0,0,14,
+    'X','D','I','R',
+    'I','N','F','O',  0,0,0,2,
+    2,0,
+    'C','A','T',' ',  0,0,0,184,
+    'X','M','I','D',
+    'F','O','R','M',  0,0,0,138,
+    'X','M','I','D',
+    'E','V','N','T',  0,0,0,126,
+    0xff, 0x51, 0x03, 0x00, 0x0a, 0xda
+};
+static const uint8_t too_long_tail[] = {
+    0xff, 0x2f, 0x00,
+    'F','O','R','M',  0,0,0,26,
+    'X','M','I','D',
+    'E','V','N','T',  0,0,0,14,
+    0xff, 0x51, 0x03, 0xff, 0xff, 0xff,
+    0x90, 60, 100, 0x01, 0x01, 0xff, 0x2f, 0x00
+};
+
 /* delta of the end of track event closing the MTrk at p; returns the next */
 static const uint8_t *eot_delta(const uint8_t *p, uint8_t *delta) {
     uint32_t len = ((uint32_t)p[4] << 24) | (p[5] << 16) | (p[6] << 8) | p[7];
@@ -88,5 +113,16 @@ int main(void) {
     assert(size == size2 && !memcmp(mid, mid2, size));
     free(mid);
     free(mid2);
+
+    {
+        uint8_t too_long[sizeof(too_long_head) + LONG_WAIT + sizeof(too_long_tail)];
+        memcpy(too_long, too_long_head, sizeof(too_long_head));
+        memset(too_long + sizeof(too_long_head), 0x7f, LONG_WAIT);
+        memcpy(too_long + sizeof(too_long_head) + LONG_WAIT,
+               too_long_tail, sizeof(too_long_tail));
+        assert(_WM_xmi2midi(too_long, sizeof(too_long), &mid, &size,
+                            XMIDI_CONVERT_NOCONVERSION) == -1);
+        assert(mid == NULL && size == 0);
+    }
     return 0;
 }
