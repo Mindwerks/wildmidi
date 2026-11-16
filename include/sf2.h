@@ -46,6 +46,9 @@ extern void _WM_SF2_AdjustChannelVolumes(struct _mdi *mdi);
 /* send every sounding voice into its release stage */
 extern void _WM_SF2_ReleaseAll(void *synth);
 
+/* drop every voice outright, keeping channel state (for the seeks) */
+extern void _WM_SF2_ClearVoices(void *synth);
+
 /* translate a wildmidi event to the synth */
 extern void _WM_SF2_Event(void *synth, struct _mdi *mdi, struct _event *event);
 
