@@ -147,6 +147,14 @@ _WM_ParseNewMus(const uint8_t *mus_data, uint32_t mus_size) {
          /* Build the event */
         _mus_build_event:
 
+        /* GHSA-98xh-c4wm-qxq9 / GHSA-7hpj-m84x-rmvx: the goto above re-enters
+         * here without passing the loop condition, and events 0-4 read up to
+         * mus_data_ofs + 2. Running out of data ends the song, same as the
+         * loop condition does. */
+        if (mus_data_ofs >= mus_size) goto _mus_end_of_song;
+        if (((mus_data[mus_data_ofs] >> 4) & 0x07) < 5 && mus_size - mus_data_ofs < 3)
+            goto _mus_end_of_song;
+
         channel = mus_data[mus_data_ofs] & 0x0f;
 
         /* Mus drums happen on channel 15, swap channel 9 & 15 */
@@ -349,6 +357,7 @@ _WM_ParseNewMus(const uint8_t *mus_data, uint32_t mus_size) {
 
         mus_ticks = 0;
         do {
+            if (mus_data_ofs >= mus_size) goto _mus_end_of_song;
             mus_ticks = (mus_ticks << 7) | (mus_data[mus_data_ofs++] & 0x7f);
         } while (mus_data[mus_data_ofs - 1] & 0x80);
 
